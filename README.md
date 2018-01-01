@@ -2,19 +2,24 @@
   <img src=".img/poster.png" height="400px" width=auto alt="AppImageUpdaterBridge Poster">  <br>
 </p>
 
+<p align="center">
+<b>!WORK IN PROGRESS!</b>
+</p>
+
 > :rocket: A simple bridge to AppImage's :arrow_double_down: Updating Mechanism written :paintbrush: in C++ using Qt5. This small library :white_check_mark:   
 > helps you to create awesome :sunglasses: AutoUpdater in Qt5 for AppImages. :heart:   
 > -- Antony Jr. :sunglasses:
 
 
-# AppImage Updater Bridge [![GitHub issues](https://img.shields.io/github/issues/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/issues) [![GitHub forks](https://img.shields.io/github/forks/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/network) [![GitHub stars](https://img.shields.io/github/stars/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/stargazers) [![GitHub license](https://img.shields.io/github/license/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/blob/master/LICENSE)
+# AppImage Updater Bridge [![GitHub issues](https://img.shields.io/github/issues/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/issues) [![GitHub stars](https://img.shields.io/github/stars/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/stargazers) [![GitHub license](https://img.shields.io/github/license/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/blob/master/LICENSE)
 
-This small library helps you to create awesome **Updaters** in **Qt5** for your **AppImages** , which is also light-wieght and self-contained.   
-you can also use the default theme if you just want to set a update **feature** for your **AppImage**. :heart:
+
+This small library helps you to create awesome **Updaters** in **Qt5** for your **AppImages** , which is also light-wieght   
+and self-contained. you can also use the default theme if you just want to set a update **feature** for your **AppImage**. :heart:
 
 # Getting Started
 
-Please refer the official [documentation](https://antony-jr.github.io/AppImageUpdaterBridge).
+Please refer the official [documentation](https://antony-jr.github.io/AppImageUpdaterBridge). ( NOT PUBLISHED YET! )
 
 # Thank You ![Thank You](https://img.shields.io/badge/Always-Say%20Thank%20You!-blue.svg?style=flat-square)
 
