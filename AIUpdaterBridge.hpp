@@ -41,24 +41,68 @@
 #include <QtCore>
 #include <zsglobal.h>
 extern "C" {
-    #include <zsync.h>
-    #include <zlib.h>
+#include <zsync.h>
+#include <zlib.h>
 }
 
 /*
- * Class AIUpdaterBridge  <- Inherits QThread.
+ * Class AIUpdaterBridge  <- Inherits QObject.
  * ---------------------
  *
- *  This is the main class that handles AppImage Updates like 
+ *  This is the main class that handles AppImage Updates like
  *  a pro.
+ *
+ *  Constructors:
+ *      explicit AIUpdaterBridge(QObject *parent = NULL)   - Only Construct the class.
 */
-class AIUpdaterBridge : public QThread // START CLASS AIUpdaterBridge
+class AIUpdaterBridge : public QObject // START CLASS AIUpdaterBridge
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-private slots:
-public slots:
-signals:
+    explicit AIUpdaterBridge(QObject *parent = NULL)
+        : QObject(parent)
+    {
+    }
 private:
-}; // END CLASS AIUpdaterBridge 
+    /*
+     * configuration  <- Json
+     * -------------
+     *
+     * Just define the transport type and type the config , the
+     * bridge will automatically search for the required fields.
+     *
+     * Using generic zsync.
+     *
+     * {
+     *     "transport"     : "zsync",
+     *     "url"           : "http://server.domain/path/Application-latest-x86_64.AppImage.zsync",
+     *     "cacheFiles"    : false
+     * }
+     *
+     * Using gh-releases-zsync
+     *
+     * {
+     *     "transport" : "gh-releases-zsync",
+     *     "username"  : "antony-jr",
+     *     "repo"      : "appImage",
+     *     "tag"       : "latest",
+     *     "filename"  : "file.AppImage*.zsync"
+     * }
+     *
+     * Using bintray-zsync
+     *
+     * {
+     *     "transport" : "bintray-zsync",
+     *     "username"  : "antony-jr",
+     *     "repo"      : "appImage",
+     *     "package"   : "AppImageUpdater",
+     *     "path"      : "file.AppImage_latest_.zsync"
+     * }
+     *
+    */
+    QJsonDocument configuration;
+    QString currentWorkingDirectory;
+    struct zsync_state *zsyncFile; // legacy
+    off_t remoteFileSizeCache;
+};// END CLASS AIUpdaterBridge
 #endif // AIUPDATER_BRIDGE_HPP_INCLUDED
