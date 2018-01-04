@@ -1,0 +1,3 @@
+[submodule "QAIUpdateInformation"]
+	path = QAIUpdateInformation
+	url = ssh+git://git@github.com/antony-jr/QAIUpdateInformation
