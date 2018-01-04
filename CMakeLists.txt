@@ -11,7 +11,7 @@ set(CMAKE_AUTOMOC ON)
 # Find the QtCore library
 find_package(Qt5Core)
 
-include_directories(.)
+include_directories(. QAIUpdateInformation)
 # config.h contains some global defines, our config.h.in is a modified version of the upstream config.h.in to make it
 # integrate with CMake
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

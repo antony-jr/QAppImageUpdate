@@ -55,6 +55,12 @@ AIUpdaterBridge::AIUpdaterBridge(const QJsonObject& config)
 	return;
 }
 
+void AIUpdaterBridge::doDebug(bool ch)
+{
+	debug = ch;
+	return;
+}
+
 // Public Slots
 
 void AIUpdaterBridge::setAppImageUpdateInformation(const QString& appImage)
@@ -86,14 +92,13 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage , 
 	}else if(config["transport"].toString() == "gh-releases-zsync"){
 	// handle github releases zsync.
 	QUrl releaseLink;
-	releaseLink << "https://api.github.com/repos/" << config["username"].toString()
-		    << "/" << config["repo"].toString() << "/releases/";
+	releaseLink = QUrl("https://api.github.com/repos/" + config["username"].toString() + 
+			   "/"  + config["repo"].toString() + "/releases/");
 	if(config["tag"].toString().lower() == "latest"){
-		releaseLink << config["tag"].toString();
+		releaseLink = QUrl(releaseLink.toString() + config["tag"].toString());
 	}else{
-		releaseLink << "tags/" << config["tag"].toString();
+		releaseLink = QUrl(releaseLink.toString() + "tags/" + config["tag"].toString());
 	}
-
 	if(debug){
 		qDebug() << "AIUpdaterBridge:: github release link ::" << releaseLink;
 	}

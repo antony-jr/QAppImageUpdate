@@ -79,7 +79,7 @@ public:
 
     ~AIUpdaterBridge() { }
 public slots:
-    void setAppImageUpateInformation(const QString&);
+    void setAppImageUpdateInformation(const QString&);
 private slots:
     void handleAppImageUpdateInformation(const QString& , const QJsonObject&);
     void handleAppImageUpdateError(const QString& , short );
