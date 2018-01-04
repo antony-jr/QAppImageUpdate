@@ -67,47 +67,53 @@ extern "C" {
 class AIUpdaterBridge : public QObject // START CLASS AIUpdaterBridge
 {
     Q_OBJECT
-public: 
+public:
     /*
      * Error codes.
      * -----------
     */
     enum {
-	UNABLE_TO_GET_APPIMAGE_INFORMATION,
-    APPIMAGE_PATH_NOT_GIVEN,
-    TRANSPORT_NOT_GIVEN,
-    URL_NOT_GIVEN,
-    INVALID_UPD_INFO_PARAMENTERS,
-    INVALID_TRANSPORT_GIVEN,
-    NOT_IMPLEMENTED_YET
+        UNABLE_TO_GET_APPIMAGE_INFORMATION,
+        APPIMAGE_PATH_NOT_GIVEN,
+        TRANSPORT_NOT_GIVEN,
+        URL_NOT_GIVEN,
+        INVALID_UPD_INFO_PARAMENTERS,
+        INVALID_TRANSPORT_GIVEN,
+        NOT_IMPLEMENTED_YET,
+        NETWORK_ERROR,
+        CANNOT_FIND_GITHUB_ASSET
     };
 
-    explicit AIUpdaterBridge(QObject *parent = NULL , QNetworkAccessManager *toUseManager = NULL)
+    explicit AIUpdaterBridge(QObject *parent = NULL, QNetworkAccessManager *toUseManager = NULL)
         : QObject(parent)
     {
-	    // According to the Qt Docs , A Single QNetworkAccessManager is capable
-	    // of doing multiple request with less footprint as possible , it is also recommended
-	    // that a single QNetworkAccessManager is more than enough for a Qt App ,
-	    // So lets have a option to use this advantage.
-	    _pManager = (toUseManager == NULL) ? new QNetworkAccessManager(this) : toUseManager;
-	    return;
+        // According to the Qt Docs , A Single QNetworkAccessManager is capable
+        // of doing multiple request with less footprint as possible , it is also recommended
+        // that a single QNetworkAccessManager is more than enough for a Qt App ,
+        // So lets have a option to use this advantage.
+        _pManager = (toUseManager == NULL) ? new QNetworkAccessManager(this) : toUseManager;
+        _pManager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
+        return;
     }
     explicit AIUpdaterBridge(const QString&); // get info from appimage
     explicit AIUpdaterBridge(const QJsonObject&); // get info from json
     void doDebug(bool);
-    
+
     void setAppImageUpdateInformation(const QString&);
     void setAppImageUpdateInformation(const QJsonObject&);
 
     ~AIUpdaterBridge()
     {
-	    _pManager->deleteLater();
+        _pManager->deleteLater();
     }
 private slots:
-    void handleAppImageUpdateInformation(const QString& , const QJsonObject&);
-    void handleAppImageUpdateError(const QString& , short );
+    void handleAppImageUpdateInformation(const QString&, const QJsonObject&);
+    void handleAppImageUpdateError(const QString&, short );
+    void getGitHubReleases(const QUrl&);
+    void handleGitHubReleases(const QString&);
+    void handleNetworkErrors(QNetworkReply::NetworkError);
 signals:
-    void error(const QString& , short );
+    void error(const QString&, short );
 private:
     /*
      * configuration  <- Json
@@ -148,13 +154,13 @@ private:
      *
     */
 
-    /* 
+    /*
      * The end resultant from configuration
     */
     QString appImage;
     QString zsyncFileName;
     QUrl zsyncURL;
-    
+
     QAIUpdateInformation AppImageInformer;
     QString currentWorkingDirectory;
     struct zsync_state *zsyncFile; // zsync legacy
@@ -167,6 +173,5 @@ private:
     QNetworkAccessManager    *_pManager = NULL;
     QNetworkRequest           _CurrentRequest;
     QNetworkReply            *_pCurrentReply = NULL;
-    QUrl		      _URL;
 };// END CLASS AIUpdaterBridge
 #endif // AIUPDATER_BRIDGE_HPP_INCLUDED

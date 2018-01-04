@@ -32,201 +32,283 @@
  * ------------------------------------------------------------------------------
  *  @filename           : AIUpdaterBridge.cpp
  *  @description        : This is the source file which fills in the code
- *  			  with reference to the prototype given in the 
+ *  			  with reference to the prototype given in the
  *  			  AIUpdaterBridge.hpp.
- *  			  A simple bridge to AppImage's Updating Mechanism 
- *  			  writen in C++ using Qt5. This small library helps 
+ *  			  A simple bridge to AppImage's Updating Mechanism
+ *  			  writen in C++ using Qt5. This small library helps
  *  			  you to create awesome AutoUpdater in Qt5 for AppImages.
  * ------------------------------------------------------------------------------
 */
 #include <AIUpdaterBridge.hpp>
 
 AIUpdaterBridge::AIUpdaterBridge(const QString& appImage)
-	: QObject(NULL)
+    : QObject(NULL)
 {
-	_pManager = new QNetworkAccessManager(this);
-	setAppImageUpdateInformation(appImage);
-	return;
+    _pManager = new QNetworkAccessManager(this);
+    _pManager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
+    setAppImageUpdateInformation(appImage);
+    return;
 }
 
 AIUpdaterBridge::AIUpdaterBridge(const QJsonObject& config)
-	: QObject(NULL)
+    : QObject(NULL)
 {
-	_pManager = new QNetworkAccessManager(this);
-	setAppImageUpdateInformation(config);
-	return;
+    _pManager = new QNetworkAccessManager(this);
+    _pManager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
+    setAppImageUpdateInformation(config);
+    return;
 }
 
 void AIUpdaterBridge::doDebug(bool ch)
 {
-	debug = ch;
-	return;
+    debug = ch;
+    return;
 }
 
-// Public Slots
 
 void AIUpdaterBridge::setAppImageUpdateInformation(const QString& appImage)
 {
-	connect(&AppImageInformer , SIGNAL(updateInformation(const QString& , const QJsonObject&)),
-                    this , SLOT(handleAppImageUpdateInformation(const QString& , const QJsonObject&)));
-        connect(&AppImageInformer , SIGNAL(error(const QString& , short)),
-                    this , SLOT(handleAppImageUpdateError(const QString& , short)));
-	this->appImage = appImage;
-	AppImageInformer.setAppImage(appImage);
-	AppImageInformer.doDebug(debug);
-	AppImageInformer.start();
-	return;
+    connect(&AppImageInformer, SIGNAL(updateInformation(const QString&, const QJsonObject&)),
+            this, SLOT(handleAppImageUpdateInformation(const QString&, const QJsonObject&)));
+    connect(&AppImageInformer, SIGNAL(error(const QString&, short)),
+            this, SLOT(handleAppImageUpdateError(const QString&, short)));
+    this->appImage = appImage;
+    AppImageInformer.setAppImage(appImage);
+    AppImageInformer.doDebug(debug);
+    AppImageInformer.start();
+    return;
 }
 
 void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
 {
-	// Since this is from the user the data can have a lot 
-	// of errors. Must check before use
+    // Since this is from the user the data can have a lot
+    // of errors. Must check before use
 
-	if(!config["appImagePath"].isString() || config["appImagePath"].isNull()){
-                if(debug){
-                        qDebug() << "AIUpdaterBridge:: 'appImagePath' entry missing in the given json ::" << config;
-                }
-                emit error(QString("NONE") , APPIMAGE_PATH_NOT_GIVEN);
-                return;
-	}else{
-		// set our appImage
-		this->appImage = config["appImagePath"].toString();
-	}
-
-	if(!config["transport"].isString() || config["transport"].isNull()){
-		if(debug){
-			qDebug() << "AIUpdaterBridge:: 'transport' entry missing in the given json ::" << config;
-		}
-		emit error(appImage , TRANSPORT_NOT_GIVEN);	
-		return;
-	}else{
-	if(config["transport"].toString() == "zsync"){
-		if(!config["url"].isString() || config["url"].isNull()){
-                if(debug){
-                        qDebug() << "AIUpdaterBridge:: 'url' entry missing in the given json ::" << config;
-                }
-                emit error(appImage , URL_NOT_GIVEN);
-                return;
-        	}else{
-                   this->zsyncURL = QUrl(config["url"].toString());
-                   if(debug){
-                          qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL << " :: " << appImage;
-                   }
-		}
-        }else if(config["transport"].toString() == "gh-releases-zsync"){
-        // handle github releases zsync.
-	if(
-	 	(!config["username"].isString() || config["username"].isNull()) ||
-		(!config["repo"].isString() || config["repo"].isNull()) ||
-		(!config["tag"].isString() || config["tag"].isNull()) ||
-		(!config["filename"].isString() || config["filename"].isNull())
-	){
-		if(debug){
-			qDebug() << "AIUpdaterBridge:: invalid number of parameters ::" << config;
-		}
-		emit error(appImage , INVALID_UPD_INFO_PARAMENTERS);
-		return;
-	}
-        QUrl releaseLink;
-        releaseLink = QUrl("https://api.github.com/repos/" + config["username"].toString() +
-                           "/"  + config["repo"].toString() + "/releases/");
-        if(config["tag"].toString() == "latest"){
-                releaseLink = QUrl(releaseLink.toString() + config["tag"].toString());
-        }else{
-                releaseLink = QUrl(releaseLink.toString() + "tags/" + config["tag"].toString());
+    if(!config["appImagePath"].isString() || config["appImagePath"].isNull()) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: 'appImagePath' entry missing in the given json ::" << config;
         }
-        if(debug){
-                qDebug() << "AIUpdaterBridge:: github release link ::" << releaseLink;
-        }
-	this->zsyncFileName = config["filename"].toString();
-    }else if(config["transport"] == "bintray-zsync"){
-        // handle bintray zsync.
-        if(
-	 	(!config["username"].isString() || config["username"].isNull()) ||
-		(!config["repo"].isString() || config["repo"].isNull()) ||
-		(!config["packageName"].isString() || config["packageName"].isNull()) ||
-		(!config["filename"].isString() || config["filename"].isNull())
-	){
-		if(debug){
-			qDebug() << "AIUpdaterBridge:: invalid number of parameters ::" << config;
-		}
-		emit error(appImage , INVALID_UPD_INFO_PARAMENTERS);
-		return;
-	}
-	if(debug){
-        qDebug() << "AIUpdaterBridge:: sorry but this is not implemented yet!";
-    }
-	emit error(appImage , NOT_IMPLEMENTED_YET);
-	return;
-    }else{
-        // invalid transport given by the user
-        if(debug){
-			qDebug() << "AIUpdaterBridge:: 'transport' entry invalid in the given json ::" << config["transport"].toString();
-            // lets help the user a little bit.
-            QString hint = config["transport"].toString();
-            if(hint.contains("github") 
-                || hint.contains("GITHUB") 
-                || hint.contains("gh-zsync") 
-                || hint.contains("gh") 
-                || hint.contains("GH")){
-                qDebug() << "AIUpdaterBridge:: did you mean 'gh-releases-zsync' ?";
-            }else if(hint.contains("bintray") 
-                || hint.contains("BINTRAY")
-             ){
-                qDebug() << "AIUpdaterBridge:: did you mean 'bintray-zsync' ?";
-            }else{
-                qDebug() << "AIUpdaterBridge:: valid transport mechanisms are:: 'gh-releases-zsync' , 'zsync' , 'bintray-zsync'";
-            }
-		}
-        emit error(appImage , INVALID_TRANSPORT_GIVEN);
+        emit error(QString("NONE"), APPIMAGE_PATH_NOT_GIVEN);
         return;
+    } else {
+        // set our appImage
+        this->appImage = config["appImagePath"].toString();
     }
-	}
-	return;
+
+    if(!config["transport"].isString() || config["transport"].isNull()) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: 'transport' entry missing in the given json ::" << config;
+        }
+        emit error(appImage, TRANSPORT_NOT_GIVEN);
+        return;
+    } else {
+        if(config["transport"].toString() == "zsync") {
+            if(!config["url"].isString() || config["url"].isNull()) {
+                if(debug) {
+                    qDebug() << "AIUpdaterBridge:: 'url' entry missing in the given json ::" << config;
+                }
+                emit error(appImage, URL_NOT_GIVEN);
+                return;
+            } else {
+                this->zsyncURL = QUrl(config["url"].toString());
+                if(debug) {
+                    qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL << " :: " << appImage;
+                }
+            }
+        } else if(config["transport"].toString() == "gh-releases-zsync") {
+            // handle github releases zsync.
+            if(
+                (!config["username"].isString() || config["username"].isNull()) ||
+                (!config["repo"].isString() || config["repo"].isNull()) ||
+                (!config["tag"].isString() || config["tag"].isNull()) ||
+                (!config["filename"].isString() || config["filename"].isNull())
+            ) {
+                if(debug) {
+                    qDebug() << "AIUpdaterBridge:: invalid number of parameters ::" << config;
+                }
+                emit error(appImage, INVALID_UPD_INFO_PARAMENTERS);
+                return;
+            }
+            QUrl releaseLink;
+            releaseLink = QUrl("https://api.github.com/repos/" + config["username"].toString() +
+                               "/"  + config["repo"].toString() + "/releases/");
+            if(config["tag"].toString() == "latest") {
+                releaseLink = QUrl(releaseLink.toString() + config["tag"].toString());
+            } else {
+                releaseLink = QUrl(releaseLink.toString() + "tags/" + config["tag"].toString());
+            }
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: github release link ::" << releaseLink;
+            }
+            this->zsyncFileName = config["filename"].toString();
+            getGitHubReleases(releaseLink);
+        } else if(config["transport"] == "bintray-zsync") {
+            // handle bintray zsync.
+            if(
+                (!config["username"].isString() || config["username"].isNull()) ||
+                (!config["repo"].isString() || config["repo"].isNull()) ||
+                (!config["packageName"].isString() || config["packageName"].isNull()) ||
+                (!config["filename"].isString() || config["filename"].isNull())
+            ) {
+                if(debug) {
+                    qDebug() << "AIUpdaterBridge:: invalid number of parameters ::" << config;
+                }
+                emit error(appImage, INVALID_UPD_INFO_PARAMENTERS);
+                return;
+            }
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: sorry but this is not implemented yet!";
+            }
+            emit error(appImage, NOT_IMPLEMENTED_YET);
+            return;
+        } else {
+            // invalid transport given by the user
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: 'transport' entry invalid in the given json ::" << config["transport"].toString();
+                // lets help the user a little bit.
+                QString hint = config["transport"].toString();
+                if(hint.contains("github")
+                   || hint.contains("GITHUB")
+                   || hint.contains("gh-zsync")
+                   || hint.contains("gh")
+                   || hint.contains("GH")) {
+                    qDebug() << "AIUpdaterBridge:: did you mean 'gh-releases-zsync' ?";
+                } else if(hint.contains("bintray")
+                          || hint.contains("BINTRAY")
+                         ) {
+                    qDebug() << "AIUpdaterBridge:: did you mean 'bintray-zsync' ?";
+                } else {
+                    qDebug() << "AIUpdaterBridge:: valid transport mechanisms are:: 'gh-releases-zsync' , 'zsync' , 'bintray-zsync'";
+                }
+            }
+            emit error(appImage, INVALID_TRANSPORT_GIVEN);
+            return;
+        }
+    }
+    return;
 }
 
 // Private Slots
 
-void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage , const QJsonObject& config)
+void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, const QJsonObject& config)
 {
-	if(config["transport"].toString() == "zsync"){
-		this->zsyncURL = QUrl(config["url"].toString());
-		if(debug){
-			qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL << " :: " << appImage;
-		}
-	}else if(config["transport"].toString() == "gh-releases-zsync"){
-	// handle github releases zsync.
-	QUrl releaseLink;
-	releaseLink = QUrl("https://api.github.com/repos/" + config["username"].toString() + 
-			   "/"  + config["repo"].toString() + "/releases/");
-	if(config["tag"].toString() == "latest"){
-		releaseLink = QUrl(releaseLink.toString() + config["tag"].toString());
-	}else{
-		releaseLink = QUrl(releaseLink.toString() + "tags/" + config["tag"].toString());
-	}
-	if(debug){
-		qDebug() << "AIUpdaterBridge:: github release link ::" << releaseLink;
-	}
-	this->zsyncFileName = config["filename"].toString();
-	}else{
-	// if its not github releases zsync or generic zsync
-	// then it must be bintray-zsync
-	// Note: Since QAIUpdateInformation can handle errors
-	// we don't really have to check for integrity now.
-	
-	// handle bintray zsync.
-    emit error(appImage , NOT_IMPLEMENTED_YET);
-	return;
-	}
-	// There should be no errors at this stage.
-	return;
+    if(config["transport"].toString() == "zsync") {
+        this->zsyncURL = QUrl(config["url"].toString());
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL << " :: " << appImage;
+        }
+    } else if(config["transport"].toString() == "gh-releases-zsync") {
+        // handle github releases zsync.
+        QUrl releaseLink;
+        releaseLink = QUrl("https://api.github.com/repos/" + config["username"].toString() +
+                           "/"  + config["repo"].toString() + "/releases/");
+        if(config["tag"].toString() == "latest") {
+            releaseLink = QUrl(releaseLink.toString() + config["tag"].toString());
+        } else {
+            releaseLink = QUrl(releaseLink.toString() + "tags/" + config["tag"].toString());
+        }
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: github release link ::" << releaseLink;
+        }
+        this->zsyncFileName = config["filename"].toString();
+
+        getGitHubReleases(releaseLink);
+
+    } else {
+        // if its not github releases zsync or generic zsync
+        // then it must be bintray-zsync
+        // Note: Since QAIUpdateInformation can handle errors
+        // we don't really have to check for integrity now.
+
+        // handle bintray zsync.
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: sorry but this is not implemented yet!";
+        }
+        emit error(appImage, NOT_IMPLEMENTED_YET);
+        return;
+    }
+    // There should be no errors at this stage.
+    return;
 }
 
-void AIUpdaterBridge::handleAppImageUpdateError(const QString& appImage , short errorCode)
+void AIUpdaterBridge::handleAppImageUpdateError(const QString& appImage, short errorCode)
 {
-	emit error(appImage , UNABLE_TO_GET_APPIMAGE_INFORMATION);
-	return;
+    emit error(appImage, UNABLE_TO_GET_APPIMAGE_INFORMATION);
+    return;
 }
 
 
+void AIUpdaterBridge::getGitHubReleases(const QUrl& url)
+{
+    _CurrentRequest = QNetworkRequest(url);
+    _pCurrentReply = _pManager->get(_CurrentRequest);
+
+    connect(_pCurrentReply, &QNetworkReply::finished,
+    [&]() {
+        if(_pCurrentReply->attribute( QNetworkRequest::HttpStatusCodeAttribute ).toInt() >= 400) {
+            return;
+        }
+
+        QString Response(_pCurrentReply->readAll());
+
+        if(debug) {
+            qDebug() << "AIUpdaterBridge::GET::" << _CurrentRequest.url() << " :: success!";
+        }
+        handleGitHubReleases(Response);
+        return;
+
+    });
+    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
+            this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
+    return;
+}
+
+void AIUpdaterBridge::handleNetworkErrors(QNetworkReply::NetworkError code)
+{
+    if(debug) {
+        qDebug() << "AIUpdaterBridge:: network error.";
+    }
+    emit error(appImage,  NETWORK_ERROR);
+    return;
+}
+
+void AIUpdaterBridge::handleGitHubReleases(const QString& content)
+{
+    QJsonDocument jsonResponse = QJsonDocument::fromJson(content.toUtf8());
+    QJsonObject jsonObject = jsonResponse.object();
+    QJsonArray assetsArray = jsonObject["assets"].toArray();
+    QString version = jsonObject["tag_name"].toString();
+    QVector<QJsonObject> assets;
+    QRegExp rx(zsyncFileName); // Patern Matching with wildcards!
+    rx.setPatternSyntax(QRegExp::Wildcard);
+
+    if(debug) {
+        qDebug() << "AIUpdaterBridge::Latest Version:: " << version;
+        qDebug() << "AIUpdaterBridge::Asset Required:: " << zsyncFileName;
+    }
+
+    // Parse the array in the assets vector!
+    foreach (const QJsonValue &value, assetsArray) {
+        assets.push_back(value.toObject());
+    }
+
+    for(int i = 0; i < assets.size(); ++i) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge::Checking Asset::" << assets.at(i)["name"].toString();
+        }
+        if(rx.exactMatch(assets.at(i)["name"].toString())) {
+            zsyncURL = assets.at(i)["browser_download_url"].toString();
+            if(debug) {
+                qDebug() << "AIUpdaterBridge::Latest Package::" << zsyncURL;
+            }
+            break;
+        }
+    }
+    if(zsyncURL.isEmpty()) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: cannot find zsync file ::" << zsyncFileName;
+        }
+        emit error(appImage, CANNOT_FIND_GITHUB_ASSET);
+    }
+    return;
+}
