@@ -85,7 +85,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
 void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage , const QJsonObject& config)
 {
 	if(config["transport"].toString() == "zsync"){
-		this->zsyncURL = config["url"].toUrl();
+		this->zsyncURL = QUrl(config["url"].toString());
 		if(debug){
 			qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL;
 		}
@@ -94,7 +94,7 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage , 
 	QUrl releaseLink;
 	releaseLink = QUrl("https://api.github.com/repos/" + config["username"].toString() + 
 			   "/"  + config["repo"].toString() + "/releases/");
-	if(config["tag"].toString().lower() == "latest"){
+	if(config["tag"].toString() == "latest"){
 		releaseLink = QUrl(releaseLink.toString() + config["tag"].toString());
 	}else{
 		releaseLink = QUrl(releaseLink.toString() + "tags/" + config["tag"].toString());
@@ -115,7 +115,7 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage , 
 	return;
 }
 
-void AIUpdaterBridge::handleAppImageUpdateInformationError(const QString& appImage , short errorCode)
+void AIUpdaterBridge::handleAppImageUpdateError(const QString& appImage , short errorCode)
 {
 	emit error(appImage , UNABLE_TO_GET_APPIMAGE_INFORMATION);
 	return;

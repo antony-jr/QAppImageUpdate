@@ -76,10 +76,11 @@ public:
     explicit AIUpdaterBridge(const QString&); // get info from appimage
     explicit AIUpdaterBridge(const QJsonObject&); // get info from json
     void doDebug(bool);
+    
+    void setAppImageUpdateInformation(const QString&);
+    void setAppImageUpdateInformation(const QJsonObject&);
 
     ~AIUpdaterBridge() { }
-public slots:
-    void setAppImageUpdateInformation(const QString&);
 private slots:
     void handleAppImageUpdateInformation(const QString& , const QJsonObject&);
     void handleAppImageUpdateError(const QString& , short );

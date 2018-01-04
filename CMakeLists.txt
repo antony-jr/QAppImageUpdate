@@ -22,9 +22,10 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_subdirectory(zlib)
 add_subdirectory(librcksum)
 add_subdirectory(libzsync)
+add_subdirectory(QAIUpdateInformation)
 
 add_library(AIUpdaterBridge AIUpdaterBridge.cpp AIUpdaterBridge.hpp)
 target_link_libraries(AIUpdaterBridge PRIVATE libzsync)
-target_link_libraries(AIUpdaterBridge  PUBLIC Qt5::Core)
-target_include_directories(AIUpdaterBridge PUBLIC . libzsync librcksum zlib)
+target_link_libraries(AIUpdaterBridge  PUBLIC QAIUpdateInformation Qt5::Core)
+target_include_directories(AIUpdaterBridge PUBLIC . libzsync librcksum zlib QAIUpdateInformation)
 
