@@ -40,6 +40,9 @@
 #define AIUPDATER_BRIDGE_HPP_INCLUDED
 #include <QtCore>
 #include <QAIUpdateInformation.hpp>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 #include <zsglobal.h>
 extern "C" {
 #include <zsync.h>
@@ -53,8 +56,13 @@ extern "C" {
  *  This is the main class that handles AppImage Updates like
  *  a pro.
  *
- *  Constructors:
- *      explicit AIUpdaterBridge(QObject *parent = NULL)   - Only Construct the class.
+ *  Public Functions:
+ *      explicit AIUpdaterBridge(QObject *parent = NULL , QNetworkAccessManager *toUseManager = NULL)   - Only Construct the class.
+ *      explicit AIUpdaterBridge(const QString&) - Extract Update information from AppImage and Constructs the class.
+ *      explicit AIUpdaterBridge(const QJsonObject&) - Extract Update information directly from json and Construct the class.
+ *
+ *      void doDebug(bool)  - Set Debuging.
+ *
 */
 class AIUpdaterBridge : public QObject // START CLASS AIUpdaterBridge
 {
@@ -65,12 +73,23 @@ public:
      * -----------
     */
     enum {
-	UNABLE_TO_GET_APPIMAGE_INFORMATION
+	UNABLE_TO_GET_APPIMAGE_INFORMATION,
+    APPIMAGE_PATH_NOT_GIVEN,
+    TRANSPORT_NOT_GIVEN,
+    URL_NOT_GIVEN,
+    INVALID_UPD_INFO_PARAMENTERS,
+    INVALID_TRANSPORT_GIVEN,
+    NOT_IMPLEMENTED_YET
     };
 
-    explicit AIUpdaterBridge(QObject *parent = NULL)
+    explicit AIUpdaterBridge(QObject *parent = NULL , QNetworkAccessManager *toUseManager = NULL)
         : QObject(parent)
     {
+	    // According to the Qt Docs , A Single QNetworkAccessManager is capable
+	    // of doing multiple request with less footprint as possible , it is also recommended
+	    // that a single QNetworkAccessManager is more than enough for a Qt App ,
+	    // So lets have a option to use this advantage.
+	    _pManager = (toUseManager == NULL) ? new QNetworkAccessManager(this) : toUseManager;
 	    return;
     }
     explicit AIUpdaterBridge(const QString&); // get info from appimage
@@ -80,7 +99,10 @@ public:
     void setAppImageUpdateInformation(const QString&);
     void setAppImageUpdateInformation(const QJsonObject&);
 
-    ~AIUpdaterBridge() { }
+    ~AIUpdaterBridge()
+    {
+	    _pManager->deleteLater();
+    }
 private slots:
     void handleAppImageUpdateInformation(const QString& , const QJsonObject&);
     void handleAppImageUpdateError(const QString& , short );
@@ -97,14 +119,15 @@ private:
      * Using generic zsync.
      *
      * {
+     *     "appImagePath"  : "something/path/appImage.AppImage",
      *     "transport"     : "zsync",
      *     "url"           : "http://server.domain/path/Application-latest-x86_64.AppImage.zsync",
-     *     "cacheFiles"    : false
      * }
      *
      * Using gh-releases-zsync
      *
      * {
+     *     "appImagePath" : "some/path/appImage.AppImage",
      *     "transport" : "gh-releases-zsync",
      *     "username"  : "antony-jr",
      *     "repo"      : "appImage",
@@ -115,6 +138,7 @@ private:
      * Using bintray-zsync
      *
      * {
+     *     "appImagePath" : "some/path/appImage.AppImage",
      *     "transport" : "bintray-zsync",
      *     "username"  : "antony-jr",
      *     "repo"      : "appImage",
@@ -127,13 +151,22 @@ private:
     /* 
      * The end resultant from configuration
     */
-    QString filename; // if we got github or bintray info!
+    QString appImage;
+    QString zsyncFileName;
     QUrl zsyncURL;
     
     QAIUpdateInformation AppImageInformer;
     QString currentWorkingDirectory;
-    struct zsync_state *zsyncFile; // legacy
+    struct zsync_state *zsyncFile; // zsync legacy
     off_t remoteFileSizeCache;
     bool debug = false;
+
+    /*
+     * Networking Support by Qt
+    */
+    QNetworkAccessManager    *_pManager = NULL;
+    QNetworkRequest           _CurrentRequest;
+    QNetworkReply            *_pCurrentReply = NULL;
+    QUrl		      _URL;
 };// END CLASS AIUpdaterBridge
 #endif // AIUPDATER_BRIDGE_HPP_INCLUDED

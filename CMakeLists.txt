@@ -10,6 +10,7 @@ set(CMAKE_AUTOMOC ON)
 
 # Find the QtCore library
 find_package(Qt5Core)
+find_package(Qt5Network)
 
 include_directories(. QAIUpdateInformation)
 # config.h contains some global defines, our config.h.in is a modified version of the upstream config.h.in to make it
@@ -26,6 +27,6 @@ add_subdirectory(QAIUpdateInformation)
 
 add_library(AIUpdaterBridge AIUpdaterBridge.cpp AIUpdaterBridge.hpp)
 target_link_libraries(AIUpdaterBridge PRIVATE libzsync)
-target_link_libraries(AIUpdaterBridge  PUBLIC QAIUpdateInformation Qt5::Core)
+target_link_libraries(AIUpdaterBridge  PUBLIC QAIUpdateInformation Qt5::Core Qt5::Network)
 target_include_directories(AIUpdaterBridge PUBLIC . libzsync librcksum zlib QAIUpdateInformation)
 
