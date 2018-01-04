@@ -41,4 +41,79 @@
 */
 #include <AIUpdaterBridge.hpp>
 
+AIUpdaterBridge::AIUpdaterBridge(const QString& appImage)
+	: QObject(NULL)
+{
+	setAppImageUpdateInformation(appImage);
+	return;
+}
+
+AIUpdaterBridge::AIUpdaterBridge(const QJsonObject& config)
+	: QObject(NULL)
+{
+	setAppImageUpdateInformation(config);
+	return;
+}
+
+// Public Slots
+
+void AIUpdaterBridge::setAppImageUpdateInformation(const QString& appImage)
+{
+	connect(&AppImageInformer , SIGNAL(updateInformation(const QString& , const QJsonObject&)),
+                    this , SLOT(handleAppImageUpdateInformation(const QString& , const QJsonObject&)));
+        connect(&AppImageInformer , SIGNAL(error(const QString& , short)),
+                    this , SLOT(handleAppImageUpdateError(const QString& , short)));
+	AppImageInformer.setAppImage(appImage);
+	AppImageInformer.doDebug(debug);
+	AppImageInformer.start();
+	return;
+}
+
+void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
+{
+	return;
+}
+
+// Private Slots
+
+void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage , const QJsonObject& config)
+{
+	if(config["transport"].toString() == "zsync"){
+		this->zsyncURL = config["url"].toUrl();
+		if(debug){
+			qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL;
+		}
+	}else if(config["transport"].toString() == "gh-releases-zsync"){
+	// handle github releases zsync.
+	QUrl releaseLink;
+	releaseLink << "https://api.github.com/repos/" << config["username"].toString()
+		    << "/" << config["repo"].toString() << "/releases/";
+	if(config["tag"].toString().lower() == "latest"){
+		releaseLink << config["tag"].toString();
+	}else{
+		releaseLink << "tags/" << config["tag"].toString();
+	}
+
+	if(debug){
+		qDebug() << "AIUpdaterBridge:: github release link ::" << releaseLink;
+	}
+
+	}else{
+	// if its not github releases zsync or generic zsync
+	// then it must be bintray-zsync
+	// Note: Since QAIUpdateInformation can handle errors
+	// we don't really have to check for integrity now.
+	
+	// handle bintray zsync.
+	}
+	// There should be no errors at this stage.
+	return;
+}
+
+void AIUpdaterBridge::handleAppImageUpdateInformationError(const QString& appImage , short errorCode)
+{
+	emit error(appImage , UNABLE_TO_GET_APPIMAGE_INFORMATION);
+	return;
+}
+
 

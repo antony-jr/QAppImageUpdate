@@ -39,6 +39,7 @@
 #if !defined(AIUPDATER_BRIDGE_HPP_INCLUDED)
 #define AIUPDATER_BRIDGE_HPP_INCLUDED
 #include <QtCore>
+#include <QAIUpdateInformation.hpp>
 #include <zsglobal.h>
 extern "C" {
 #include <zsync.h>
@@ -58,11 +59,32 @@ extern "C" {
 class AIUpdaterBridge : public QObject // START CLASS AIUpdaterBridge
 {
     Q_OBJECT
-public:
+public: 
+    /*
+     * Error codes.
+     * -----------
+    */
+    enum {
+	UNABLE_TO_GET_APPIMAGE_INFORMATION
+    };
+
     explicit AIUpdaterBridge(QObject *parent = NULL)
         : QObject(parent)
     {
+	    return;
     }
+    explicit AIUpdaterBridge(const QString&); // get info from appimage
+    explicit AIUpdaterBridge(const QJsonObject&); // get info from json
+    void doDebug(bool);
+
+    ~AIUpdaterBridge() { }
+public slots:
+    void setAppImageUpateInformation(const QString&);
+private slots:
+    void handleAppImageUpdateInformation(const QString& , const QJsonObject&);
+    void handleAppImageUpdateError(const QString& , short );
+signals:
+    void error(const QString& , short );
 private:
     /*
      * configuration  <- Json
@@ -95,14 +117,22 @@ private:
      *     "transport" : "bintray-zsync",
      *     "username"  : "antony-jr",
      *     "repo"      : "appImage",
-     *     "package"   : "AppImageUpdater",
-     *     "path"      : "file.AppImage_latest_.zsync"
+     *     "packageName"   : "AppImageUpdater",
+     *     "filename"      : "file.AppImage_latest_.zsync"
      * }
      *
     */
-    QJsonDocument configuration;
+
+    /* 
+     * The end resultant from configuration
+    */
+    QString filename; // if we got github or bintray info!
+    QUrl zsyncURL;
+    
+    QAIUpdateInformation AppImageInformer;
     QString currentWorkingDirectory;
     struct zsync_state *zsyncFile; // legacy
     off_t remoteFileSizeCache;
+    bool debug = false;
 };// END CLASS AIUpdaterBridge
 #endif // AIUPDATER_BRIDGE_HPP_INCLUDED
