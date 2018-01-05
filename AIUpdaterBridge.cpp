@@ -70,7 +70,8 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QString& appImage)
             this, SLOT(handleAppImageUpdateInformation(const QString&, const QJsonObject&)));
     connect(&AppImageInformer, SIGNAL(error(const QString&, short)),
             this, SLOT(handleAppImageUpdateError(const QString&, short)));
-    this->appImage = appImage;
+    this->appImage = appImage; // do not need to check this because QAIUpdateInformation will
+    // take care of it.
     AppImageInformer.setAppImage(appImage);
     AppImageInformer.doDebug(debug);
     AppImageInformer.start();
@@ -89,8 +90,17 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
         emit error(QString("NONE"), APPIMAGE_PATH_NOT_GIVEN);
         return;
     } else {
-        // set our appImage
-        this->appImage = config["appImagePath"].toString();
+        // set our appImage but check if it exists
+        QFileInfo check_file(config["appImagePath"].toString());
+        if (check_file.exists() && check_file.isFile()) {
+            this->appImage = config["appImagePath"].toString();
+        } else {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: file not found :: " << config["appImagePath"].toString();
+            }
+            emit error(config["appImagePath"].toString(), APPIMAGE_NOT_FOUND);
+            return;
+        }
     }
 
     if(!config["transport"].isString() || config["transport"].isNull()) {
@@ -336,11 +346,54 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
         _pCurrentReply = NULL;
         // clean our header first
         zsyncHeader = zsyncHeader.split("\n\n")[0];
+
+        // Parse to json for more cleaner usage.
+        QStringList zsyncHeaders = zsyncHeader.split("\n");
+        if(zsyncHeaders.size() == 8) {
+            zsyncHeaderJson = QJsonObject {
+                {"zsync", zsyncHeaders.at(0).split("zsync: ")[1]},
+                {"Filename", zsyncHeaders.at(1).split("Filename: ")[1]},
+                {"MTime", zsyncHeaders.at(2).split("MTime: ")[1]},
+                {"Blocksize", zsyncHeaders.at(3).split("Blocksize: ")[1]},
+                {"Length", zsyncHeaders.at(4).split("Length: ")[1]},
+                {"Hash-Lengths", zsyncHeaders.at(5).split("Hash-Lengths: ")[1]},
+                {"URL" 	, zsyncHeaders.at(6).split("URL: ")[1]},
+                {"SHA-1", zsyncHeaders.at(7).split("SHA-1: ")[1]}
+            };
+        } else {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: zsync header invalid parameters:: " << zsyncHeaders.size();
+            }
+            emit error(appImage, ZSYNC_HEADER_INVALID);
+            return;
+        }
         if(debug) {
-            qDebug() << "AIUpdaterBrdige:: zsync header :: " << zsyncHeader;
+            qDebug() << "AIUpdaterBrdige::GOT:: zsync headers :: success!";
         }
         // compare the headers SHA1 and the local files SHA1
         // to confirm if we need to update or not!
+        QFile AppImage(appImage);
+        if(!AppImage.open(QIODevice::ReadOnly)) {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: file not found :: " << appImage;
+            }
+            emit error(appImage, APPIMAGE_NOT_FOUND);
+            return;
+        }
+        QString RemoteSHA1 = zsyncHeaderJson["SHA-1"].toString();
+        QString LocalSHA1  = QCryptographicHash::hash(AppImage.readAll(), QCryptographicHash::Sha1);
+
+        if(RemoteSHA1 != LocalSHA1) {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: new updates available :: " << RemoteSHA1;
+            }
+            emit updatesAvailable(appImage, RemoteSHA1);
+        } else {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: no new updates available :: " << RemoteSHA1;
+            }
+            emit noUpdatesAvailable(appImage, RemoteSHA1);
+        }
         return;
     }
     return;

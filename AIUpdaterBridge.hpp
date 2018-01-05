@@ -81,7 +81,9 @@ public:
         INVALID_TRANSPORT_GIVEN,
         NOT_IMPLEMENTED_YET,
         NETWORK_ERROR,
-        CANNOT_FIND_GITHUB_ASSET
+        CANNOT_FIND_GITHUB_ASSET,
+        ZSYNC_HEADER_INVALID,
+        APPIMAGE_NOT_FOUND
     };
 
     explicit AIUpdaterBridge(QNetworkAccessManager *toUseManager = NULL)
@@ -117,8 +119,8 @@ private slots:
 
     void checkForUpdates(void);
 signals:
-    void updatesAvailable(void);
-    void noUpdatesAvailable(void);
+    void updatesAvailable(const QString&, const QString&);
+    void noUpdatesAvailable(const QString&, const QString&);
     void progress(double); // in percentage
     void error(const QString&, short );
 private:
@@ -164,9 +166,10 @@ private:
     /*
      * The end resultant from configuration
     */
-    QString appImage;
-    QString zsyncHeader;
-    QString zsyncFileName;
+    QString appImage,
+            zsyncHeader,
+            zsyncFileName;
+    QJsonObject zsyncHeaderJson; // clean zsync header
     QUrl zsyncURL;
 
     QAIUpdateInformation AppImageInformer;
