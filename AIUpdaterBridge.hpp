@@ -43,10 +43,12 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <vector>
 #include <zsglobal.h>
 extern "C" {
 #include <zsync.h>
 #include <zlib.h>
+#include <legacy_http.h>
 }
 
 /*
@@ -83,7 +85,14 @@ public:
         NETWORK_ERROR,
         CANNOT_FIND_GITHUB_ASSET,
         ZSYNC_HEADER_INVALID,
-        APPIMAGE_NOT_FOUND
+        APPIMAGE_NOT_FOUND,
+        FILENAME_MISMATCH,
+        FAILED_TO_OPEN_ZSYNC_HANDLE,
+        ZSYNC_RANGE_FETCH_FAILED,
+        ZSYNC_RECIEVE_FAILED,
+        UPDATE_INTEGRITY_FAILED,
+        FAILED_TO_RENAME_TEMPFILE,
+        BAD_ALLOC
     };
 
     explicit AIUpdaterBridge(QNetworkAccessManager *toUseManager = NULL)
@@ -117,13 +126,15 @@ private slots:
     void handleZsyncHeader(qint64, qint64);
     void handleRedirects(const QUrl&);
     void resolveUrlAndEmitUpdatesAvailable(const QUrl&);
+    void constructZsync(void);
     void handleNetworkErrors(QNetworkReply::NetworkError);
 
     void checkForUpdates(void);
 signals:
     void updatesAvailable(const QString&, const QString&);
     void noUpdatesAvailable(const QString&, const QString&);
-    void progress(double); // in percentage
+    void updateFinished(void);
+    void progress(float, long long);  // Percentage and Bytes Only!
     void error(const QString&, short );
 private:
     /*
@@ -178,9 +189,7 @@ private:
     QAIUpdateInformation AppImageInformer;
     QString currentWorkingDirectory;
     struct zsync_state *zsyncFile; // zsync legacy
-    off_t remoteFileSizeCache;
     bool debug = false;
-    QEventLoop Pause;
 
     /*
      * Networking Support by Qt

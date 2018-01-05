@@ -25,8 +25,7 @@ add_subdirectory(librcksum)
 add_subdirectory(libzsync)
 add_subdirectory(QAIUpdateInformation)
 
-add_library(AIUpdaterBridge AIUpdaterBridge.cpp AIUpdaterBridge.hpp)
-target_link_libraries(AIUpdaterBridge PRIVATE libzsync)
-target_link_libraries(AIUpdaterBridge  PUBLIC QAIUpdateInformation Qt5::Core Qt5::Network)
+add_library(AIUpdaterBridge AIUpdaterBridge.cpp AIUpdaterBridge.hpp legacy_http.c)
+target_link_libraries(AIUpdaterBridge  PUBLIC QAIUpdateInformation Qt5::Core Qt5::Network curl libzsync)
 target_include_directories(AIUpdaterBridge PUBLIC . libzsync librcksum zlib QAIUpdateInformation)
 

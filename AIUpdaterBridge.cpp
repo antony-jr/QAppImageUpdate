@@ -380,10 +380,24 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
             emit error(appImage, APPIMAGE_NOT_FOUND);
             return;
         }
+        QString RemoteFileName = zsyncHeaderJson["Filename"].toString();
+        QString LocalFileName  = QFileInfo(appImage).fileName();
         QString RemoteSHA1 = zsyncHeaderJson["SHA-1"].toString();
-        QString LocalSHA1  = QCryptographicHash::hash(AppImage.readAll(), QCryptographicHash::Sha1);
+        QString LocalSHA1(QCryptographicHash::hash(AppImage.readAll(), QCryptographicHash::Sha1).toHex());
+
+        // lets check if we have the correct file
+        if(RemoteFileName != LocalFileName) {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: remote file name and local file name does not match:: "<< RemoteFileName;
+            }
+            emit error(appImage, FILENAME_MISMATCH);
+            return;
+        }
 
         if(RemoteSHA1 != LocalSHA1) {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: your version of appimage is older:: " << LocalSHA1;
+            }
             // Lets prepare for the update before we tell the user.
             QUrl alphaFile(zsyncHeaderJson["Filename"].toString());
             if(!alphaFile.isValid() || alphaFile.isRelative()) {
@@ -407,6 +421,37 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
 
 }
 
+void AIUpdaterBridge::constructZsync()
+{
+    QByteArray resp(_pCurrentReply->readAll());
+    QString tempFilePath(QFileInfo(appImage).fileName() + ".part");
+    auto *memFile = fmemopen(resp.data(), resp.size(), "r");
+    if((zsyncFile = zsync_begin(memFile, 0, QDir::currentPath().toStdString().c_str())) == nullptr) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: failed to open zsync handle.";
+        }
+        emit error(appImage, FAILED_TO_OPEN_ZSYNC_HANDLE);
+        return;
+    } else {
+        // rename file.
+        if(zsync_rename_file(zsyncFile, tempFilePath.toStdString().c_str()) != 0) {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: failed to rename temporary file.";
+            }
+            emit error(appImage, FAILED_TO_RENAME_TEMPFILE);
+            return;
+        }
+        // start update
+        QString RemoteSHA1 = zsyncHeaderJson["SHA-1"].toString();
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: new updates available :: " << RemoteSHA1;
+        }
+        emit updatesAvailable(appImage, RemoteSHA1);
+    }
+    _pCurrentReply->deleteLater();
+    return;
+}
+
 void AIUpdaterBridge::handleRedirects(const QUrl& url)
 {
     disconnect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(handleRedirects(const QUrl&)));
@@ -416,9 +461,17 @@ void AIUpdaterBridge::handleRedirects(const QUrl& url)
     if(debug) {
         qDebug() << "AIUpdaterBridge:: redirected url :: " << url;
     }
-    fileURL = url;
-    // We are all set to update.
-    emit updatesAvailable(appImage, zsyncHeaderJson["SHA-1"].toString());
+    fileURL = url; // setURL
+    QDir::setCurrent ( QDir(QFileInfo(appImage).absoluteDir()).absolutePath() ); // set current dir
+    // Now we are set to construct the zsHandle.
+
+    _CurrentRequest = QNetworkRequest(zsyncURL);
+    _pCurrentReply = _pManager->get(_CurrentRequest);
+
+    connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(constructZsync()));
+    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
+            this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
+
     return;
 }
 
@@ -452,11 +505,154 @@ void AIUpdaterBridge::checkForUpdates(void)
 // in the GUI.
 void AIUpdaterBridge::run(void)
 {
-    if(zsyncURL.isEmpty()) {
+    if(fileURL.isEmpty() || zsyncFile == nullptr) {
         return;
     }
+    static const auto BUFFERSIZE = 8192;
     if(debug) {
-        qDebug() << "AIUpdaterBridge:: got everything :: ready for update!";
+        qDebug() << "AIUpdaterBridge:: got everything :: Updating";
+    }
+
+    int urlType = 0,
+        ret = 0;
+
+    qDebug() << fileURL.toEncoded().data();
+    struct range_fetch* rf = range_fetch_start(fileURL.toEncoded().data());
+    struct zsync_receiver* zr;
+
+    if (rf == nullptr) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: range fetch failed ::" << appImage;
+        }
+        emit error(appImage, ZSYNC_RANGE_FETCH_FAILED);
+        return;
+    }
+
+    zr = zsync_begin_receive(zsyncFile, urlType);
+    if (zr == nullptr) {
+        range_fetch_end(rf);
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: zsync recieve failed ::" << appImage;
+        }
+        emit error(appImage, ZSYNC_RECIEVE_FAILED);
+        return;
+    }
+
+    std::vector<unsigned char> buffer;
+    try {
+        buffer.reserve(BUFFERSIZE);
+    } catch (std::bad_alloc& e) {
+        // finish available data, then re-throw
+        zsync_end_receive(zr);
+        range_fetch_end(rf);
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: bad alloc.";
+        }
+        emit error(appImage, BAD_ALLOC);
+        return;
+    }
+
+    {   /* Get a set of byte ranges that we need to complete the target */
+        int nrange;
+        auto* zbyterange = zsync_needed_byte_ranges(zsyncFile, &nrange, urlType);
+        if (zbyterange == nullptr) {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: zsync recieve failed ::" << appImage;
+            }
+            emit error(appImage, ZSYNC_RECIEVE_FAILED);
+            return;
+        }
+        if (nrange == 0) {
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: zsync recieve failed ::" << appImage;
+            }
+            emit error(appImage, ZSYNC_RECIEVE_FAILED);
+            return;
+        }
+        for(int i = 0; i < 2 * nrange; i++) {
+            auto beginbyte = zbyterange[i];
+            i++;
+            auto endbyte = zbyterange[i];
+            off_t single_range[2] = {beginbyte, endbyte};
+            /* And give that to the range fetcher */
+            /* Only one range at a time because Akamai can't handle more than one range per request */
+            range_fetch_addranges(rf, single_range, 1);
+
+            {
+                int len;
+                off_t zoffset;
+
+                /* Loop while we're receiving data, until we're done or there is an error */
+                while (!ret
+                       && (len = get_range_block(rf, &zoffset, buffer.data(), BUFFERSIZE)) > 0) {
+                    /* Pass received data to the zsync receiver, which writes it to the
+                     * appropriate location in the target file */
+                    if (zsync_receive_data(zr, buffer.data(), zoffset, len) != 0)
+                        ret = 1;
+
+                    {
+                        long long zgot, ztot;
+                        zsync_progress(zsyncFile, &zgot, &ztot);
+                        double percentage = (double) zgot / (double) ztot;
+                        emit progress((float) percentage * 100.0f, range_fetch_bytes_down(rf));
+                    }
+                    // Needed in case next call returns len=0 and we need to signal where the EOF was.
+                    zoffset += len;
+                }
+
+                /* If error, we need to flag that to our caller */
+                if (len < 0) {
+                    if(debug) {
+                        qDebug() << "AIUpdaterBridge:: zsync recieve failed ::" << appImage;
+                    }
+                    emit error(appImage, ZSYNC_RECIEVE_FAILED);
+                } else {
+                    /* Else, let the zsync receiver know that we're at EOF; there
+                     *could be data in its buffer that it can use or needs to process */
+                    zsync_receive_data(zr, nullptr, zoffset, 0);
+                }
+            }
+
+        }
+
+        free(zbyterange);
+
+    }
+    auto httpDown = range_fetch_bytes_down(rf);
+    zsync_end_receive(zr);
+    range_fetch_end(rf);
+    zsync_complete(zsyncFile);
+    zsync_end(zsyncFile);
+    // Verify temporary file and replace.
+    QString tempFilePath(QFileInfo(appImage).fileName() + ".part");
+    QFile AppImage(tempFilePath);
+    if(!AppImage.open(QIODevice::ReadOnly)) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: temporary file not found :: " << tempFilePath;
+        }
+        emit error(appImage, APPIMAGE_NOT_FOUND);
+        return;
+    }
+    QString RemoteSHA1 = zsyncHeaderJson["SHA-1"].toString();
+    QString LocalSHA1(QCryptographicHash::hash(AppImage.readAll(), QCryptographicHash::Sha1).toHex());
+    // final checksum verification with sha1 sum.
+    if(RemoteSHA1 != LocalSHA1) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: failed to prove integrity :: "<< RemoteSHA1 << "!=" << LocalSHA1;
+        }
+        emit error(appImage, UPDATE_INTEGRITY_FAILED);
+        return;
+    } else {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: SHA1 Sum Matched -> Integrity Proved :: " << RemoteSHA1;
+        }
+        emit progress( 100, httpDown );
+        // remove old backups
+        QFile::remove(appImage + ".zs-old");
+        QFile::rename(appImage, appImage + ".zs-old");
+        QFile::rename(tempFilePath, appImage);
+        QFile::setPermissions(appImage, QFile(appImage + ".zs-old").permissions());
+        emit updateFinished(); // Yeaa , Finally Finished Gracefully!
     }
     return;
 }
