@@ -42,7 +42,6 @@
 #include <AIUpdaterBridge.hpp>
 
 AIUpdaterBridge::AIUpdaterBridge(const QString& appImage)
-    : QObject(NULL)
 {
     _pManager = new QNetworkAccessManager(this);
     _pManager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -51,7 +50,6 @@ AIUpdaterBridge::AIUpdaterBridge(const QString& appImage)
 }
 
 AIUpdaterBridge::AIUpdaterBridge(const QJsonObject& config)
-    : QObject(NULL)
 {
     _pManager = new QNetworkAccessManager(this);
     _pManager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -211,9 +209,7 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, c
             qDebug() << "AIUpdaterBridge:: github release link ::" << releaseLink;
         }
         this->zsyncFileName = config["filename"].toString();
-
         getGitHubReleases(releaseLink);
-
     } else {
         // if its not github releases zsync or generic zsync
         // then it must be bintray-zsync
@@ -250,7 +246,8 @@ void AIUpdaterBridge::getGitHubReleases(const QUrl& url)
         }
 
         QString Response(_pCurrentReply->readAll());
-
+        _pCurrentReply->deleteLater(); // this will free the memory as soon as this object is not used.
+        // by anyone or anything.
         if(debug) {
             qDebug() << "AIUpdaterBridge::GET::" << _CurrentRequest.url() << " :: success!";
         }
@@ -265,8 +262,12 @@ void AIUpdaterBridge::getGitHubReleases(const QUrl& url)
 
 void AIUpdaterBridge::handleNetworkErrors(QNetworkReply::NetworkError code)
 {
+    // avoid operation cancel errors.
+    if(code == QNetworkReply::OperationCanceledError) {
+        return;
+    }
     if(debug) {
-        qDebug() << "AIUpdaterBridge:: network error.";
+        qDebug() << "AIUpdaterBridge:: network error :: " << code;
     }
     emit error(appImage,  NETWORK_ERROR);
     return;
@@ -309,6 +310,67 @@ void AIUpdaterBridge::handleGitHubReleases(const QString& content)
             qDebug() << "AIUpdaterBridge:: cannot find zsync file ::" << zsyncFileName;
         }
         emit error(appImage, CANNOT_FIND_GITHUB_ASSET);
+    } else {
+        // Got the zsync url so proceed to check for changes.
+        checkForUpdates();
+    }
+    return;
+}
+
+void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
+{
+    // Since we don't need any progress with this
+    (void)bytesTotal;
+
+    if(_pCurrentReply->attribute( QNetworkRequest::HttpStatusCodeAttribute ).toInt() >= 400) {
+        return;
+    }
+
+    zsyncHeader += QString(_pCurrentReply->readAll());
+    // Stop the request after we see two newlines or return feed.
+    if((zsyncHeader.contains("\n\n") || zsyncHeader.contains("\n\n\r")) && _pCurrentReply != NULL) {
+        disconnect(_pCurrentReply, SIGNAL(downloadProgress(qint64, qint64)),
+                   this, SLOT(handleZsyncHeader(qint64, qint64)));
+        _pCurrentReply->abort(); // stop the request.
+        _pCurrentReply->deleteLater();
+        _pCurrentReply = NULL;
+        // clean our header first
+        zsyncHeader = zsyncHeader.split("\n\n")[0];
+        if(debug) {
+            qDebug() << "AIUpdaterBrdige:: zsync header :: " << zsyncHeader;
+        }
+        // compare the headers SHA1 and the local files SHA1
+        // to confirm if we need to update or not!
+        return;
+    }
+    return;
+
+}
+
+void AIUpdaterBridge::checkForUpdates(void)
+{
+    _CurrentRequest = QNetworkRequest(zsyncURL);
+    // We only need the first 1KiB.
+    _CurrentRequest.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+    _pCurrentReply = _pManager->get(_CurrentRequest);
+
+    connect(_pCurrentReply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(handleZsyncHeader(qint64, qint64)));
+    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
+            this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
+    return;
+}
+
+
+// This is where everthing runs seperate from current main thread
+// to avoid blocking of the gui thread , which may cause lags
+// in the GUI.
+void AIUpdaterBridge::run(void)
+{
+    if(zsyncURL.isEmpty()) {
+        return;
+    }
+    if(debug) {
+        qDebug() << "AIUpdaterBridge:: got everything :: ready for update!";
     }
     return;
 }

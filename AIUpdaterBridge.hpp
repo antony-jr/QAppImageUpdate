@@ -64,7 +64,7 @@ extern "C" {
  *      void doDebug(bool)  - Set Debuging.
  *
 */
-class AIUpdaterBridge : public QObject // START CLASS AIUpdaterBridge
+class AIUpdaterBridge : public QThread // START CLASS AIUpdaterBridge
 {
     Q_OBJECT
 public:
@@ -84,8 +84,7 @@ public:
         CANNOT_FIND_GITHUB_ASSET
     };
 
-    explicit AIUpdaterBridge(QObject *parent = NULL, QNetworkAccessManager *toUseManager = NULL)
-        : QObject(parent)
+    explicit AIUpdaterBridge(QNetworkAccessManager *toUseManager = NULL)
     {
         // According to the Qt Docs , A Single QNetworkAccessManager is capable
         // of doing multiple request with less footprint as possible , it is also recommended
@@ -99,6 +98,8 @@ public:
     explicit AIUpdaterBridge(const QJsonObject&); // get info from json
     void doDebug(bool);
 
+    void run(void) override;
+
     void setAppImageUpdateInformation(const QString&);
     void setAppImageUpdateInformation(const QJsonObject&);
 
@@ -111,8 +112,14 @@ private slots:
     void handleAppImageUpdateError(const QString&, short );
     void getGitHubReleases(const QUrl&);
     void handleGitHubReleases(const QString&);
+    void handleZsyncHeader(qint64, qint64);
     void handleNetworkErrors(QNetworkReply::NetworkError);
+
+    void checkForUpdates(void);
 signals:
+    void updatesAvailable(void);
+    void noUpdatesAvailable(void);
+    void progress(double); // in percentage
     void error(const QString&, short );
 private:
     /*
@@ -158,6 +165,7 @@ private:
      * The end resultant from configuration
     */
     QString appImage;
+    QString zsyncHeader;
     QString zsyncFileName;
     QUrl zsyncURL;
 
@@ -166,6 +174,7 @@ private:
     struct zsync_state *zsyncFile; // zsync legacy
     off_t remoteFileSizeCache;
     bool debug = false;
+    QEventLoop Pause;
 
     /*
      * Networking Support by Qt
