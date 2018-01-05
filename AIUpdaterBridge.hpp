@@ -52,18 +52,28 @@ extern "C" {
 }
 
 /*
- * Class AIUpdaterBridge  <- Inherits QObject.
+ * Class AIUpdaterBridge  <- Inherits QThread.
  * ---------------------
  *
  *  This is the main class that handles AppImage Updates like
  *  a pro.
  *
  *  Public Functions:
- *      explicit AIUpdaterBridge(QObject *parent = NULL , QNetworkAccessManager *toUseManager = NULL)   - Only Construct the class.
+ *      explicit AIUpdaterBridge(QNetworkAccessManager *toUseManager = NULL)   - Only Construct the class.
  *      explicit AIUpdaterBridge(const QString&) - Extract Update information from AppImage and Constructs the class.
  *      explicit AIUpdaterBridge(const QJsonObject&) - Extract Update information directly from json and Construct the class.
  *
+ *      void setAppImageUpdateInformation(const QString&) - Extract Update information from AppImage.
+ *      void setAppImageUpdateInformation(const QJsonObject&) - Extract Update information directly from json.
+ *
  *      void doDebug(bool)  - Set Debuging.
+ *
+ *  Signals:
+ *      void updatesAvailable(const QString&, const QString&)   - Emitted when there is a new update available.
+ *      void noUpdatesAvailable(const QString&, const QString&) - Emitted when there is no new updates , usefull to invoke your mainwindow.
+ *      void updateFinished(const QString& , const QString&)    - Emitted when a update is finished successfully.
+ *      void progress(float percent, qint64 bytesRecived , qint64 bytesTotal , double speed , const QString& unit) - Emitted on progress for zsync.
+ *      void error(const QString&, short )                      - Emitted when something goes wrong. with the AppImage name(1).
  *
 */
 class AIUpdaterBridge : public QThread // START CLASS AIUpdaterBridge
@@ -90,6 +100,8 @@ public:
         FAILED_TO_OPEN_ZSYNC_HANDLE,
         ZSYNC_RANGE_FETCH_FAILED,
         ZSYNC_RECIEVE_FAILED,
+        CANNOT_FIND_BINTRAY_PACKAGE,
+        POST_INSTALLATION_FAILED,
         UPDATE_INTEGRITY_FAILED,
         FAILED_TO_RENAME_TEMPFILE,
         BAD_ALLOC
@@ -122,19 +134,21 @@ private slots:
     void handleAppImageUpdateInformation(const QString&, const QJsonObject&);
     void handleAppImageUpdateError(const QString&, short );
     void getGitHubReleases(const QUrl&);
+    void getBintrayLatestPackage(const QUrl&);
+    void handleBintrayLatestPackage(const QUrl&);
     void handleGitHubReleases(const QString&);
     void handleZsyncHeader(qint64, qint64);
-    void handleRedirects(const QUrl&);
-    void resolveUrlAndEmitUpdatesAvailable(const QUrl&);
     void constructZsync(void);
+    void resolveGitHubRedirections(const QUrl&);
+    void resolveRedirections(void);
     void handleNetworkErrors(QNetworkReply::NetworkError);
 
     void checkForUpdates(void);
 signals:
     void updatesAvailable(const QString&, const QString&);
     void noUpdatesAvailable(const QString&, const QString&);
-    void updateFinished(void);
-    void progress(float, long long);  // Percentage and Bytes Only!
+    void updateFinished(const QString&, const QString&);
+    void progress(float, qint64 bytesRecived, qint64 bytesTotal, double speed, const QString& unit);     // Full Progress!
     void error(const QString&, short );
 private:
     /*
@@ -185,11 +199,10 @@ private:
     QJsonObject zsyncHeaderJson; // clean zsync header
     QUrl zsyncURL,
          fileURL;
-
     QAIUpdateInformation AppImageInformer;
-    QString currentWorkingDirectory;
     struct zsync_state *zsyncFile; // zsync legacy
-    bool debug = false;
+    bool debug = false,
+         github = false; // We need a special case for github.
 
     /*
      * Networking Support by Qt
@@ -197,5 +210,6 @@ private:
     QNetworkAccessManager    *_pManager = NULL;
     QNetworkRequest           _CurrentRequest;
     QNetworkReply            *_pCurrentReply = NULL;
+    QTime  downloadSpeed; // to calculate download speed.
 };// END CLASS AIUpdaterBridge
 #endif // AIUPDATER_BRIDGE_HPP_INCLUDED

@@ -122,6 +122,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
                 if(debug) {
                     qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL << " :: " << appImage;
                 }
+                checkForUpdates();
             }
         } else if(config["transport"].toString() == "gh-releases-zsync") {
             // handle github releases zsync.
@@ -164,10 +165,11 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
                 emit error(appImage, INVALID_UPD_INFO_PARAMENTERS);
                 return;
             }
-            if(debug) {
-                qDebug() << "AIUpdaterBridge:: sorry but this is not implemented yet!";
-            }
-            emit error(appImage, NOT_IMPLEMENTED_YET);
+            QUrl latestLink;
+            latestLink = QUrl("https://bintray.com/" + config["username"].toString() +
+                              "/" + config["repo"].toString() + "/" + config["packageName"].toString() + "/_latestVersion");
+            this->zsyncFileName = config["filename"].toString();
+            getBintrayLatestPackage(latestLink);
             return;
         } else {
             // invalid transport given by the user
@@ -205,6 +207,7 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, c
         if(debug) {
             qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL << " :: " << appImage;
         }
+        checkForUpdates();
     } else if(config["transport"].toString() == "gh-releases-zsync") {
         // handle github releases zsync.
         QUrl releaseLink;
@@ -227,10 +230,11 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, c
         // we don't really have to check for integrity now.
 
         // handle bintray zsync.
-        if(debug) {
-            qDebug() << "AIUpdaterBridge:: sorry but this is not implemented yet!";
-        }
-        emit error(appImage, NOT_IMPLEMENTED_YET);
+        QUrl latestLink;
+        latestLink = QUrl("https://bintray.com/" + config["username"].toString() +
+                          "/" + config["repo"].toString() + "/" + config["packageName"].toString() + "/_latestVersion");
+        this->zsyncFileName = config["filename"].toString();
+        getBintrayLatestPackage(latestLink);
         return;
     }
     // There should be no errors at this stage.
@@ -246,6 +250,7 @@ void AIUpdaterBridge::handleAppImageUpdateError(const QString& appImage, short e
 
 void AIUpdaterBridge::getGitHubReleases(const QUrl& url)
 {
+    github = true;
     _CurrentRequest = QNetworkRequest(url);
     _pCurrentReply = _pManager->get(_CurrentRequest);
 
@@ -270,6 +275,18 @@ void AIUpdaterBridge::getGitHubReleases(const QUrl& url)
     return;
 }
 
+void AIUpdaterBridge::getBintrayLatestPackage(const QUrl& url)
+{
+    _CurrentRequest = QNetworkRequest(url);
+    _pCurrentReply = _pManager->head(_CurrentRequest);
+
+    connect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(handleBintrayLatestPackage(const QUrl&)));
+    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
+            this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
+    return;
+}
+
+
 void AIUpdaterBridge::handleNetworkErrors(QNetworkReply::NetworkError code)
 {
     // avoid operation cancel errors.
@@ -280,6 +297,33 @@ void AIUpdaterBridge::handleNetworkErrors(QNetworkReply::NetworkError code)
         qDebug() << "AIUpdaterBridge:: network error :: " << code;
     }
     emit error(appImage,  NETWORK_ERROR);
+    return;
+}
+
+void AIUpdaterBridge::handleBintrayLatestPackage(const QUrl& url)
+{
+    disconnect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(handleBintrayLatestPackage(const QUrl&)));
+    _pCurrentReply->abort();
+    _pCurrentReply->deleteLater();
+    _pCurrentReply = NULL;
+    QString latestVersion = url.fileName();
+    QStringList information = url.toString().split("/");
+    zsyncFileName.replace("_latestVersion", latestVersion);
+    zsyncURL = QUrl("https://dl.bintray.com/" + information[3] + "/" + information[4] + "/" + zsyncFileName);
+
+    if(debug) {
+        qDebug() << "AIUpdaterBrdige:: bintray url :: " << zsyncURL;
+    }
+
+    if(zsyncURL.isEmpty()) {
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: cannot find zsync file ::" << zsyncFileName;
+        }
+        emit error(appImage, CANNOT_FIND_BINTRAY_PACKAGE);
+    } else {
+        // Got the zsync url so proceed to check for changes.
+        checkForUpdates();
+    }
     return;
 }
 
@@ -408,7 +452,16 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
                 alphaFile = betaFile;
             }
             // emit updatesAvailable after we setup everything for the user.
-            resolveUrlAndEmitUpdatesAvailable(alphaFile);
+            _CurrentRequest = QNetworkRequest(alphaFile);
+            _pCurrentReply = _pManager->head(_CurrentRequest);
+            if(github) {
+                connect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(resolveGitHubRedirections(const QUrl&)));
+            } else {
+                connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(resolveRedirections()));
+            }
+            connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
+                    this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
+            github = false;
         } else {
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: no new updates available :: " << RemoteSHA1;
@@ -452,16 +505,20 @@ void AIUpdaterBridge::constructZsync()
     return;
 }
 
-void AIUpdaterBridge::handleRedirects(const QUrl& url)
+void AIUpdaterBridge::resolveGitHubRedirections(const QUrl& url)
 {
-    disconnect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(handleRedirects(const QUrl&)));
+    disconnect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(resolveGitHubRedirections(const QUrl&)));
     _pCurrentReply->abort();
     _pCurrentReply->deleteLater();
     _pCurrentReply = NULL;
+
+    QUrl redirected(url);
+
     if(debug) {
-        qDebug() << "AIUpdaterBridge:: redirected url :: " << url;
+        qDebug() << "AIUpdaterBridge:: redirected url :: " << redirected;
     }
-    fileURL = url; // setURL
+
+    fileURL = redirected; // setURL
     QDir::setCurrent ( QDir(QFileInfo(appImage).absoluteDir()).absolutePath() ); // set current dir
     // Now we are set to construct the zsHandle.
 
@@ -471,16 +528,26 @@ void AIUpdaterBridge::handleRedirects(const QUrl& url)
     connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(constructZsync()));
     connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
-
     return;
 }
 
-void AIUpdaterBridge::resolveUrlAndEmitUpdatesAvailable(const QUrl& url)
+void AIUpdaterBridge::resolveRedirections()
 {
-    _CurrentRequest = QNetworkRequest(url);
-    _pCurrentReply = _pManager->head(_CurrentRequest);
+    QUrl redirected = _pCurrentReply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
+    _pCurrentReply->deleteLater();
+    _pCurrentReply = NULL;
+    if(debug) {
+        qDebug() << "AIUpdaterBridge:: redirected url :: " << redirected;
+    }
 
-    connect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(handleRedirects(const QUrl&)));
+    fileURL = redirected; // setURL
+    QDir::setCurrent ( QDir(QFileInfo(appImage).absoluteDir()).absolutePath() ); // set current dir
+    // Now we are set to construct the zsHandle.
+
+    _CurrentRequest = QNetworkRequest(zsyncURL);
+    _pCurrentReply = _pManager->get(_CurrentRequest);
+
+    connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(constructZsync()));
     connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
     return;
@@ -516,7 +583,6 @@ void AIUpdaterBridge::run(void)
     int urlType = 0,
         ret = 0;
 
-    qDebug() << fileURL.toEncoded().data();
     struct range_fetch* rf = range_fetch_start(fileURL.toEncoded().data());
     struct zsync_receiver* zr;
 
@@ -542,7 +608,6 @@ void AIUpdaterBridge::run(void)
     try {
         buffer.reserve(BUFFERSIZE);
     } catch (std::bad_alloc& e) {
-        // finish available data, then re-throw
         zsync_end_receive(zr);
         range_fetch_end(rf);
         if(debug) {
@@ -568,8 +633,12 @@ void AIUpdaterBridge::run(void)
             }
             emit error(appImage, ZSYNC_RECIEVE_FAILED);
             return;
+
         }
-        for(int i = 0; i < 2 * nrange; i++) {
+
+        downloadSpeed.start();
+
+        for(int i = 0; i < 2 * nrange && !this->isInterruptionRequested(); i++) {
             auto beginbyte = zbyterange[i];
             i++;
             auto endbyte = zbyterange[i];
@@ -584,7 +653,7 @@ void AIUpdaterBridge::run(void)
 
                 /* Loop while we're receiving data, until we're done or there is an error */
                 while (!ret
-                       && (len = get_range_block(rf, &zoffset, buffer.data(), BUFFERSIZE)) > 0) {
+                       && (len = get_range_block(rf, &zoffset, buffer.data(), BUFFERSIZE)) > 0 && !this->isInterruptionRequested()) {
                     /* Pass received data to the zsync receiver, which writes it to the
                      * appropriate location in the target file */
                     if (zsync_receive_data(zr, buffer.data(), zoffset, len) != 0)
@@ -592,9 +661,27 @@ void AIUpdaterBridge::run(void)
 
                     {
                         long long zgot, ztot;
+                        qint64 bytesReceived, bytesTotal;
                         zsync_progress(zsyncFile, &zgot, &ztot);
                         double percentage = (double) zgot / (double) ztot;
-                        emit progress((float) percentage * 100.0f, range_fetch_bytes_down(rf));
+
+                        // Lets calculate the speed too.
+                        bytesReceived = (qint64)range_fetch_bytes_down(rf);
+                        bytesTotal    = (qint64)zsyncHeaderJson["Length"].toString().toInt();
+                        double speed = bytesReceived * 1000.0 / downloadSpeed.elapsed();
+
+                        QString unit;
+                        if (speed < 1024) {
+                            unit = "bytes/sec";
+                        } else if (speed < 1024*1024) {
+                            speed /= 1024;
+                            unit = "kB/s";
+                        } else {
+                            speed /= 1024*1024;
+                            unit = "MB/s";
+                        }
+
+                        emit progress((float) percentage * 100.0f, bytesReceived, bytesTotal, speed, unit);
                     }
                     // Needed in case next call returns len=0 and we need to signal where the EOF was.
                     zoffset += len;
@@ -616,13 +703,17 @@ void AIUpdaterBridge::run(void)
         }
 
         free(zbyterange);
-
+        // if interruption is requested then silently exit
+        if(this->isInterruptionRequested()) {
+            return;
+        }
     }
-    auto httpDown = range_fetch_bytes_down(rf);
+    emit progress(100, (qint64)zsyncHeaderJson["Length"].toString().toInt(), (qint64)zsyncHeaderJson["Length"].toString().toInt(), 0, "Kbps");
     zsync_end_receive(zr);
     range_fetch_end(rf);
     zsync_complete(zsyncFile);
     zsync_end(zsyncFile);
+
     // Verify temporary file and replace.
     QString tempFilePath(QFileInfo(appImage).fileName() + ".part");
     QFile AppImage(tempFilePath);
@@ -646,13 +737,30 @@ void AIUpdaterBridge::run(void)
         if(debug) {
             qDebug() << "AIUpdaterBridge:: SHA1 Sum Matched -> Integrity Proved :: " << RemoteSHA1;
         }
-        emit progress( 100, httpDown );
-        // remove old backups
-        QFile::remove(appImage + ".zs-old");
-        QFile::rename(appImage, appImage + ".zs-old");
-        QFile::rename(tempFilePath, appImage);
-        QFile::setPermissions(appImage, QFile(appImage + ".zs-old").permissions());
-        emit updateFinished(); // Yeaa , Finally Finished Gracefully!
+        // remove old backups and create new backups
+        if(QFileInfo(appImage  + ".zs-old").exists()) {
+            if(!QFile::remove(appImage + ".zs-old")) {
+                if(debug) {
+                    qDebug() << "AIUpdaterBrdige:: Post installation error.";
+                }
+                emit error(appImage, POST_INSTALLATION_FAILED);
+                return;
+            }
+        }
+        if(
+            !(
+                QFile::rename(appImage, appImage + ".zs-old") &&
+                QFile::rename(tempFilePath, appImage) &&
+                QFile::setPermissions(appImage, QFile(appImage + ".zs-old").permissions())
+            )
+        ) {
+            if(debug) {
+                qDebug() << "AIUpdaterBrdige:: Post installation error.";
+            }
+            emit error(appImage, POST_INSTALLATION_FAILED);
+            return;
+        }
+        emit updateFinished(appImage, RemoteSHA1);  // Yeaa , Finally Finished Gracefully!
     }
     return;
 }
