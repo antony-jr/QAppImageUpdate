@@ -115,6 +115,7 @@ private slots:
     void getGitHubReleases(const QUrl&);
     void handleGitHubReleases(const QString&);
     void handleZsyncHeader(qint64, qint64);
+    void handleRedirects(const QUrl&);
     void resolveUrlAndEmitUpdatesAvailable(const QUrl&);
     void handleNetworkErrors(QNetworkReply::NetworkError);
 
@@ -171,7 +172,8 @@ private:
             zsyncHeader,
             zsyncFileName;
     QJsonObject zsyncHeaderJson; // clean zsync header
-    QUrl zsyncURL;
+    QUrl zsyncURL,
+         fileURL;
 
     QAIUpdateInformation AppImageInformer;
     QString currentWorkingDirectory;

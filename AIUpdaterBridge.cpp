@@ -385,16 +385,16 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
 
         if(RemoteSHA1 != LocalSHA1) {
             // Lets prepare for the update before we tell the user.
-	    QUrl alphaFile(zsyncHeaderJson["Filename"].toString);
-	    if(!alphaFile.isValid() || alphaFile.isRelative()){
-		// then it must be relative.
-		QUrl betaFile(zsyncURL);
-		betaFile = betaFile.adjusted(RemoveFilename);
-		betaFile = QUrl(betaFile.toString() + alphaFile);
-		alphaFile = betaFile;
-	    }
-	    // emit updatesAvailable after we setup everything for the user.
-	    resolveUrlAndEmitUpdatesAvailable(alphaFile);
+            QUrl alphaFile(zsyncHeaderJson["Filename"].toString());
+            if(!alphaFile.isValid() || alphaFile.isRelative()) {
+                // then it must be relative.
+                QUrl betaFile(zsyncURL);
+                betaFile = betaFile.adjusted(QUrl::RemoveFilename);
+                betaFile = QUrl(betaFile.toString() + alphaFile.toString());
+                alphaFile = betaFile;
+            }
+            // emit updatesAvailable after we setup everything for the user.
+            resolveUrlAndEmitUpdatesAvailable(alphaFile);
         } else {
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: no new updates available :: " << RemoteSHA1;
@@ -407,8 +407,30 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
 
 }
 
-void AIUpdaterBridge::resolveUrlAndEmitUpdatesAvailable(const QUrl& url){
-	return;
+void AIUpdaterBridge::handleRedirects(const QUrl& url)
+{
+    disconnect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(handleRedirects(const QUrl&)));
+    _pCurrentReply->abort();
+    _pCurrentReply->deleteLater();
+    _pCurrentReply = NULL;
+    if(debug) {
+        qDebug() << "AIUpdaterBridge:: redirected url :: " << url;
+    }
+    fileURL = url;
+    // We are all set to update.
+    emit updatesAvailable(appImage, zsyncHeaderJson["SHA-1"].toString());
+    return;
+}
+
+void AIUpdaterBridge::resolveUrlAndEmitUpdatesAvailable(const QUrl& url)
+{
+    _CurrentRequest = QNetworkRequest(url);
+    _pCurrentReply = _pManager->head(_CurrentRequest);
+
+    connect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(handleRedirects(const QUrl&)));
+    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
+            this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
+    return;
 }
 
 void AIUpdaterBridge::checkForUpdates(void)
