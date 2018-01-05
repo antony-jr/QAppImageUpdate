@@ -384,10 +384,17 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
         QString LocalSHA1  = QCryptographicHash::hash(AppImage.readAll(), QCryptographicHash::Sha1);
 
         if(RemoteSHA1 != LocalSHA1) {
-            if(debug) {
-                qDebug() << "AIUpdaterBridge:: new updates available :: " << RemoteSHA1;
-            }
-            emit updatesAvailable(appImage, RemoteSHA1);
+            // Lets prepare for the update before we tell the user.
+	    QUrl alphaFile(zsyncHeaderJson["Filename"].toString);
+	    if(!alphaFile.isValid() || alphaFile.isRelative()){
+		// then it must be relative.
+		QUrl betaFile(zsyncURL);
+		betaFile = betaFile.adjusted(RemoveFilename);
+		betaFile = QUrl(betaFile.toString() + alphaFile);
+		alphaFile = betaFile;
+	    }
+	    // emit updatesAvailable after we setup everything for the user.
+	    resolveUrlAndEmitUpdatesAvailable(alphaFile);
         } else {
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: no new updates available :: " << RemoteSHA1;
@@ -398,6 +405,10 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
     }
     return;
 
+}
+
+void AIUpdaterBridge::resolveUrlAndEmitUpdatesAvailable(const QUrl& url){
+	return;
 }
 
 void AIUpdaterBridge::checkForUpdates(void)

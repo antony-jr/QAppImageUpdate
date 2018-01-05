@@ -115,6 +115,7 @@ private slots:
     void getGitHubReleases(const QUrl&);
     void handleGitHubReleases(const QString&);
     void handleZsyncHeader(qint64, qint64);
+    void resolveUrlAndEmitUpdatesAvailable(const QUrl&);
     void handleNetworkErrors(QNetworkReply::NetworkError);
 
     void checkForUpdates(void);
