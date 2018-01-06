@@ -13,9 +13,7 @@
 
 # AppImage Updater Bridge [![GitHub issues](https://img.shields.io/github/issues/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/issues) [![GitHub stars](https://img.shields.io/github/stars/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/stargazers) [![GitHub license](https://img.shields.io/github/license/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/blob/master/LICENSE)
 
-
-This small library helps you to create awesome **Updaters** in **Qt5** for your **AppImages** , which is also light-wieght   
-and self-contained. you can also use the default theme if you just want to set a update **feature** for your **AppImage**. :heart:
+AppImage's are cool but when it comes to updating package that uses AppImage , it can be pretty hard to workout. And Therefore I started creating a lot of libraries that can be used to AutoUpdate any software including AppImages , But AppImages used a seperate efficient way to update packages , Thus I started working on creating a nice bridge to this mechanism and So AppImage Updater Bridge was born.
 
 # Getting Started
 
