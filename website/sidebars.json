@@ -1,0 +1,17 @@
+{
+  "docs": {
+    "Getting Started": [ 
+	   "Installation",
+	   "AddingAppImageUpdaterBridge"
+    ],
+    "Guides" : [
+	   "UpdatingFromAppImageInformation",
+	   "UpdatingFromProgrammedConfiguration",
+	   "UpdatingFromJsonConfiguration"
+    ],
+    "API" : [
+	   "AppImageUpdaterBridgeErrorCodes",
+	   "ClassAIUpdaterBridge"
+    ]
+  }
+}
