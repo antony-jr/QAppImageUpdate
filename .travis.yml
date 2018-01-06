@@ -1,3 +1,9 @@
+
+script:
+  - cd website
+  - npm install
+  - npm run publish-gh-pages
+
 deploy:
   provider: pages
   skip_cleanup: true
