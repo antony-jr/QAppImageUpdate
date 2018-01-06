@@ -2,9 +2,6 @@
   <img src=".img/poster.png" height="400px" width=auto alt="AppImageUpdaterBridge Poster">  <br>
 </p>
 
-<p align="center">
-<b>!WORK IN PROGRESS!</b>
-</p>
 
 > :rocket: A simple bridge to AppImage's :arrow_double_down: Updating Mechanism written :paintbrush: in C++ using Qt5. This small library :white_check_mark:   
 > helps you to create awesome :sunglasses: AutoUpdater in Qt5 for AppImages. :heart:   
@@ -17,7 +14,7 @@ AppImage's are cool but when it comes to updating package that uses AppImage , i
 
 # Getting Started
 
-Please refer the official [documentation](https://antony-jr.github.io/AppImageUpdaterBridge). ( NOT PUBLISHED YET! )
+Please refer the official [documentation](https://antony-jr.github.io/AppImageUpdaterBridge).
 
 # Thank You ![Thank You](https://img.shields.io/badge/Always-Say%20Thank%20You!-blue.svg?style=flat-square)
 
