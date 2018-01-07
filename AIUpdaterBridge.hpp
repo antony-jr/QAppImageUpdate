@@ -210,6 +210,5 @@ private:
     QNetworkAccessManager    *_pManager = NULL;
     QNetworkRequest           _CurrentRequest;
     QNetworkReply            *_pCurrentReply = NULL;
-    QTime  downloadSpeed; // to calculate download speed.
 };// END CLASS AIUpdaterBridge
 #endif // AIUPDATER_BRIDGE_HPP_INCLUDED

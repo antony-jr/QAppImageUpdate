@@ -572,6 +572,7 @@ void AIUpdaterBridge::checkForUpdates(void)
 // in the GUI.
 void AIUpdaterBridge::run(void)
 {
+    QTime  downloadSpeed; // to calculate download speed.
     if(fileURL.isEmpty() || zsyncFile == nullptr) {
         return;
     }
