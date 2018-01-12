@@ -232,7 +232,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
  * This is what the users get to use.
 */
 
-bool isRunning(void) const
+bool AIUpdaterBridge::isRunning(void)
 {
     if(Promise == nullptr) {
         return Promise->isRunning();
@@ -240,7 +240,7 @@ bool isRunning(void) const
     return false;
 }
 
-void AIUpdaterBrdige::startUpdating(void)
+void AIUpdaterBridge::startUpdating(void)
 {
     if(!mutex.tryLock()) {
         return;
@@ -251,7 +251,7 @@ void AIUpdaterBrdige::startUpdating(void)
     return;
 }
 
-void AIUpdaterBrdige::stopUpdating(void)
+void AIUpdaterBridge::stopUpdating(void)
 {
     if(isRunning()) {
         stopUpdate = true;
@@ -389,7 +389,7 @@ void AIUpdaterBridge::handleBintrayLatestPackage(const QUrl& url)
     zsyncURL = QUrl("https://dl.bintray.com/" + information[3] + "/" + information[4] + "/" + zsyncFileName);
 
     if(debug) {
-        qDebug() << "AIUpdaterBrdige:: bintray url :: " << zsyncURL;
+        qDebug() << "AIUpdaterBridge:: bintray url :: " << zsyncURL;
     }
 
     if(zsyncURL.isEmpty()) {
@@ -504,7 +504,7 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
             return;
         }
         if(debug) {
-            qDebug() << "AIUpdaterBrdige::GOT:: zsync headers :: success!";
+            qDebug() << "AIUpdaterBridge::GOT:: zsync headers :: success!";
         }
         // compare the headers SHA1 and the local files SHA1
         // to confirm if we need to update or not!
@@ -864,7 +864,7 @@ void AIUpdaterBridge::doUpdate(void)
         if(QFileInfo(appImage  + ".zs-old").exists()) {
             if(!QFile::remove(appImage + ".zs-old")) {
                 if(debug) {
-                    qDebug() << "AIUpdaterBrdige:: Post installation error.";
+                    qDebug() << "AIUpdaterBridge:: Post installation error.";
                 }
                 mutex.unlock();
                 emit error(appImage, POST_INSTALLATION_FAILED);
@@ -879,7 +879,7 @@ void AIUpdaterBridge::doUpdate(void)
             )
         ) {
             if(debug) {
-                qDebug() << "AIUpdaterBrdige:: Post installation error.";
+                qDebug() << "AIUpdaterBridge:: Post installation error.";
             }
             mutex.unlock();
             emit error(appImage, POST_INSTALLATION_FAILED);

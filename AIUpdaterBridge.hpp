@@ -133,11 +133,12 @@ public:
     }
 
 public slots:
-    bool isRunning(void) const;
+    bool isRunning(void);
     void startUpdating(void);
     void stopUpdating(void);
 
 private slots:
+    void doUpdate(void);
     void handleAppImageUpdateInformation(const QString&, const QJsonObject&);
     void handleAppImageUpdateError(const QString&, short );
     void getGitHubReleases(const QUrl&);
@@ -200,6 +201,7 @@ private:
 
 
     QFuture<void> *Promise = nullptr;
+    QMutex mutex;
 
     /*
      * The end resultant from configuration
