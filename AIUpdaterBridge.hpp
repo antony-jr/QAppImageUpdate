@@ -212,7 +212,7 @@ private:
     QUrl zsyncURL,
          fileURL;
     QAIUpdateInformation AppImageInformer;
-    struct zsync_state *zsyncFile; // zsync legacy
+    struct zsync_state *zsyncFile = NULL; // zsync legacy
     bool debug = false,
          github = false, // We need a special case for github.
          stopUpdate = false;
