@@ -683,7 +683,7 @@ void AIUpdaterBridge::checkForUpdates(void)
 
 void AIUpdaterBridge::doUpdate(void)
 {
-    if(fileURL.isEmpty() || zsyncFile == nullptr || !mutex.tryLock()) {
+    if(fileURL.isEmpty() || zsyncFile == nullptr) {
         return;
     }
     QTime  downloadSpeed; // to calculate download speed.
@@ -861,28 +861,31 @@ void AIUpdaterBridge::doUpdate(void)
             qDebug() << "AIUpdaterBridge:: SHA1 Sum Matched -> Integrity Proved :: " << RemoteSHA1;
         }
         // remove old backups and create new backups
-        if(QFileInfo(appImage  + ".zs-old").exists()) {
-            if(!QFile::remove(appImage + ".zs-old")) {
+        
+        auto LocalFile = QFileInfo(appImage).fileName();
+        
+        if(QFileInfo(LocalFile  + ".zs-old").exists()) {
+            if(!QFile::remove(LocalFile + ".zs-old")) {
                 if(debug) {
                     qDebug() << "AIUpdaterBridge:: Post installation error.";
                 }
                 mutex.unlock();
-                emit error(appImage, POST_INSTALLATION_FAILED);
+                emit error(LocalFile, POST_INSTALLATION_FAILED);
                 return;
             }
         }
         if(
             !(
-                QFile::rename(appImage, appImage + ".zs-old") &&
-                QFile::rename(tempFilePath, appImage) &&
-                QFile::setPermissions(appImage, QFile(appImage + ".zs-old").permissions())
+                QFile::rename(LocalFile, LocalFile + ".zs-old") &&
+                QFile::rename(tempFilePath, LocalFile) &&
+                QFile::setPermissions(LocalFile, QFile(LocalFile + ".zs-old").permissions())
             )
         ) {
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: Post installation error.";
             }
             mutex.unlock();
-            emit error(appImage, POST_INSTALLATION_FAILED);
+            emit error(LocalFile, POST_INSTALLATION_FAILED);
             return;
         }
         emit updateFinished(appImage, RemoteSHA1);  // Yeaa , Finally Finished Gracefully!
