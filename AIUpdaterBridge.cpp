@@ -861,9 +861,9 @@ void AIUpdaterBridge::doUpdate(void)
             qDebug() << "AIUpdaterBridge:: SHA1 Sum Matched -> Integrity Proved :: " << RemoteSHA1;
         }
         // remove old backups and create new backups
-        
+
         auto LocalFile = QFileInfo(appImage).fileName();
-        
+
         if(QFileInfo(LocalFile  + ".zs-old").exists()) {
             if(!QFile::remove(LocalFile + ".zs-old")) {
                 if(debug) {
