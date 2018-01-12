@@ -7,9 +7,9 @@ sidebar_label: Class AIUpdaterBridge
 |	        |	    	                                           |		
 |-----------|------------------------------------------------------|
 |  Header:  | #include "AppImageUpdaterBridge/AIUpdaterBridge.hpp" |
-|   qmake:  | QT += core network		                           |
+|   qmake:  | QT += core network concurrent                          |
 |	        | HEADERS += AppImageUpdaterBridge/AIUpdaterBridge.hpp |
-|Inherits:  | [QThread](http://doc.qt.io/qt-5/qthread.html)        |
+|Inherits:  | [QObject](http://doc.qt.io/qt-5/qobject.html)        |
 
 
 ## Public Functions
@@ -26,18 +26,16 @@ sidebar_label: Class AIUpdaterBridge
 
 ## Slots
 
-All slots used by you are **inherited** from **[QThread](http://doc.qt.io/qt-5/qthread.html)**
-
-|               |             |
-|---------------|-------------|
-| **void**  	| start(void) |
-| **void**      | quit(void)  |
-| **void**      | wait(void)  |
+|               |                     |
+|---------------|---------------------|
+| **void**  	| startUpdating(void) |
+| **void**      | stopUpdating(void)  |
 
 ## Signals
 
 |           |                                                                                                            |
 |----------	|------------------------------------------------------------------------------------------------------------|
+| **void**  | stopped(void)                                                     |
 | **void** 	| updatesAvailable(const QString& AppImage, const QString& SHA1) 	|
 | **void** 	| noUpdatesAvailable(const QString& AppImage, const QString& SHA1) 	|
 | **void** 	| updateFinished(const QString& AppImage , const QString& SHA1) 	|
@@ -70,15 +68,20 @@ Extracts the **Update information** from the given **QJsonObject**.
 
 Sets Debuging.
 
-### void start(void)
+### void startUpdating(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
-Starts the Update , Does nothing if required components for updates are missing. Inherited from **[QThread](http://doc.qt.io/qt-5/qthread.html)**.
+Starts the Update , Does nothing if required components for updates are missing.
 
-### void quit(void)
+### void stopUpdating(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
-Quits the Updating thread. Inherited from **[QThread](http://doc.qt.io/qt-5/qthread.html)**
+Stops the Updater. Emits **void stopped(void)** signal when this is successfull.
+
+### void stopped(void)
+<p align="right"> <b>[SIGNAL]</b> </p>
+
+Emitted when **void stopUpdating(void)** is successfull. In other words , Emitted when the installation is aborted safely!
 
 ### void updatesAvailable(const QString& AppImage, const QString& SHA1)
 <p align="right"> <b>[SIGNAL]</b> </p>

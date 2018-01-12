@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     QObject::connect(&Bridge, &AIUpdaterBridge::updatesAvailable,
     [&](QString appimage, QString sha1) {
         //Start the update // Ask the user a choose about Update here!
-        Bridge.start();
+        Bridge.startUpdating();
     });
     QObject::connect(&Bridge, &AIUpdaterBridge::updateFinished,
     [&](QString appImage, QString SHA1) {
@@ -49,7 +49,6 @@ int main(int argc, char **argv)
     QObject::connect(&Bridge, &AIUpdaterBridge::error,
     [&](QString appImage, short errorCode) {
         qDebug() << "ERROR CODE:: " << errorCode;
-        Bridge.quit();
         app.quit();
         return;
     });
@@ -85,19 +84,27 @@ int main(int argc, char **argv)
 ```
 CMAKE_MINIMUM_REQUIRED( VERSION 3.2)
 project(Updater)
+
 set(CMAKE_CXX_STANDARD 11)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
 
 # Find the QtCore library
 find_package(Qt5Core)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+find_package(Qt5Network)
+find_package(Qt5Concurrent)
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR}) # just in case!
+# Add include directory
 include_directories(AppImageUpdaterBridge)
-# include subdirectories in the right order
+
+# include subdirectories 
 add_subdirectory(AppImageUpdaterBridge)
-add_executable(Updater main.cpp)
-target_link_libraries(Updater AIUpdaterBridge Qt5::Core)
+
+add_executable(Updater MyMain.cpp)
+target_link_libraries(Updater AIUpdaterBridge Qt5::Core Qt5::Network Qt5::Concurrent)
 ```
 
 ## Compilation and Execution
