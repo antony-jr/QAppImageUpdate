@@ -16,7 +16,6 @@ sidebar_label: AppImageUpdaterBridge Error Codes
 | AIUpdaterBridge::CANNOT_FIND_GITHUB_ASSET 	| The filename was not found at github. 	|
 | AIUpdaterBridge::ZSYNC_HEADER_INVALID 	| Invalid zsync header. 	|
 | AIUpdaterBridge::APPIMAGE_NOT_FOUND 	| AppImage was not found in the given path. 	|
-| AIUpdaterBridge::FILENAME_MISMATCH 	| The local filename and the remote filename does not match. 	|
 | AIUpdaterBridge::FAILED_TO_OPEN_ZSYNC_HANDLE 	| Failed to open zsync handler. Some fatal error. 	|
 | AIUpdaterBridge::ZSYNC_RANGE_FETCH_FAILED 	| Zsync range fetch failed. Some fatal error. 	|
 | AIUpdaterBridge::ZSYNC_RECIEVE_FAILED 	| Zsync recieve failed , it must mean that the update failed. 	|
