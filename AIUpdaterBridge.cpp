@@ -41,7 +41,13 @@
 */
 #include <AIUpdaterBridge.hpp>
 
+/*
+ * Constructors
+ * ------------
+*/
+
 AIUpdaterBridge::AIUpdaterBridge(const QString& appImage)
+    : QObject(NULL)
 {
     _pManager = new QNetworkAccessManager(this);
     _pManager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -50,6 +56,7 @@ AIUpdaterBridge::AIUpdaterBridge(const QString& appImage)
 }
 
 AIUpdaterBridge::AIUpdaterBridge(const QJsonObject& config)
+    : QObject(NULL)
 {
     _pManager = new QNetworkAccessManager(this);
     _pManager->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -57,6 +64,12 @@ AIUpdaterBridge::AIUpdaterBridge(const QJsonObject& config)
     return;
 }
 
+/* --------------------------------- */
+
+/*
+ *  Public Functions
+ * ------------------
+*/
 void AIUpdaterBridge::doDebug(bool ch)
 {
     debug = ch;
@@ -66,6 +79,9 @@ void AIUpdaterBridge::doDebug(bool ch)
 
 void AIUpdaterBridge::setAppImageUpdateInformation(const QString& appImage)
 {
+    if(!mutex.tryLock()) {
+        return;
+    }
     connect(&AppImageInformer, SIGNAL(updateInformation(const QString&, const QJsonObject&)),
             this, SLOT(handleAppImageUpdateInformation(const QString&, const QJsonObject&)));
     connect(&AppImageInformer, SIGNAL(error(const QString&, short)),
@@ -82,11 +98,14 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
 {
     // Since this is from the user the data can have a lot
     // of errors. Must check before use
-
+    if(!mutex.tryLock()) {
+        return;
+    }
     if(!config["appImagePath"].isString() || config["appImagePath"].isNull()) {
         if(debug) {
             qDebug() << "AIUpdaterBridge:: 'appImagePath' entry missing in the given json ::" << config;
         }
+        mutex.unlock();
         emit error(QString("NONE"), APPIMAGE_PATH_NOT_GIVEN);
         return;
     } else {
@@ -98,6 +117,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: file not found :: " << config["appImagePath"].toString();
             }
+            mutex.unlock();
             emit error(config["appImagePath"].toString(), APPIMAGE_NOT_FOUND);
             return;
         }
@@ -107,6 +127,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
         if(debug) {
             qDebug() << "AIUpdaterBridge:: 'transport' entry missing in the given json ::" << config;
         }
+        mutex.unlock();
         emit error(appImage, TRANSPORT_NOT_GIVEN);
         return;
     } else {
@@ -115,6 +136,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
                 if(debug) {
                     qDebug() << "AIUpdaterBridge:: 'url' entry missing in the given json ::" << config;
                 }
+                mutex.unlock();
                 emit error(appImage, URL_NOT_GIVEN);
                 return;
             } else {
@@ -135,6 +157,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
                 if(debug) {
                     qDebug() << "AIUpdaterBridge:: invalid number of parameters ::" << config;
                 }
+                mutex.unlock();
                 emit error(appImage, INVALID_UPD_INFO_PARAMENTERS);
                 return;
             }
@@ -162,6 +185,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
                 if(debug) {
                     qDebug() << "AIUpdaterBridge:: invalid number of parameters ::" << config;
                 }
+                mutex.unlock();
                 emit error(appImage, INVALID_UPD_INFO_PARAMENTERS);
                 return;
             }
@@ -191,6 +215,7 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
                     qDebug() << "AIUpdaterBridge:: valid transport mechanisms are:: 'gh-releases-zsync' , 'zsync' , 'bintray-zsync'";
                 }
             }
+            mutex.unlock();
             emit error(appImage, INVALID_TRANSPORT_GIVEN);
             return;
         }
@@ -198,7 +223,49 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
     return;
 }
 
-// Private Slots
+
+/* ------------------------------- */
+
+/*
+ * Public Slots
+ * ------------
+ * This is what the users get to use.
+*/
+
+bool isRunning(void) const
+{
+    if(Promise == nullptr) {
+        return Promise->isRunning();
+    }
+    return false;
+}
+
+void AIUpdaterBrdige::startUpdating(void)
+{
+    if(!mutex.tryLock()) {
+        return;
+    }
+    stopUpdate = false; // reset in case.
+    Promise = new QFuture<void>;
+    *Promise = QtConcurrent::run(this, &AIUpdaterBridge::doUpdate);
+    return;
+}
+
+void AIUpdaterBrdige::stopUpdating(void)
+{
+    if(isRunning()) {
+        stopUpdate = true;
+    }
+    return;
+}
+
+
+/* ------------------------------- */
+
+/*
+ * Private Slots
+ * -------------
+*/
 
 void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, const QJsonObject& config)
 {
@@ -243,6 +310,11 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, c
 
 void AIUpdaterBridge::handleAppImageUpdateError(const QString& appImage, short errorCode)
 {
+    if(!mutex.tryLock()) {
+        mutex.unlock();
+    } else {
+        mutex.unlock();
+    }
     emit error(appImage, UNABLE_TO_GET_APPIMAGE_INFORMATION);
     return;
 }
@@ -296,6 +368,11 @@ void AIUpdaterBridge::handleNetworkErrors(QNetworkReply::NetworkError code)
     if(debug) {
         qDebug() << "AIUpdaterBridge:: network error :: " << code;
     }
+    if(!mutex.tryLock()) {
+        mutex.unlock();
+    } else {
+        mutex.unlock();
+    }
     emit error(appImage,  NETWORK_ERROR);
     return;
 }
@@ -318,6 +395,11 @@ void AIUpdaterBridge::handleBintrayLatestPackage(const QUrl& url)
     if(zsyncURL.isEmpty()) {
         if(debug) {
             qDebug() << "AIUpdaterBridge:: cannot find zsync file ::" << zsyncFileName;
+        }
+        if(!mutex.tryLock()) {
+            mutex.unlock();
+        } else {
+            mutex.unlock();
         }
         emit error(appImage, CANNOT_FIND_BINTRAY_PACKAGE);
     } else {
@@ -362,6 +444,11 @@ void AIUpdaterBridge::handleGitHubReleases(const QString& content)
     if(zsyncURL.isEmpty()) {
         if(debug) {
             qDebug() << "AIUpdaterBridge:: cannot find zsync file ::" << zsyncFileName;
+        }
+        if(!mutex.tryLock()) {
+            mutex.unlock();
+        } else {
+            mutex.unlock();
         }
         emit error(appImage, CANNOT_FIND_GITHUB_ASSET);
     } else {
@@ -408,6 +495,11 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: zsync header invalid parameters:: " << zsyncHeaders.size();
             }
+            if(!mutex.tryLock()) {
+                mutex.unlock();
+            } else {
+                mutex.unlock();
+            }
             emit error(appImage, ZSYNC_HEADER_INVALID);
             return;
         }
@@ -421,6 +513,11 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: file not found :: " << appImage;
             }
+            if(!mutex.tryLock()) {
+                mutex.unlock();
+            } else {
+                mutex.unlock();
+            }
             emit error(appImage, APPIMAGE_NOT_FOUND);
             return;
         }
@@ -433,6 +530,11 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
         if(RemoteFileName != LocalFileName) {
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: remote file name and local file name does not match:: "<< RemoteFileName;
+            }
+            if(!mutex.tryLock()) {
+                mutex.unlock();
+            } else {
+                mutex.unlock();
             }
             emit error(appImage, FILENAME_MISMATCH);
             return;
@@ -466,6 +568,7 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: no new updates available :: " << RemoteSHA1;
             }
+            mutex.unlock(); // remember this lock we put on setAppImageUpdateInformation
             emit noUpdatesAvailable(appImage, RemoteSHA1);
         }
         return;
@@ -483,6 +586,11 @@ void AIUpdaterBridge::constructZsync()
         if(debug) {
             qDebug() << "AIUpdaterBridge:: failed to open zsync handle.";
         }
+        if(!mutex.tryLock()) {
+            mutex.unlock();
+        } else {
+            mutex.unlock();
+        }
         emit error(appImage, FAILED_TO_OPEN_ZSYNC_HANDLE);
         return;
     } else {
@@ -490,6 +598,11 @@ void AIUpdaterBridge::constructZsync()
         if(zsync_rename_file(zsyncFile, tempFilePath.toStdString().c_str()) != 0) {
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: failed to rename temporary file.";
+            }
+            if(!mutex.tryLock()) {
+                mutex.unlock();
+            } else {
+                mutex.unlock();
             }
             emit error(appImage, FAILED_TO_RENAME_TEMPFILE);
             return;
@@ -499,6 +612,7 @@ void AIUpdaterBridge::constructZsync()
         if(debug) {
             qDebug() << "AIUpdaterBridge:: new updates available :: " << RemoteSHA1;
         }
+        mutex.unlock();
         emit updatesAvailable(appImage, RemoteSHA1);
     }
     _pCurrentReply->deleteLater();
@@ -567,15 +681,12 @@ void AIUpdaterBridge::checkForUpdates(void)
 }
 
 
-// This is where everthing runs seperate from current main thread
-// to avoid blocking of the gui thread , which may cause lags
-// in the GUI.
-void AIUpdaterBridge::run(void)
+void AIUpdaterBridge::doUpdate(void)
 {
-    QTime  downloadSpeed; // to calculate download speed.
-    if(fileURL.isEmpty() || zsyncFile == nullptr) {
+    if(fileURL.isEmpty() || zsyncFile == nullptr || !mutex.tryLock()) {
         return;
     }
+    QTime  downloadSpeed; // to calculate download speed.
     static const auto BUFFERSIZE = 8192;
     if(debug) {
         qDebug() << "AIUpdaterBridge:: got everything :: Updating";
@@ -591,6 +702,7 @@ void AIUpdaterBridge::run(void)
         if(debug) {
             qDebug() << "AIUpdaterBridge:: range fetch failed ::" << appImage;
         }
+        mutex.unlock();
         emit error(appImage, ZSYNC_RANGE_FETCH_FAILED);
         return;
     }
@@ -601,6 +713,7 @@ void AIUpdaterBridge::run(void)
         if(debug) {
             qDebug() << "AIUpdaterBridge:: zsync recieve failed ::" << appImage;
         }
+        mutex.unlock();
         emit error(appImage, ZSYNC_RECIEVE_FAILED);
         return;
     }
@@ -614,6 +727,7 @@ void AIUpdaterBridge::run(void)
         if(debug) {
             qDebug() << "AIUpdaterBridge:: bad alloc.";
         }
+        mutex.unlock();
         emit error(appImage, BAD_ALLOC);
         return;
     }
@@ -625,6 +739,7 @@ void AIUpdaterBridge::run(void)
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: zsync recieve failed ::" << appImage;
             }
+            mutex.unlock();
             emit error(appImage, ZSYNC_RECIEVE_FAILED);
             return;
         }
@@ -632,6 +747,7 @@ void AIUpdaterBridge::run(void)
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: zsync recieve failed ::" << appImage;
             }
+            mutex.unlock();
             emit error(appImage, ZSYNC_RECIEVE_FAILED);
             return;
 
@@ -639,7 +755,7 @@ void AIUpdaterBridge::run(void)
 
         downloadSpeed.start();
 
-        for(int i = 0; i < 2 * nrange && !this->isInterruptionRequested(); i++) {
+        for(int i = 0; i < 2 * nrange && !stopUpdate; i++) {
             auto beginbyte = zbyterange[i];
             i++;
             auto endbyte = zbyterange[i];
@@ -654,7 +770,7 @@ void AIUpdaterBridge::run(void)
 
                 /* Loop while we're receiving data, until we're done or there is an error */
                 while (!ret
-                       && (len = get_range_block(rf, &zoffset, buffer.data(), BUFFERSIZE)) > 0 && !this->isInterruptionRequested()) {
+                       && (len = get_range_block(rf, &zoffset, buffer.data(), BUFFERSIZE)) > 0 && !stopUpdate) {
                     /* Pass received data to the zsync receiver, which writes it to the
                      * appropriate location in the target file */
                     if (zsync_receive_data(zr, buffer.data(), zoffset, len) != 0)
@@ -693,7 +809,9 @@ void AIUpdaterBridge::run(void)
                     if(debug) {
                         qDebug() << "AIUpdaterBridge:: zsync recieve failed ::" << appImage;
                     }
+                    mutex.unlock();
                     emit error(appImage, ZSYNC_RECIEVE_FAILED);
+                    return;
                 } else {
                     /* Else, let the zsync receiver know that we're at EOF; there
                      *could be data in its buffer that it can use or needs to process */
@@ -705,7 +823,9 @@ void AIUpdaterBridge::run(void)
 
         free(zbyterange);
         // if interruption is requested then silently exit
-        if(this->isInterruptionRequested()) {
+        if(stopUpdate) {
+            mutex.unlock();
+            emit(stopped());
             return;
         }
     }
@@ -722,6 +842,7 @@ void AIUpdaterBridge::run(void)
         if(debug) {
             qDebug() << "AIUpdaterBridge:: temporary file not found :: " << tempFilePath;
         }
+        mutex.unlock();
         emit error(appImage, APPIMAGE_NOT_FOUND);
         return;
     }
@@ -732,6 +853,7 @@ void AIUpdaterBridge::run(void)
         if(debug) {
             qDebug() << "AIUpdaterBridge:: failed to prove integrity :: "<< RemoteSHA1 << "!=" << LocalSHA1;
         }
+        mutex.unlock();
         emit error(appImage, UPDATE_INTEGRITY_FAILED);
         return;
     } else {
@@ -744,6 +866,7 @@ void AIUpdaterBridge::run(void)
                 if(debug) {
                     qDebug() << "AIUpdaterBrdige:: Post installation error.";
                 }
+                mutex.unlock();
                 emit error(appImage, POST_INSTALLATION_FAILED);
                 return;
             }
@@ -758,10 +881,14 @@ void AIUpdaterBridge::run(void)
             if(debug) {
                 qDebug() << "AIUpdaterBrdige:: Post installation error.";
             }
+            mutex.unlock();
             emit error(appImage, POST_INSTALLATION_FAILED);
             return;
         }
         emit updateFinished(appImage, RemoteSHA1);  // Yeaa , Finally Finished Gracefully!
     }
+    mutex.unlock();
     return;
 }
+
+/* ----------------------- */

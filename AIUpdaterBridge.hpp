@@ -39,6 +39,8 @@
 #if !defined(AIUPDATER_BRIDGE_HPP_INCLUDED)
 #define AIUPDATER_BRIDGE_HPP_INCLUDED
 #include <QtCore>
+#include <QtConcurrentRun>
+#include <QFuture>
 #include <QAIUpdateInformation.hpp>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -52,14 +54,14 @@ extern "C" {
 }
 
 /*
- * Class AIUpdaterBridge  <- Inherits QThread.
+ * Class AIUpdaterBridge  <- Inherits QObject.
  * ---------------------
  *
  *  This is the main class that handles AppImage Updates like
  *  a pro.
  *
  *  Public Functions:
- *      explicit AIUpdaterBridge(QNetworkAccessManager *toUseManager = NULL)   - Only Construct the class.
+ *      explicit AIUpdaterBridge(QObject *parent = NULL , QNetworkAccessManager *toUseManager = NULL)   - Only Construct the class.
  *      explicit AIUpdaterBridge(const QString&) - Extract Update information from AppImage and Constructs the class.
  *      explicit AIUpdaterBridge(const QJsonObject&) - Extract Update information directly from json and Construct the class.
  *
@@ -76,7 +78,7 @@ extern "C" {
  *      void error(const QString&, short )                      - Emitted when something goes wrong. with the AppImage name(1).
  *
 */
-class AIUpdaterBridge : public QThread // START CLASS AIUpdaterBridge
+class AIUpdaterBridge : public QObject // START CLASS AIUpdaterBridge
 {
     Q_OBJECT
 public:
@@ -107,7 +109,8 @@ public:
         BAD_ALLOC
     };
 
-    explicit AIUpdaterBridge(QNetworkAccessManager *toUseManager = NULL)
+    explicit AIUpdaterBridge(QObject *parent = NULL, QNetworkAccessManager *toUseManager = NULL)
+        : QObject(parent)
     {
         // According to the Qt Docs , A Single QNetworkAccessManager is capable
         // of doing multiple request with less footprint as possible , it is also recommended
@@ -121,8 +124,6 @@ public:
     explicit AIUpdaterBridge(const QJsonObject&); // get info from json
     void doDebug(bool);
 
-    void run(void) override;
-
     void setAppImageUpdateInformation(const QString&);
     void setAppImageUpdateInformation(const QJsonObject&);
 
@@ -130,6 +131,12 @@ public:
     {
         _pManager->deleteLater();
     }
+
+public slots:
+    bool isRunning(void) const;
+    void startUpdating(void);
+    void stopUpdating(void);
+
 private slots:
     void handleAppImageUpdateInformation(const QString&, const QJsonObject&);
     void handleAppImageUpdateError(const QString&, short );
@@ -142,9 +149,10 @@ private slots:
     void resolveGitHubRedirections(const QUrl&);
     void resolveRedirections(void);
     void handleNetworkErrors(QNetworkReply::NetworkError);
-
     void checkForUpdates(void);
+
 signals:
+    void stopped(void);
     void updatesAvailable(const QString&, const QString&);
     void noUpdatesAvailable(const QString&, const QString&);
     void updateFinished(const QString&, const QString&);
@@ -190,6 +198,9 @@ private:
      *
     */
 
+
+    QFuture<void> *Promise = nullptr;
+
     /*
      * The end resultant from configuration
     */
@@ -202,7 +213,8 @@ private:
     QAIUpdateInformation AppImageInformer;
     struct zsync_state *zsyncFile; // zsync legacy
     bool debug = false,
-         github = false; // We need a special case for github.
+         github = false, // We need a special case for github.
+         stopUpdate = false;
 
     /*
      * Networking Support by Qt
