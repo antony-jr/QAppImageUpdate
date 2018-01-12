@@ -526,20 +526,6 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
         QString RemoteSHA1 = zsyncHeaderJson["SHA-1"].toString();
         QString LocalSHA1(QCryptographicHash::hash(AppImage.readAll(), QCryptographicHash::Sha1).toHex());
 
-        // lets check if we have the correct file
-        if(RemoteFileName != LocalFileName) {
-            if(debug) {
-                qDebug() << "AIUpdaterBridge:: remote file name and local file name does not match:: "<< RemoteFileName;
-            }
-            if(!mutex.tryLock()) {
-                mutex.unlock();
-            } else {
-                mutex.unlock();
-            }
-            emit error(appImage, FILENAME_MISMATCH);
-            return;
-        }
-
         if(RemoteSHA1 != LocalSHA1) {
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: your version of appimage is older:: " << LocalSHA1;
