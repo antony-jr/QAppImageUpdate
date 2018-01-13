@@ -903,6 +903,19 @@ void AIUpdaterBridge::doUpdate(void)
                 return;
             }
         }
+
+        if(QFileInfo(zsyncHeaderJson["Filename"].toString()).exists()) {
+            if(!QFile::remove(zsyncHeaderJson["Filename"].toString())) {
+                if(debug) {
+                    qDebug() << "AIUpdaterBridge:: Post installation error.";
+                }
+                mutex.unlock();
+                emit error(zsyncHeaderJson["Filename"].toString(), POST_INSTALLATION_FAILED);
+                return;
+            }
+
+        }
+
         if(
             !(
                 QFile::rename(LocalFile, LocalFile + ".zs-old") &&
