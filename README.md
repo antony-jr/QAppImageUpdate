@@ -14,8 +14,7 @@ AppImage's are cool but when it comes to updating package that uses AppImage , i
 
 # Try it
 
-See this library in **action** at this [repo](https://github.com/antony-jr/AppImageUpdater) which reimplements the official   
-**AppImageUpdater Tool** with **Qt's** amazing **GUI** and my **design.**
+See this library in **action** at this [repo](https://github.com/antony-jr/AppImageUpdater) which reimplements the official **AppImageUpdater Tool** with **Qt's** amazing **GUI** and my **design.**
 
 
 # Getting Started
