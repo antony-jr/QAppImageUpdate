@@ -820,6 +820,18 @@ void AIUpdaterBridge::doUpdate(void)
     }
 
     if(stopUpdate) {
+        appImage.clear();
+        zsyncHeader.clear();
+        zsyncFileName.clear();
+        zsyncHeaderJson = QJsonObject(); // clean zsync header
+        zsyncURL.clear();
+        fileURL.clear();
+         
+        if(zsyncFile != NULL){
+         free(zsyncFile);
+         zsyncFile = NULL;
+        }
+        github = stopUpdate = false;
         mutex.unlock();
         emit(stopped());
         return;
@@ -884,7 +896,26 @@ void AIUpdaterBridge::doUpdate(void)
             emit error(LocalFile, POST_INSTALLATION_FAILED);
             return;
         }
+        
+        /*
+         * Clear everything -> This is really important!
+        */
+        zsyncHeader.clear();
+        zsyncFileName.clear();
+        zsyncHeaderJson = QJsonObject(); // clean zsync header
+        zsyncURL.clear();
+        fileURL.clear();
+         
+        if(zsyncFile != NULL){
+         /*
+          * Do not free here!
+         */
+         zsyncFile = NULL;
+        }
+        github = stopUpdate = false;
+        
         emit updateFinished(appImage, RemoteSHA1);  // Yeaa , Finally Finished Gracefully!
+        appImage.clear();
     }
     mutex.unlock();
     return;
