@@ -906,8 +906,8 @@ void AIUpdaterBridge::doUpdate(void)
         if(
             !(
                 QFile::rename(LocalFile, LocalFile + ".zs-old") &&
-                QFile::rename(tempFilePath, LocalFile) &&
-                QFile::setPermissions(LocalFile, QFile(LocalFile + ".zs-old").permissions())
+                QFile::rename(tempFilePath, zsyncHeaderJson["Filename"].toString()) &&
+                QFile::setPermissions(zsyncHeaderJson["Filename"].toString(), QFile(LocalFile + ".zs-old").permissions())
             )
         ) {
             if(debug) {
