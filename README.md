@@ -12,6 +12,12 @@
 
 AppImage's are cool but when it comes to updating package that uses AppImage , it can be pretty hard to workout. And Therefore I started creating a lot of libraries that can be used to AutoUpdate any software including AppImages , But AppImages used a seperate efficient way to update packages , Thus I started working on creating a nice bridge to this mechanism and So AppImage Updater Bridge was born.
 
+# Try it
+
+See this library in **action** at this [repo](https://github.com/antony-jr/AppImageUpdater) which reimplements the official   
+**AppImageUpdater Tool** with **Qt's** amazing **GUI** and my **design.**
+
+
 # Getting Started
 
 Please refer the official [documentation](https://antony-jr.github.io/AppImageUpdaterBridge).

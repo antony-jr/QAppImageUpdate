@@ -234,10 +234,11 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
 
 bool AIUpdaterBridge::isRunning(void)
 {
-    if(Promise == nullptr) {
-        return Promise->isRunning();
+    if(mutex.tryLock()) {
+        mutex.unlock();
+        return false;
     }
-    return false;
+    return true;
 }
 
 void AIUpdaterBridge::startUpdating(void)
@@ -269,6 +270,15 @@ void AIUpdaterBridge::stopUpdating(void)
 
 void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, const QJsonObject& config)
 {
+    /*
+     * Disconnect with confidence!
+    */
+
+    disconnect(&AppImageInformer, SIGNAL(updateInformation(const QString&, const QJsonObject&)),
+               this, SLOT(handleAppImageUpdateInformation(const QString&, const QJsonObject&)));
+    disconnect(&AppImageInformer, SIGNAL(error(const QString&, short)),
+               this, SLOT(handleAppImageUpdateError(const QString&, short)));
+
     if(config["transport"].toString() == "zsync") {
         this->zsyncURL = QUrl(config["url"].toString());
         if(debug) {
@@ -302,7 +312,6 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, c
                           "/" + config["repo"].toString() + "/" + config["packageName"].toString() + "/_latestVersion");
         this->zsyncFileName = config["filename"].toString();
         getBintrayLatestPackage(latestLink);
-        return;
     }
     // There should be no errors at this stage.
     return;
@@ -808,13 +817,14 @@ void AIUpdaterBridge::doUpdate(void)
         }
 
         free(zbyterange);
-        // if interruption is requested then silently exit
-        if(stopUpdate) {
-            mutex.unlock();
-            emit(stopped());
-            return;
-        }
     }
+
+    if(stopUpdate) {
+        mutex.unlock();
+        emit(stopped());
+        return;
+    }
+
     emit progress(100, (qint64)zsyncHeaderJson["Length"].toString().toInt(), (qint64)zsyncHeaderJson["Length"].toString().toInt(), 0, "Kbps");
     zsync_end_receive(zr);
     range_fetch_end(rf);
