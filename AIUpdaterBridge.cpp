@@ -82,6 +82,9 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QString& appImage)
     if(!mutex.tryLock()) {
         return;
     }
+
+    clear();
+
     connect(&AppImageInformer, SIGNAL(updateInformation(const QString&, const QJsonObject&)),
             this, SLOT(handleAppImageUpdateInformation(const QString&, const QJsonObject&)));
     connect(&AppImageInformer, SIGNAL(error(const QString&, short)),
@@ -101,6 +104,9 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QJsonObject& config)
     if(!mutex.tryLock()) {
         return;
     }
+
+    clear();
+
     if(!config["appImagePath"].isString() || config["appImagePath"].isNull()) {
         if(debug) {
             qDebug() << "AIUpdaterBridge:: 'appImagePath' entry missing in the given json ::" << config;
@@ -260,6 +266,21 @@ void AIUpdaterBridge::stopUpdating(void)
     return;
 }
 
+void AIUpdaterBridge::clear(void)
+{
+    appImage.clear();
+    zsyncHeader.clear();
+    zsyncFileName.clear();
+    zsyncHeaderJson = QJsonObject(); // clean zsync header
+    zsyncURL.clear();
+    fileURL.clear();
+
+    if(zsyncFile != NULL) {
+        zsyncFile = NULL;
+    }
+    github = stopUpdate = false;
+    return;
+}
 
 /* ------------------------------- */
 
@@ -826,10 +847,10 @@ void AIUpdaterBridge::doUpdate(void)
         zsyncHeaderJson = QJsonObject(); // clean zsync header
         zsyncURL.clear();
         fileURL.clear();
-         
-        if(zsyncFile != NULL){
-         free(zsyncFile);
-         zsyncFile = NULL;
+
+        if(zsyncFile != NULL) {
+            free(zsyncFile);
+            zsyncFile = NULL;
         }
         github = stopUpdate = false;
         mutex.unlock();
@@ -896,26 +917,7 @@ void AIUpdaterBridge::doUpdate(void)
             emit error(LocalFile, POST_INSTALLATION_FAILED);
             return;
         }
-        
-        /*
-         * Clear everything -> This is really important!
-        */
-        zsyncHeader.clear();
-        zsyncFileName.clear();
-        zsyncHeaderJson = QJsonObject(); // clean zsync header
-        zsyncURL.clear();
-        fileURL.clear();
-         
-        if(zsyncFile != NULL){
-         /*
-          * Do not free here!
-         */
-         zsyncFile = NULL;
-        }
-        github = stopUpdate = false;
-        
         emit updateFinished(appImage, RemoteSHA1);  // Yeaa , Finally Finished Gracefully!
-        appImage.clear();
     }
     mutex.unlock();
     return;

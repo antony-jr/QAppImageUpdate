@@ -135,6 +135,7 @@ public slots:
     bool isRunning(void);
     void startUpdating(void);
     void stopUpdating(void);
+    void clear(void);
 
 private slots:
     void doUpdate(void);
