@@ -704,6 +704,42 @@ void AIUpdaterBridge::doUpdate(void)
     }
     QTime  downloadSpeed; // to calculate download speed.
     static const auto BUFFERSIZE = 8192;
+
+    /*
+     * Before starting the fetch , lets add the seed files first!
+     * ----------------------------------------------------------
+     * Since the AppImage is checked all the time over the code
+     * we don't have to check it here , but still , just to be safe.
+    */
+    {
+        FILE *MainAppImage,
+             *BrokenDownloads;
+        QFile AppImage(appImage);
+        QFile brokenDownloads(appImage + ".part");
+        if(!AppImage.open(QIODevice::ReadOnly)) {
+            mutex.unlock();
+            qDebug() << "AIUpdaterBridge:: cannot find appimage.";
+            emit error(appImage , APPIMAGE_NOT_FOUND);
+            return;
+        } else {
+            MainAppImage = fdopen(AppImage.handle(), "r");
+        }
+
+        if(!brokenDownloads.open(QIODevice::ReadOnly)) {
+            // No broken downloads
+            BrokenDownloads = NULL;
+        } else {
+            BrokenDownloads = fdopen(brokenDownloads.handle(), "r");
+        }
+
+        zsync_submit_source_file(zsyncFile, MainAppImage, false);
+        if(BrokenDownloads != NULL) {
+            zsync_submit_source_file(zsyncFile, BrokenDownloads, false);
+        }
+        // All Files get closed here.
+    }
+
+
     if(debug) {
         qDebug() << "AIUpdaterBridge:: got everything :: Updating";
     }
