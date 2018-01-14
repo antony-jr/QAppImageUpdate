@@ -904,6 +904,15 @@ void AIUpdaterBridge::doUpdate(void)
             }
         }
 
+        if(!QFile::rename(LocalFile, LocalFile + ".zs-old")){
+            if(debug) {
+                qDebug() << "AIUpdaterBridge:: Post installation error.";
+            }
+            mutex.unlock();
+            emit error(LocalFile, POST_INSTALLATION_FAILED);
+            return;
+        }
+        
         if(QFileInfo(zsyncHeaderJson["Filename"].toString()).exists()) {
             if(!QFile::remove(zsyncHeaderJson["Filename"].toString())) {
                 if(debug) {
@@ -918,17 +927,11 @@ void AIUpdaterBridge::doUpdate(void)
 
         if(
             !(
-                QFile::rename(LocalFile, LocalFile + ".zs-old") &&
                 QFile::rename(tempFilePath, zsyncHeaderJson["Filename"].toString()) &&
                 QFile::setPermissions(zsyncHeaderJson["Filename"].toString(), QFile(LocalFile + ".zs-old").permissions())
             )
         ) {
-            if(debug) {
-                qDebug() << "AIUpdaterBridge:: Post installation error.";
-            }
-            mutex.unlock();
-            emit error(LocalFile, POST_INSTALLATION_FAILED);
-            return;
+            
         }
         emit updateFinished(appImage, RemoteSHA1);  // Yeaa , Finally Finished Gracefully!
     }
