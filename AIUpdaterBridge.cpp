@@ -301,7 +301,7 @@ void AIUpdaterBridge::handleAppImageUpdateInformation(const QString& appImage, c
                this, SLOT(handleAppImageUpdateError(const QString&, short)));
 
     if(config["transport"].toString() == "zsync") {
-        this->zsyncURL = QUrl(config["url"].toString());
+        this->zsyncURL = QUrl(config["zsyncUrl"].toString());
         if(debug) {
             qDebug() << "AIUpdaterBridge:: zsyncURL ::" << zsyncURL << " :: " << appImage;
         }
@@ -719,7 +719,7 @@ void AIUpdaterBridge::doUpdate(void)
         if(!AppImage.open(QIODevice::ReadOnly)) {
             mutex.unlock();
             qDebug() << "AIUpdaterBridge:: cannot find appimage.";
-            emit error(appImage , APPIMAGE_NOT_FOUND);
+            emit error(appImage, APPIMAGE_NOT_FOUND);
             return;
         } else {
             MainAppImage = fdopen(AppImage.handle(), "r");
