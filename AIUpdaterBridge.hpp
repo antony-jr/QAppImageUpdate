@@ -147,8 +147,7 @@ private slots:
     void handleGitHubReleases(const QString&);
     void handleZsyncHeader(qint64, qint64);
     void constructZsync(void);
-    void resolveGitHubRedirections(const QUrl&);
-    void resolveRedirections(void);
+    void resolveRedirections(qint64, qint64);
     void handleNetworkErrors(QNetworkReply::NetworkError);
     void checkForUpdates(void);
 
@@ -215,7 +214,6 @@ private:
     QAIUpdateInformation AppImageInformer;
     struct zsync_state *zsyncFile = NULL; // zsync legacy
     bool debug = false,
-         github = false, // We need a special case for github.
          stopUpdate = false;
 
     /*

@@ -278,7 +278,7 @@ void AIUpdaterBridge::clear(void)
     if(zsyncFile != NULL) {
         zsyncFile = NULL;
     }
-    github = stopUpdate = false;
+    stopUpdate = false;
     return;
 }
 
@@ -352,7 +352,6 @@ void AIUpdaterBridge::handleAppImageUpdateError(const QString& appImage, short e
 
 void AIUpdaterBridge::getGitHubReleases(const QUrl& url)
 {
-    github = true;
     _CurrentRequest = QNetworkRequest(url);
     _pCurrentReply = _pManager->get(_CurrentRequest);
 
@@ -571,15 +570,10 @@ void AIUpdaterBridge::handleZsyncHeader(qint64 bytesRecived, qint64 bytesTotal)
             }
             // emit updatesAvailable after we setup everything for the user.
             _CurrentRequest = QNetworkRequest(alphaFile);
-            _pCurrentReply = _pManager->head(_CurrentRequest);
-            if(github) {
-                connect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(resolveGitHubRedirections(const QUrl&)));
-            } else {
-                connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(resolveRedirections()));
-            }
+            _pCurrentReply = _pManager->get(_CurrentRequest);
+            connect(_pCurrentReply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(resolveRedirections(qint64, qint64 )));
             connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
                     this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
-            github = false;
         } else {
             if(debug) {
                 qDebug() << "AIUpdaterBridge:: no new updates available :: " << RemoteSHA1;
@@ -635,51 +629,36 @@ void AIUpdaterBridge::constructZsync()
     return;
 }
 
-void AIUpdaterBridge::resolveGitHubRedirections(const QUrl& url)
+void AIUpdaterBridge::resolveRedirections(qint64 bytesReceived, qint64 bytesTotal)
 {
-    disconnect(_pCurrentReply, SIGNAL(redirected(const QUrl&)), this, SLOT(resolveGitHubRedirections(const QUrl&)));
-    _pCurrentReply->abort();
-    _pCurrentReply->deleteLater();
-    _pCurrentReply = NULL;
+    /*
+     * Since we have no use of these.
+    */
+    (void)bytesReceived;
+    (void)bytesTotal;
 
-    QUrl redirected(url);
+    QUrl redirected = _pCurrentReply->url();
+    if(!redirected.isEmpty()) { // Stop the request when we get a valid redirection!
+        disconnect(_pCurrentReply, SIGNAL(downloadProgress(qint64, qint64)),
+                   this, SLOT(resolveRedirections(qint64, qint64)));
+        _pCurrentReply->abort(); // stop the request.
+        _pCurrentReply->deleteLater();
+        _pCurrentReply = NULL;
+        if(debug) {
+            qDebug() << "AIUpdaterBridge:: redirected url :: " << redirected;
+        }
 
-    if(debug) {
-        qDebug() << "AIUpdaterBridge:: redirected url :: " << redirected;
+        fileURL = redirected; // setURL
+        QDir::setCurrent ( QDir(QFileInfo(appImage).absoluteDir()).absolutePath() ); // set current dir
+        // Now we are set to construct the zsHandle.
+
+        _CurrentRequest = QNetworkRequest(zsyncURL);
+        _pCurrentReply = _pManager->get(_CurrentRequest);
+
+        connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(constructZsync()));
+        connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
+                this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
     }
-
-    fileURL = redirected; // setURL
-    QDir::setCurrent ( QDir(QFileInfo(appImage).absoluteDir()).absolutePath() ); // set current dir
-    // Now we are set to construct the zsHandle.
-
-    _CurrentRequest = QNetworkRequest(zsyncURL);
-    _pCurrentReply = _pManager->get(_CurrentRequest);
-
-    connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(constructZsync()));
-    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
-            this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
-    return;
-}
-
-void AIUpdaterBridge::resolveRedirections()
-{
-    QUrl redirected = _pCurrentReply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
-    _pCurrentReply->deleteLater();
-    _pCurrentReply = NULL;
-    if(debug) {
-        qDebug() << "AIUpdaterBridge:: redirected url :: " << redirected;
-    }
-
-    fileURL = redirected; // setURL
-    QDir::setCurrent ( QDir(QFileInfo(appImage).absoluteDir()).absolutePath() ); // set current dir
-    // Now we are set to construct the zsHandle.
-
-    _CurrentRequest = QNetworkRequest(zsyncURL);
-    _pCurrentReply = _pManager->get(_CurrentRequest);
-
-    connect(_pCurrentReply, SIGNAL(finished()), this, SLOT(constructZsync()));
-    connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
-            this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
     return;
 }
 
@@ -888,7 +867,7 @@ void AIUpdaterBridge::doUpdate(void)
             free(zsyncFile);
             zsyncFile = NULL;
         }
-        github = stopUpdate = false;
+        stopUpdate = false;
         mutex.unlock();
         emit(stopped());
         return;
