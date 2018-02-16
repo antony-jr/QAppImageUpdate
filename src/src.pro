@@ -1,7 +1,7 @@
 TEMPLATE = lib
 CONFIG += staticlib
 TARGET = AIUpdaterBridge
-LIBS += ../libz/libz.a ../librcksum/librcksum.a ../libzsync/libzsync.a -lcurl
+LIBS += ../zlib/libz.a ../librcksum/librcksum.a ../libzsync/libzsync.a -lcurl
 QT += core network concurrent
 INCLUDEPATH += . .. ../QAIUpdateInformation ../libzsync ../librcksum ../libz
 DEFINES += QT_DEPRECATED_WARNINGS
