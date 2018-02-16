@@ -124,7 +124,6 @@ public:
     void doDebug(bool);
 
     void setChangelogURL(const QUrl&);
-    const QString &getChangelog(void);
     void setAppImageUpdateInformation(const QString&);
     void setAppImageUpdateInformation(const QJsonObject&);
 
@@ -134,6 +133,7 @@ public:
     }
 
 public slots:
+    const QString &getChangelog(void);
     bool isRunning(void);
     void startUpdating(void);
     void stopUpdating(void);

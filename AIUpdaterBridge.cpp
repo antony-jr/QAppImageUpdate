@@ -487,6 +487,7 @@ void AIUpdaterBridge::handleGitHubReleases(const QString& content)
     QJsonObject jsonObject = jsonResponse.object();
     QJsonArray assetsArray = jsonObject["assets"].toArray();
     QString version = jsonObject["tag_name"].toString();
+    Changelog = jsonObject["body"].toString();
     QVector<QJsonObject> assets;
     QRegExp rx(zsyncFileName); // Patern Matching with wildcards!
     rx.setPatternSyntax(QRegExp::Wildcard);
