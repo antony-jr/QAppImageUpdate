@@ -19,6 +19,8 @@ sidebar_label: Class AIUpdaterBridge
 | **explicit** 	| AIUpdaterBridge(QNetworkAccessManager *toUseManager = NULL) 	|
 | **explicit** 	| AIUpdaterBridge(const QString& AppImagePath) 	|
 | **explicit** 	| AIUpdaterBridge(const QJsonObject& config) 	|
+| **void**      | setChangelogURL(const QUrl& url)				|
+| const QString&| getChangelog(void)						|
 | **void** 	| setAppImageUpdateInformation(const QString& AppImagePath) 	|
 | **void** 	| setAppImageUpdateInformation(const QJsonObject& config) 	|
 | **void** 	| doDebug(bool choose) 	|

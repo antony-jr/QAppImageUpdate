@@ -123,6 +123,8 @@ public:
     explicit AIUpdaterBridge(const QJsonObject&); // get info from json
     void doDebug(bool);
 
+    void setChangelogURL(const QUrl&);
+    const QString &getChangelog(void);
     void setAppImageUpdateInformation(const QString&);
     void setAppImageUpdateInformation(const QJsonObject&);
 
@@ -207,10 +209,12 @@ private:
     */
     QString appImage,
             zsyncHeader,
-            zsyncFileName;
+            zsyncFileName,
+            Changelog;
     QJsonObject zsyncHeaderJson; // clean zsync header
     QUrl zsyncURL,
-         fileURL;
+         fileURL,
+         changelogURL;
     QAIUpdateInformation AppImageInformer;
     struct zsync_state *zsyncFile = NULL; // zsync legacy
     bool debug = false,

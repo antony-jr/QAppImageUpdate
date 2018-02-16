@@ -77,6 +77,20 @@ void AIUpdaterBridge::doDebug(bool ch)
 }
 
 
+void AIUpdaterBridge::setChangelogURL(const QUrl &url)
+{
+    if(mutex.tryLock()) {
+        changelogURL = url;
+        mutex.unlock();
+    }
+    return;
+}
+
+const QString &AIUpdaterBridge::getChangelog(void)
+{
+    return Changelog;
+}
+
 void AIUpdaterBridge::setAppImageUpdateInformation(const QString& appImage)
 {
     if(!mutex.tryLock()) {
@@ -93,7 +107,36 @@ void AIUpdaterBridge::setAppImageUpdateInformation(const QString& appImage)
     // take care of it.
     AppImageInformer.setAppImage(appImage);
     AppImageInformer.doDebug(debug);
-    AppImageInformer.start();
+
+    if(!changelogURL.isEmpty()) {
+        _CurrentRequest = QNetworkRequest(changelogURL);
+        _pCurrentReply = _pManager->get(_CurrentRequest);
+
+        connect(_pCurrentReply, &QNetworkReply::finished,
+        [&]() {
+            if(_pCurrentReply->attribute( QNetworkRequest::HttpStatusCodeAttribute ).toInt() >= 400) {
+                AppImageInformer.start();
+                return;
+            }
+
+            QString Response(_pCurrentReply->readAll());
+            _pCurrentReply->deleteLater(); // this will free the memory as soon as this object is not used.
+            // by anyone or anything.
+            if(debug) {
+                qDebug() << "AIUpdaterBridge::GET::" << _CurrentRequest.url() << " :: success!";
+                qDebug() << "AIUpdaterBridge::Changelog::" << "\n" << Response << "\n";
+            }
+            Changelog = Response;
+            AppImageInformer.start();
+            return;
+
+        });
+        connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)),
+                this, SLOT(handleNetworkErrors(QNetworkReply::NetworkError)));
+
+    } else {
+        AppImageInformer.start();
+    }
     return;
 }
 
