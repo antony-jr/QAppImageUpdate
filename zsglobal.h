@@ -16,12 +16,6 @@
 #ifndef ZSGLOBAL_H
 #define ZSGLOBAL_H
 
-
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#undef HAVE_CONFIG_H
-#endif
-
 #if defined(__GNUC__) && defined (__OpenBSD__)
 #  define ZS_DECL_BOUNDED(x,y,z) __attribute__((__bounded__(x,y,z)))
 #else

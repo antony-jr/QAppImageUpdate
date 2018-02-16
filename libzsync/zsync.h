@@ -12,6 +12,9 @@
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   COPYING file for details.
  */
+#ifndef VERSION
+#define VERSION "0.6.2"
+#endif
 
 struct zsync_state;
 
