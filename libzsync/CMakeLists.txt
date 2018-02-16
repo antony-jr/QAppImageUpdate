@@ -6,7 +6,7 @@ project(libzsync)
 enable_testing()
 
 # add actual library
-add_library(libzsync zsync.c zmap.c sha1.c)
+add_library(libzsync zsync.c zmap.c)
 
 # since the target is called libsomething, one doesn't need CMake's additional lib prefix
 set_target_properties(libzsync PROPERTIES PREFIX "")

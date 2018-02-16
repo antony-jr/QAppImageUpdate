@@ -52,7 +52,6 @@
 
 #include "librcksum/rcksum.h"
 #include "zsync.h"
-#include "sha1.h"
 #include "zmap.h"
 
 /* Probably we really want a table of compression methods here. But I've only
@@ -594,10 +593,6 @@ int zsync_complete(struct zsync_state *zs) {
         rc = -1;
     }
 
-    /* Do checksum check */
-    if (rc == 0 && zs->checksum && !strcmp(zs->checksum_method, ckmeth_sha1)) {
-        rc = zsync_sha1(zs, fh);
-    }
     close(fh);
 
     /* Do any requested recompression */
@@ -609,44 +604,6 @@ int zsync_complete(struct zsync_state *zs) {
     return rc;
 }
 
-/* zsync_sha1(self, filedesc)
- * Given the currently-open-and-at-start-of-file complete local copy of the
- * target, read it and compare the SHA1 checksum with the one from the .zsync.
- * Returns -1 or 1 as per zsync_complete.
- */
-int zsync_sha1(struct zsync_state *zs, int fh) {
-    SHA1_CTX shactx;
-
-    {                           /* Do SHA1 of file contents */
-        unsigned char buf[4096];
-        int rc;
-
-        SHA1Init(&shactx);
-        while (0 < (rc = read(fh, buf, sizeof buf))) {
-            SHA1Update(&shactx, buf, rc);
-        }
-        if (rc < 0) {
-            perror("read");
-            return -1;
-        }
-    }
-
-    {                           /* And compare result of the SHA1 with the one from the .zsync */
-        unsigned char digest[SHA1_DIGEST_LENGTH];
-        int i;
-
-        SHA1Final(digest, &shactx);
-
-        for (i = 0; i < SHA1_DIGEST_LENGTH; i++) {
-            int j;
-            sscanf(&(zs->checksum[2 * i]), "%2x", &j);
-            if (j != digest[i]) {
-                return -1;
-            }
-        }
-        return 1; /* Checksum verified okay */
-    }
-}
 
 /* zsync_recompress(self)
  * Called when we have a complete local copy of the uncompressed data, to

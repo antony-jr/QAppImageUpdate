@@ -12,9 +12,17 @@
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *   COPYING file for details.
  */
+
+/*
+ * Preprocessor Constants.
+*/
 #ifndef VERSION
 #define VERSION "0.6.2"
 #endif
+
+#define	SHA1_BLOCK_LENGTH		64
+#define	SHA1_DIGEST_LENGTH		20
+#define	SHA1_DIGEST_STRING_LENGTH	(SHA1_DIGEST_LENGTH * 2 + 1)
 
 struct zsync_state;
 
