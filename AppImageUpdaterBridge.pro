@@ -6,6 +6,7 @@
 # ----
 TEMPLATE = subdirs
 CONFIG += ordered
+LIBS += ./libz/libz.a ./librcksum/librcksum.a ./libzsync/libzsync.a -lcurl
 QT += core network concurrent
 SUBDIRS = zlib \
 	  librcksum \
