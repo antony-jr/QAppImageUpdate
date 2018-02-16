@@ -12,6 +12,3 @@ set_target_properties(librcksum PROPERTIES PREFIX "")
 # set includes
 target_include_directories(librcksum INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
-# add tests
-add_executable(md4test md4test.c md4.c)
-add_test(md4test md4test)
