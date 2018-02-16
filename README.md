@@ -10,7 +10,7 @@
 
 # AppImage Updater Bridge [![GitHub issues](https://img.shields.io/github/issues/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/issues) [![GitHub stars](https://img.shields.io/github/stars/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/stargazers) [![GitHub license](https://img.shields.io/github/license/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/blob/master/LICENSE) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8ec8eac35a304883829b785d298b6fa6)](https://www.codacy.com/app/antony-jr/AppImageUpdaterBridge?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=antony-jr/AppImageUpdaterBridge&amp;utm_campaign=Badge_Grade)
 
-AppImage's are cool but when it comes to updating package that uses AppImage , it can be pretty hard to workout. And Therefore I started creating a lot of libraries that can be used to AutoUpdate any software including AppImages , But AppImages used a seperate efficient way to update packages , Thus I started working on creating a nice bridge to this mechanism and So AppImage Updater Bridge was born.
+Inorder to build a super cool updater for all open source projects , I required API's to all major distribution methods. AppImage is a super cool method to distribute your Apps in a single file for all Linux Distro's and So AppImageUpdaterBridge was created to give a nice Qt API to the Updating Mechanism of AppImage's. This is not the official AppImageUpdate Library.
 
 # Try it
 
