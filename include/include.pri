@@ -1,5 +1,5 @@
 # BSD 3-Clause License
-# 
+#
 # Copyright (c) 2018, Antony jr
 # All rights reserved.
 # 
@@ -28,9 +28,5 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-TEMPLATE = subdirs
-CONFIG += ordered release
-SUBDIRS = lib \
-	  src
-
-src.depends = lib
+INCLUDEPATH = $$system(pwd) $$system(pwd)/..
+HEADERS += $$system(pwd)/AppImageUpdaterBridge.hpp

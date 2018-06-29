@@ -1,6 +1,7 @@
 # BSD 3-Clause License
-# 
+#
 # Copyright (c) 2018, Antony jr
+# All rights reserved.
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -29,8 +30,5 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 TEMPLATE = subdirs
-CONFIG += ordered release
-SUBDIRS = lib \
-	  src
-
-src.depends = lib
+CONFIG = ordered release
+SUBDIRS += QAIUpdateInformation

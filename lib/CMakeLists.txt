@@ -1,5 +1,5 @@
 # BSD 3-Clause License
-# 
+#
 # Copyright (c) 2018, Antony jr
 # All rights reserved.
 # 
@@ -28,9 +28,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-TEMPLATE = subdirs
-CONFIG += ordered release
-SUBDIRS = lib \
-	  src
+CMAKE_MINIMUM_REQUIRED( VERSION 3.2)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
 
-src.depends = lib
+include_directories(QAIUpdateInformation QAIUpdateInformation/include)
+
+add_subdirectory(QAIUpdateInformation)
