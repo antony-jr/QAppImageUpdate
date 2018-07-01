@@ -43,6 +43,49 @@
 #include <QNetworkReply>
 
 namespace AppImageUpdaterBridge {
-	/* ... */
+class AppImageUpdaterBridge : public QObject {
+	Q_OBJECT
+public:
+    enum : short {
+
+    } error_code;
+
+    enum : short {
+    
+    } status_code;
+
+    explicit AppImageUpdaterBridge(QObject *parent = nullptr);
+    explicit AppImageUpdaterBridge(const QString& , QObject *parent = nullptr);
+    explicit AppImageUpdaterBridge(QFile * , QObject *parent = nullptr);
+    AppImageUpdaterBridge &setAppImage(const QString&);
+    AppImageUpdaterBridge &setAppImage(QFile *);
+    AppImageUpdaterBridge &setShowLog(bool);
+    ~AppImageUpdaterBridge();
+
+public Q_SLOTS:
+    AppImageUpdaterBridge &waitForFinished(void);
+    AppImageUpdaterBridge &start(void);
+    AppImageUpdaterBridge &cancel(void);
+    AppImageUpdaterBridge &pause(void);
+    AppImageUpdaterBridge &resume(void);
+
+    bool isRunning() const;
+    bool isStarted() const;
+    bool isCanceled() const;
+    bool isPaused() const;
+    bool isFinished() const;
+
+Q_SIGNALS:
+    void started(void);
+    void finished(void);
+    void canceled(void);
+    void paused(void);
+    void resumed(void);
+    void progress(int);
+    void logger(QString);
+    void error(short);
+private:
+    QAIUpdateInformation _pAIUInformation;
+};
 }
 #endif // AIUPDATER_BRIDGE_HPP_INCLUDED
