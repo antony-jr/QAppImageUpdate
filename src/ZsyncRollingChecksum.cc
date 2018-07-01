@@ -136,6 +136,26 @@ void  ZsyncRollingChecksum::writeBlocks(const unsigned char *data,  zs_blockid b
     return;
 }
 
+void ZsyncRollingChecksum::addTargetBlock(zs_blockid b, rsum r, void *checksum) {
+    if (b < _nBlocks) {
+        /* Get hash entry with checksums for this block */
+        hash_entry *e = &((_pBlockHashes.data())[b]);
+
+        /* Enter checksums */
+        memcpy(e->checksum, checksum, _nChecksumBytes);
+        e->r.a = r.a & _nRsumMaskA;
+        e->r.b = r.b;
+
+        /* New checksums invalidate any existing checksum hash tables */
+        if (_pRsumHash) {
+            free(_pRsumHash);
+            _pRsumHash = NULL;
+            free(_cBitHash);
+            _cBitHash = NULL;
+        }
+    }
+}
+
 qint64 ZsyncRollingChecksum::readKnownData(unsigned char *buffer, off_t offset, quint64 len)
 {
     qint64 ret = -1;

@@ -24,6 +24,7 @@ public:
 public Q_SLOTS:
     quint64 submitSourceFile(QFile *file);
     QVector<QPair<zs_blockid, zs_blockid>> neededBlockRanges(zs_blockid from, zs_blockid to);
+    void addTargetBlock(zs_blockid b, rsum r, void *checksum);
 private Q_SLOTS:
     rsum __attribute__((pure)) calculateRollingChecksum(const unsigned char *data, quint64 len);
     void calculateStrongChecksum(unsigned char *buffer, const unsigned char *data, quint64 len);
