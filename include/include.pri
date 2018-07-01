@@ -29,4 +29,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 INCLUDEPATH = $$system(pwd) $$system(pwd)/..
-HEADERS += $$system(pwd)/AppImageUpdaterBridge.hpp
+HEADERS += $$system(pwd)/AppImageUpdaterBridge.hpp \
+	   $$system(pwd)/ZsyncInternalStructures.hpp \
+	   $$system(pwd)/ZsyncRollingChecksum.hpp 

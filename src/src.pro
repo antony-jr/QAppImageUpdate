@@ -32,6 +32,4 @@ include(src.pri)
 
 TEMPLATE = lib
 CONFIG += staticlib release
-TARGET = ../AppImageUpdaterBridge
-
-SOURCES += AppImageUpdaterBridge.cc
+TARGET = ../AppImageUpdaterBridge 

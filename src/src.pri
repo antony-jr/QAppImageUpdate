@@ -33,4 +33,7 @@ include(../lib/lib.pri)
 
 QT += core concurrent network
 
+SOURCES += $$system(pwd)/AppImageUpdaterBridge.cc \
+	   $$system(pwd)/ZsyncRollingChecksum.cc
+
 
