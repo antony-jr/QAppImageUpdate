@@ -126,7 +126,7 @@ void rcksum_end(struct rcksum_state *z) {
     if (z->fd != -1)
         close(z->fd);
     if (z->filename) {
-        unlink(z->filename);
+        // unlink(z->filename);
         free(z->filename);
     }
 

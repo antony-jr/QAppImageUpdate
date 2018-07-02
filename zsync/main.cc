@@ -87,5 +87,7 @@ int main(int ac, char **av)
     FILE *seed = fopen(av[0] , "r");
     qInfo() << "GOT BLOCKS:: " << rcksum_submit_source_file(rstate , seed , 0);
 
+    rcksum_end(rstate);
+
     return 0;
 }
