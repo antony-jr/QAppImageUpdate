@@ -2,12 +2,10 @@
 #include <rcksum.hpp>
 #include <arpa/inet.h>
 
-using namespace AppImageUpdaterBridge;
-
 int main(int ac, char **av)
 {
-    if(ac < 2) {
-        qInfo().noquote() << "Usage: " << av[0] << " [zsync meta file] [source file]";
+    if(ac == 1) {
+        qInfo().noquote() << "Usage: " << av[0] << " [zsync meta file]";
         return 0;
     }
     QString filename(av[1]);
@@ -61,13 +59,14 @@ int main(int ac, char **av)
     qInfo().noquote() << "blocks = " << blocks << " , blocksize = " << blocksize << " , rsum_bytes = " << rsum_bytes
                       << " , checksum_bytes = " << checksum_bytes << " , seq_matches = " << seq_matches;
 
-    filename.replace(".zsync", ".part");
+    auto rstate = rcksum_init(blocks , blocksize , rsum_bytes , checksum_bytes , seq_matches);
+
     /* Now read in and store the checksums */
 
     zs_blockid id = 0;
     for (; id < blocks; id++) {
         rsum r = { 0, 0 };
-        unsigned char checksum[STRONG_CHECKSUM_SIZE];
+        unsigned char checksum[16];
 
         /* Read in */
         if (fread(((char *)&r) + 4 - rsum_bytes, rsum_bytes, 1, f) < 1
@@ -82,7 +81,11 @@ int main(int ac, char **av)
         /* Convert to host endian and store */
         r.a = ntohs(r.a);
         r.b = ntohs(r.b);
-
+	rcksum_add_target_block(rstate , id , r , checksum);
     }
+
+    FILE *seed = fopen(av[0] , "r");
+    qInfo() << "GOT BLOCKS:: " << rcksum_submit_source_file(rstate , seed , 0);
+
     return 0;
 }

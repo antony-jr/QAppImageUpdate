@@ -8,9 +8,9 @@
 # include <dmalloc.h>
 #endif
 
-#include "md4.h"
 #include "rcksum.hpp"
 #include "internal.hpp"
+#include <QCryptographicHash>
 
 #define UPDATE_RSUM(a, b, oldc, newc, bshift) do { (a) += ((unsigned char)(newc)) - ((unsigned char)(oldc)); (b) += (a) - ((oldc) << (bshift)); } while (0)
 
@@ -42,10 +42,10 @@ size_t rcksum_get_call_count(struct rcksum_state *z)
  * Returns the MD4 checksum (in checksum_buf) of the given data block */
 void rcksum_calc_checksum(unsigned char *c, const unsigned char *data,
                           size_t len) {
-    MD4_CTX ctx;
-    MD4Init(&ctx);
-    MD4Update(&ctx, data, len);
-    MD4Final(c, &ctx);
+    QCryptographicHash ctx(QCryptographicHash::Md4);
+    ctx.addData((const char*)data , len);
+    auto result = ctx.result();
+    memmove(c, result.constData() , sizeof(const char) * result.size());
 }
 
 #ifndef HAVE_PWRITE
