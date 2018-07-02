@@ -1,5 +1,5 @@
 #include <QtCore>
-#include <ZsyncRollingChecksum.hpp>
+#include <rcksum.hpp>
 #include <arpa/inet.h>
 
 using namespace AppImageUpdaterBridge;
@@ -11,19 +11,12 @@ int main(int ac, char **av)
         return 0;
     }
     QString filename(av[1]);
-    QString source(av[2]);
-    QFile sourceFile(source);
     QFile zsyncFile(filename);
     if(!zsyncFile.open(QIODevice::ReadOnly)) {
         qCritical().noquote() << "Failed to open zsync file.";
         return -1;
     }
-    if(!sourceFile.open(QIODevice::ReadOnly)) {
-        qCritical().noquote() << "Failed to open source file.";
-        return -1;
-    }
     FILE *f = fdopen(zsyncFile.handle(), "r");
-    ZsyncRollingChecksum ZsyncCore;
     int checksum_bytes = 16, rsum_bytes = 4, seq_matches = 1;
     size_t filesize, blocksize, blocks;
 
@@ -69,7 +62,6 @@ int main(int ac, char **av)
                       << " , checksum_bytes = " << checksum_bytes << " , seq_matches = " << seq_matches;
 
     filename.replace(".zsync", ".part");
-    ZsyncCore.setConfiguration(blocks, blocksize, rsum_bytes,checksum_bytes, seq_matches, filename);
     /* Now read in and store the checksums */
 
     zs_blockid id = 0;
@@ -91,9 +83,6 @@ int main(int ac, char **av)
         r.a = ntohs(r.a);
         r.b = ntohs(r.b);
 
-        ZsyncCore.addTargetBlock(id, r, checksum);
     }
-    qDebug() << "GOT BLOCKS:: " << ZsyncCore.submitSourceFile(&sourceFile);
-    qDebug() << "NEEDED RANGES:: " << ZsyncCore.neededBlockRanges(0, blocks);
     return 0;
 }

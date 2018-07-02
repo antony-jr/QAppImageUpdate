@@ -196,129 +196,121 @@ int ZsyncRollingChecksum::submitBlocks(const unsigned char *data, zs_blockid bfr
 
 int ZsyncRollingChecksum::submitSourceData(unsigned char *data, size_t len, off_t offset)
 {
-    /* The window in data[] currently being considered is [x, x+bs] */
+   /* The window in data[] currently being considered is 
+     * [x, x+bs)
+     */
+    call_count++;
     int x = 0;
-    int got_blocks = 0;  /* Count the number of useful data blocks found. */
-    register const int x_limit = len - _nContext;
+    register int bs = _nBlockSize;
+    int got_blocks = 0;
 
     if (offset) {
         x = _nSkip;
-    } else {
+    }
+    else {
         _pNextMatch = NULL;
     }
 
     if (x || !offset) {
-        _pCurrentSums[0] = calculateRollingChecksum(data + x, _nBlockSize);
-        if (_nSeqMatches > 1){
-            _pCurrentSums[1] = calculateRollingChecksum(data + x + _nBlockSize, _nBlockSize);
-        }
+        _pCurrentSums[0] = calculateRollingChecksum(data + x, bs);
+        if (_nSeqMatches > 1)
+            _pCurrentSums[1] = calculateRollingChecksum(data + x + bs, bs);
     }
     _nSkip = 0;
 
-    /* Work through the block until the current _nContext bytes being
-     * considered, starting at x, is at or past the end of the buffer */
-
-    /* The loop is split into an outer and an inner loop here. Both are looping
-     * over the data in the buffer; the inner loop is not strictly necessary but
-     * makes it clearer what is the critical code path i.e. stepping through the
-     * buffer one byte at a time. When we find a matching block, we skip forward
-     * by a whole block - the outer loop handles this case. */
-    while (x < x_limit /* which is len - _nContext */) {
-        /* # of blocks to advance if thismatch > 0. Can be less than
-         * thismatch as thismatch could be N*blocks_matched, if a block was
-         * duplicated to multiple locations in the output file. */
-        int blocks_matched = 0;
-
-        /* If the previous block was a match, but we're looking for
-         * sequential matches, then test this block against the block in
-         * the target immediately after our previous hit. */
-        if (_pNextMatch && _nSeqMatches > 1) {
-            int thismatch;
-            if (0 != (thismatch = checkChecksumOnHashChain(_pNextMatch, data + x, 1))) {
-                blocks_matched = 1;
-                got_blocks += thismatch;
-            }
+    /* Work through the block until the current blocksize bytes being
+     * considered, starting at x, is at the end of the buffer */
+    for (;;) {
+        if (x + _nContext == len) {
+            return got_blocks;
         }
 
-        /* If we already matched this block, we don't look it up in the hash
-         * table at all.
-         * Advance one byte at a time through the input stream, looking up the
-         * rolling checksum in the rsum hash table. */
-        while (0 == blocks_matched && x < x_limit) {
+#if 0
+        {   /* Catch rolling checksum failure */
+            int k = 0;
+            struct rsum c = rcksum_calc_rsum_block(data + x + bs * k, bs);
+            if (c.a != z->r[k].a || c.b != z->r[k].b) {
+                fprintf(stderr, "rsum miscalc (%d) at %lld\n", k, offset + x);
+                exit(3);
+            }
+        }
+#endif
+
+        {
             /* # of blocks of the output file we got from this data */
-            quint64 thismatch = 0;
+            int thismatch = 0;
+            /* # of blocks to advance if thismatch > 0. Can be less than
+             * thismatch as thismatch could be N*blocks_matched, if a block was
+             * duplicated to multiple locations in the output file. */
+            int blocks_matched = 0; 
 
-
-            {
-                const hash_entry *e;
+            /* If the previous block was a match, but we're looking for
+             * sequential matches, then test this block against the block in
+             * the target immediately after our previous hit. */
+            if (_pNextMatch && _nSeqMatches > 1) {
+                if (0 != (thismatch = checkChecksumOnHashChain(_pNextMatch, data + x, 1))) {
+                    blocks_matched = 1;
+                }
+            }
+            if (!thismatch) {
+                const struct hash_entry *e;
 
                 /* Do a hash table lookup - first in the bithash (fast negative
                  * check) and then in the rsum hash */
                 unsigned hash = _pCurrentSums[0].b;
                 hash ^= ((_nSeqMatches > 1) ? _pCurrentSums[1].b
-                         : _pCurrentSums[0].a & _nRsumMaskA) << _nHashFuncShift;
-
-                if ((_cBitHash[(hash & _nBitHashMask) >> 3] & (1 << (hash & 7))) != 0
+                        : _pCurrentSums[0].a & _nRsumMaskA) << BIT_HASH_BITS;
+		if ((_cBitHash[(hash & _nBitHashMask) >> 3] & (1 << (hash & 7))) != 0
                     && (e = _pRsumHash[hash & _nHashMask]) != NULL) {
 
                     /* Okay, we have a hash hit. Follow the hash chain and
                      * check our block against all the entries. */
                     thismatch = checkChecksumOnHashChain(e, data + x, 0);
-                    if (thismatch) {
+                    if (thismatch)
                         blocks_matched = _nSeqMatches;
-                    }
                 }
             }
             got_blocks += thismatch;
 
-            /* (If we didn't match any data) advance the window by 1 byte -
-             * update the rolling checksum and our offset in the buffer */
-            if (!blocks_matched) {
-                unsigned char Nc = data[x + _nBlockSize * 2];
-                unsigned char nc = data[x + _nBlockSize];
-                unsigned char oc = data[x];
-                UPDATE_RSUM(_pCurrentSums[0].a, _pCurrentSums[0].b, oc, nc, _nBlockShift);
-                if (_nSeqMatches > 1) {
-                    UPDATE_RSUM(_pCurrentSums[1].a, _pCurrentSums[1].b, nc, Nc, _nBlockShift);
+            /* If we got a hit, skip forward (if a block in the target matches
+             * at x, it's highly unlikely to get a hit at x+1 as all the
+             * target's blocks are multiples of the blocksize apart. */
+            if (blocks_matched) {
+                x += bs + (blocks_matched > 1 ? bs : 0);
+
+                if (x + _nContext > len) {
+                    /* can't calculate rsum for block after this one, because
+                     * it's not in the buffer. So leave a hint for next time so
+                     * we know we need to recalculate */
+                    _nSkip = x +_nContext - len;
+                    return got_blocks;
                 }
-                x++;
-            }
-        }
 
-        /* If we got a hit, skip forward (if a block in the target matches
-         * at x, it's highly unlikely to get a hit at x+1 as all the
-         * target's blocks are multiples of the blocksize apart. */
-        if (blocks_matched) {
-            x += _nBlockSize + (blocks_matched > 1 ? _nBlockSize : 0);
-
-            if (x > x_limit) {
-                /* can't calculate rsum for block after this one, because
-                 * it's not in the buffer. We will drop out of the loop and
-                 * return. */
-            } else {
                 /* If we are moving forward just 1 block, we already have the
                  * following block rsum. If we are skipping both, then
                  * recalculate both */
-                if (_nSeqMatches > 1 && blocks_matched == 1) {
+                if (_nSeqMatches > 1 && blocks_matched == 1)
                     _pCurrentSums[0] = _pCurrentSums[1];
-                } else {
-                    _pCurrentSums[0] = calculateRollingChecksum(data + x, _nBlockSize);
-                }
-                if (_nSeqMatches > 1) {
-                    _pCurrentSums[1] = calculateRollingChecksum(data + x + _nBlockSize, _nBlockSize);
-                }
+                else
+                    _pCurrentSums[0] = calculateRollingChecksum(data + x, bs);
+                if (_nSeqMatches > 1)
+                    _pCurrentSums[1] = calculateRollingChecksum(data + x + bs, bs);
+                continue;
             }
         }
-    }
-    /* If we jumped to a point in the stream not yet in the buffer (x > x_limit)
-     * then we need to save that state so that the next call knows where to
-     * resume - and also so that the next call knows that it must calculate the
-     * checksum of the first block because we do not have enough data to do so
-     * right now. */
-    _nSkip = x - x_limit;
 
-    /* Keep caller informed about how much useful data we are getting. */
-    return got_blocks;
+        /* Else - advance the window by 1 byte - update the rolling checksum
+         * and our offset in the buffer */
+        {
+            unsigned char Nc = data[x + bs * 2];
+            unsigned char nc = data[x + bs];
+            unsigned char oc = data[x];
+            UPDATE_RSUM(_pCurrentSums[0].a, _pCurrentSums[0].b, oc, nc, _nBlockShift);
+            if (_nSeqMatches > 1)
+                UPDATE_RSUM(_pCurrentSums[1].a, _pCurrentSums[1].b, nc, Nc, _nBlockShift);
+        }
+        x++;
+    }
 }
 
 
@@ -340,22 +332,78 @@ void ZsyncRollingChecksum::removeBlockFromHash(zs_blockid id)
     }
 }
 
-int ZsyncRollingChecksum::submitSourceFile(QFile *file)
-{
+
+int ZsyncRollingChecksum::submitSourceFile(FILE *f) {
     /* Track progress */
+    int got_blocks = 0;
+    off_t in = 0;
+    int in_mb = 0;
+
+    /* Allocate buffer of 16 blocks */
+    register size_t bufsize = _nBlockSize * 16;
+    unsigned char *buf = (unsigned char*)malloc(bufsize + _nContext);
+    if (!buf)
+        return 0;
+
+    /* Build checksum hash tables ready to analyse the blocks we find */
+    if (!_pRsumHash)
+        if (!buildHash()) {
+            free(buf);
+            return 0;
+        }
+
+    while (!feof(f)) {
+        size_t len;
+        off_t start_in = in;
+
+        /* If this is the start, fill the buffer for the first time */
+        if (!in) {
+            len = fread(buf, 1, bufsize, f);
+            in += len;
+        }
+
+        /* Else, move the last context bytes from the end of the buffer to the
+         * start, and refill the rest of the buffer from the stream. */
+        else {
+            memcpy(buf, buf + (bufsize - _nContext), _nContext);
+            in += bufsize - _nContext;
+            len = _nContext + fread(buf + _nContext, 1, bufsize - _nContext, f);
+        }
+
+        /* If either fread above failed, or EOFed */
+        if (ferror(f)) {
+            perror("fread");
+            free(buf);
+            return got_blocks;
+        }
+        if (feof(f)) {          /* 0 pad to complete a block */
+            memset(buf + len, 0, _nContext);
+            len += _nContext;
+        }
+
+        /* Process the data in the buffer, and report progress */
+        got_blocks += submitSourceData(buf, len, start_in);
+    }
+    free(buf);
+    return got_blocks;
+}
+
+
+/* int ZsyncRollingChecksum::submitSourceFile(QFile *file)
+ {
     int got_blocks = 0;
     off_t in = 0;
     off_t size = file->size();
 
     /* Allocate buffer of 16 blocks */
-    register size_t bufsize = _nBlockSize * 16;
+/*    register size_t bufsize = _nBlockSize * 16;
     unsigned char *buf = (unsigned char*)calloc(bufsize + _nContext, 1);
     if (!buf) {
         return 0;
     }
 
     /* Build checksum hash tables ready to analyse the blocks we find */
-    if (!_pRsumHash)
+/*    if (!_pRsumHash)
         if (!buildHash()) {
             free(buf);
             return 0;
@@ -366,14 +414,14 @@ int ZsyncRollingChecksum::submitSourceFile(QFile *file)
         off_t start_in = in;
 
         /* If this is the start, fill the buffer for the first time */
-        if (!in) {
+ /*       if (!in) {
             len = file->read((char*)buf, bufsize);
             in += len;
         }
 
         /* Else, move the last context bytes from the end of the buffer to the
          * start, and refill the rest of the buffer from the stream. */
-        else {
+/*        else {
             memcpy(buf, buf + (bufsize - _nContext), _nContext);
             in += bufsize - _nContext;
             len = _nContext + file->read((char*)(buf + _nContext), bufsize - _nContext);
@@ -385,23 +433,23 @@ int ZsyncRollingChecksum::submitSourceFile(QFile *file)
             return got_blocks;
         }
         */
-        if (file->atEnd()) {          /* 0 pad to complete a block */
-            memset(buf + len, 0, _nContext);
+/*        if (file->atEnd()) {          /* 0 pad to complete a block */
+/*            memset(buf + len, 0, _nContext);
             len += _nContext;
         }
 
         /* Process the data in the buffer, and report progress */
-        got_blocks += submitSourceData(buf, len, start_in);
+//         got_blocks += submitSourceData(buf, len, start_in);
         /*
          if (progress && in_mb != in / 1000000) {
              do_progress(p, 100.0 * in / size, in);
              in_mb = in / 1000000;
          }
          */
-    }
+/*    }
     free(buf);
     return got_blocks;
-}
+}*/
 
 
 unsigned ZsyncRollingChecksum::calcRHash(const hash_entry *const e)
@@ -608,7 +656,6 @@ int ZsyncRollingChecksum::checkChecksumOnHashChain(const hash_entry *e, const un
         {
             int ok = 1;
             signed int check_md4 = 0;
-
             /* This block at least must match; we must match at least
              * z->seq_matches-1 others, which could either be trailing stuff,
              * or these could be preceding blocks that we have verified
@@ -617,7 +664,7 @@ int ZsyncRollingChecksum::checkChecksumOnHashChain(const hash_entry *e, const un
                 /* We only calculate the MD4 once we need it; but need not do so twice */
                 if (check_md4 > done_md4) {
                     calculateStrongChecksum(&md4sum[check_md4][0],
-                                            data + _nBlockSize * check_md4,
+                                            data + (_nBlockSize * check_md4),
                                             _nBlockSize);
                     done_md4 = check_md4;
                     _nCheckSummed++;
@@ -627,11 +674,11 @@ int ZsyncRollingChecksum::checkChecksumOnHashChain(const hash_entry *e, const un
                 if (memcmp(&md4sum[check_md4],
                            e[check_md4].checksum,
                            _nChecksumBytes)){
-                    ok = 0;
+                ok = 0;
                 }
-
+                
                 check_md4++;
-            } while (ok && !onlyone && check_md4 < _nSeqMatches);
+            } while (ok && !onlyone && check_md4 < _nSeqMatches);       
 
             if (ok) {
                 int num_write_blocks;

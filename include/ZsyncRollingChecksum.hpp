@@ -11,6 +11,7 @@ class ZsyncRollingChecksum : public QObject
 {
     Q_OBJECT
 public:
+    qint64 call_count = 0;
     explicit ZsyncRollingChecksum(QObject *parent = nullptr);
     void setConfiguration(int nblocks,
                           size_t blocksize,
@@ -22,7 +23,10 @@ public:
     ~ZsyncRollingChecksum();
 
 public Q_SLOTS:
-    int submitSourceFile(QFile *file);
+    quint64 getStrongHit(){
+	    return _nStrongHit;
+    }
+    int submitSourceFile(/*QFile*/FILE *file);
     QVector<QPair<zs_blockid, zs_blockid>> neededBlockRanges(zs_blockid from, zs_blockid to);
     void addTargetBlock(zs_blockid b, rsum r, void *checksum);
 private Q_SLOTS:
@@ -57,21 +61,21 @@ private:
     int _nSeqMatches = 0;
     unsigned int _nContext = 0; /* precalculated blocksize * seq_matches */
 
-    int _nSkip;
-    const hash_entry *_pRover = nullptr;
+    int _nSkip = 0;
+    const hash_entry *_pRover = NULL;
 
-    const hash_entry *_pNextMatch = nullptr;
+    const hash_entry *_pNextMatch = NULL;
     zs_blockid _nNextKnown = 0;
 
     unsigned int _nHashMask;
     QSharedPointer<hash_entry> _pBlockHashes;
     hash_entry **_pRsumHash = nullptr;
 
-    unsigned char *_cBitHash = nullptr;
+    unsigned char *_cBitHash = NULL;
     unsigned int _nBitHashMask = 0;
 
     int _nNumRanges = 0;
-    QSharedPointer<zs_blockid> _pRanges;
+    QSharedPointer<zs_blockid> _pRanges = NULL;
     int _nGotBlocks = 0;
 
     QSharedPointer<QFile> _pTargetFile;

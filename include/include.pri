@@ -30,5 +30,6 @@
 
 INCLUDEPATH = $$system(pwd) $$system(pwd)/..
 HEADERS += $$system(pwd)/AppImageUpdaterBridge.hpp \
-	   $$system(pwd)/ZsyncInternalStructures.hpp \
-	   $$system(pwd)/ZsyncRollingChecksum.hpp 
+	   $$system(pwd)/rcksum.hpp
+	   # $$system(pwd)/ZsyncInternalStructures.hpp \
+	   # $$system(pwd)/ZsyncRollingChecksum.hpp 
