@@ -12,8 +12,8 @@ class ZsyncRollingChecksum : public QObject
     Q_OBJECT
 public:
     explicit ZsyncRollingChecksum(QObject *parent = nullptr);
-    void setConfiguration(quint64 nblocks,
-                          quint64 blocksize,
+    void setConfiguration(int nblocks,
+                          size_t blocksize,
                           unsigned int rsum_bytes,
                           unsigned int checksum_bytes,
                           unsigned int seq_matches,
@@ -22,31 +22,32 @@ public:
     ~ZsyncRollingChecksum();
 
 public Q_SLOTS:
-    quint64 submitSourceFile(QFile *file);
+    int submitSourceFile(QFile *file);
     QVector<QPair<zs_blockid, zs_blockid>> neededBlockRanges(zs_blockid from, zs_blockid to);
     void addTargetBlock(zs_blockid b, rsum r, void *checksum);
 private Q_SLOTS:
-    rsum __attribute__((pure)) calculateRollingChecksum(const unsigned char *data, quint64 len);
-    void calculateStrongChecksum(unsigned char *buffer, const unsigned char *data, quint64 len);
+    rsum __attribute__((pure)) calculateRollingChecksum(const unsigned char *data, size_t len);
+    void calculateStrongChecksum(unsigned char *buffer, const unsigned char *data, size_t len);
     void writeBlocks(const unsigned char *data,  zs_blockid bfrom, zs_blockid bto);
-    qint64 readKnownData(unsigned char *buffer, off_t offset, quint64 len);
+    ssize_t readKnownData(unsigned char *buffer, off_t offset, size_t len);
     void removeBlockFromHash(zs_blockid id);
     void addToRanges(zs_blockid id);
     zs_blockid nextKnownBlock(zs_blockid x);
-    quint64 calcRHash(const hash_entry *const e);
-    qint64 rangeBeforeBlock(zs_blockid x);
-    quint64 checkChecksumOnHashChain(const hash_entry *e, const unsigned char *data, int onlyone);
+    unsigned calcRHash(const hash_entry *const e);
+    int rangeBeforeBlock(zs_blockid x);
+    int checkChecksumOnHashChain(const hash_entry *e, const unsigned char *data, int onlyone);
     int buildHash(void);
 
-    qint64 submitBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto);
-    quint64 submitSourceData(unsigned char *data, quint64 len, off_t offset);
+    int submitBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto);
+    int submitSourceData(unsigned char *data, size_t len, off_t offset);
 
     zs_blockid getHashEntryBlockID(const hash_entry *e);
 private:
     QMutex _pMutex;
+    QSharedPointer<QCryptographicHash> StrongHasher = nullptr;
     rsum _pCurrentSums[2] = { {0, 0}, {0, 0} };    /* current rsums */
     zs_blockid _nBlocks = 0; /* number of blocks in the target file */
-    quint64 _nBlockSize = 0; /* bytes per block */
+    size_t _nBlockSize = 0; /* bytes per block */
     int _nBlockShift = 0; /* log2(blocksize) */
     unsigned short _nRsumMaskA = 0;
     unsigned short _nRsumBits = 0;
@@ -54,9 +55,9 @@ private:
     unsigned _nHashFuncShift = 0; /* config for the hash function */
     unsigned int _nChecksumBytes = 0; /* length of the MD4 Checksum available */
     int _nSeqMatches = 0;
-    quint64 _nContext = 0; /* precalculated blocksize * seq_matches */
+    unsigned int _nContext = 0; /* precalculated blocksize * seq_matches */
 
-    qint64 _nSkip;
+    int _nSkip;
     const hash_entry *_pRover = nullptr;
 
     const hash_entry *_pNextMatch = nullptr;
@@ -69,9 +70,9 @@ private:
     unsigned char *_cBitHash = nullptr;
     unsigned int _nBitHashMask = 0;
 
-    qint64 _nNumRanges = 0;
+    int _nNumRanges = 0;
     QSharedPointer<zs_blockid> _pRanges;
-    quint64 _nGotBlocks = 0;
+    int _nGotBlocks = 0;
 
     QSharedPointer<QFile> _pTargetFile;
     /* Stats */

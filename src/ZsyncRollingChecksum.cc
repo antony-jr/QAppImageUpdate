@@ -29,6 +29,7 @@ static void freeRanges(zs_blockid *ranges)
 ZsyncRollingChecksum::ZsyncRollingChecksum(QObject *parent)
     : QObject(parent)
 {
+    StrongHasher = QSharedPointer<QCryptographicHash>(new QCryptographicHash(QCryptographicHash::Md4));
     return;
 }
 
@@ -38,8 +39,8 @@ ZsyncRollingChecksum::~ZsyncRollingChecksum()
     return;
 }
 
-void ZsyncRollingChecksum::setConfiguration(quint64 nblocks,
-        quint64 blocksize,
+void ZsyncRollingChecksum::setConfiguration(int nblocks,
+        size_t blocksize,
         unsigned int rsum_bytes,
         unsigned int checksum_bytes,
         unsigned int seq_matches,
@@ -69,7 +70,7 @@ void ZsyncRollingChecksum::setConfiguration(quint64 nblocks,
             return;
         } else {
             /* Calculate bit-shift for blocksize */
-            for (quint64 i = 0; i < sizeof(quint64) * 8; i++) {
+            for (int i = 0; i < 32; i++) {
                 if (_nBlockSize == (1u << i)) {
                     _nBlockShift = i;
                     break;
@@ -91,7 +92,7 @@ void ZsyncRollingChecksum::setConfiguration(quint64 nblocks,
 }
 
 
-rsum __attribute__((pure)) ZsyncRollingChecksum::calculateRollingChecksum(const unsigned char *data, quint64 len)
+rsum __attribute__((pure)) ZsyncRollingChecksum::calculateRollingChecksum(const unsigned char *data, size_t len)
 {
     register unsigned short a = 0;
     register unsigned short b = 0;
@@ -106,11 +107,11 @@ rsum __attribute__((pure)) ZsyncRollingChecksum::calculateRollingChecksum(const 
     }
 }
 
-void ZsyncRollingChecksum::calculateStrongChecksum(unsigned char *buffer, const unsigned char *data, quint64 len)
+void ZsyncRollingChecksum::calculateStrongChecksum(unsigned char *buffer, const unsigned char *data, size_t len)
 {
-    QCryptographicHash Hasher(QCryptographicHash::Md4);
-    Hasher.addData((const char*)data, len);
-    qstrcpy((char*)buffer, Hasher.result().constData());
+    StrongHasher->reset();
+    StrongHasher->addData((const char*)data, len);
+    qstrcpy((char*)buffer, StrongHasher->result().constData());
     return;
 }
 
@@ -156,9 +157,9 @@ void ZsyncRollingChecksum::addTargetBlock(zs_blockid b, rsum r, void *checksum) 
     }
 }
 
-qint64 ZsyncRollingChecksum::readKnownData(unsigned char *buffer, off_t offset, quint64 len)
+ssize_t ZsyncRollingChecksum::readKnownData(unsigned char *buffer, off_t offset, size_t len)
 {
-    qint64 ret = -1;
+    ssize_t ret = 0;
     if(_pTargetFile != nullptr) {
         _pTargetFile->seek(offset);
         ret = _pTargetFile->read((char*)buffer, len);
@@ -167,7 +168,7 @@ qint64 ZsyncRollingChecksum::readKnownData(unsigned char *buffer, off_t offset, 
 }
 
 
-qint64 ZsyncRollingChecksum::submitBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
+int ZsyncRollingChecksum::submitBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
     unsigned char md4sum[STRONG_CHECKSUM_SIZE];
 
@@ -181,8 +182,9 @@ qint64 ZsyncRollingChecksum::submitBlocks(const unsigned char *data, zs_blockid 
     for (zs_blockid x = bfrom; x <= bto; x++) {
         calculateStrongChecksum(&md4sum[0], data + ((x - bfrom) << _nBlockShift), _nBlockSize);
         if (memcmp(&md4sum, &((_pBlockHashes.data())[x].checksum[0]), _nChecksumBytes)) {
-            if (x > bfrom)      /* Write any good blocks we did get */
+            if (x > bfrom){      /* Write any good blocks we did get */
                 writeBlocks(data, bfrom, x - 1);
+            }
             return -1;
         }
     }
@@ -192,12 +194,12 @@ qint64 ZsyncRollingChecksum::submitBlocks(const unsigned char *data, zs_blockid 
     return 0;
 }
 
-quint64 ZsyncRollingChecksum::submitSourceData(unsigned char *data, quint64 len, off_t offset)
+int ZsyncRollingChecksum::submitSourceData(unsigned char *data, size_t len, off_t offset)
 {
     /* The window in data[] currently being considered is [x, x+bs] */
-    quint64 x = 0;
-    quint64 got_blocks = 0;  /* Count the number of useful data blocks found. */
-    quint64 x_limit = len - _nContext;
+    int x = 0;
+    int got_blocks = 0;  /* Count the number of useful data blocks found. */
+    register const int x_limit = len - _nContext;
 
     if (offset) {
         x = _nSkip;
@@ -207,8 +209,9 @@ quint64 ZsyncRollingChecksum::submitSourceData(unsigned char *data, quint64 len,
 
     if (x || !offset) {
         _pCurrentSums[0] = calculateRollingChecksum(data + x, _nBlockSize);
-        if (_nSeqMatches > 1)
+        if (_nSeqMatches > 1){
             _pCurrentSums[1] = calculateRollingChecksum(data + x + _nBlockSize, _nBlockSize);
+        }
     }
     _nSkip = 0;
 
@@ -230,7 +233,7 @@ quint64 ZsyncRollingChecksum::submitSourceData(unsigned char *data, quint64 len,
          * sequential matches, then test this block against the block in
          * the target immediately after our previous hit. */
         if (_pNextMatch && _nSeqMatches > 1) {
-            quint64 thismatch;
+            int thismatch;
             if (0 != (thismatch = checkChecksumOnHashChain(_pNextMatch, data + x, 1))) {
                 blocks_matched = 1;
                 got_blocks += thismatch;
@@ -251,7 +254,7 @@ quint64 ZsyncRollingChecksum::submitSourceData(unsigned char *data, quint64 len,
 
                 /* Do a hash table lookup - first in the bithash (fast negative
                  * check) and then in the rsum hash */
-                quint64 hash = _pCurrentSums[0].b;
+                unsigned hash = _pCurrentSums[0].b;
                 hash ^= ((_nSeqMatches > 1) ? _pCurrentSums[1].b
                          : _pCurrentSums[0].a & _nRsumMaskA) << _nHashFuncShift;
 
@@ -337,15 +340,15 @@ void ZsyncRollingChecksum::removeBlockFromHash(zs_blockid id)
     }
 }
 
-quint64 ZsyncRollingChecksum::submitSourceFile(QFile *file)
+int ZsyncRollingChecksum::submitSourceFile(QFile *file)
 {
     /* Track progress */
-    quint64 got_blocks = 0;
+    int got_blocks = 0;
     off_t in = 0;
     off_t size = file->size();
 
     /* Allocate buffer of 16 blocks */
-    quint64 bufsize = _nBlockSize * 16;
+    register size_t bufsize = _nBlockSize * 16;
     unsigned char *buf = (unsigned char*)calloc(bufsize + _nContext, 1);
     if (!buf) {
         return 0;
@@ -359,8 +362,7 @@ quint64 ZsyncRollingChecksum::submitSourceFile(QFile *file)
         }
 
     while (!file->atEnd()) {
-        qint64 len;
-        qint64 len_buf;
+        size_t len;
         off_t start_in = in;
 
         /* If this is the start, fill the buffer for the first time */
@@ -374,18 +376,15 @@ quint64 ZsyncRollingChecksum::submitSourceFile(QFile *file)
         else {
             memcpy(buf, buf + (bufsize - _nContext), _nContext);
             in += bufsize - _nContext;
-            len_buf = file->read((char*)(buf + _nContext), bufsize - _nContext);
-            len = _nContext + len_buf;
+            len = _nContext + file->read((char*)(buf + _nContext), bufsize - _nContext);
         }
 
-        /* If either read above failed, or EOFed */
+        /* If either read above failed, or EOFed 
         if (len_buf == -1) {
-            /*
-             * read error.
-             */
             free(buf);
             return got_blocks;
         }
+        */
         if (file->atEnd()) {          /* 0 pad to complete a block */
             memset(buf + len, 0, _nContext);
             len += _nContext;
@@ -405,22 +404,22 @@ quint64 ZsyncRollingChecksum::submitSourceFile(QFile *file)
 }
 
 
-quint64 ZsyncRollingChecksum::calcRHash(const hash_entry *const e)
+unsigned ZsyncRollingChecksum::calcRHash(const hash_entry *const e)
 {
-    quint64 h = e[0].r.b;
+    unsigned h = e[0].r.b;
     h ^= (_nSeqMatches > 1) ? e[1].r.b : (e[0].r.a & _nRsumMaskA) << _nHashFuncShift;
     return h;
 }
 
-qint64 ZsyncRollingChecksum::rangeBeforeBlock(zs_blockid x)
+int ZsyncRollingChecksum::rangeBeforeBlock(zs_blockid x)
 {
     /* Lowest number and highest number block that it could be inside (0 based) */
-    qint64 min = 0, max = _nNumRanges-1;
+    register int min = 0, max = _nNumRanges-1;
 
     /* By bisection */
     for (; min<=max;) {
         /* Range number to compare against */
-        qint64 r = (max+min)/2;
+        register int r = (max+min)/2;
 
         if (x > (_pRanges.data())[2*r+1]) {
             min = r+1;  /* After range r */
@@ -492,7 +491,7 @@ void ZsyncRollingChecksum::addToRanges(zs_blockid x)
 
 zs_blockid ZsyncRollingChecksum::nextKnownBlock(zs_blockid x)
 {
-    qint64 r = rangeBeforeBlock(x);
+    int r = rangeBeforeBlock(x);
     if (r == -1)
         return x;
     if (r == _nNumRanges) {
@@ -556,7 +555,7 @@ int ZsyncRollingChecksum::buildHash(void)
         hash_entry *e = (_pBlockHashes.data()) + (--id);
 
         /* Prepend to linked list for this hash entry */
-        quint64 h = calcRHash(e);
+        unsigned h = calcRHash(e);
         e->next = _pRsumHash[h & _nHashMask];
         _pRsumHash[h & _nHashMask] = e;
 
@@ -566,11 +565,11 @@ int ZsyncRollingChecksum::buildHash(void)
     return 1;
 }
 
-quint64 ZsyncRollingChecksum::checkChecksumOnHashChain(const hash_entry *e, const unsigned char *data, int onlyone)
+int ZsyncRollingChecksum::checkChecksumOnHashChain(const hash_entry *e, const unsigned char *data, int onlyone)
 {
     unsigned char md4sum[2][STRONG_CHECKSUM_SIZE];
     signed int done_md4 = -1;
-    quint64 got_blocks = 0;
+    int got_blocks = 0;
     register rsum r = _pCurrentSums[0];
 
     /* This is a hint to the caller that they should try matching the next
@@ -627,14 +626,15 @@ quint64 ZsyncRollingChecksum::checkChecksumOnHashChain(const hash_entry *e, cons
                 /* Now check the strong checksum for this block */
                 if (memcmp(&md4sum[check_md4],
                            e[check_md4].checksum,
-                           _nChecksumBytes))
+                           _nChecksumBytes)){
                     ok = 0;
+                }
 
                 check_md4++;
             } while (ok && !onlyone && check_md4 < _nSeqMatches);
 
             if (ok) {
-                quint64 num_write_blocks;
+                int num_write_blocks;
 
                 /* Find the next block that we already have data for. If this
                  * is part of a run of matches then we have this stored already
