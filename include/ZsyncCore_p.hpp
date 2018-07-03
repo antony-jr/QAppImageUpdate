@@ -1,3 +1,5 @@
+#ifndef ZSYNC_CORE_PRIVATE_INCLUDED
+#define ZSYNC_CORE_PRIVATE_INCLUDED
 #include <QtCore>
 
 namespace AppImageUpdaterBridge_p { 
@@ -5,23 +7,23 @@ static constexpr unsigned short CHECKSUM_SIZE = 16;
 static constexpr unsigned short BITHASHBITS = 3;
 typedef int zs_blockid;
 
+struct rsum {
+	unsigned short	a;
+	unsigned short	b;
+} __attribute__((packed));
+
 struct hash_entry {
     struct hash_entry *next;    /* next entry with the same rsum */
     struct rsum r;
     unsigned char checksum[CHECKSUM_SIZE];
 };
 
-struct rsum {
-	unsigned short	a;
-	unsigned short	b;
-} __attribute__((packed));
-
 class ZsyncCoreWorker : public QObject {
 	Q_OBJECT
 public:
-    explicit ZsyncCoreWorker(zs_blockid , size_t , int , int , int );
+    explicit ZsyncCoreWorker(zs_blockid , size_t , int , int , int , QObject *parent = nullptr );
     
-    char* filename(void);
+    char* get_filename(void);
     int filehandle(void);
     void add_target_block(zs_blockid , rsum , void* );
     int submit_blocks(const unsigned char* , zs_blockid , zs_blockid );
@@ -29,7 +31,7 @@ public:
     int submit_source_file(FILE*);
     int read_known_data(unsigned char* , off_t , size_t );
     zs_blockid* needed_block_ranges(int* , zs_blockid , zs_blockid );
-    int rcksum_blocks_todo(void);
+    int blocks_todo(void);
     
     ~ZsyncCoreWorker();
 private Q_SLOTS:
@@ -37,6 +39,7 @@ private Q_SLOTS:
     void write_blocks(const unsigned char *, zs_blockid , zs_blockid);
     zs_blockid get_HE_blockid(const struct hash_entry *);
     void add_to_ranges(zs_blockid);
+    int range_before_block(zs_blockid);
     int already_got_block(zs_blockid);
     zs_blockid next_known_block(zs_blockid);
     unsigned calc_rhash(const struct hash_entry *const);
@@ -90,3 +93,4 @@ private:
 
 };
 }
+#endif // ZSYNC_CORE_PRIVATE_INCLUDED

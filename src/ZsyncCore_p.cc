@@ -132,7 +132,7 @@ ZsyncCoreWorker::~ZsyncCoreWorker()
  * Returns temporary filename to caller as malloced string.
  * Ownership of the file passes to the caller - the function returns NULL if
  * called again, and it is up to the caller to deal with the file. */
-char *ZsyncCoreWorker::filename(void) {
+char *ZsyncCoreWorker::get_filename(void) {
     char *p = filename;
     filename = NULL;
     return p;
@@ -189,7 +189,7 @@ int ZsyncCoreWorker::submit_blocks(const unsigned char *data, zs_blockid bfrom, 
 
     /* Build checksum hash tables if we don't have them yet */
     if (!rsum_hash)
-        if (!build_hash(z))
+        if (!build_hash())
             return -1;
 
     /* Check each block */
@@ -198,13 +198,13 @@ int ZsyncCoreWorker::submit_blocks(const unsigned char *data, zs_blockid bfrom, 
                              blocksize);
         if (memcmp(&md4sum, &(blockhashes[x].checksum[0]), checksum_bytes)) {
             if (x > bfrom)      /* Write any good blocks we did get */
-                write_blocks(z, data, bfrom, x - 1);
+                write_blocks( data, bfrom, x - 1);
             return -1;
         }
     }
 
     /* All blocks are valid; write them and update our state */
-    write_blocks(z, data, bfrom, bto);
+    write_blocks( data, bfrom, bto);
     return 0;
 }
 
@@ -223,7 +223,7 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
     unsigned char md4sum[2][CHECKSUM_SIZE];
     signed int done_md4 = -1;
     int got_blocks = 0;
-    register struct rsum r = r[0];
+    register rsum rs = r[0];
 
     /* This is a hint to the caller that they should try matching the next
      * block against a particular hash entry (because at least seq_matches
@@ -244,11 +244,11 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
         /* Check weak checksum first */
 
         stats.hashhit++;
-        if (e->r.a != (r.a & rsum_a_mask) || e->r.b != r.b) {
+        if (e->r.a != (rs.a & rsum_a_mask) || e->r.b != rs.b) {
             continue;
         }
 
-        id = get_HE_blockid(z, e);
+        id = get_HE_blockid( e);
 
         if (!onlyone && seq_matches > 1
             && (blockhashes[id + 1].r.a != (r[1].a & rsum_a_mask)
@@ -294,7 +294,7 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
                 /* Find the next block that we already have data for. If this
                  * is part of a run of matches then we have this stored already
                  * as ->next_known. */
-                zs_blockid next_known = onlyone ? next_known : next_known_block(z, id);
+                zs_blockid next_known = onlyone ? next_known : next_known_block( id);
 
                 stats.stronghit += check_md4;
 
@@ -313,7 +313,7 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
                 }
 
                 /* Write out the matched blocks that we don't yet know */
-                write_blocks(z, data, id, id + num_write_blocks - 1);
+                write_blocks( data, id, id + num_write_blocks - 1);
                 got_blocks += num_write_blocks;
             }
         }
@@ -392,7 +392,7 @@ int ZsyncCoreWorker::submit_source_data(unsigned char *data,size_t len, off_t of
              * sequential matches, then test this block against the block in
              * the target immediately after our previous hit. */
             if (next_match && seq_matches > 1) {
-                if (0 != (thismatch = check_checksums_on_hash_chain(z, next_match, data + x, 1))) {
+                if (0 != (thismatch = check_checksums_on_hash_chain( next_match, data + x, 1))) {
                     blocks_matched = 1;
                 }
             }
@@ -409,7 +409,7 @@ int ZsyncCoreWorker::submit_source_data(unsigned char *data,size_t len, off_t of
 
                     /* Okay, we have a hash hit. Follow the hash chain and
                      * check our block against all the entries. */
-                    thismatch = check_checksums_on_hash_chain(z, e, data + x, 0);
+                    thismatch = check_checksums_on_hash_chain( e, data + x, 0);
                     if (thismatch)
                         blocks_matched = seq_matches;
                 }
@@ -466,7 +466,6 @@ int ZsyncCoreWorker::submit_source_file( FILE * f) {
     /* Track progress */
     int got_blocks = 0;
     off_t in = 0;
-    int in_mb = 0;
 
     /* Allocate buffer of 16 blocks */
     register int bufsize = blocksize * 16;
@@ -476,7 +475,7 @@ int ZsyncCoreWorker::submit_source_file( FILE * f) {
 
     /* Build checksum hash tables ready to analyse the blocks we find */
     if (!rsum_hash)
-        if (!build_hash(z)) {
+        if (!build_hash()) {
             free(buf);
             return 0;
         }
@@ -511,7 +510,7 @@ int ZsyncCoreWorker::submit_source_file( FILE * f) {
         }
 
         /* Process the data in the buffer, and report progress */
-        got_blocks += submit_source_data(z, buf, len, start_in);
+        got_blocks += submit_source_data( buf, len, start_in);
     }
     free(buf);
     return got_blocks;
@@ -520,7 +519,7 @@ int ZsyncCoreWorker::submit_source_file( FILE * f) {
 
 /* ZsyncCoreWorker::needed_block_ranges
  * Return the block ranges needed to complete the target file */
-zs_blockid *ZsyncCoreWorker::needed_block_ranges(void int *num, zs_blockid from, zs_blockid to) {
+zs_blockid *ZsyncCoreWorker::needed_block_ranges(int *num, zs_blockid from, zs_blockid to) {
     int i, n;
     int alloc_n = 100;
     zs_blockid *r = (zs_blockid*)malloc(2 * alloc_n * sizeof(zs_blockid));
@@ -633,7 +632,7 @@ int ZsyncCoreWorker::build_hash(void) {
          hash_entry *e = blockhashes + (--id);
 
         /* Prepend to linked list for this hash entry */
-        unsigned h = calc_rhash(z, e);
+        unsigned h = calc_rhash( e);
         e->next = rsum_hash[h & hashmask];
         rsum_hash[h & hashmask] = e;
 
@@ -650,7 +649,7 @@ int ZsyncCoreWorker::build_hash(void) {
 void ZsyncCoreWorker::remove_block_from_hash(zs_blockid id) {
      hash_entry *t = &(blockhashes[id]);
 
-     hash_entry **p = &(rsum_hash[calc_rhash(z, t) & hashmask]);
+     hash_entry **p = &(rsum_hash[calc_rhash( t) & hashmask]);
 
     while (*p != NULL) {
         if (*p == t) {
@@ -702,7 +701,7 @@ int ZsyncCoreWorker::range_before_block(zs_blockid x) {
  * Mark the given blockid as known, updating the stored known ranges
  * appropriately */
 void ZsyncCoreWorker::add_to_ranges(zs_blockid x) {
-    int r = range_before_block(rs, x);
+    int r = range_before_block(x);
 
     if (r == -1) {
         /* Already have this block */
@@ -748,7 +747,7 @@ void ZsyncCoreWorker::add_to_ranges(zs_blockid x) {
 /* already_got_block
  * Return true iff blockid x of the target file is already known */
 int ZsyncCoreWorker::already_got_block(zs_blockid x) {
-    return (range_before_block(rs, x) == -1);
+    return (range_before_block(x) == -1);
 }
 
 /* next_blockid = next_known_block(rs, blockid)
@@ -759,7 +758,7 @@ int ZsyncCoreWorker::already_got_block(zs_blockid x) {
  * the end of the file).
  */
 zs_blockid ZsyncCoreWorker::next_known_block(zs_blockid x) {
-    int r = range_before_block(rs, x);
+    int r = range_before_block(x);
     if (r == -1)
         return x;
     if (r == numranges) {
@@ -822,8 +821,8 @@ void ZsyncCoreWorker::write_blocks(const unsigned char *data, zs_blockid bfrom, 
          * have received and stored the data for */
         int id;
         for (id = bfrom; id <= bto; id++) {
-            remove_block_from_hash(z, id);
-            add_to_ranges(z, id);
+            remove_block_from_hash( id);
+            add_to_ranges( id);
         }
     }
 }

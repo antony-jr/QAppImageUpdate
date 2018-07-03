@@ -1,6 +1,7 @@
-#include <QtCore>
-#include <rcksum.hpp>
+#include <ZsyncCore_p.hpp>
 #include <arpa/inet.h>
+
+using namespace AppImageUpdaterBridge_p;
 
 int main(int ac, char **av)
 {
@@ -59,8 +60,7 @@ int main(int ac, char **av)
     qInfo().noquote() << "blocks = " << blocks << " , blocksize = " << blocksize << " , rsum_bytes = " << rsum_bytes
                       << " , checksum_bytes = " << checksum_bytes << " , seq_matches = " << seq_matches;
 
-    auto rstate = rcksum_init(blocks , blocksize , rsum_bytes , checksum_bytes , seq_matches);
-
+    ZsyncCoreWorker rstate(blocks , blocksize , rsum_bytes , checksum_bytes , seq_matches);
     /* Now read in and store the checksums */
 
     zs_blockid id = 0;
@@ -81,13 +81,16 @@ int main(int ac, char **av)
         /* Convert to host endian and store */
         r.a = ntohs(r.a);
         r.b = ntohs(r.b);
-	rcksum_add_target_block(rstate , id , r , checksum);
+	rstate.add_target_block(id , r , checksum);
     }
 
     FILE *seed = fopen(av[0] , "r");
-    qInfo() << "GOT BLOCKS:: " << rcksum_submit_source_file(rstate , seed , 0);
+    qInfo() << "GOT BLOCKS:: " << rstate.submit_source_file(seed);
+    char *rfilename = rstate.get_filename();
+    int fd = rstate.filehandle();
 
-    rcksum_end(rstate);
+    qInfo() << "FILE WRITTEN AT:: " << rfilename;
+
 
     return 0;
 }
