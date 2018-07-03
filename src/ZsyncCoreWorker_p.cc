@@ -1,4 +1,4 @@
-#include <ZsyncCore_p.hpp>
+#include <ZsyncCoreWorker_p.hpp>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -506,6 +506,7 @@ int ZsyncCoreWorker::submit_source_file(QFile *file) {
         /* Process the data in the buffer, and report progress */
         got_blocks += submit_source_data( buf, len, start_in);
     }
+    file->close();
     free(buf);
     return got_blocks;
 }

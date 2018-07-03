@@ -1,5 +1,5 @@
-#ifndef ZSYNC_CORE_PRIVATE_INCLUDED
-#define ZSYNC_CORE_PRIVATE_INCLUDED
+#ifndef ZSYNC_CORE_WORKER_PRIVATE_INCLUDED
+#define ZSYNC_CORE_WORKER_PRIVATE_INCLUDED
 #include <QtCore>
 
 namespace AppImageUpdaterBridge_p { 
@@ -93,4 +93,4 @@ private:
 
 };
 }
-#endif // ZSYNC_CORE_PRIVATE_INCLUDED
+#endif // ZSYNC_CORE_WORKER_PRIVATE_INCLUDED

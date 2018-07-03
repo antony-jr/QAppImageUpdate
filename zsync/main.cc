@@ -1,4 +1,4 @@
-#include <ZsyncCore_p.hpp>
+#include <ZsyncCoreWorker_p.hpp>
 #include <arpa/inet.h>
 #include <unistd.h>
 

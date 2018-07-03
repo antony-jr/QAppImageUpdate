@@ -30,4 +30,4 @@
 
 INCLUDEPATH = $$system(pwd) $$system(pwd)/..
 HEADERS += $$system(pwd)/AppImageUpdaterBridge.hpp \
-	   $$system(pwd)/ZsyncCore_p.hpp
+	   $$system(pwd)/ZsyncCoreWorker_p.hpp
