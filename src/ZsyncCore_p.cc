@@ -462,7 +462,7 @@ int ZsyncCoreWorker::submit_source_data(unsigned char *data,size_t len, off_t of
  * identify any blocks of data in common with the target file. Blocks found are
  * written to our working target output. Progress reports if progress != 0
  */
-int ZsyncCoreWorker::submit_source_file( FILE * f) {
+int ZsyncCoreWorker::submit_source_file(QFile *file) {
     /* Track progress */
     int got_blocks = 0;
     off_t in = 0;
@@ -480,13 +480,13 @@ int ZsyncCoreWorker::submit_source_file( FILE * f) {
             return 0;
         }
 
-    while (!feof(f)) {
+    while (!file->atEnd()) {
         size_t len;
         off_t start_in = in;
 
         /* If this is the start, fill the buffer for the first time */
         if (!in) {
-            len = fread(buf, 1, bufsize, f);
+            len = file->read((char*)buf, bufsize);
             in += len;
         }
 
@@ -495,16 +495,10 @@ int ZsyncCoreWorker::submit_source_file( FILE * f) {
         else {
             memcpy(buf, buf + (bufsize - context), context);
             in += bufsize - context;
-            len = context + fread(buf + context, 1, bufsize - context, f);
+            len = context + file->read((char*)(buf + context), (bufsize - context));
         }
 
-        /* If either fread above failed, or EOFed */
-        if (ferror(f)) {
-            perror("fread");
-            free(buf);
-            return got_blocks;
-        }
-        if (feof(f)) {          /* 0 pad to complete a block */
+        if (file->atEnd()) {          /* 0 pad to complete a block */
             memset(buf + len, 0, context);
             len += context;
         }

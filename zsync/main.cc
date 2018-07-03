@@ -1,5 +1,6 @@
 #include <ZsyncCore_p.hpp>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 using namespace AppImageUpdaterBridge_p;
 
@@ -15,6 +16,13 @@ int main(int ac, char **av)
         qCritical().noquote() << "Failed to open zsync file.";
         return -1;
     }
+
+    filename.replace(".zsync" , "");
+    QFile seedFile(filename);
+    if(!seedFile.open(QIODevice::ReadOnly)){
+	qCritical().noquote() << "Failed to open seed file.";
+    }
+
     FILE *f = fdopen(zsyncFile.handle(), "r");
     int checksum_bytes = 16, rsum_bytes = 4, seq_matches = 1;
     size_t filesize, blocksize, blocks;
@@ -84,13 +92,11 @@ int main(int ac, char **av)
 	rstate.add_target_block(id , r , checksum);
     }
 
-    FILE *seed = fopen(av[0] , "r");
-    qInfo() << "GOT BLOCKS:: " << rstate.submit_source_file(seed);
+    auto seedsize = seedFile.size();
+    qInfo() << "GOT BLOCKS:: " << rstate.submit_source_file(&seedFile);
     char *rfilename = rstate.get_filename();
     int fd = rstate.filehandle();
-
-    qInfo() << "FILE WRITTEN AT:: " << rfilename;
-
-
+    ftruncate(fd , seedsize);
+    close(fd);
     return 0;
 }

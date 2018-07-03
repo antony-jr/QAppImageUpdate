@@ -28,7 +28,7 @@ public:
     void add_target_block(zs_blockid , rsum , void* );
     int submit_blocks(const unsigned char* , zs_blockid , zs_blockid );
     int submit_source_data(unsigned char* , size_t , off_t );
-    int submit_source_file(FILE*);
+    int submit_source_file(QFile*);
     int read_known_data(unsigned char* , off_t , size_t );
     zs_blockid* needed_block_ranges(int* , zs_blockid , zs_blockid );
     int blocks_todo(void);
