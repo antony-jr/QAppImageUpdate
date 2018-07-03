@@ -5,7 +5,7 @@
 namespace AppImageUpdaterBridge_p { 
 static constexpr unsigned short CHECKSUM_SIZE = 16;
 static constexpr unsigned short BITHASHBITS = 3;
-typedef int zs_blockid;
+typedef qint32 zs_blockid;
 
 struct rsum {
 	unsigned short	a;
