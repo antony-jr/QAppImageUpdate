@@ -30,7 +30,7 @@ public:
     int submit_source_data(unsigned char* , size_t , off_t );
     int submit_source_file(QFile*);
     int read_known_data(unsigned char* , off_t , size_t );
-    zs_blockid* needed_block_ranges(int* , zs_blockid , zs_blockid );
+    QVector<QPair<zs_blockid , zs_blockid>> needed_block_ranges(zs_blockid , zs_blockid);
     int blocks_todo(void);
     
     ~ZsyncCoreWorker();

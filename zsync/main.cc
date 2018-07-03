@@ -65,7 +65,7 @@ int main(int ac, char **av)
     blocks = (filesize + blocksize - 1) / blocksize;
 
 
-    qInfo().noquote() << "blocks = " << blocks << " , blocksize = " << blocksize << " , rsum_bytes = " << rsum_bytes
+    qInfo().noquote() << "INFO:: blocks = " << blocks << " , blocksize = " << blocksize << " , rsum_bytes = " << rsum_bytes
                       << " , checksum_bytes = " << checksum_bytes << " , seq_matches = " << seq_matches;
 
     ZsyncCoreWorker rstate(blocks , blocksize , rsum_bytes , checksum_bytes , seq_matches);
@@ -94,6 +94,7 @@ int main(int ac, char **av)
 
     auto seedsize = seedFile.size();
     qInfo() << "GOT BLOCKS:: " << rstate.submit_source_file(&seedFile);
+    qInfo() << "Required Blocks  :: "<< rstate.needed_block_ranges(0  , blocks);
     char *rfilename = rstate.get_filename();
     int fd = rstate.filehandle();
     ftruncate(fd , seedsize);

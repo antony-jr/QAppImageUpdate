@@ -514,62 +514,50 @@ int ZsyncCoreWorker::submit_source_file(QFile *file) {
 
 /* ZsyncCoreWorker::needed_block_ranges
  * Return the block ranges needed to complete the target file */
-zs_blockid *ZsyncCoreWorker::needed_block_ranges(int *num, zs_blockid from, zs_blockid to) {
+QVector<QPair<zs_blockid , zs_blockid>> ZsyncCoreWorker::needed_block_ranges(zs_blockid from, zs_blockid to) {
     int i, n;
-    int alloc_n = 100;
-    zs_blockid *r = (zs_blockid*)malloc(2 * alloc_n * sizeof(zs_blockid));
-
-    if (!r)
-        return NULL;
+    QVector<QPair<zs_blockid , zs_blockid>> ret_ranges;
 
     if (to >= blocks)
         to = blocks;
-    r[0] = from;
-    r[1] = to;
+
+    ret_ranges.append(qMakePair(from , to));
+    ret_ranges.append(qMakePair(0 , 0));
     n = 1;
     /* Note r[2*n-1] is the last range in our prospective list */
 
     for (i = 0; i < numranges; i++) {
-        if (ranges[2 * i] > r[2 * n - 1])
+        if (ranges[2 * i] > ret_ranges.at(n - 1).second) // (2 * n - 1) -> second.
             continue;
         if (ranges[2 * i + 1] < from)
             continue;
 
         /* Okay, they intersect */
         if (n == 1 && ranges[2 * i] <= from) {       /* Overlaps the start of our window */
-            r[0] = ranges[2 * i + 1] + 1;
+            ret_ranges[0].first = ranges[2 * i + 1] + 1;
         }
         else {
             /* If the last block that we still (which is the last window end -1, due
              * to half-openness) then this range just cuts the end of our window */
-            if (ranges[2 * i + 1] >= r[2 * n - 1] - 1) {
-                r[2 * n - 1] = ranges[2 * i];
+            if (ranges[2 * i + 1] >= ret_ranges.at(n - 1).second - 1) {
+                ret_ranges[n - 1].second = ranges[2 * i];
             }
             else {
                 /* In the middle of our range, split it */
-                r[2 * n] = ranges[2 * i + 1] + 1;
-                r[2 * n + 1] = r[2 * n - 1];
-                r[2 * n - 1] = ranges[2 * i];
+                ret_ranges[n].first = ranges[2 * i + 1] + 1;
+                ret_ranges[n].second = ret_ranges.at(n-1).second;
+                ret_ranges[n-1].second = ranges[2 * i];
                 n++;
-                if (n == alloc_n) {
-                    zs_blockid *r2;
-                    alloc_n += 100;
-                    r2 = (zs_blockid*)realloc(r, 2 * alloc_n * sizeof *r);
-                    if (!r2) {
-                        free(r);
-                        return NULL;
-                    }
-                    r = r2;
-                }
             }
         }
+	ret_ranges.append(qMakePair( 0 , 0 ));
     }
-    r = (zs_blockid*)realloc(r, 2 * n * sizeof *r);
-    if (n == 1 && r[0] >= r[1])
+    if (n == 1 && ret_ranges.at(0).first >= ret_ranges.at(0).second){
         n = 0;
+        ret_ranges.clear();
+    }
 
-    *num = n;
-    return r;
+    return ret_ranges;
 }
 
 /* ZsyncCoreWorker::blocks_todo
