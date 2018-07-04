@@ -21,15 +21,15 @@ struct hash_entry {
 class ZsyncCoreWorker : public QObject {
 	Q_OBJECT
 public:
-    explicit ZsyncCoreWorker(zs_blockid , size_t , int , int , int , QObject *parent = nullptr );
+    explicit ZsyncCoreWorker(zs_blockid , size_t , int , int , int , size_t ,QObject *parent = nullptr );
     
-    char* get_filename(void);
+    QString get_filename(void);
     int filehandle(void);
     void add_target_block(zs_blockid , rsum , void* );
     int submit_blocks(const unsigned char* , zs_blockid , zs_blockid );
     int submit_source_data(unsigned char* , size_t , off_t );
     int submit_source_file(QFile*);
-    int read_known_data(unsigned char* , off_t , size_t );
+    // int read_known_data(unsigned char* , off_t , size_t );
     QVector<QPair<zs_blockid , zs_blockid>> needed_block_ranges(zs_blockid , zs_blockid);
     int blocks_todo(void);
     
@@ -88,9 +88,8 @@ private:
     } stats;
 
     /* Temp file for output */
-    char *filename;
-    int fd;
-
+    QFile *file = nullptr;
+    size_t targetFileSize = 0;
 };
 }
 #endif // ZSYNC_CORE_WORKER_PRIVATE_INCLUDED

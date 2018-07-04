@@ -1,4 +1,5 @@
 #include <ZsyncCoreWorker_p.hpp>
+#include "basic_fetcher.hpp"
 #include <arpa/inet.h>
 #include <unistd.h>
 
@@ -10,6 +11,7 @@ int main(int ac, char **av)
         qInfo().noquote() << "Usage: " << av[0] << " [zsync meta file]";
         return 0;
     }
+    QCoreApplication app(ac , av);
     QString filename(av[1]);
     QFile zsyncFile(filename);
     if(!zsyncFile.open(QIODevice::ReadOnly)) {
@@ -68,9 +70,8 @@ int main(int ac, char **av)
     qInfo().noquote() << "INFO:: blocks = " << blocks << " , blocksize = " << blocksize << " , rsum_bytes = " << rsum_bytes
                       << " , checksum_bytes = " << checksum_bytes << " , seq_matches = " << seq_matches;
 
-    ZsyncCoreWorker rstate(blocks , blocksize , rsum_bytes , checksum_bytes , seq_matches);
+    ZsyncCoreWorker rstate(blocks , blocksize , rsum_bytes , checksum_bytes , seq_matches , filesize );
     /* Now read in and store the checksums */
-
     zs_blockid id = 0;
     for (; id < blocks; id++) {
         rsum r = { 0, 0 };
@@ -94,10 +95,20 @@ int main(int ac, char **av)
 
     auto seedsize = seedFile.size();
     qInfo() << "GOT BLOCKS:: " << rstate.submit_source_file(&seedFile);
-    qInfo() << "Required Blocks  :: "<< rstate.needed_block_ranges(0  , blocks);
-    char *rfilename = rstate.get_filename();
-    int fd = rstate.filehandle();
-    ftruncate(fd , seedsize);
-    close(fd);
-    return 0;
+    qInfo() << "Downloading missing blocks... ";
+
+    basic_fetcher fetcher(&rstate , QUrl("http://127.0.0.1:8080/appimagetool-x86_64.AppImage") , blocksize);
+    seedFile.close();
+    
+    QObject::connect(&fetcher , &basic_fetcher::finishedAll , [&](){
+	qInfo() << "Finished Everything.";
+	QTimer::singleShot(1000 , [&](){
+	app.quit();
+	});
+    });
+
+    QTimer::singleShot(2000 , [&](){
+    fetcher.start_fetch();
+    });
+    return app.exec();
 }

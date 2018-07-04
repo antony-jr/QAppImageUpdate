@@ -42,20 +42,21 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
 /*
  * Constructor and Destructor 
 */
-ZsyncCoreWorker::ZsyncCoreWorker(zs_blockid nblocks, size_t blocksize, int rsum_bytes, int checksum_bytes, int require_consecutive_matches , QObject *parent)
+ZsyncCoreWorker::ZsyncCoreWorker(zs_blockid nblocks, size_t blocksize, int rsum_bytes, int checksum_bytes, int require_consecutive_matches , size_t tFileSize , QObject *parent)
             : QObject(parent),
               blocksize(blocksize),
               blocks(nblocks),
               rsum_a_mask(rsum_bytes < 3 ? 0 : rsum_bytes == 3 ? 0xff : 0xffff),
               checksum_bytes(checksum_bytes),
-              seq_matches(require_consecutive_matches)
+              seq_matches(require_consecutive_matches),
+	      targetFileSize(tFileSize)
 {
     /* require_consecutive_matches is 1 if true; and if true we need 1 block of
      * context to do block matching */
     context = blocksize * require_consecutive_matches;
 
     /* Temporary file to hold the target file as we get blocks for it */
-    filename = strdup("rcksum-XXXXXX");
+    file = new QFile(QString("rcksum.test"));
 
     /* Initialise to 0 various state & stats */
     gotblocks = 0;
@@ -69,11 +70,8 @@ ZsyncCoreWorker::ZsyncCoreWorker(zs_blockid nblocks, size_t blocksize, int rsum_
     rsum_hash = NULL;
     bithash = NULL;
 
-    if (!(blocksize & (blocksize - 1)) && filename != NULL
-            && blocks) {
-        /* Create temporary file */
-        fd = mkstemp(filename);
-        if (fd == -1) {
+    if (!(blocksize & (blocksize - 1)) && blocks) {
+        if (!file->open(QIODevice::ReadWrite)) {
             perror("open");
         }
         else {
@@ -98,22 +96,14 @@ ZsyncCoreWorker::ZsyncCoreWorker(zs_blockid nblocks, size_t blocksize, int rsum_
             /* All below is error handling */
         }
     }
-    free(filename);
     return;
 }
 
 
 ZsyncCoreWorker::~ZsyncCoreWorker()
 {
-    /* Free temporary file resources */
-    if (fd != -1){
-        close(fd);
-    }
-    if (filename) {
-        unlink(filename);
-        free(filename);
-    }
-
+    file->resize(targetFileSize);
+    file->close();
     /* Free other allocated memory */
     free(rsum_hash);
     free(blockhashes);
@@ -132,10 +122,8 @@ ZsyncCoreWorker::~ZsyncCoreWorker()
  * Returns temporary filename to caller as malloced string.
  * Ownership of the file passes to the caller - the function returns NULL if
  * called again, and it is up to the caller to deal with the file. */
-char *ZsyncCoreWorker::get_filename(void) {
-    char *p = filename;
-    filename = NULL;
-    return p;
+QString ZsyncCoreWorker::get_filename(void) {
+    return file->fileName();
 }
 
 /* filehandle(self)
@@ -143,9 +131,7 @@ char *ZsyncCoreWorker::get_filename(void) {
  * Ownership of the handle passes to the caller - the function returns -1 if
  * called again, and it is up to the caller to close it. */
 int ZsyncCoreWorker::filehandle(void) {
-    int h = fd;
-    fd = -1;
-    return h;
+    return file->handle();
 }
 
 
@@ -194,9 +180,11 @@ int ZsyncCoreWorker::submit_blocks(const unsigned char *data, zs_blockid bfrom, 
 
     /* Check each block */
     for (x = bfrom; x <= bto; x++) {
-        calc_checksum(&md4sum[0], data + ((x - bfrom) << blockshift),
-                             blocksize);
-        if (memcmp(&md4sum, &(blockhashes[x].checksum[0]), checksum_bytes)) {
+        calc_checksum(&md4sum[0], data + ((x - bfrom) << blockshift), blocksize);
+	qInfo() << "block id = " << x; 
+	qInfo() << "data md4sum = " << QByteArray((const char*)(&md4sum[0])).toHex();
+	qInfo() << "blocksums md4sum = " << QByteArray((const char*)(&(blockhashes[x].checksum[0]))).toHex();
+	if (memcmp(&md4sum, &(blockhashes[x].checksum[0]), checksum_bytes)) {
             if (x > bfrom)      /* Write any good blocks we did get */
                 write_blocks( data, bfrom, x - 1);
             return -1;
@@ -527,6 +515,11 @@ QVector<QPair<zs_blockid , zs_blockid>> ZsyncCoreWorker::needed_block_ranges(zs_
     /* Note r[2*n-1] is the last range in our prospective list */
 
     for (i = 0; i < numranges; i++) {
+	if(n == 1){
+		ret_ranges.append(qMakePair(from , to));
+	}else{
+		ret_ranges.append(qMakePair(0 , 0));
+	}
         if (ranges[2 * i] > ret_ranges.at(n - 1).second) // (2 * n - 1) -> second.
             continue;
         if (ranges[2 * i + 1] < from)
@@ -550,13 +543,13 @@ QVector<QPair<zs_blockid , zs_blockid>> ZsyncCoreWorker::needed_block_ranges(zs_
                 n++;
             }
         }
-	ret_ranges.append(qMakePair( 0 , 0 ));
     }
     if (n == 1 && ret_ranges.at(0).first >= ret_ranges.at(0).second){
         n = 0;
         ret_ranges.clear();
     }
 
+    ret_ranges.removeAll(qMakePair(0 , 0));
     return ret_ranges;
 }
 
@@ -773,29 +766,11 @@ void ZsyncCoreWorker::write_blocks(const unsigned char *data, zs_blockid bfrom, 
     off_t len = ((off_t) (bto - bfrom + 1)) << blockshift;
     off_t offset = ((off_t) bfrom) << blockshift;
 
-    while (len) {
-        size_t l = len;
-        int rc;
+    auto pos = file->pos();
+    file->seek(offset);
+    file->write((char*)data , len);
+    file->seek(pos);
 
-        /* On some platforms, the bytes-to-write could be more than pwrite(2)
-         * will accept. Write in blocks of 2^31 bytes in that case. */
-        if ((off_t) l < len)
-            l = 0x8000000;
-
-        /* Write */
-        rc = pwrite(fd, data, l, offset);
-        if (rc == -1) {
-            fprintf(stderr, "IO error: %s\n", strerror(errno));
-            exit(-1);
-        }
-
-        /* Keep track of any data still to do */
-        len -= rc;
-        if (len) {              /* More to write */
-            data += rc;
-            offset += rc;
-        }
-    }
 
     {   /* Having written those blocks, discard them from the rsum hashes (as
          * we don't need to identify data for those blocks again, and this may
