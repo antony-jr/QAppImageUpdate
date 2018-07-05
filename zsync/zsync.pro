@@ -9,4 +9,4 @@ CONFIG += debug
 TARGET = zsync
 
 SOURCES += main.cc
-HEADERS += basic_fetcher.hpp
+# HEADERS += basic_fetcher.hpp

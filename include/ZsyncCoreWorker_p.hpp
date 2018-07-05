@@ -2,7 +2,7 @@
 #define ZSYNC_CORE_WORKER_PRIVATE_INCLUDED
 #include <QtCore>
 
-namespace AppImageUpdaterBridge_p { 
+namespace AppImageUpdaterBridgePrivate { 
 static constexpr unsigned short CHECKSUM_SIZE = 16;
 static constexpr unsigned short BITHASHBITS = 3;
 typedef qint32 zs_blockid;

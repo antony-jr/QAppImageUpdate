@@ -1,9 +1,7 @@
+#include <ZsyncRemoteControlFileParser_p.hpp>
 #include <ZsyncCoreWorker_p.hpp>
-#include "basic_fetcher.hpp"
-#include <arpa/inet.h>
-#include <unistd.h>
 
-using namespace AppImageUpdaterBridge_p;
+using namespace AppImageUpdaterBridgePrivate;
 
 int main(int ac, char **av)
 {
@@ -13,102 +11,33 @@ int main(int ac, char **av)
     }
     QCoreApplication app(ac , av);
     QString filename(av[1]);
-    QFile zsyncFile(filename);
-    if(!zsyncFile.open(QIODevice::ReadOnly)) {
-        qCritical().noquote() << "Failed to open zsync file.";
-        return -1;
-    }
+    ZsyncCoreWorker *z;
+    ZsyncRemoteControlFileParserPrivate p;//(QUrl("http://127.0.0.1:8080/zsync.zsync"));
+    p.setControlFileUrl(QUrl("http://127.0.0.1:8080/zsync.zsync"));
 
-    filename.replace(".zsync" , "");
-    QFile seedFile(filename);
-    if(!seedFile.open(QIODevice::ReadOnly)){
-	qCritical().noquote() << "Failed to open seed file.";
-    }
+    QTimer::singleShot(1000 , [&](){
+		z = new ZsyncCoreWorker((size_t)(p.getTargetFileBlocksCount()) ,
+					(size_t)(p.getTargetFileBlockSize()),
+					(int)(p.getWeakCheckSumBytes()),
+					(int)(p.getStrongCheckSumBytes()),
+					(int)(p.getConsecutiveMatchNeeded()),
+					(size_t)(p.getTargetFileLength()));
+		p.getTargetFileBlocks();
 
-    FILE *f = fdopen(zsyncFile.handle(), "r");
-    int checksum_bytes = 16, rsum_bytes = 4, seq_matches = 1;
-    size_t filesize, blocksize, blocks;
+		QObject::connect(&p , &ZsyncRemoteControlFileParserPrivate::handleTargetFileBlocks,
+		[&](zs_blockid id , rsum r , void *checksum){
+			z->add_target_block(id , r , checksum);
+		});
 
-    for (;;) {
-        char buf[1024];
-        char *p = NULL;
-        int l;
-
-        if (fgets(buf, sizeof(buf), f) != NULL) {
-            if (buf[0] == '\n')
-                break;
-            l = strlen(buf) - 1;
-            while (l >= 0
-                   && (buf[l] == '\n' || buf[l] == '\r' || buf[l] == ' '))
-                buf[l--] = 0;
-
-            p = strchr(buf, ':');
-        }
-        if (p && *(p + 1) == ' ') {
-            *p++ = 0;
-            p++;
-            if (!strcmp(buf, "Length")) {
-                filesize = atoll(p);
-            } else if (!strcmp(buf, "Blocksize")) {
-                blocksize = (size_t)atol(p);
-            } else if (!strcmp(buf, "Hash-Lengths")) {
-                if (sscanf
-                    (p, "%d,%d,%d", &seq_matches, &rsum_bytes,
-                     &checksum_bytes) != 3 || rsum_bytes < 1 || rsum_bytes > 4
-                    || checksum_bytes < 3 || checksum_bytes > 16
-                    || seq_matches > 2 || seq_matches < 1) {
-                    fprintf(stderr, "nonsensical hash lengths line %s\n", p);
-                }
-            } else {
-            }
-        }
-    }
-
-    blocks = (filesize + blocksize - 1) / blocksize;
-
-
-    qInfo().noquote() << "INFO:: blocks = " << blocks << " , blocksize = " << blocksize << " , rsum_bytes = " << rsum_bytes
-                      << " , checksum_bytes = " << checksum_bytes << " , seq_matches = " << seq_matches;
-
-    ZsyncCoreWorker rstate(blocks , blocksize , rsum_bytes , checksum_bytes , seq_matches , filesize );
-    /* Now read in and store the checksums */
-    zs_blockid id = 0;
-    for (; id < blocks; id++) {
-        rsum r = { 0, 0 };
-        unsigned char checksum[16];
-
-        /* Read in */
-        if (fread(((char *)&r) + 4 - rsum_bytes, rsum_bytes, 1, f) < 1
-            || fread((void *)&checksum, checksum_bytes, 1, f) < 1) {
-
-            /* Error - free the rcksum_state and tell the caller to bail */
-            fprintf(stderr, "short read on control file; %s\n",
-                    strerror(ferror(f)));
-            return -1;
-        }
-
-        /* Convert to host endian and store */
-        r.a = ntohs(r.a);
-        r.b = ntohs(r.b);
-	rstate.add_target_block(id , r , checksum);
-    }
-
-    auto seedsize = seedFile.size();
-    qInfo() << "GOT BLOCKS:: " << rstate.submit_source_file(&seedFile);
-    qInfo() << "Downloading missing blocks... ";
-
-    basic_fetcher fetcher(&rstate , QUrl("http://127.0.0.1:8080/appimagetool-x86_64.AppImage") , blocksize);
-    seedFile.close();
-    
-    QObject::connect(&fetcher , &basic_fetcher::finishedAll , [&](){
-	qInfo() << "Finished Everything.";
-	QTimer::singleShot(1000 , [&](){
-	app.quit();
-	});
+		QObject::connect(&p , &ZsyncRemoteControlFileParserPrivate::gotAllTargetFileBlocks , [&](){
+			QFile file(p.getTargetFileName());
+			file.open(QIODevice::ReadOnly);
+			z->submit_source_file(&file);
+			file.close();
+			return;
+		});
+		
     });
 
-    QTimer::singleShot(2000 , [&](){
-    fetcher.start_fetch();
-    });
     return app.exec();
 }

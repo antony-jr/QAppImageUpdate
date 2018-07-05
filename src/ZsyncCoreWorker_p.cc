@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-using namespace AppImageUpdaterBridge_p;
+using namespace AppImageUpdaterBridgePrivate;
 
 #define UPDATE_RSUM(a, b, oldc, newc, bshift) do { (a) += ((unsigned char)(newc)) - ((unsigned char)(oldc)); (b) += (a) - ((oldc) << (bshift)); } while (0)
 
