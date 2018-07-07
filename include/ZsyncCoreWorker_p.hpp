@@ -2,14 +2,15 @@
 #define ZSYNC_CORE_WORKER_PRIVATE_INCLUDED
 #include <QtCore>
 
-namespace AppImageUpdaterBridgePrivate { 
+namespace AppImageUpdaterBridgePrivate
+{
 static constexpr unsigned short CHECKSUM_SIZE = 16;
 static constexpr unsigned short BITHASHBITS = 3;
 typedef qint32 zs_blockid;
 
 struct rsum {
-	unsigned short	a;
-	unsigned short	b;
+    unsigned short	a;
+    unsigned short	b;
 } __attribute__((packed));
 
 struct hash_entry {
@@ -18,25 +19,26 @@ struct hash_entry {
     unsigned char checksum[CHECKSUM_SIZE];
 };
 
-class ZsyncCoreWorker : public QObject {
-	Q_OBJECT
+class ZsyncCoreWorker : public QObject
+{
+    Q_OBJECT
 public:
-    explicit ZsyncCoreWorker(zs_blockid , size_t , int , int , int , size_t ,QObject *parent = nullptr );
-    
+    ZsyncCoreWorker(zs_blockid, size_t, int, int, int, size_t,QObject *parent = nullptr );
+
     QString get_filename(void);
     int filehandle(void);
-    void add_target_block(zs_blockid , rsum , void* );
-    int submit_blocks(const unsigned char* , zs_blockid , zs_blockid );
-    int submit_source_data(unsigned char* , size_t , off_t );
+    void add_target_block(zs_blockid, rsum, void* );
+    int submit_blocks(const unsigned char*, zs_blockid, zs_blockid );
+    int submit_source_data(unsigned char*, size_t, off_t );
     int submit_source_file(QFile*);
     // int read_known_data(unsigned char* , off_t , size_t );
-    QVector<QPair<zs_blockid , zs_blockid>> needed_block_ranges(zs_blockid , zs_blockid);
+    QVector<QPair<zs_blockid, zs_blockid>> needed_block_ranges(zs_blockid, zs_blockid);
     int blocks_todo(void);
-    
+
     ~ZsyncCoreWorker();
 private Q_SLOTS:
-    int check_checksums_on_hash_chain(const hash_entry *, const unsigned char * ,int );
-    void write_blocks(const unsigned char *, zs_blockid , zs_blockid);
+    int check_checksums_on_hash_chain(const hash_entry *, const unsigned char *,int );
+    void write_blocks(const unsigned char *, zs_blockid, zs_blockid);
     zs_blockid get_HE_blockid(const struct hash_entry *);
     void add_to_ranges(zs_blockid);
     int range_before_block(zs_blockid);
@@ -45,7 +47,7 @@ private Q_SLOTS:
     unsigned calc_rhash(const struct hash_entry *const);
     int build_hash(void);
     void remove_block_from_hash(zs_blockid);
-    
+
 private:
     rsum r[2];           /* Current rsums */
 

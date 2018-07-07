@@ -4,17 +4,14 @@ using namespace AppImageUpdaterBridgePrivate;
 
 static void doDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
 {
-	if(NetworkManager != nullptr)
-	{
-		NetworkManager->deleteLater();
-	}
-	return;
+    NetworkManager->deleteLater();
+    return;
 }
 
 static void doNotDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
 {
-	(void)NetworkManager;
-	return;
+    (void)NetworkManager;
+    return;
 }
 
 /*
@@ -22,36 +19,35 @@ static void doNotDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
 */
 
 ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *NetworkManager)
-	: QObject(NetworkManager)
+    : QObject(NetworkManager)
 {
-	_pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));;
-	_pNManager = (NetworkManager == nullptr) ? 
-		     QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager , doDeleteNetworkManager) :
-		     QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager , doNotDeleteNetworkManager);
-	connect(_pNManager.data(), SIGNAL(networkAccessibleChanged(QNetworkAccessManager::NetworkAccessibility)), 
-			this, SLOT(checkNetworkConnection(QNetworkAccessManager::NetworkAccessibility)));	
-    connect(this , SIGNAL(error(short)) , this , SLOT(handleError(short)));
-	return;
+    _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));;
+    _pNManager = (NetworkManager == nullptr) ?
+                 QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doDeleteNetworkManager) :
+                 QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doNotDeleteNetworkManager);
+    connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
+    return;
 }
 
 ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate
-		(const QUrl &controlFileUrl , QNetworkAccessManager *NetworkManager)
-	: QObject(NetworkManager)
+(const QUrl &controlFileUrl, QNetworkAccessManager *NetworkManager)
+    : QObject(NetworkManager),
+      _uControlFileUrl(controlFileUrl)
 {
-	_pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
-	_pNManager = (NetworkManager == nullptr) ? 
-		     QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager , doDeleteNetworkManager) :
-		     QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager , doNotDeleteNetworkManager);
-	connect(_pNManager.data(), SIGNAL(networkAccessibleChanged(QNetworkAccessManager::NetworkAccessibility)), 
-			this, SLOT(checkNetworkConnection(QNetworkAccessManager::NetworkAccessibility)));	
-    connect(this , SIGNAL(error(short)) , this , SLOT(handleError(short)));
-    setControlFileUrl(controlFileUrl);
-	return;
+    _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
+    _pNManager = (NetworkManager == nullptr) ?
+                 QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doDeleteNetworkManager) :
+                 QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doNotDeleteNetworkManager);
+    connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
+    return;
 }
 
 ZsyncRemoteControlFileParserPrivate::~ZsyncRemoteControlFileParserPrivate()
 {
-	return;
+    _pNManager.clear();
+    _pLogger.clear();
+    _pControlFile.clear();
+    return;
 }
 
 
@@ -60,441 +56,471 @@ ZsyncRemoteControlFileParserPrivate::~ZsyncRemoteControlFileParserPrivate()
 */
 void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(const QUrl &controlFileUrl)
 {
-    _pMutex.lock();
-    if(!controlFileUrl.isValid()){
+    if(!_pMutex.tryLock()) {
         return;
     }
-    _pZsyncHeader.clear();
     _uControlFileUrl = controlFileUrl;
-    QNetworkRequest request;
-	request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
-	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute , true);
-	request.setUrl(_uControlFileUrl);
-	
-	_pTimeoutTimer.setInterval(_nTimeoutTime);
-	_pTimeoutTimer.setSingleShot(true);
-	connect(&_pTimeoutTimer , SIGNAL(timeout(void)) , 
-			this , SLOT(handleTimeout(void)));  
-
-	_pCurrentRequest = request;
-	_pCurrentReply = _pNManager->get(_pCurrentRequest);
-
-	_pTimeoutTimer.start();
-    connect(_pCurrentReply, SIGNAL(downloadProgress(qint64 , qint64)), 
-			this, SLOT(handleControlFileHeader(qint64 , qint64)));
-
-	connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)) , 
-			this ,SLOT(handleNetworkError(QNetworkReply::NetworkError)));
-    
+    _pMutex.unlock();
     return;
 }
 
 void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose)
 {
-    QMutexLocker locker(&_pMutex);
-    if(choose){
-    disconnect(this , SIGNAL(logger(QString)) , 
-            this , SLOT(logPrinter(QString)));
-    connect(this , SIGNAL(logger(QString)) , 
-            this , SLOT(logPrinter(QString)));
-    }else{
-    disconnect(this , SIGNAL(logger(QString)) , 
-            this , SLOT(logPrinter(QString)));
+    if(!_pMutex.tryLock()) {
+        return;
+    } else if(choose) {
+        disconnect(this, SIGNAL(logger(QString)),
+                   this, SLOT(logPrinter(QString)));
+        connect(this, SIGNAL(logger(QString)),
+                this, SLOT(logPrinter(QString)));
+    } else {
+        disconnect(this, SIGNAL(logger(QString)),
+                   this, SLOT(logPrinter(QString)));
     }
+    _pMutex.unlock();
     return;
 }
 
-void ZsyncRemoteControlFileParserPrivate::setTimeoutTime(qint64 timeInSeconds)
+void ZsyncRemoteControlFileParserPrivate::clear(void)
 {
-    QMutexLocker locker(&_pMutex);
-    _nTimeoutTime = timeInSeconds;
+    if(!_pMutex.tryLock()) {
+        return;
+    }
+    _sZsyncMakeVersion.clear();
+    _sTargetFileName.clear();
+    _sTargetFileSHA1.clear();
+    _sControlFileName.clear();
+    _sLogBuffer.clear();
+    _pMTime = QDateTime();
+    _nTargetFileBlockSize = _nTargetFileLength = _nTargetFileBlocks =
+                                _nWeakCheckSumBytes = _nStrongCheckSumBytes = _nConsecutiveMatchNeeded =
+                                            _nCheckSumBlocksOffset = 0;
+    _uTargetFileUrl.clear();
+    _uControlFileUrl.clear();
+    _pControlFile.clear();
+    _pControlFile = nullptr;
+    _pMutex.unlock();
     return;
 }
 
-/* 
+/*
  * Public Slots.
 */
+
+void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
+{
+    if(!_pMutex.tryLock()) {
+        return;
+    }
+
+    if(_uControlFileUrl.isEmpty() || !_uControlFileUrl.isValid()) {
+        _pMutex.unlock();
+        return;
+    }
+
+    QNetworkRequest request;
+    request.setUrl(_uControlFileUrl);
+    request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+    request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+
+    QNetworkReply *reply = _pNManager->get(request);
+
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
+            this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+    connect(reply, SIGNAL(finished(void)), this, SLOT(handleControlFile(void)));
+    connect(reply, SIGNAL(downloadProgress(qint64, qint64)),
+            this, SLOT(handleDownloadProgress(qint64, qint64)));
+    return;
+}
+
 void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
 {
-	QMutexLocker locker(&_pMutex);
-	if(_uControlFileUrl.isEmpty() || _uTargetFileUrl.isEmpty()){
-									
-		return;
-	}
+    /* Use seperate if control flows since
+     * we don't know if a mutex is locked if we put
+     * it in the same tag which can lead to deadlock.
+    */
+    if(!_pMutex.tryLock()) {
+        return;
+    }
 
-	QNetworkRequest request;
-	if(_bSupportForRangeRequests){
-	    QByteArray rangeHeaderValue = "bytes="+ QByteArray::number(_nTargetFileBlocksRangeStart) + "-";
-       	    rangeHeaderValue += QByteArray::number(_nTargetFileBlocksRangeEnd);
-	    request.setRawHeader("Range" , rangeHeaderValue);
-	}
-	request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
-	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute , true);
-	request.setUrl(_uControlFileUrl);
-	
-	_pTimeoutTimer.setInterval(_nTimeoutTime);
-	_pTimeoutTimer.setSingleShot(true);
+    if(!_pControlFile ||
+       !_pControlFile->isOpen() ||
+       _pControlFile->size() - _nCheckSumBlocksOffset < (_nWeakCheckSumBytes + _nStrongCheckSumBytes) ||
+       !_nCheckSumBlocksOffset) {
+        _pMutex.unlock();
+        return;
+    }
 
-	connect(&_pTimeoutTimer , SIGNAL(timeout(void)) , 
-			this , SLOT(handleTimeout(void)));  
+    /*
+     * We can make this parallel but I thought that was kind of
+     * a over pull , Because this is just a read and sequential reads
+     * are faster than random reads.
+     * To make this parallel we need to use simple algorithm to
+     * get the offset of the checksum block.
+     *
+     * CheckSumBlockOffset(blockid , controlFileOffset)
+     * 	 	= ((_nWeakCheckSumBytes + _nStrongCheckSumBytes) * blockid)
+     * 	 	  + controlFileOffset
+    */
+    _pControlFile->seek(_nCheckSumBlocksOffset); /* Seek to the offset of the checksum block. */
+    for(zs_blockid id = 0; id < _nTargetFileBlocks ; ++id) {
+        rsum r = { 0, 0 };
+        unsigned char checksum[16];
 
-	_pCurrentRequest = request;
-	_pCurrentReply = _pNManager->get(_pCurrentRequest);
+        /* Read on. */
+        if (_pControlFile->read(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
+            || _pControlFile->read((char *)&checksum, _nStrongCheckSumBytes) < 1) {
+            emit error(IO_READ_ERROR);
+            return;
+        }
 
-	_pTimeoutTimer.start();
-	connect(_pCurrentReply, SIGNAL(finished(void)), 
-			this, SLOT(sentAllTargetFileBlocks(void)));
+        /* Convert to host endian and store.
+        * We need to convert from network endian to host endian ,
+         * Network endian is nothing but big endian byte order , So if we have little endian byte order ,
+         * We need to convert the data but if we have a big endian byte order ,
+         * We can simply avoid this conversion to save computation power.
+         *
+         * But most of the time we will need little endian since intel's microproccessors always follow
+         * little endian byte order.
+        */
+        if(Q_BYTE_ORDER == Q_LITTLE_ENDIAN) {
+            r.a = qFromBigEndian(r.a);
+            r.b = qFromBigEndian(r.b);
+        }
 
-    connect(_pCurrentReply, SIGNAL(downloadProgress(qint64 , qint64)), 
-			this, SLOT(sendTargetFileBlocks(qint64 , qint64)));
-
-	connect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)) , 
-			this ,SLOT(handleNetworkError(QNetworkReply::NetworkError)));
-	return;
+        emit receiveTargetFileBlocks(id, r, checksum);
+    }
+    _pMutex.unlock();
+    emit endOfTargetFileBlocks();
+    return;
 }
 
-const size_t &ZsyncRemoteControlFileParserPrivate::getTargetFileBlocksCount(void)
+size_t ZsyncRemoteControlFileParserPrivate::getTargetFileBlocksCount(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _nTargetFileBlocks;
+    if(!_pMutex.tryLock()) {
+        return 0;
+    }
+    auto ret = _nTargetFileBlocks;
+    _pMutex.unlock();
+    return ret;
 }
 
-const QUrl &ZsyncRemoteControlFileParserPrivate::getControlFileUrl(void)
+QUrl ZsyncRemoteControlFileParserPrivate::getControlFileUrl(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _uControlFileUrl;
+    if(!_pMutex.tryLock()) {
+        return QUrl();
+    }
+    auto ret = _uControlFileUrl;
+    _pMutex.unlock();
+    return ret;
 }
 
-const QString &ZsyncRemoteControlFileParserPrivate::getZsyncMakeVersion(void)
+QString ZsyncRemoteControlFileParserPrivate::getZsyncMakeVersion(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _sZsyncMakeVersion;
+    if(!_pMutex.tryLock()) {
+        return QString();
+    }
+    auto ret = _sZsyncMakeVersion;
+    _pMutex.unlock();
+    return ret;
 }
 
-const QString &ZsyncRemoteControlFileParserPrivate::getTargetFileName(void)
+QString ZsyncRemoteControlFileParserPrivate::getTargetFileName(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _sTargetFileName;
+    if(!_pMutex.tryLock()) {
+        return QString();
+    }
+    auto ret = _sTargetFileName;
+    _pMutex.unlock();
+    return ret;
 }
 
-const QUrl &ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
+QUrl ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _uTargetFileUrl;
+    if(!_pMutex.tryLock()) {
+        return QUrl();
+    }
+    auto ret = _uTargetFileUrl;
+    _pMutex.unlock();
+    return ret;
 }
 
-const QString &ZsyncRemoteControlFileParserPrivate::getTargetFileSHA1(void)
+QString ZsyncRemoteControlFileParserPrivate::getTargetFileSHA1(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _sTargetFileSHA1;
+    if(!_pMutex.tryLock()) {
+        return QString();
+    }
+    auto ret = _sTargetFileSHA1;
+    _pMutex.unlock();
+    return ret;
 }
 
-const QDateTime &ZsyncRemoteControlFileParserPrivate::getMTime(void)
+QDateTime ZsyncRemoteControlFileParserPrivate::getMTime(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _pMTime;
+    if(!_pMutex.tryLock()) {
+        return QDateTime();
+    }
+    auto ret = _pMTime;
+    _pMutex.unlock();
+    return ret;
 }
 
-const size_t &ZsyncRemoteControlFileParserPrivate::getTargetFileBlockSize(void)
+size_t ZsyncRemoteControlFileParserPrivate::getTargetFileBlockSize(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _nTargetFileBlockSize;
+    if(!_pMutex.tryLock()) {
+        return 0;
+    }
+    auto ret = _nTargetFileBlockSize;
+    _pMutex.unlock();
+    return ret;
 }
 
-const size_t &ZsyncRemoteControlFileParserPrivate::getTargetFileLength(void)
+size_t ZsyncRemoteControlFileParserPrivate::getTargetFileLength(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _nTargetFileLength;
+    if(!_pMutex.tryLock()) {
+        return 0;
+    }
+    auto ret = _nTargetFileLength;
+    _pMutex.unlock();
+    return ret;
 }
 
-const qint32 &ZsyncRemoteControlFileParserPrivate::getWeakCheckSumBytes(void)
+qint32 ZsyncRemoteControlFileParserPrivate::getWeakCheckSumBytes(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _nWeakCheckSumBytes;
+    if(!_pMutex.tryLock()) {
+        return 0;
+    }
+    auto ret = _nWeakCheckSumBytes;
+    _pMutex.unlock();
+    return ret;
 }
 
-const qint32 &ZsyncRemoteControlFileParserPrivate::getStrongCheckSumBytes(void)
+qint32 ZsyncRemoteControlFileParserPrivate::getStrongCheckSumBytes(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _nStrongCheckSumBytes;
+    if(!_pMutex.tryLock()) {
+        return 0;
+    }
+    auto ret = _nStrongCheckSumBytes;
+    _pMutex.unlock();
+    return ret;
 }
 
-const qint32 &ZsyncRemoteControlFileParserPrivate::getConsecutiveMatchNeeded(void)
+qint32 ZsyncRemoteControlFileParserPrivate::getConsecutiveMatchNeeded(void)
 {
-	QMutexLocker locker(&_pMutex);
-	return _nConsecutiveMatchNeeded;
+    if(!_pMutex.tryLock()) {
+        return 0;
+    }
+    auto ret = _nConsecutiveMatchNeeded;
+    _pMutex.unlock();
+    return ret;
 }
 
 /*
  * Private slots.
 */
-
-void ZsyncRemoteControlFileParserPrivate::logPrinter(QString msg)
+void ZsyncRemoteControlFileParserPrivate::handleDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 {
-    qDebug().noquote() << "[ " 
-                       << QDateTime::currentDateTime().toString(Qt::ISODate)
-                       << " ]" 
-                       << msg;
-    return;
-}
-
-void ZsyncRemoteControlFileParserPrivate::handleError(short errorCode)
-{
-    (void)errorCode;
-    _pZsyncHeader.clear();
-    if(_pCurrentReply != nullptr){
-        _pCurrentReply->abort();
-        _pCurrentReply->deleteLater();
-        _pCurrentReply = nullptr;
-    }
-    if(_pMutex.tryLock()){
-        _pMutex.unlock();
-    }else{
-        _pMutex.unlock();
-    }
-    _bSafeToProceed = false;
-    _pTimeoutTimer.stop();
-    return;
-}
-
-void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::NetworkError error)
-{
-    if(error == QNetworkReply::OperationCanceledError){
-        return;
-    }
-     _bSafeToProceed = false;
-      disconnect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)) , 
-			this ,SLOT(handleNetworkError(QNetworkReply::NetworkError)));
-      disconnect(&_pTimeoutTimer , SIGNAL(timeout(void)) , 
-			this , SLOT(handleTimeout(void)));
-    // emit(error(ERROR_RESPONSE_CODE));
-    return;
-}
-
-void ZsyncRemoteControlFileParserPrivate::handleTimeout(void)
-{
-    _pTimeoutTimer.stop();
-    disconnect(&_pTimeoutTimer , SIGNAL(timeout(void)) , 
-			this , SLOT(handleTimeout(void)));
-    emit(error(NETWORK_TIMEOUT));
-    return;
-}
-
-void ZsyncRemoteControlFileParserPrivate::checkNetworkConnection(QNetworkAccessManager::NetworkAccessibility access)
-{
-     if (access == QNetworkAccessManager::NotAccessible || access == QNetworkAccessManager::UnknownAccessibility) {
-         emit(error(NO_INTERNET_CONNECTION));
-    }
-    return;
-}
-
-void ZsyncRemoteControlFileParserPrivate::handleControlFileHeader(qint64 bytesReceived, qint64 bytesTotal)
-{
-    _pTimeoutTimer.stop();
-    if(!_bSafeToProceed){
-        _bSupportForRangeRequests = false;
-        if (_pCurrentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() >= 400) {
-            _bSafeToProceed = false;
-            disconnect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)) , 
-			this ,SLOT(handleNetworkError(QNetworkReply::NetworkError)));
-            disconnect(&_pTimeoutTimer , SIGNAL(timeout(void)) , 
-			this , SLOT(handleTimeout(void)));
-            disconnect(_pCurrentReply, SIGNAL(downloadProgress(qint64 , qint64)), 
-			this, SLOT(handleControlFileHeader(qint64 , qint64)));
-            emit(error(CONTROL_FILE_NOT_FOUND));
-            return;
-        }else if(_pCurrentReply->hasRawHeader("Accept-Ranges")) {
-        QString qstrAcceptRanges = _pCurrentReply->rawHeader("Accept-Ranges");
-        _bSupportForRangeRequests = (qstrAcceptRanges.compare("bytes", Qt::CaseInsensitive) == 0);
-        }else{
-         _bSupportForRangeRequests = false;   
-        }
-        _bSafeToProceed = true;
-        _nTargetFileBlocksRangeEnd = bytesTotal;
-    }else{
-         int nPercentage =
+    int nPercentage =
         static_cast<int>(
             (static_cast<float>
              (
-                bytesReceived
+                 bytesReceived
              ) * 100.0
             ) / static_cast<float>
             (
                 bytesTotal
             )
         );
-        emit(progress(nPercentage));
-    }
-    
-    _pZsyncHeader += _pCurrentReply->readAll();
-    
-    if(_pZsyncHeader.contains("\n\n")){
-        if(_pMutex.tryLock()){
-            _pMutex.unlock();
-        }else{
-            _pMutex.unlock();
-        }
-        
-        QMutexLocker locker(&_pMutex);
-        
-        disconnect(_pCurrentReply, SIGNAL(downloadProgress(qint64 , qint64)), 
-			this, SLOT(handleControlFileHeader(qint64 , qint64)));
-        _pCurrentReply->abort();
-        _pCurrentReply->deleteLater();
-        _pCurrentReply = nullptr;
-       
-        QString ZsyncHeader = QString::fromLatin1(_pZsyncHeader);	
-        ZsyncHeader = ZsyncHeader.split("\n\n")[0];
-        
-        if(_bSupportForRangeRequests){
-            _nTargetFileBlocksRangeStart = _pZsyncHeader.size() + 2;
-        }
-        
-        QStringList ZsyncHeaderList = QString(ZsyncHeader).split("\n"); 
-        if(ZsyncHeaderList.size() < 8){
-            /* error */
-        }
-        
-        _sZsyncMakeVersion = ZsyncHeaderList.at(0).split("zsync: ")[1];
-        
-        if(_sZsyncMakeVersion == ZsyncHeaderList.at(0)){
-            /*
-             * error , invalid version. 
-            */
-            return;
-        }
-        
-        _sTargetFileName = ZsyncHeaderList.at(1).split("Filename: ")[1];
-        
-        if(_sTargetFileName == ZsyncHeaderList.at(1)){
-            /*
-             * error , invalid target file name.
-            */
-            return;
-        }
-       
-        _pMTime = QDateTime::fromString(ZsyncHeaderList.at(2).split("MTime: ")[1] , "ddd, dd MMM yyyy HH:mm:ss +zzz0");
-        
-        if(!_pMTime.isValid()){
-            qDebug() << "Invalid MTime.";
-		return;
-        }
-        
-        _nTargetFileBlockSize = (size_t)ZsyncHeaderList.at(3).split("Blocksize: ")[1].toInt();
-        
-        if(_nTargetFileBlockSize < 1024){
-            return;
-        }
-        
-        _nTargetFileLength =  (size_t)ZsyncHeaderList.at(4).split("Length: ")[1].toInt();
-        
-        if(_nTargetFileLength == 0){
-            return;
-        }
-        
-        QString HashLength = ZsyncHeaderList.at(5).split("Hash-Lengths: ")[1];
-        QStringList HashLengths = HashLength.split(',');
-        if(HashLengths.size() != 3){
-            /* invalid hash length line. */
-            return;
-        }
-        
-        _nConsecutiveMatchNeeded = HashLengths.at(0).toInt();
-        _nWeakCheckSumBytes = HashLengths.at(1).toInt();
-        _nStrongCheckSumBytes = HashLengths.at(2).toInt();
-        
-        if(_nWeakCheckSumBytes < 1 || _nWeakCheckSumBytes > 4
-            || _nStrongCheckSumBytes < 3 || _nStrongCheckSumBytes > 16
-            || _nConsecutiveMatchNeeded > 2 || _nConsecutiveMatchNeeded < 1)
-        {
-            return;
-        }
-        
-        _uTargetFileUrl = QUrl(ZsyncHeaderList.at(6).split("URL: ")[1]);
-        if(!_uTargetFileUrl.isValid()){
-            return;
-        }
-        _sTargetFileSHA1 = ZsyncHeaderList.at(7).split("SHA-1: ")[1];
-        if(_sTargetFileSHA1 == ZsyncHeaderList.at(7)){
-            return;
-        }
-        
-    }
-    
-    _pTimeoutTimer.setInterval(_nTimeoutTime);
-    _pTimeoutTimer.start();
+    emit progress(nPercentage);
     return;
 }
 
-void ZsyncRemoteControlFileParserPrivate::sendTargetFileBlocks(qint64 bytesReceived , qint64 bytesTotal)
+void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
 {
-    _pTimeoutTimer.stop();
-    if(!_bSafeToProceed){
-        if (_pCurrentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() >= 400) {
-            _bSafeToProceed = false;
-            disconnect(_pCurrentReply, SIGNAL(error(QNetworkReply::NetworkError)) , 
-			this ,SLOT(handleNetworkError(QNetworkReply::NetworkError)));
-            disconnect(&_pTimeoutTimer , SIGNAL(timeout(void)) , 
-			this , SLOT(handleTimeout(void)));
-            disconnect(_pCurrentReply, SIGNAL(downloadProgress(qint64 , qint64)), 
-			this, SLOT(sendTargetFileBlocks(qint64 , qint64)));
-            emit(error(CANNOT_PROCESS_TARGET_BLOCKS));
-            return;
-        }
-        _bSafeToProceed = true;
-    }else{
-         int nPercentage =
-        static_cast<int>(
-            (static_cast<float>
-             (
-                _nTargetFileBlocksRangeStart + bytesReceived
-             ) * 100.0
-            ) / static_cast<float>
-            (
-                _nTargetFileBlocksRangeEnd
-            )
-        );
-        emit(progress(nPercentage));
+    QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
+    int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if(responseCode > 400) {
+        emit error(ERROR_RESPONSE_CODE);
+        return;
     }
-    
-    if(_pBlockSumBuffer.size() < _nWeakCheckSumBytes + _nStrongCheckSumBytes){
-        _pBlockSumBuffer += _pCurrentReply->readAll();
-    }else{
-        QDataStream stream(_pBlockSumBuffer);
-        qint32 gotTargetBlocks = _pBlockSumBuffer.size() / (_nWeakCheckSumBytes + _nStrongCheckSumBytes);
-        qint32 cutRight = gotTargetBlocks;
-        gotTargetBlocks += _nCurrentBlockId;
-        while(_nCurrentBlockId < gotTargetBlocks){
-        rsum r = { 0, 0 };
-        unsigned char checksum[16];
 
-        /* Read in */
-        if (stream.readRawData(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
-            || stream.readRawData((char *)&checksum, _nStrongCheckSumBytes) < 1) {
-            return;
-        }
+    /*
+     * Disconnect all ties before casting it as QIODevice to read.
+    */
+    disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
+               this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+    disconnect(senderReply, SIGNAL(finished(void)), this, SLOT(handleControlFile(void)));
+    disconnect(senderReply, SIGNAL(downloadProgress(qint64, qint64)),
+               this, SLOT(handleDownloadProgress(qint64, qint64)));
 
-        /* Convert to host endian and store */
-        if(Q_BYTE_ORDER == Q_LITTLE_ENDIAN){
-        r.a = qFromBigEndian(r.a);
-        r.b = qFromBigEndian(r.b);
+    _pControlFile = QSharedPointer<QBuffer>(new QBuffer);
+    _pControlFile->open(QIODevice::ReadWrite);
+
+    /*
+     * Since QNetworkReply is sequential QIODevice , We cannot seek but we
+     * need to seek on command for future operation so we copy everything
+     * to our newly allocated QIODevice and Also find the offset on the way.
+     * Since this is sequential , We cannot use *->pos() to get the current position
+     * of the file pointer , Therefore we will use a temporary variable.
+     */
+    {
+        qint64 pos = 0;
+        int bufferSize = 2; // 2 bytes.
+        while(!senderReply->atEnd()) {
+            /*
+             * Read two bytes at a time , Since the marker for the
+             * offset of the checksum blocks is \n\n.
+             *
+             * Therefore,
+             *
+             * ZsyncHeaders = (0 , offset - 2)
+             * Checksums = (offset , EOF)
+            */
+            QByteArray data = senderReply->read(bufferSize);
+            pos += bufferSize;
+            if(bufferSize < 1024 && data.at(0) == 10 && data.at(1) == 10) {
+                /*
+                 * Set the offset and increase the buffer size
+                 * to finish the rest of the copy faster.
+                */
+                _nCheckSumBlocksOffset = pos;
+                bufferSize = 1024; /* Use standard size of 1024 bytes. */
+            }
+            _pControlFile->write(data);
         }
-        emit(handleTargetFileBlocks(_nCurrentBlockId , r , checksum));
-        ++_nCurrentBlockId;
-        }
-        _pBlockSumBuffer = _pBlockSumBuffer.right(cutRight);
     }
-    
-    _pTimeoutTimer.setInterval(_nTimeoutTime);
-    _pTimeoutTimer.start();
+    _pControlFile->seek(0); /* seek to the top again. */
+    if(!_nCheckSumBlocksOffset) {
+        /* error , we don't know the marker and therefore
+        				it must be an invalid control file.*/
+        emit error(NO_MARKER_FOUND_IN_CONTROL_FILE );
+        return;
+    }
+    QString ZsyncHeader(_pControlFile->read(_nCheckSumBlocksOffset - 2)); /* avoid reading the marker. */
+    QStringList ZsyncHeaderList = QString(ZsyncHeader).split("\n");
+    if(ZsyncHeaderList.size() < 8) {
+        emit error(INVALID_ZSYNC_HEADERS_NUMBER);
+        return;
+    }
+
+    _sZsyncMakeVersion = ZsyncHeaderList.at(0).split("zsync: ")[1];
+    if(_sZsyncMakeVersion == ZsyncHeaderList.at(0)) {
+        emit error(INVALID_ZSYNC_MAKE_VERSION);
+        return;
+    }
+
+    _sTargetFileName = ZsyncHeaderList.at(1).split("Filename: ")[1];
+    if(_sTargetFileName == ZsyncHeaderList.at(1)) {
+        emit error(INVALID_ZSYNC_TARGET_FILENAME);
+        return;
+    }
+
+    _pMTime = QDateTime::fromString(ZsyncHeaderList.at(2).split("MTime: ")[1], "ddd, dd MMM yyyy HH:mm:ss +zzz0");
+    if(!_pMTime.isValid()) {
+        emit error(INVALID_ZSYNC_MTIME);
+        return;
+    }
+
+    _nTargetFileBlockSize = (size_t)ZsyncHeaderList.at(3).split("Blocksize: ")[1].toInt();
+    if(_nTargetFileBlockSize < 1024) {
+        emit error(INVALID_ZSYNC_BLOCKSIZE);
+        return;
+    }
+
+    _nTargetFileLength =  (size_t)ZsyncHeaderList.at(4).split("Length: ")[1].toInt();
+    if(_nTargetFileLength == 0) {
+        emit error(INVALID_TARGET_FILE_LENGTH);
+        return;
+    }
+
+    QString HashLength = ZsyncHeaderList.at(5).split("Hash-Lengths: ")[1];
+    QStringList HashLengths = HashLength.split(',');
+    if(HashLengths.size() != 3) {
+        emit error(INVALID_HASH_LENGTH_LINE);
+        return;
+    }
+
+    _nConsecutiveMatchNeeded = HashLengths.at(0).toInt();
+    _nWeakCheckSumBytes = HashLengths.at(1).toInt();
+    _nStrongCheckSumBytes = HashLengths.at(2).toInt();
+    if(_nWeakCheckSumBytes < 1 || _nWeakCheckSumBytes > 4
+       || _nStrongCheckSumBytes < 3 || _nStrongCheckSumBytes > 16
+       || _nConsecutiveMatchNeeded > 2 || _nConsecutiveMatchNeeded < 1) {
+        emit error(INVALID_HASH_LENGTHS);
+        return;
+    }
+
+    _uTargetFileUrl = QUrl(ZsyncHeaderList.at(6).split("URL: ")[1]);
+    if(!_uTargetFileUrl.isValid()) {
+        emit error(INVALID_TARGET_FILE_URL);
+        return;
+    }
+
+    _sTargetFileSHA1 = ZsyncHeaderList.at(7).split("SHA-1: ")[1];
+    if(_sTargetFileSHA1 == ZsyncHeaderList.at(7)) {
+        emit error(INVALID_TARGET_FILE_SHA1);
+        return;
+    }
+
+    /*
+     * No need to worry about zero devision error since blocksize is checked
+     * earlier. Anything lesser than 1024 bytes is an invalid blocksize.
+    */
+    _nTargetFileBlocks = (_nTargetFileLength + _nTargetFileBlockSize - 1) / _nTargetFileBlockSize;
+
+    _pMutex.unlock();
+    emit receiveControlFile(_nTargetFileBlocks, _nTargetFileBlockSize, _nWeakCheckSumBytes,
+                            _nStrongCheckSumBytes, _nConsecutiveMatchNeeded, _nTargetFileLength);
     return;
 }
 
-void ZsyncRemoteControlFileParserPrivate::sentAllTargetFileBlocks(void)
+void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::NetworkError errorCode)
 {
-    _pCurrentReply->deleteLater();
-    _pCurrentReply = nullptr;
-    
-    emit(gotAllTargetFileBlocks());
+    if(errorCode == QNetworkReply::OperationCanceledError) {
+        return;
+    }
+
+    QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
+    disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
+               this,SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+    disconnect(senderReply, SIGNAL(finished(void)), this, SLOT(handleControlFile(void)));
+    disconnect(senderReply, SIGNAL(downloadProgress(qint64, qint64)),
+               this, SLOT(handleDownloadProgress(qint64, qint64)));
+
+    senderReply->deleteLater();
+    emit error(UNKNOWN_NETWORK_ERROR);
+    return;
+}
+
+/*
+ * This slot will be called anytime error signal is emitted.
+ * This is to prevent any deadlocks.
+*/
+void ZsyncRemoteControlFileParserPrivate::handleErrorSignal(short errorCode)
+{
+    /*
+     * Since unlocking a unlocked mutex can cause
+     * undefined behaviour , We have to be carefull on
+     * this.
+    */
+    if(_pMutex.tryLock()) { // Check if it is locked.
+        _pMutex.unlock(); // Unlock if locked.
+    } else {
+        /*
+        * Unlock even if it is not locked
+        * since tryLock() will lock the mutex again.
+        */
+        _pMutex.unlock();
+    }
+    clear(); // clear all data to prevent later corrupted data collisions.
+    return;
+}
+
+void ZsyncRemoteControlFileParserPrivate::handleLogMessage(QString msg)
+{
+    qDebug().noquote() << "[ "
+                       << QDateTime::currentDateTime().toString(Qt::ISODate)
+                       << " ]"
+                       << msg;
     return;
 }
