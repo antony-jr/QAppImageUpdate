@@ -764,7 +764,7 @@ unsigned ZsyncCoreWorker::calc_rhash(const struct hash_entry *const e)
     return h;
 }
 
-zs_blockid ZsyncCoreWorker::get_HE_blockid(const struct hash_entry *e)
+zs_blockid ZsyncCoreWorker::getHashEntryBlockId(const hash_entry *e)
 {
     return e - blockhashes;
 }

@@ -1,11 +1,10 @@
 #ifndef ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
 #define ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
-#include <functional>
 #include <QtCore>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <ZsyncCoreWorker_p.hpp>
+#include <ZsyncInternalStructures_p.hpp>
 
 namespace AppImageUpdaterBridgePrivate
 {
@@ -37,6 +36,8 @@ public:
     void clear(void);
     ~ZsyncRemoteControlFileParserPrivate();
 
+    /* static function to return a QString for corresponding error code.*/
+    static QString errorCodeToString(short);
 public Q_SLOTS:
     void getControlFile(void);
     void getTargetFileBlocks(void);
@@ -61,7 +62,7 @@ private Q_SLOTS:
 Q_SIGNALS:
     void receiveTargetFileBlocks(zs_blockid, rsum, void*);
     void endOfTargetFileBlocks(void);
-    void receiveControlFile(size_t, size_t, qint32, qint32, qint32, size_t);
+    void receiveControlFile(void);
     void progress(int);
     void error(short);
     void logger(QString);
