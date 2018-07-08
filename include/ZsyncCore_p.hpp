@@ -1,5 +1,5 @@
-#ifndef ZSYNC_CORE_WORKER_PRIVATE_INCLUDED
-#define ZSYNC_CORE_WORKER_PRIVATE_INCLUDED
+#ifndef ZSYNC_CORE_WORKER_INCLUDED
+#define ZSYNC_CORE_WORKER_INCLUDED
 #include <QtCore>
 #include <ZsyncInternalStructures_p.hpp>
 #include <ZsyncRemoteControlFileParser_p.hpp>
@@ -18,32 +18,33 @@ public:
     ~ZsyncCorePrivate();
 
 public Q_SLOTS:
-    qint32 submitSourceFiles(QFile*);
+    qint32 addSourceFile(const QString&);
+    qint32 addSourceFile(QFile*);
 
 private Q_SLOTS:
     void addTargetFileChecksumBlocks(zs_blockid, rsum, void*);
-    qint32 getNeededBlocksCount(void);
+    void writeBlocks(const char *, zs_blockid, zs_blockid); 
+    void addToRanges(zs_blockid);
+    void removeBlockFromHash(zs_blockid);
     qint32 submitTargetFileBlocks(const char*, zs_blockid, zs_blockid );
     qint32 submitSourceData(char*, size_t, off_t);
     qint32 checkCheckSumsOnHashChain(const hash_entry *, const char *, qint32 );
-    void writeBlocks(const char *, zs_blockid, zs_blockid);
-    zs_blockid getHashEntryBlockId(const hash_entry *);
-    void addToRanges(zs_blockid);
     qint32 rangeBeforeBlock(zs_blockid);
     qint32 alreadyGotBlock(zs_blockid);
-    zs_blockid nextKnownBlock(zs_blockid);
-    unsigned calcRHash(const hash_entry *const);
     qint32 buildHash(void);
-    void removeBlockFromHash(zs_blockid);
+    quint32 calcRHash(const hash_entry *const);
+    zs_blockid nextKnownBlock(zs_blockid);
 
 Q_SIGNALS:
     void receiveNeededBlockRanges(const QVector<QPair<zs_blockid, zs_blockid>>&);
+    void addedSourceFile(QString);
+    void logger(QString);
 
 private:
     QMutex _pMutex;
     QPair<rsum> _pCurrentWeakCheckSums = qMakePair({ 0 , 0 } , { 0 , 0 });
     size_t _nBlocks = 0 , 
-	   _nBlockSize = 0;
+	       _nBlockSize = 0;
     qint32 _nBlockShift = 0, // log2(blocksize).
 	   _nContext = 0,    // precalculated blocksize * seq_matches.
 	   _nSkip = 0,       // skip forward on next submit_source_data.
@@ -65,8 +66,9 @@ private:
     unsigned char *_pBitHash = nullptr;
 
     QVector<QPair<zs_blockid , zs_blockid>> _pRanges; // Ranges needed to finish the under construction target file.
-    QSharedPointer<QFile> _pTargetFile = nullptr; // Under construction target file.
+    QSharedPointer<QTemporaryFile> _pTargetFile = nullptr; // Under construction target file.
+    QSharedPointer<QThread> _pControlFileParserThread = nullptr; // Thread affinity of the control file parser.
     QSharedPointer<ZsyncRemoteControlFileParserPrivate> _pControlFileParser = nullptr; // Zsync control file.
 };
 }
-#endif // ZSYNC_CORE_WORKER_PRIVATE_INCLUDED
+#endif // ZSYNC_CORE_PRIVATE_INCLUDED

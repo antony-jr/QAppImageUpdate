@@ -1,4 +1,4 @@
-#include <ZsyncCoreWorker_p.hpp>
+#include <ZsyncCore_p.hpp>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -44,18 +44,18 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
 /*
  * Constructor and Destructor
 */
-ZsyncCoreWorker::ZsyncCoreWorker(zs_blockid nblocks, size_t blocksize, int rsum_bytes, int checksum_bytes, int require_consecutive_matches, size_t tFileSize, QObject *parent)
+ZsyncCorePrivate::ZsyncCorePrivate(zs_blockid nblocks, size_t blocksize, int rsum_bytes, int checksum_bytes, int require_consecutive_matches, size_t tFileSize, QObject *parent)
     : QObject(parent),
       blocksize(blocksize),
       blocks(nblocks),
-      rsum_a_mask(rsum_bytes < 3 ? 0 : rsum_bytes == 3 ? 0xff : 0xffff),
+      _pWeakCheckSumMask(rsum_bytes < 3 ? 0 : rsum_bytes == 3 ? 0xff : 0xffff),
       checksum_bytes(checksum_bytes),
       seq_matches(require_consecutive_matches),
       targetFileSize(tFileSize)
 {
     /* require_consecutive_matches is 1 if true; and if true we need 1 block of
-     * context to do block matching */
-    context = blocksize * require_consecutive_matches;
+     * _nContext to do block matching */
+    _nContext = blocksize * require_consecutive_matches;
 
     /* Temporary file to hold the target file as we get blocks for it */
     file = new QFile(QString("rcksum.test"));
@@ -69,8 +69,8 @@ ZsyncCoreWorker::ZsyncCoreWorker(zs_blockid nblocks, size_t blocksize, int rsum_
     /* Hashes for looking up checksums are generated when needed.
      * So initially store NULL so we know there's nothing there yet.
      */
-    rsum_hash = NULL;
-    bithash = NULL;
+    _pRsumHash = NULL;
+    _pBitHash = NULL;
 
     if (!(blocksize & (blocksize - 1)) && blocks) {
         if (!file->open(QIODevice::ReadWrite)) {
@@ -80,15 +80,15 @@ ZsyncCoreWorker::ZsyncCoreWorker(zs_blockid nblocks, size_t blocksize, int rsum_
                 int i;
                 for (i = 0; i < 32; i++)
                     if (blocksize == (1u << i)) {
-                        blockshift = i;
+                        _nBlockShift = i;
                         break;
                     }
             }
 
-            blockhashes = ( hash_entry*)
-                          malloc(sizeof(blockhashes[0]) *
+            _pBlockHashes = ( hash_entry*)
+                          malloc(sizeof(_pBlockHashes[0]) *
                                  (blocks + seq_matches));
-            if (blockhashes != NULL) {
+            if (_pBlockHashes != NULL) {
                 /*
                  * Error.
                 */
@@ -101,14 +101,14 @@ ZsyncCoreWorker::ZsyncCoreWorker(zs_blockid nblocks, size_t blocksize, int rsum_
 }
 
 
-ZsyncCoreWorker::~ZsyncCoreWorker()
+ZsyncCorePrivate::~ZsyncCorePrivate()
 {
     file->resize(targetFileSize);
     file->close();
     /* Free other allocated memory */
-    free(rsum_hash);
-    free(blockhashes);
-    free(bithash);
+    free(_pRsumHash);
+    free(_pBlockHashes);
+    free(_pBitHash);
     free(ranges);            // Should be NULL already
 }
 
@@ -123,7 +123,7 @@ ZsyncCoreWorker::~ZsyncCoreWorker()
  * Returns temporary filename to caller as malloced string.
  * Ownership of the file passes to the caller - the function returns NULL if
  * called again, and it is up to the caller to deal with the file. */
-QString ZsyncCoreWorker::get_filename(void)
+QString ZsyncCorePrivate::get_filename(void)
 {
     return file->fileName();
 }
@@ -132,39 +132,39 @@ QString ZsyncCoreWorker::get_filename(void)
  * Returns the filehandle for the temporary file.
  * Ownership of the handle passes to the caller - the function returns -1 if
  * called again, and it is up to the caller to close it. */
-int ZsyncCoreWorker::filehandle(void)
+int ZsyncCorePrivate::filehandle(void)
 {
     return file->handle();
 }
 
 
-/* ZsyncCoreWorker::add_target_block(self, blockid, rsum, checksum)
+/* ZsyncCorePrivate::add_target_block(self, blockid, rsum, checksum)
  * Sets the stored hash values for the given blockid to the given values.
  */
-void ZsyncCoreWorker::add_target_block(zs_blockid b, rsum r, void *checksum)
+void ZsyncCorePrivate::add_target_block(zs_blockid b, rsum r, void *checksum)
 {
-    if (b < blocks) {
+    if (b < _nBlocks) {
         /* Get hash entry with checksums for this block */
-        hash_entry *e = &(blockhashes[b]);
+        hash_entry *e = &(_pBlockHashes[b]);
 
         /* Enter checksums */
         memcpy(e->checksum, checksum, checksum_bytes);
-        e->r.a = r.a & rsum_a_mask;
+        e->r.a = r.a & _pWeakCheckSumMask;
         e->r.b = r.b;
 
         /* New checksums invalidate any existing checksum hash tables */
-        if (rsum_hash) {
-            free(rsum_hash);
-            rsum_hash = NULL;
-            free(bithash);
-            bithash = NULL;
+        if (_pRsumHash) {
+            free(_pRsumHash);
+            _pRsumHash = NULL;
+            free(_pBitHash);
+            _pBitHash = NULL;
         }
     }
 }
 
 
 
-/* ZsyncCoreWorker::submit_blocks(self, data, startblock, endblock)
+/* ZsyncCorePrivate::submit_blocks(self, data, startblock, endblock)
  * The data in data[] (which should be (endblock - startblock + 1) * blocksize * bytes)
  * is tested block-by-block as valid data against the target checksums for
  * those blocks and, if valid, accepted and written to the working output.
@@ -173,23 +173,23 @@ void ZsyncCoreWorker::add_target_block(zs_blockid b, rsum r, void *checksum)
  * blocks in the output file (i.e. you've downloaded them from a real copy of
  * the target).
  */
-int ZsyncCoreWorker::submit_blocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
+int ZsyncCorePrivate::submit_blocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
     zs_blockid x;
     unsigned char md4sum[CHECKSUM_SIZE];
 
     /* Build checksum hash tables if we don't have them yet */
-    if (!rsum_hash)
+    if (!_pRsumHash)
         if (!build_hash())
             return -1;
 
     /* Check each block */
     for (x = bfrom; x <= bto; x++) {
-        calc_checksum(&md4sum[0], data + ((x - bfrom) << blockshift), blocksize);
+        calc_checksum(&md4sum[0], data + ((x - bfrom) << _nBlockShift), _nBlockSize);
         qInfo() << "block id = " << x;
         qInfo() << "data md4sum = " << QByteArray((const char*)(&md4sum[0])).toHex();
-        qInfo() << "blocksums md4sum = " << QByteArray((const char*)(&(blockhashes[x].checksum[0]))).toHex();
-        if (memcmp(&md4sum, &(blockhashes[x].checksum[0]), checksum_bytes)) {
+        qInfo() << "blocksums md4sum = " << QByteArray((const char*)(&(_pBlockHashes[x].checksum[0]))).toHex();
+        if (memcmp(&md4sum, &(_pBlockHashes[x].checksum[0]), checksum_bytes)) {
             if (x > bfrom)      /* Write any good blocks we did get */
                 write_blocks( data, bfrom, x - 1);
             return -1;
@@ -212,41 +212,41 @@ int ZsyncCoreWorker::submit_blocks(const unsigned char *data, zs_blockid bfrom, 
  *
  * Return the number of blocks successfully obtained.
  */
-int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, const unsigned char *data,int onlyone)
+int ZsyncCorePrivate::check_checksums_on_hash_chain(const struct hash_entry *e, const unsigned char *data,int onlyone)
 {
     unsigned char md4sum[2][CHECKSUM_SIZE];
     signed int done_md4 = -1;
     int got_blocks = 0;
-    register rsum rs = r[0];
+    register rsum rs = _pCurrentWeakCheckSums.first;
 
     /* This is a hint to the caller that they should try matching the next
      * block against a particular hash entry (because at least seq_matches
      * prior blocks to it matched in sequence). Clear it here and set it below
      * if and when we get such a set of matches. */
-    next_match = NULL;
+    _pNextMatch = NULL;
 
     /* This is essentially a for (;e;e=e->next), but we want to remove links from
      * the list as we find matches, without keeping too many temp variables.
      */
-    rover = e;
-    while (rover) {
+    _pRover = e;
+    while (_pRover) {
         zs_blockid id;
 
-        e = rover;
-        rover = onlyone ? NULL : e->next;
+        e = _pRover;
+        _pRover = onlyone ? NULL : e->next;
 
         /* Check weak checksum first */
 
         stats.hashhit++;
-        if (e->r.a != (rs.a & rsum_a_mask) || e->r.b != rs.b) {
+        if (e->r.a != (rs.a & _pWeakCheckSumMask) || e->r.b != rs.b) {
             continue;
         }
 
         id = get_HE_blockid( e);
 
         if (!onlyone && seq_matches > 1
-            && (blockhashes[id + 1].r.a != (r[1].a & rsum_a_mask)
-                || blockhashes[id + 1].r.b != r[1].b))
+            && (_pBlockHashes[id + 1].r.a != (_pCurrentWeakCheckSums.second.a & _pWeakCheckSumMask)
+                || _pBlockHashes[id + 1].r.b != _pCurrentWeakCheckSums.second.b))
             continue;
 
         stats.weakhit++;
@@ -264,15 +264,15 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
                 /* We only calculate the MD4 once we need it; but need not do so twice */
                 if (check_md4 > done_md4) {
                     calc_checksum(&md4sum[check_md4][0],
-                                  data + blocksize * check_md4,
-                                  blocksize);
+                                  data + _nBlockSize * check_md4,
+                                  _nBlockSize);
                     done_md4 = check_md4;
                     stats.checksummed++;
                 }
 
                 /* Now check the strong checksum for this block */
                 if (memcmp(&md4sum[check_md4],
-                           blockhashes[id + check_md4].checksum,
+                           _pBlockHashes[id + check_md4].checksum,
                            checksum_bytes)) {
                     printf("Strong checksum mismatch.\n");
                     ok = 0;
@@ -287,7 +287,7 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
                 /* Find the next block that we already have data for. If this
                  * is part of a run of matches then we have this stored already
                  * as ->next_known. */
-                zs_blockid next_known = onlyone ? next_known : next_known_block( id);
+                zs_blockid next_known = onlyone ? _nNextKnown : next_known_block( id);
 
                 stats.stronghit += check_md4;
 
@@ -295,8 +295,8 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
                     num_write_blocks = check_md4;
 
                     /* Save state for this run of matches */
-                    next_match = &(blockhashes[id + check_md4]);
-                    if (!onlyone) next_known = next_known;
+                    _pNextMatch = &(_pBlockHashes[id + check_md4]);
+                    if (!onlyone) _nNextKnown = next_known;
                 } else {
                     /* We've reached the EOF, or data we already know. Just
                      * write out the blocks we don't know, and that's the end
@@ -313,7 +313,7 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
     return got_blocks;
 }
 
-/* ZsyncCoreWorker::submit_source_data(self, data, datalen, offset)
+/* ZsyncCorePrivate::submit_source_data(self, data, datalen, offset)
  * Reads the supplied data (length datalen) and identifies any contained blocks
  * of data that can be used to make up the target file.
  *
@@ -326,38 +326,38 @@ int ZsyncCoreWorker::check_checksums_on_hash_chain(const struct hash_entry *e, c
  *
  * IMPLEMENTATION:
  * We maintain the following state:
- * skip - the number of bytes to skip next time we enter ZsyncCoreWorker::submit_source_data
+ * _nSkip - the number of bytes to skip next time we enter ZsyncCorePrivate::submit_source_data
  *        e.g. because we've just matched a block and the forward jump takes
  *        us past the end of the buffer
- * r[0] - rolling checksum of the first blocksize bytes of the buffer
- * r[1] - rolling checksum of the next blocksize bytes of the buffer (if seq_matches > 1)
+ * _pCurrentWeakCheckSums.first - rolling checksum of the first blocksize bytes of the buffer
+ * _pCurrentWeakCheckSums.second - rolling checksum of the next blocksize bytes of the buffer (if seq_matches > 1)
  */
-int ZsyncCoreWorker::submit_source_data(unsigned char *data,size_t len, off_t offset)
+int ZsyncCorePrivate::submit_source_data(unsigned char *data,size_t len, off_t offset)
 {
     /* The window in data[] currently being considered is
      * [x, x+bs)
      */
     int x = 0;
-    register int bs = blocksize;
+    register int bs = _nBlockSize;
     int got_blocks = 0;
 
     if (offset) {
-        x = skip;
+        x = _nSkip;
     } else {
-        next_match = NULL;
+        _pNextMatch = NULL;
     }
 
     if (x || !offset) {
-        r[0] = calc_rsum_block(data + x, bs);
+        _pCurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);
         if (seq_matches > 1)
-            r[1] = calc_rsum_block(data + x + bs, bs);
+            _pCurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);
     }
-    skip = 0;
+    _nSkip = 0;
 
     /* Work through the block until the current blocksize bytes being
      * considered, starting at x, is at the end of the buffer */
     for (;;) {
-        if (x + context == len) {
+        if (x + _nContext == len) {
             return got_blocks;
         }
 
@@ -383,21 +383,21 @@ int ZsyncCoreWorker::submit_source_data(unsigned char *data,size_t len, off_t of
             /* If the previous block was a match, but we're looking for
              * sequential matches, then test this block against the block in
              * the target immediately after our previous hit. */
-            if (next_match && seq_matches > 1) {
-                if (0 != (thismatch = check_checksums_on_hash_chain( next_match, data + x, 1))) {
+            if (_pNextMatch && seq_matches > 1) {
+                if (0 != (thismatch = check_checksums_on_hash_chain( _pNextMatch, data + x, 1))) {
                     blocks_matched = 1;
                 }
             }
             if (!thismatch) {
                 const struct hash_entry *e;
 
-                /* Do a hash table lookup - first in the bithash (fast negative
+                /* Do a hash table lookup - first in the _pBitHash (fast negative
                  * check) and then in the rsum hash */
-                unsigned hash = r[0].b;
-                hash ^= ((seq_matches > 1) ? r[1].b
-                         : r[0].a & rsum_a_mask) << BITHASHBITS;
-                if ((bithash[(hash & bithashmask) >> 3] & (1 << (hash & 7))) != 0
-                    && (e = rsum_hash[hash & hashmask]) != NULL) {
+                unsigned hash = _pCurrentWeakCheckSums.first.b;
+                hash ^= ((seq_matches > 1) ? _pCurrentWeakCheckSums.second.b
+                         : _pCurrentWeakCheckSums.first.a & _pWeakCheckSumMask) << BITHASHBITS;
+                if ((_pBitHash[(hash & _pBitHashMask) >> 3] & (1 << (hash & 7))) != 0
+                    && (e = _pRsumHash[hash & _pHashMask]) != NULL) {
 
                     /* Okay, we have a hash hit. Follow the hash chain and
                      * check our block against all the entries. */
@@ -414,11 +414,11 @@ int ZsyncCoreWorker::submit_source_data(unsigned char *data,size_t len, off_t of
             if (blocks_matched) {
                 x += bs + (blocks_matched > 1 ? bs : 0);
 
-                if (x + context > len) {
+                if (x + _nContext > len) {
                     /* can't calculate rsum for block after this one, because
                      * it's not in the buffer. So leave a hint for next time so
                      * we know we need to recalculate */
-                    skip = x + context - len;
+                    _nSkip = x + _nContext - len;
                     return got_blocks;
                 }
 
@@ -426,11 +426,11 @@ int ZsyncCoreWorker::submit_source_data(unsigned char *data,size_t len, off_t of
                  * following block rsum. If we are skipping both, then
                  * recalculate both */
                 if (seq_matches > 1 && blocks_matched == 1)
-                    r[0] = r[1];
+                    _pCurrentWeakCheckSums.first = _pCurrentWeakCheckSums.second;
                 else
-                    r[0] = calc_rsum_block(data + x, bs);
+                    _pCurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);
                 if (seq_matches > 1)
-                    r[1] = calc_rsum_block(data + x + bs, bs);
+                    _pCurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);
                 continue;
             }
         }
@@ -441,33 +441,33 @@ int ZsyncCoreWorker::submit_source_data(unsigned char *data,size_t len, off_t of
             unsigned char Nc = data[x + bs * 2];
             unsigned char nc = data[x + bs];
             unsigned char oc = data[x];
-            UPDATE_RSUM(r[0].a, r[0].b, oc, nc, blockshift);
+            UPDATE_RSUM(_pCurrentWeakCheckSums.first.a, _pCurrentWeakCheckSums.first.b, oc, nc, _nBlockShift);
             if (seq_matches > 1)
-                UPDATE_RSUM(r[1].a, r[1].b, nc, Nc, blockshift);
+                UPDATE_RSUM(_pCurrentWeakCheckSums.second.a, _pCurrentWeakCheckSums.second.b, nc, Nc, _nBlockShift);
         }
         x++;
     }
 }
 
-/* ZsyncCoreWorker::submit_source_file(self, stream, progress)
+/* ZsyncCorePrivate::submit_source_file(self, stream, progress)
  * Read the given stream, applying the rsync rolling checksum algorithm to
  * identify any blocks of data in common with the target file. Blocks found are
  * written to our working target output. Progress reports if progress != 0
  */
-int ZsyncCoreWorker::submit_source_file(QFile *file)
+int ZsyncCorePrivate::submit_source_file(QFile *file)
 {
     /* Track progress */
     int got_blocks = 0;
     off_t in = 0;
 
     /* Allocate buffer of 16 blocks */
-    register int bufsize = blocksize * 16;
-    unsigned char *buf = (unsigned char*)malloc(bufsize + context);
+    register int bufsize = _nBlockSize * 16;
+    unsigned char *buf = (unsigned char*)malloc(bufsize + _nContext);
     if (!buf)
         return 0;
 
     /* Build checksum hash tables ready to analyse the blocks we find */
-    if (!rsum_hash)
+    if (!_pRsumHash)
         if (!build_hash()) {
             free(buf);
             return 0;
@@ -483,17 +483,17 @@ int ZsyncCoreWorker::submit_source_file(QFile *file)
             in += len;
         }
 
-        /* Else, move the last context bytes from the end of the buffer to the
+        /* Else, move the last _nContext bytes from the end of the buffer to the
          * start, and refill the rest of the buffer from the stream. */
         else {
-            memcpy(buf, buf + (bufsize - context), context);
-            in += bufsize - context;
-            len = context + file->read((char*)(buf + context), (bufsize - context));
+            memcpy(buf, buf + (bufsize - _nContext), _nContext);
+            in += bufsize - _nContext;
+            len = _nContext + file->read((char*)(buf + _nContext), (bufsize - _nContext));
         }
 
         if (file->atEnd()) {          /* 0 pad to complete a block */
-            memset(buf + len, 0, context);
-            len += context;
+            memset(buf + len, 0, _nContext);
+            len += _nContext;
         }
 
         /* Process the data in the buffer, and report progress */
@@ -505,15 +505,15 @@ int ZsyncCoreWorker::submit_source_file(QFile *file)
 }
 
 
-/* ZsyncCoreWorker::needed_block_ranges
+/* ZsyncCorePrivate::needed_block_ranges
  * Return the block ranges needed to complete the target file */
-QVector<QPair<zs_blockid, zs_blockid>> ZsyncCoreWorker::needed_block_ranges(zs_blockid from, zs_blockid to)
+QVector<QPair<zs_blockid, zs_blockid>> ZsyncCorePrivate::needed_block_ranges(zs_blockid from, zs_blockid to)
 {
     int i, n;
     QVector<QPair<zs_blockid, zs_blockid>> ret_ranges;
 
-    if (to >= blocks)
-        to = blocks;
+    if (to >= _nBlocks)
+        to = _nBlocks;
 
     ret_ranges.append(qMakePair(from, to));
     ret_ranges.append(qMakePair(0, 0));
@@ -557,11 +557,11 @@ QVector<QPair<zs_blockid, zs_blockid>> ZsyncCoreWorker::needed_block_ranges(zs_b
     return ret_ranges;
 }
 
-/* ZsyncCoreWorker::blocks_todo
+/* ZsyncCorePrivate::blocks_todo
  * Return the number of blocks still needed to complete the target file */
-int ZsyncCoreWorker::blocks_todo(void)
+int ZsyncCorePrivate::blocks_todo(void)
 {
-    int i, n = blocks;
+    int i, n = _nBlocks;
     for (i = 0; i < numranges; i++) {
         n -= 1 + ranges[2 * i + 1] - ranges[2 * i];
     }
@@ -578,28 +578,28 @@ int ZsyncCoreWorker::blocks_todo(void)
  * Build hash tables to quickly lookup a block based on its rsum value.
  * Returns non-zero if successful.
  */
-int ZsyncCoreWorker::build_hash(void)
+int ZsyncCorePrivate::build_hash(void)
 {
     zs_blockid id;
     int i = 16;
 
     /* Try hash size of 2^i; step down the value of i until we find a good size
      */
-    while ((2 << (i - 1)) > blocks && i > 4)
+    while ((2 << (i - 1)) > _nBlocks && i > 4)
         i--;
 
     /* Allocate hash based on rsum */
-    hashmask = (2 << i) - 1;
-    rsum_hash = (hash_entry**)calloc(hashmask + 1, sizeof *(rsum_hash));
-    if (!rsum_hash)
+    _pHashMask = (2 << i) - 1;
+    _pRsumHash = (hash_entry**)calloc(_pHashMask + 1, sizeof *(_pRsumHash));
+    if (!_pRsumHash)
         return 0;
 
     /* Allocate bit-table based on rsum */
-    bithashmask = (2 << (i + BITHASHBITS)) - 1;
-    bithash = (unsigned char*)calloc(bithashmask + 1, 1);
-    if (!bithash) {
-        free(rsum_hash);
-        rsum_hash = NULL;
+    _pBitHashMask = (2 << (i + BITHASHBITS)) - 1;
+    _pBitHash = (unsigned char*)calloc(_pBitHashMask + 1, 1);
+    if (!_pBitHash) {
+        free(_pRsumHash);
+        _pRsumHash = NULL;
         return 0;
     }
 
@@ -609,17 +609,17 @@ int ZsyncCoreWorker::build_hash(void)
      * reverse then the resulting hash chains have the blocks in normal order.
      * That's improves our pattern of I/O when writing out identical blocks
      * once we are processing data; we will write them in order. */
-    for (id = blocks; id > 0;) {
+    for (id = _nBlocks; id > 0;) {
         /* Decrement the loop variable here, and get the hash entry. */
-        hash_entry *e = blockhashes + (--id);
+        hash_entry *e = _pBlockHashes + (--id);
 
         /* Prepend to linked list for this hash entry */
         unsigned h = calc_rhash( e);
-        e->next = rsum_hash[h & hashmask];
-        rsum_hash[h & hashmask] = e;
+        e->next = _pRsumHash[h & _pHashMask];
+        _pRsumHash[h & _pHashMask] = e;
 
-        /* And set relevant bit in the bithash to 1 */
-        bithash[(h & bithashmask) >> 3] |= 1 << (h & 7);
+        /* And set relevant bit in the _pBitHash to 1 */
+        _pBitHash[(h & _pBitHashMask) >> 3] |= 1 << (h & 7);
     }
     return 1;
 }
@@ -628,16 +628,16 @@ int ZsyncCoreWorker::build_hash(void)
  * Remove the given data block from the rsum hash table, so it won't be
  * returned in a hash lookup again (e.g. because we now have the data)
  */
-void ZsyncCoreWorker::remove_block_from_hash(zs_blockid id)
+void ZsyncCorePrivate::remove_block_from_hash(zs_blockid id)
 {
-    hash_entry *t = &(blockhashes[id]);
+    hash_entry *t = &(_pBlockHashes[id]);
 
-    hash_entry **p = &(rsum_hash[calc_rhash( t) & hashmask]);
+    hash_entry **p = &(_pRsumHash[calc_rhash( t) & _pHashMask]);
 
     while (*p != NULL) {
         if (*p == t) {
-            if (t == rover) {
-                rover = t->next;
+            if (t == _pRover) {
+                _pRover = t->next;
             }
             *p = (*p)->next;
             return;
@@ -657,7 +657,7 @@ void ZsyncCoreWorker::remove_block_from_hash(zs_blockid id)
  * ...
  * numranges if it is after the last range
  */
-int ZsyncCoreWorker::range_before_block(zs_blockid x)
+int ZsyncCorePrivate::range_before_block(zs_blockid x)
 {
     /* Lowest number and highest number block that it could be inside (0 based) */
     register int min = 0, max = numranges-1;
@@ -683,7 +683,7 @@ int ZsyncCoreWorker::range_before_block(zs_blockid x)
 /* add_to_ranges(rs, blockid)
  * Mark the given blockid as known, updating the stored known ranges
  * appropriately */
-void ZsyncCoreWorker::add_to_ranges(zs_blockid x)
+void ZsyncCorePrivate::add_to_ranges(zs_blockid x)
 {
     int r = range_before_block(x);
 
@@ -729,7 +729,7 @@ void ZsyncCoreWorker::add_to_ranges(zs_blockid x)
 
 /* already_got_block
  * Return true iff blockid x of the target file is already known */
-int ZsyncCoreWorker::already_got_block(zs_blockid x)
+int ZsyncCorePrivate::already_got_block(zs_blockid x)
 {
     return (range_before_block(x) == -1);
 }
@@ -741,42 +741,42 @@ int ZsyncCoreWorker::already_got_block(zs_blockid x)
  * If no later blocks are known, it returns numblocks (i.e. the block after
  * the end of the file).
  */
-zs_blockid ZsyncCoreWorker::next_known_block(zs_blockid x)
+zs_blockid ZsyncCorePrivate::next_known_block(zs_blockid x)
 {
     int r = range_before_block(x);
     if (r == -1)
         return x;
     if (r == numranges) {
-        return blocks;
+        return _nBlocks;
     }
     /* Else return first block of next known range. */
     return ranges[2*r];
 }
 
 
-unsigned ZsyncCoreWorker::calc_rhash(const struct hash_entry *const e)
+unsigned ZsyncCorePrivate::calc_rhash(const struct hash_entry *const e)
 {
     unsigned h = e[0].r.b;
 
     h ^= ((seq_matches > 1) ? e[1].r.b
-          : e[0].r.a & rsum_a_mask) << BITHASHBITS;
+          : e[0].r.a & _pWeakCheckSumMask) << BITHASHBITS;
 
     return h;
 }
 
-zs_blockid ZsyncCoreWorker::getHashEntryBlockId(const hash_entry *e)
+zs_blockid ZsyncCorePrivate::getHashEntryBlockId(const hash_entry *e)
 {
-    return e - blockhashes;
+    return e - _pBlockHashes;
 }
 
 
 /* write_blocks(rcksum_state, buf, startblock, endblock)
  * Writes the block range (inclusive) from the supplied buffer to our
  * under-construction output file */
-void ZsyncCoreWorker::write_blocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
+void ZsyncCorePrivate::write_blocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
-    off_t len = ((off_t) (bto - bfrom + 1)) << blockshift;
-    off_t offset = ((off_t) bfrom) << blockshift;
+    off_t len = ((off_t) (bto - bfrom + 1)) << _nBlockShift;
+    off_t offset = ((off_t) bfrom) << _nBlockShift;
 
     auto pos = file->pos();
     file->seek(offset);
