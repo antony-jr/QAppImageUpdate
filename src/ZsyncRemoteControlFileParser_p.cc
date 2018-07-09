@@ -132,14 +132,14 @@ void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose)
         return;
     } else if(choose) {
         disconnect(this, SIGNAL(logger(QString)),
-                   this, SLOT(logPrinter(QString)));
+                   this, SLOT(handleLogMessage(QString)));
         connect(this, SIGNAL(logger(QString)),
-                this, SLOT(logPrinter(QString)));
+                this, SLOT(handleLogMessage(QString)));
 	INFO_START << " setShowLog : started logging." INFO_END;
     } else {
 	INFO_START << " setShowLog : stopping logging." INFO_END;
         disconnect(this, SIGNAL(logger(QString)),
-                   this, SLOT(logPrinter(QString)));
+                   this, SLOT(handleLogMessage(QString)));
     }
     _pMutex.unlock();
     return;
@@ -181,8 +181,7 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
     }
 
     if(_uControlFileUrl.isEmpty() || !_uControlFileUrl.isValid()) {
-	WARNING_START << " getControlFile : no zsync control file url(" 
-		      << _uControlFileUrl << ") is given or valid." WARNIGN_END;
+	WARNING_START << " getControlFile : no zsync control file url(" << _uControlFileUrl << ") is given or valid." WARNING_END;
         _pMutex.unlock();
         return;
     }
@@ -573,7 +572,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         emit error(INVALID_ZSYNC_TARGET_FILENAME);
         return;
     }
-    INFO_START << " handleControlFile : zsync target file name confirmed to be " << _sTargetFileName << "." INFO_END:
+    INFO_START << " handleControlFile : zsync target file name confirmed to be " << _sTargetFileName << "." INFO_END;
 
     _pMTime = QDateTime::fromString(ZsyncHeaderList.at(2).split("MTime: ")[1], "ddd, dd MMM yyyy HH:mm:ss +zzz0");
     if(!_pMTime.isValid()) {
@@ -629,7 +628,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         emit error(INVALID_TARGET_FILE_SHA1);
         return;
     }
-    INFO_START << " handleControlFile : zsync target file sha1 hash is confirmed to be " << _uTargetFileSHA1 << "." INFO_END:
+    INFO_START << " handleControlFile : zsync target file sha1 hash is confirmed to be " << _sTargetFileSHA1 << "." INFO_END;
 
     _nTargetFileBlocks = (_nTargetFileLength + _nTargetFileBlockSize - 1) / _nTargetFileBlockSize;
     INFO_START << " handleControlFile : zsync target file has " << _nTargetFileBlocks << " number of blocks." INFO_END;
@@ -714,32 +713,34 @@ QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
 		case NO_MARKER_FOUND_IN_CONTROL_FILE:
 			errorCodeString.append("NO_MARKER_FOUND_IN_CONTROL_FILE");
 			break;
-			INVALID_ZSYNC_HEADERS_NUMBER,
-        	case INVALID_ZSYNC_MAKE_VERSION:
+        case INVALID_ZSYNC_HEADERS_NUMBER:
+            errorCodeString.append("INVALID_ZSYNC_HEADERS_NUMBER");
+            break;
+        case INVALID_ZSYNC_MAKE_VERSION:
 			errorCodeString.append("INVALID_ZSYNC_MAKE_VERSION");
 			break;
-        	case INVALID_ZSYNC_TARGET_FILENAME:
+        case INVALID_ZSYNC_TARGET_FILENAME:
 			errorCodeString.append("INVALID_ZSYNC_TARGET_FILENAME");
 			break;
-        	case INVALID_ZSYNC_MTIME:
+        case INVALID_ZSYNC_MTIME:
 			errorCodeString.append("INVALID_ZSYNC_MTIME");
 			break;
-        	case INVALID_ZSYNC_BLOCKSIZE:
+        case INVALID_ZSYNC_BLOCKSIZE:
 			errorCodeString.append("INVALID_ZSYNC_BLOCKSIZE");
 			break;
-        	case INVALID_TARGET_FILE_LENGTH:
+        case INVALID_TARGET_FILE_LENGTH:
 			errorCodeString.append("INVALID_TARGET_FILE_LENGTH");
 			break;
-        	case INVALID_HASH_LENGTH_LINE:
+        case INVALID_HASH_LENGTH_LINE:
 			errorCodeString.append("INVALID_HASH_LENGTH_LINE");
 			break;
-        	case INVALID_HASH_LENGTHS:
+        case INVALID_HASH_LENGTHS:
 			errorCodeString.append("INVALID_HASH_LENGTHS");
 			break;
-        	case INVALID_TARGET_FILE_URL:
+        case INVALID_TARGET_FILE_URL:
 			errorCodeString.append("INVALID_TARGET_FILE_URL");
 			break;
-        	case INVALID_TARGET_FILE_SHA1:
+        case INVALID_TARGET_FILE_SHA1:
 			errorCodeString.append("INVALID_TARGET_FILE_SHA1");
 			break;
 		default:

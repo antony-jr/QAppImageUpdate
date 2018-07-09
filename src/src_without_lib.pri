@@ -33,6 +33,6 @@ include(../include/include.pri)
 QT += core concurrent network
 
 SOURCES += $$system(pwd)/AppImageUpdaterBridge.cc \
-	   $$system(pwd)/ZsyncCoreWorker_p.cc \
+	   $$system(pwd)/ZsyncCore_p.cc \
 	   $$system(pwd)/ZsyncRemoteControlFileParser_p.cc
 

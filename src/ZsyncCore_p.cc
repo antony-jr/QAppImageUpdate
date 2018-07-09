@@ -12,6 +12,7 @@ using namespace AppImageUpdaterBridgePrivate;
 
 /* rcksum_calc_rsum_block(data, data_len)
  * Calculate the rsum for a single block of data. */
+// calc_rsum_block
 static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, size_t len)
 {
     register unsigned short a = 0;
@@ -32,6 +33,7 @@ static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, si
 
 /* rcksum_calc_checksum(checksum_buf, data, data_len)
  * Returns the MD4 checksum (in checksum_buf) of the given data block */
+// calc_checksum
 static void calc_checksum(unsigned char *c, const unsigned char *data,
                           size_t len)
 {
@@ -39,116 +41,88 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
     ctx.addData((const char*)data, len);
     auto result = ctx.result();
     memmove(c, result.constData(), sizeof(const char) * result.size());
+    return;
 }
 
 /*
  * Constructor and Destructor
 */
-ZsyncCorePrivate::ZsyncCorePrivate(zs_blockid nblocks, size_t blocksize, int rsum_bytes, int checksum_bytes, int require_consecutive_matches, size_t tFileSize, QObject *parent)
-    : QObject(parent),
-      blocksize(blocksize),
-      blocks(nblocks),
-      _pWeakCheckSumMask(rsum_bytes < 3 ? 0 : rsum_bytes == 3 ? 0xff : 0xffff),
-      checksum_bytes(checksum_bytes),
-      seq_matches(require_consecutive_matches),
-      targetFileSize(tFileSize)
+ZsyncCorePrivate::ZsyncCorePrivate(QNetworkAccessManager *NetworkManager)
+    : QObject(NetworkManager)
 {
-    /* require_consecutive_matches is 1 if true; and if true we need 1 block of
-     * _nContext to do block matching */
-    _nContext = blocksize * require_consecutive_matches;
-
-    /* Temporary file to hold the target file as we get blocks for it */
-    file = new QFile(QString("rcksum.test"));
-
-    /* Initialise to 0 various state & stats */
-    gotblocks = 0;
-    memset(&(stats), 0, sizeof(stats));
-    ranges = NULL;
-    numranges = 0;
-
-    /* Hashes for looking up checksums are generated when needed.
-     * So initially store NULL so we know there's nothing there yet.
-     */
-    _pRsumHash = NULL;
-    _pBitHash = NULL;
-
-    if (!(blocksize & (blocksize - 1)) && blocks) {
-        if (!file->open(QIODevice::ReadWrite)) {
-            perror("open");
-        } else {
-            {   /* Calculate bit-shift for blocksize */
-                int i;
-                for (i = 0; i < 32; i++)
-                    if (blocksize == (1u << i)) {
-                        _nBlockShift = i;
-                        break;
-                    }
-            }
-
-            _pBlockHashes = ( hash_entry*)
-                          malloc(sizeof(_pBlockHashes[0]) *
-                                 (blocks + seq_matches));
-            if (_pBlockHashes != NULL) {
-                /*
-                 * Error.
-                */
-            }
-
-            /* All below is error handling */
-        }
-    }
+    _pControlFileParserThread = QSharedPointer<QThread>(new QThread);
+    _pControlFileParser = QSharedPointer<ZsyncRemoteControlFileParserPrivate>(new ZsyncRemoteControlFileParserPrivate(NetworkManager));
+    
+    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveControlFile ,
+            this , &ZsyncCorePrivate::processControlFile);
+    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveTargetFileBlocks ,
+            this , &ZsyncCorePrivate::addTargetFileCheckSumBlocks);
+    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::endOfTargetFileBlocks ,
+            this , &ZsyncCorePrivate::completeTargetFileCheckSumBlocks);
+    
+    _pControlFileParser->moveToThread(_pControlFileParserThread.data());
+    _pControlFileParserThread->start();
     return;
 }
 
+ZsyncCorePrivate::ZsyncCorePrivate(const QUrl &controlFileUrl , QNetworkAccessManager *NetworkManager)
+    : QObject(NetworkManager)
+{
+    _pControlFileParserThread = QSharedPointer<QThread>(new QThread);
+    _pControlFileParser = QSharedPointer<ZsyncRemoteControlFileParserPrivate>(new ZsyncRemoteControlFileParserPrivate(NetworkManager));
+    
+    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveControlFile ,
+            this , &ZsyncCorePrivate::processControlFile);
+    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveTargetFileBlocks ,
+            this , &ZsyncCorePrivate::addTargetFileCheckSumBlocks);
+    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::endOfTargetFileBlocks ,
+            this , &ZsyncCorePrivate::completeTargetFileCheckSumBlocks);
+    
+    _pControlFileParser->moveToThread(_pControlFileParserThread.data());
+    _pControlFileParserThread->start();
+    setControlFileUrl(controlFileUrl);
+    return;
+}
+
+void ZsyncCorePrivate::setControlFileUrl(const QUrl &url)
+{
+    _pControlFileParser->setControlFileUrl(url);
+    _pControlFileParser->getControlFile();
+    return;
+}
+
+void ZsyncCorePrivate::setShowLog(bool choose)
+{
+    _pControlFileParser->setShowLog(choose);
+    return;
+}
+
+void ZsyncCorePrivate::clear(void)
+{
+    return;
+}
 
 ZsyncCorePrivate::~ZsyncCorePrivate()
 {
-    file->resize(targetFileSize);
-    file->close();
     /* Free other allocated memory */
     free(_pRsumHash);
+    free(_pRanges);
     free(_pBlockHashes);
     free(_pBitHash);
-    free(ranges);            // Should be NULL already
-}
-
-
-/*
- * Public Methods.
-*/
-
-
-
-/* filename(self)
- * Returns temporary filename to caller as malloced string.
- * Ownership of the file passes to the caller - the function returns NULL if
- * called again, and it is up to the caller to deal with the file. */
-QString ZsyncCorePrivate::get_filename(void)
-{
-    return file->fileName();
-}
-
-/* filehandle(self)
- * Returns the filehandle for the temporary file.
- * Ownership of the handle passes to the caller - the function returns -1 if
- * called again, and it is up to the caller to close it. */
-int ZsyncCorePrivate::filehandle(void)
-{
-    return file->handle();
 }
 
 
 /* ZsyncCorePrivate::add_target_block(self, blockid, rsum, checksum)
  * Sets the stored hash values for the given blockid to the given values.
  */
-void ZsyncCorePrivate::add_target_block(zs_blockid b, rsum r, void *checksum)
+void ZsyncCorePrivate::addTargetFileCheckSumBlocks(zs_blockid b, rsum r, void *checksum)
 {
     if (b < _nBlocks) {
         /* Get hash entry with checksums for this block */
         hash_entry *e = &(_pBlockHashes[b]);
 
         /* Enter checksums */
-        memcpy(e->checksum, checksum, checksum_bytes);
+        memcpy(e->checksum, checksum, _nStrongCheckSumBytes);
         e->r.a = r.a & _pWeakCheckSumMask;
         e->r.b = r.b;
 
@@ -163,8 +137,34 @@ void ZsyncCorePrivate::add_target_block(zs_blockid b, rsum r, void *checksum)
 }
 
 
+void ZsyncCorePrivate::addSourceFile(const QString &file)
+{
+    sourceFiles.append(file);
+    return;
+}
 
-/* ZsyncCorePrivate::submit_blocks(self, data, startblock, endblock)
+void ZsyncCorePrivate::completeTargetFileCheckSumBlocks(void)
+{
+    /*
+     * Delete unwanted buffers.
+    */
+    _pControlFileParser.clear();
+    
+    for(auto i = 0; i < sourceFiles.size() ; ++i){
+        QFile *file = new QFile(sourceFiles.at(i));
+        file->open(QIODevice::ReadOnly);
+        _nGotBlocks += submitSourceFile(file);
+        file->close();
+        delete file;
+    }
+    if(_nGotBlocks >= _nBlocks){
+    _pTargetFile->resize(_nTargetFileLength);
+    _pTargetFile->close();
+    }
+    return;
+}
+
+/* ZsyncCorePrivate::submitTargetFileBlocks(self, data, startblock, endblock)
  * The data in data[] (which should be (endblock - startblock + 1) * blocksize * bytes)
  * is tested block-by-block as valid data against the target checksums for
  * those blocks and, if valid, accepted and written to the working output.
@@ -173,35 +173,32 @@ void ZsyncCorePrivate::add_target_block(zs_blockid b, rsum r, void *checksum)
  * blocks in the output file (i.e. you've downloaded them from a real copy of
  * the target).
  */
-int ZsyncCorePrivate::submit_blocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
+qint32 ZsyncCorePrivate::submitTargetFileBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
     zs_blockid x;
     unsigned char md4sum[CHECKSUM_SIZE];
 
     /* Build checksum hash tables if we don't have them yet */
     if (!_pRsumHash)
-        if (!build_hash())
+        if (!buildHash())
             return -1;
 
     /* Check each block */
     for (x = bfrom; x <= bto; x++) {
         calc_checksum(&md4sum[0], data + ((x - bfrom) << _nBlockShift), _nBlockSize);
-        qInfo() << "block id = " << x;
-        qInfo() << "data md4sum = " << QByteArray((const char*)(&md4sum[0])).toHex();
-        qInfo() << "blocksums md4sum = " << QByteArray((const char*)(&(_pBlockHashes[x].checksum[0]))).toHex();
-        if (memcmp(&md4sum, &(_pBlockHashes[x].checksum[0]), checksum_bytes)) {
+        if (memcmp(&md4sum, &(_pBlockHashes[x].checksum[0]), _nStrongCheckSumBytes)) {
             if (x > bfrom)      /* Write any good blocks we did get */
-                write_blocks( data, bfrom, x - 1);
+                writeBlocks(data, bfrom, x - 1);
             return -1;
         }
     }
 
     /* All blocks are valid; write them and update our state */
-    write_blocks( data, bfrom, bto);
+    writeBlocks( data, bfrom, bto);
     return 0;
 }
 
-/* check_checksums_on_hash_chain(self, &hash_entry, data[], onlyone)
+/* checkCheckSumsOnHashChain(self, &hash_entry, data[], onlyone)
  * Given a hash table entry, check the data in this block against every entry
  * in the linked list for this hash entry, checking the checksums for this
  * block against those recorded in the hash entries.
@@ -212,15 +209,15 @@ int ZsyncCorePrivate::submit_blocks(const unsigned char *data, zs_blockid bfrom,
  *
  * Return the number of blocks successfully obtained.
  */
-int ZsyncCorePrivate::check_checksums_on_hash_chain(const struct hash_entry *e, const unsigned char *data,int onlyone)
+qint32 ZsyncCorePrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, const unsigned char *data,int onlyone)
 {
     unsigned char md4sum[2][CHECKSUM_SIZE];
     signed int done_md4 = -1;
-    int got_blocks = 0;
+    qint32 got_blocks = 0;
     register rsum rs = _pCurrentWeakCheckSums.first;
 
     /* This is a hint to the caller that they should try matching the next
-     * block against a particular hash entry (because at least seq_matches
+     * block against a particular hash entry (because at least _nSeqMatches
      * prior blocks to it matched in sequence). Clear it here and set it below
      * if and when we get such a set of matches. */
     _pNextMatch = NULL;
@@ -237,19 +234,19 @@ int ZsyncCorePrivate::check_checksums_on_hash_chain(const struct hash_entry *e, 
 
         /* Check weak checksum first */
 
-        stats.hashhit++;
+        // HashHit++
         if (e->r.a != (rs.a & _pWeakCheckSumMask) || e->r.b != rs.b) {
             continue;
         }
 
-        id = get_HE_blockid( e);
+        id = getHashEntryBlockId( e);
 
-        if (!onlyone && seq_matches > 1
+        if (!onlyone && _nSeqMatches > 1
             && (_pBlockHashes[id + 1].r.a != (_pCurrentWeakCheckSums.second.a & _pWeakCheckSumMask)
                 || _pBlockHashes[id + 1].r.b != _pCurrentWeakCheckSums.second.b))
             continue;
 
-        stats.weakhit++;
+        // WeakHit++
 
         {
             int ok = 1;
@@ -257,7 +254,7 @@ int ZsyncCorePrivate::check_checksums_on_hash_chain(const struct hash_entry *e, 
             zs_blockid next_known = -1;
 
             /* This block at least must match; we must match at least
-             * seq_matches-1 others, which could either be trailing stuff,
+             * _nSeqMatches-1 others, which could either be trailing stuff,
              * or these could be preceding blocks that we have verified
              * already. */
             do {
@@ -267,29 +264,28 @@ int ZsyncCorePrivate::check_checksums_on_hash_chain(const struct hash_entry *e, 
                                   data + _nBlockSize * check_md4,
                                   _nBlockSize);
                     done_md4 = check_md4;
-                    stats.checksummed++;
+                    // Checksummed++
                 }
 
                 /* Now check the strong checksum for this block */
                 if (memcmp(&md4sum[check_md4],
                            _pBlockHashes[id + check_md4].checksum,
-                           checksum_bytes)) {
-                    printf("Strong checksum mismatch.\n");
+                           _nStrongCheckSumBytes)) {
                     ok = 0;
                 } else if (next_known == -1) {
                 }
                 check_md4++;
-            } while (ok && !onlyone && check_md4 < seq_matches);
+            } while (ok && !onlyone && check_md4 < _nSeqMatches);
 
             if (ok) {
-                int num_write_blocks;
+                qint32 num_write_blocks;
 
                 /* Find the next block that we already have data for. If this
                  * is part of a run of matches then we have this stored already
                  * as ->next_known. */
-                zs_blockid next_known = onlyone ? _nNextKnown : next_known_block( id);
+                zs_blockid next_known = onlyone ? _nNextKnown : nextKnownBlock( id);
 
-                stats.stronghit += check_md4;
+                // stronghit++
 
                 if (next_known > id + check_md4) {
                     num_write_blocks = check_md4;
@@ -305,7 +301,7 @@ int ZsyncCorePrivate::check_checksums_on_hash_chain(const struct hash_entry *e, 
                 }
 
                 /* Write out the matched blocks that we don't yet know */
-                write_blocks( data, id, id + num_write_blocks - 1);
+                writeBlocks( data, id, id + num_write_blocks - 1);
                 got_blocks += num_write_blocks;
             }
         }
@@ -313,7 +309,7 @@ int ZsyncCorePrivate::check_checksums_on_hash_chain(const struct hash_entry *e, 
     return got_blocks;
 }
 
-/* ZsyncCorePrivate::submit_source_data(self, data, datalen, offset)
+/* ZsyncCorePrivate::submitSourceData(self, data, datalen, offset)
  * Reads the supplied data (length datalen) and identifies any contained blocks
  * of data that can be used to make up the target file.
  *
@@ -326,20 +322,20 @@ int ZsyncCorePrivate::check_checksums_on_hash_chain(const struct hash_entry *e, 
  *
  * IMPLEMENTATION:
  * We maintain the following state:
- * _nSkip - the number of bytes to skip next time we enter ZsyncCorePrivate::submit_source_data
+ * _nSkip - the number of bytes to skip next time we enter ZsyncCorePrivate::submitSourceData
  *        e.g. because we've just matched a block and the forward jump takes
  *        us past the end of the buffer
  * _pCurrentWeakCheckSums.first - rolling checksum of the first blocksize bytes of the buffer
- * _pCurrentWeakCheckSums.second - rolling checksum of the next blocksize bytes of the buffer (if seq_matches > 1)
+ * _pCurrentWeakCheckSums.second - rolling checksum of the next blocksize bytes of the buffer (if _nSeqMatches > 1)
  */
-int ZsyncCorePrivate::submit_source_data(unsigned char *data,size_t len, off_t offset)
+qint32 ZsyncCorePrivate::submitSourceData(unsigned char *data,size_t len, off_t offset)
 {
     /* The window in data[] currently being considered is
      * [x, x+bs)
      */
-    int x = 0;
-    register int bs = _nBlockSize;
-    int got_blocks = 0;
+    qint32 x = 0;
+    register qint32 bs = _nBlockSize;
+    qint32 got_blocks = 0;
 
     if (offset) {
         x = _nSkip;
@@ -349,7 +345,7 @@ int ZsyncCorePrivate::submit_source_data(unsigned char *data,size_t len, off_t o
 
     if (x || !offset) {
         _pCurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);
-        if (seq_matches > 1)
+        if (_nSeqMatches > 1)
             _pCurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);
     }
     _nSkip = 0;
@@ -374,17 +370,17 @@ int ZsyncCorePrivate::submit_source_data(unsigned char *data,size_t len, off_t o
 
         {
             /* # of blocks of the output file we got from this data */
-            int thismatch = 0;
+            qint32 thismatch = 0;
             /* # of blocks to advance if thismatch > 0. Can be less than
              * thismatch as thismatch could be N*blocks_matched, if a block was
              * duplicated to multiple locations in the output file. */
-            int blocks_matched = 0;
+            qint32 blocks_matched = 0;
 
             /* If the previous block was a match, but we're looking for
              * sequential matches, then test this block against the block in
              * the target immediately after our previous hit. */
-            if (_pNextMatch && seq_matches > 1) {
-                if (0 != (thismatch = check_checksums_on_hash_chain( _pNextMatch, data + x, 1))) {
+            if (_pNextMatch && _nSeqMatches > 1) {
+                if (0 != (thismatch = checkCheckSumsOnHashChain( _pNextMatch, data + x, 1))) {
                     blocks_matched = 1;
                 }
             }
@@ -394,16 +390,16 @@ int ZsyncCorePrivate::submit_source_data(unsigned char *data,size_t len, off_t o
                 /* Do a hash table lookup - first in the _pBitHash (fast negative
                  * check) and then in the rsum hash */
                 unsigned hash = _pCurrentWeakCheckSums.first.b;
-                hash ^= ((seq_matches > 1) ? _pCurrentWeakCheckSums.second.b
+                hash ^= ((_nSeqMatches > 1) ? _pCurrentWeakCheckSums.second.b
                          : _pCurrentWeakCheckSums.first.a & _pWeakCheckSumMask) << BITHASHBITS;
                 if ((_pBitHash[(hash & _pBitHashMask) >> 3] & (1 << (hash & 7))) != 0
                     && (e = _pRsumHash[hash & _pHashMask]) != NULL) {
 
                     /* Okay, we have a hash hit. Follow the hash chain and
                      * check our block against all the entries. */
-                    thismatch = check_checksums_on_hash_chain( e, data + x, 0);
+                    thismatch = checkCheckSumsOnHashChain( e, data + x, 0);
                     if (thismatch)
-                        blocks_matched = seq_matches;
+                        blocks_matched = _nSeqMatches;
                 }
             }
             got_blocks += thismatch;
@@ -425,11 +421,11 @@ int ZsyncCorePrivate::submit_source_data(unsigned char *data,size_t len, off_t o
                 /* If we are moving forward just 1 block, we already have the
                  * following block rsum. If we are skipping both, then
                  * recalculate both */
-                if (seq_matches > 1 && blocks_matched == 1)
+                if (_nSeqMatches > 1 && blocks_matched == 1)
                     _pCurrentWeakCheckSums.first = _pCurrentWeakCheckSums.second;
                 else
                     _pCurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);
-                if (seq_matches > 1)
+                if (_nSeqMatches > 1)
                     _pCurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);
                 continue;
             }
@@ -442,33 +438,33 @@ int ZsyncCorePrivate::submit_source_data(unsigned char *data,size_t len, off_t o
             unsigned char nc = data[x + bs];
             unsigned char oc = data[x];
             UPDATE_RSUM(_pCurrentWeakCheckSums.first.a, _pCurrentWeakCheckSums.first.b, oc, nc, _nBlockShift);
-            if (seq_matches > 1)
+            if (_nSeqMatches > 1)
                 UPDATE_RSUM(_pCurrentWeakCheckSums.second.a, _pCurrentWeakCheckSums.second.b, nc, Nc, _nBlockShift);
         }
         x++;
     }
 }
 
-/* ZsyncCorePrivate::submit_source_file(self, stream, progress)
+/* ZsyncCorePrivate::submitSourceFile(self, stream, progress)
  * Read the given stream, applying the rsync rolling checksum algorithm to
  * identify any blocks of data in common with the target file. Blocks found are
  * written to our working target output. Progress reports if progress != 0
  */
-int ZsyncCorePrivate::submit_source_file(QFile *file)
+qint32 ZsyncCorePrivate::submitSourceFile(QFile *file)
 {
     /* Track progress */
-    int got_blocks = 0;
+    qint32 got_blocks = 0;
     off_t in = 0;
 
     /* Allocate buffer of 16 blocks */
-    register int bufsize = _nBlockSize * 16;
+    register qint32 bufsize = _nBlockSize * 16;
     unsigned char *buf = (unsigned char*)malloc(bufsize + _nContext);
     if (!buf)
         return 0;
 
     /* Build checksum hash tables ready to analyse the blocks we find */
     if (!_pRsumHash)
-        if (!build_hash()) {
+        if (!buildHash()) {
             free(buf);
             return 0;
         }
@@ -497,7 +493,7 @@ int ZsyncCorePrivate::submit_source_file(QFile *file)
         }
 
         /* Process the data in the buffer, and report progress */
-        got_blocks += submit_source_data( buf, len, start_in);
+        got_blocks += submitSourceData( buf, len, start_in);
     }
     file->close();
     free(buf);
@@ -507,9 +503,10 @@ int ZsyncCorePrivate::submit_source_file(QFile *file)
 
 /* ZsyncCorePrivate::needed_block_ranges
  * Return the block ranges needed to complete the target file */
-QVector<QPair<zs_blockid, zs_blockid>> ZsyncCorePrivate::needed_block_ranges(zs_blockid from, zs_blockid to)
+void ZsyncCorePrivate::getNeededRanges(void)
 {
-    int i, n;
+    qint32 i, n;
+    zs_blockid from = 0 , to = _nBlocks;
     QVector<QPair<zs_blockid, zs_blockid>> ret_ranges;
 
     if (to >= _nBlocks)
@@ -520,30 +517,30 @@ QVector<QPair<zs_blockid, zs_blockid>> ZsyncCorePrivate::needed_block_ranges(zs_
     n = 1;
     /* Note r[2*n-1] is the last range in our prospective list */
 
-    for (i = 0; i < numranges; i++) {
+    for (i = 0; i < _nRanges; i++) {
         if(n == 1) {
             ret_ranges.append(qMakePair(from, to));
         } else {
             ret_ranges.append(qMakePair(0, 0));
         }
-        if (ranges[2 * i] > ret_ranges.at(n - 1).second) // (2 * n - 1) -> second.
+        if (_pRanges[2 * i] > ret_ranges.at(n - 1).second) // (2 * n - 1) -> second.
             continue;
-        if (ranges[2 * i + 1] < from)
+        if (_pRanges[2 * i + 1] < from)
             continue;
 
         /* Okay, they intersect */
-        if (n == 1 && ranges[2 * i] <= from) {       /* Overlaps the start of our window */
-            ret_ranges[0].first = ranges[2 * i + 1] + 1;
+        if (n == 1 && _pRanges[2 * i] <= from) {       /* Overlaps the start of our window */
+            ret_ranges[0].first = _pRanges[2 * i + 1] + 1;
         } else {
             /* If the last block that we still (which is the last window end -1, due
              * to half-openness) then this range just cuts the end of our window */
-            if (ranges[2 * i + 1] >= ret_ranges.at(n - 1).second - 1) {
-                ret_ranges[n - 1].second = ranges[2 * i];
+            if (_pRanges[2 * i + 1] >= ret_ranges.at(n - 1).second - 1) {
+                ret_ranges[n - 1].second = _pRanges[2 * i];
             } else {
                 /* In the middle of our range, split it */
-                ret_ranges[n].first = ranges[2 * i + 1] + 1;
+                ret_ranges[n].first = _pRanges[2 * i + 1] + 1;
                 ret_ranges[n].second = ret_ranges.at(n-1).second;
-                ret_ranges[n-1].second = ranges[2 * i];
+                ret_ranges[n-1].second = _pRanges[2 * i];
                 n++;
             }
         }
@@ -554,16 +551,18 @@ QVector<QPair<zs_blockid, zs_blockid>> ZsyncCorePrivate::needed_block_ranges(zs_
     }
 
     ret_ranges.removeAll(qMakePair(0, 0));
-    return ret_ranges;
+    
+    emit receiveNeededBlockRanges(ret_ranges);
+    return;
 }
 
-/* ZsyncCorePrivate::blocks_todo
+/* ZsyncCorePrivate::blocksToDo
  * Return the number of blocks still needed to complete the target file */
-int ZsyncCorePrivate::blocks_todo(void)
+qint32 ZsyncCorePrivate::blocksToDo(void)
 {
-    int i, n = _nBlocks;
-    for (i = 0; i < numranges; i++) {
-        n -= 1 + ranges[2 * i + 1] - ranges[2 * i];
+    qint32 i, n = _nBlocks;
+    for (i = 0; i < _nRanges; i++) {
+        n -= 1 + _pRanges[2 * i + 1] - _pRanges[2 * i];
     }
     return n;
 }
@@ -574,14 +573,14 @@ int ZsyncCorePrivate::blocks_todo(void)
 */
 
 
-/* build_hash(self)
+/* buildHash(self)
  * Build hash tables to quickly lookup a block based on its rsum value.
  * Returns non-zero if successful.
  */
-int ZsyncCorePrivate::build_hash(void)
+qint32 ZsyncCorePrivate::buildHash(void)
 {
     zs_blockid id;
-    int i = 16;
+    qint32 i = 16;
 
     /* Try hash size of 2^i; step down the value of i until we find a good size
      */
@@ -614,7 +613,7 @@ int ZsyncCorePrivate::build_hash(void)
         hash_entry *e = _pBlockHashes + (--id);
 
         /* Prepend to linked list for this hash entry */
-        unsigned h = calc_rhash( e);
+        unsigned h = calcRHash( e);
         e->next = _pRsumHash[h & _pHashMask];
         _pRsumHash[h & _pHashMask] = e;
 
@@ -624,15 +623,15 @@ int ZsyncCorePrivate::build_hash(void)
     return 1;
 }
 
-/* remove_block_from_hash(self, block_id)
+/* removeBlockFromHash(self, block_id)
  * Remove the given data block from the rsum hash table, so it won't be
  * returned in a hash lookup again (e.g. because we now have the data)
  */
-void ZsyncCorePrivate::remove_block_from_hash(zs_blockid id)
+void ZsyncCorePrivate::removeBlockFromHash(zs_blockid id)
 {
     hash_entry *t = &(_pBlockHashes[id]);
 
-    hash_entry **p = &(_pRsumHash[calc_rhash( t) & _pHashMask]);
+    hash_entry **p = &(_pRsumHash[calcRHash( t) & _pHashMask]);
 
     while (*p != NULL) {
         if (*p == t) {
@@ -648,27 +647,27 @@ void ZsyncCorePrivate::remove_block_from_hash(zs_blockid id)
 }
 
 
-/* r = range_before_block(self, x)
+/* r = rangeBeforeBlock(self, x)
  * This determines which of the existing known ranges x falls in.
  * It returns -1 if it is inside an existing range (it doesn't tell you which
  *  one; if you already have it, that usually is enough to know).
  * Or it returns 0 if x is before the 1st range;
  * 1 if it is between ranges 1 and 2 (array indexes 0 and 1)
  * ...
- * numranges if it is after the last range
+ * _nRanges if it is after the last range
  */
-int ZsyncCorePrivate::range_before_block(zs_blockid x)
+qint32 ZsyncCorePrivate::rangeBeforeBlock(zs_blockid x)
 {
     /* Lowest number and highest number block that it could be inside (0 based) */
-    register int min = 0, max = numranges-1;
+    register qint32 min = 0, max = _nRanges-1;
 
     /* By bisection */
     for (; min<=max;) {
         /* Range number to compare against */
-        register int r = (max+min)/2;
+        register qint32 r = (max+min)/2;
 
-        if (x > ranges[2*r+1]) min = r+1;  /* After range r */
-        else if (x < ranges[2*r]) max = r-1;/* Before range r */
+        if (x > _pRanges[2*r+1]) min = r+1;  /* After range r */
+        else if (x < _pRanges[2*r]) max = r-1;/* Before range r */
         else return -1;                     /* In range r */
     }
 
@@ -680,85 +679,85 @@ int ZsyncCorePrivate::range_before_block(zs_blockid x)
     return min;
 }
 
-/* add_to_ranges(rs, blockid)
+/* addToRanges(rs, blockid)
  * Mark the given blockid as known, updating the stored known ranges
  * appropriately */
-void ZsyncCorePrivate::add_to_ranges(zs_blockid x)
+void ZsyncCorePrivate::addToRanges(zs_blockid x)
 {
-    int r = range_before_block(x);
+    qint32 r = rangeBeforeBlock(x);
 
     if (r == -1) {
         /* Already have this block */
     } else {
-        gotblocks++;
+        _nGotBlocks++;
 
         /* If between two ranges and exactly filling the hole between them,
          * merge them */
-        if (r > 0 && r < numranges
-            && ranges[2 * (r - 1) + 1] == x - 1
-            && ranges[2 * r] == x + 1) {
+        if (r > 0 && r < _nRanges
+            && _pRanges[2 * (r - 1) + 1] == x - 1
+            && _pRanges[2 * r] == x + 1) {
 
             // This block fills the gap between two areas that we have got completely. Merge the adjacent ranges
-            ranges[2 * (r - 1) + 1] = ranges[2 * r + 1];
-            memmove(&ranges[2 * r], &ranges[2 * r + 2],
-                    (numranges - r - 1) * sizeof(ranges[0]) * 2);
-            numranges--;
+            _pRanges[2 * (r - 1) + 1] = _pRanges[2 * r + 1];
+            memmove(&_pRanges[2 * r], &_pRanges[2 * r + 2],
+                    (_nRanges - r - 1) * sizeof(_pRanges[0]) * 2);
+            _nRanges--;
         }
 
         /* If adjoining a range below, add to it */
-        else if (r > 0 && numranges && ranges[2 * (r - 1) + 1] == x - 1) {
-            ranges[2 * (r - 1) + 1] = x;
+        else if (r > 0 && _nRanges && _pRanges[2 * (r - 1) + 1] == x - 1) {
+            _pRanges[2 * (r - 1) + 1] = x;
         }
 
         /* If adjoining a range above, add to it */
-        else if (r < numranges && ranges[2 * r] == x + 1) {
-            ranges[2 * r] = x;
+        else if (r < _nRanges && _pRanges[2 * r] == x + 1) {
+            _pRanges[2 * r] = x;
         }
 
         else { /* New range for this block alone */
-            ranges = (zs_blockid*)
-                     realloc(ranges,
-                             (numranges + 1) * 2 * sizeof(ranges[0]));
-            memmove(&ranges[2 * r + 2], &ranges[2 * r],
-                    (numranges - r) * 2 * sizeof(ranges[0]));
-            ranges[2 * r] = ranges[2 * r + 1] = x;
-            numranges++;
+            _pRanges = (zs_blockid*)
+                     realloc(_pRanges,
+                             (_nRanges + 1) * 2 * sizeof(_pRanges[0]));
+            memmove(&_pRanges[2 * r + 2], &_pRanges[2 * r],
+                    (_nRanges - r) * 2 * sizeof(_pRanges[0]));
+            _pRanges[2 * r] = _pRanges[2 * r + 1] = x;
+            _nRanges++;
         }
     }
 }
 
-/* already_got_block
+/* alreadyGotBlock
  * Return true iff blockid x of the target file is already known */
-int ZsyncCorePrivate::already_got_block(zs_blockid x)
+qint32 ZsyncCorePrivate::alreadyGotBlock(zs_blockid x)
 {
-    return (range_before_block(x) == -1);
+    return (rangeBeforeBlock(x) == -1);
 }
 
-/* next_blockid = next_known_block(rs, blockid)
+/* next_blockid = nextKnownBlock(rs, blockid)
  * Returns the blockid of the next block which we already have data for.
  * If we know the requested block, it returns the blockid given; otherwise it
  * will return a later blockid.
  * If no later blocks are known, it returns numblocks (i.e. the block after
  * the end of the file).
  */
-zs_blockid ZsyncCorePrivate::next_known_block(zs_blockid x)
+zs_blockid ZsyncCorePrivate::nextKnownBlock(zs_blockid x)
 {
-    int r = range_before_block(x);
+    qint32 r = rangeBeforeBlock(x);
     if (r == -1)
         return x;
-    if (r == numranges) {
+    if (r == _nRanges) {
         return _nBlocks;
     }
     /* Else return first block of next known range. */
-    return ranges[2*r];
+    return _pRanges[2*r];
 }
 
 
-unsigned ZsyncCorePrivate::calc_rhash(const struct hash_entry *const e)
+unsigned ZsyncCorePrivate::calcRHash(const struct hash_entry *const e)
 {
     unsigned h = e[0].r.b;
 
-    h ^= ((seq_matches > 1) ? e[1].r.b
+    h ^= ((_nSeqMatches > 1) ? e[1].r.b
           : e[0].r.a & _pWeakCheckSumMask) << BITHASHBITS;
 
     return h;
@@ -770,18 +769,18 @@ zs_blockid ZsyncCorePrivate::getHashEntryBlockId(const hash_entry *e)
 }
 
 
-/* write_blocks(rcksum_state, buf, startblock, endblock)
+/* writeBlocks(rcksum_state, buf, startblock, endblock)
  * Writes the block range (inclusive) from the supplied buffer to our
  * under-construction output file */
-void ZsyncCorePrivate::write_blocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
+void ZsyncCorePrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
     off_t len = ((off_t) (bto - bfrom + 1)) << _nBlockShift;
     off_t offset = ((off_t) bfrom) << _nBlockShift;
 
-    auto pos = file->pos();
-    file->seek(offset);
-    file->write((char*)data, len);
-    file->seek(pos);
+    auto pos = _pTargetFile->pos();
+    _pTargetFile->seek(offset);
+    _pTargetFile->write((char*)data, len);
+    _pTargetFile->seek(pos);
 
 
     {   /* Having written those blocks, discard them from the rsum hashes (as
@@ -791,9 +790,76 @@ void ZsyncCorePrivate::write_blocks(const unsigned char *data, zs_blockid bfrom,
          * have received and stored the data for */
         int id;
         for (id = bfrom; id <= bto; id++) {
-            remove_block_from_hash( id);
-            add_to_ranges( id);
+            removeBlockFromHash( id);
+            addToRanges( id);
         }
     }
 }
 
+void ZsyncCorePrivate::processControlFile(void)
+{
+    ZsyncRemoteControlFileParserPrivate *controlFile = (ZsyncRemoteControlFileParserPrivate*)QObject::sender();
+    _nBlockSize = controlFile->getTargetFileBlockSize();
+    _nBlocks    = controlFile->getTargetFileBlocksCount();
+    _pWeakCheckSumMask = (controlFile->getWeakCheckSumBytes() < 3 ? 0 : controlFile->getWeakCheckSumBytes() == 3 ? 0xff : 0xffff);
+    _nStrongCheckSumBytes = controlFile->getStrongCheckSumBytes();
+    _nSeqMatches = controlFile->getConsecutiveMatchNeeded();
+    _nTargetFileLength = controlFile->getTargetFileLength();
+    
+    /* _nSeqMatches is 1 if true; and if true we need 1 block of
+     * _nContext to do block matching */
+    _nContext = _nBlockSize * _nSeqMatches;
+
+    /* Temporary file to hold the target file as we get blocks for it */
+    _pTargetFile = QSharedPointer<QTemporaryFile>(new QTemporaryFile("./" + controlFile->getTargetFileName() + ".xxxxxxxx.part"));
+    
+    if (!(_nBlockSize & (_nBlockSize - 1)) && _nBlocks) {
+        if (!_pTargetFile->open()) {
+            /*
+             * Error.
+             */
+            qCritical() << "cannot create temporary file.";
+        } else {
+            _pTargetFile->setAutoRemove(false);
+            /*
+             * Before we actually calculate the bit-shift for 
+             * the blocksize which is expensive , We can reduce 
+             * the computation here with an if control flow.
+             * Since zsync is an old program and it uses a static
+             * blocksizes for most cases , We can assume that if
+             * the blocksize is 2048 bytes , then the bit-shift must be 11 and
+             * if the blocksize is 1024 bytes , then the bit-shift must be 10.
+             * If those common cases are not met then we move on to the expensive
+             * computation to find the bit-shift.
+            */
+            if(_nBlockSize == 1024){
+                _nBlockShift = 10; // log2(1024) = 10.0
+            }else if(_nBlockSize == 2048){
+                _nBlockShift = 11; // log2(2048) = 11.0
+            }else{
+            /* Calculate bit-shift for blocksize */
+                for (int i = 0; i < 32 ; i++){ // sizeof(int) * 8 = 32 
+                    if (_nBlockSize == (1u << i)) {
+                        _nBlockShift = i;
+                        break;
+                    }
+                }
+            }
+
+            _pBlockHashes = ( hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]));
+            if (_pBlockHashes != NULL) {
+                /*
+                 * Error.
+                */
+            }
+        }
+    }
+    
+    /*
+     * Shoot the control file to get the target file checksum
+     * blocks.
+    */
+    qInfo() << "TargetFile Name:: " << _pTargetFile->fileName();
+    controlFile->getTargetFileBlocks();
+    return;
+}
