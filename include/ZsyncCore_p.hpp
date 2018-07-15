@@ -1,5 +1,6 @@
 #ifndef ZSYNC_CORE_WORKER_INCLUDED
 #define ZSYNC_CORE_WORKER_INCLUDED
+#define LOGGING_ENABLED
 #include <QtCore>
 #include <ZsyncInternalStructures_p.hpp>
 #include <ZsyncRemoteControlFileParser_p.hpp>

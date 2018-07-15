@@ -91,11 +91,13 @@ void ZsyncCorePrivate::setControlFileUrl(const QUrl &url)
     return;
 }
 
+#ifdef LOGGING_ENABLED
 void ZsyncCorePrivate::setShowLog(bool choose)
 {
     _pControlFileParser->setShowLog(choose);
     return;
 }
+#endif // LOGGING_ENABLED
 
 void ZsyncCorePrivate::clear(void)
 {

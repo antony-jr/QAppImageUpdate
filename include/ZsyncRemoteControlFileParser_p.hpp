@@ -1,5 +1,6 @@
 #ifndef ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
 #define ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
+#define LOGGING_ENABLED
 #include <QtCore>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -32,7 +33,9 @@ public:
     explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *NetworkManager = nullptr);
     explicit ZsyncRemoteControlFileParserPrivate(const QUrl&, QNetworkAccessManager *NetworkManager = nullptr);
     void setControlFileUrl(const QUrl&);
+#ifdef LOGGING_ENABLED
     void setShowLog(bool);
+#endif // LOGGING_ENABLED
     void clear(void);
     ~ZsyncRemoteControlFileParserPrivate();
 
@@ -58,21 +61,29 @@ private Q_SLOTS:
     void handleControlFile(void);
     void handleNetworkError(QNetworkReply::NetworkError);
     void handleErrorSignal(short);
+#ifdef LOGGING_ENABLED
     void handleLogMessage(QString);
+#endif // LOGGING_ENABLED
 Q_SIGNALS:
     void receiveTargetFileBlocks(zs_blockid, rsum, void*);
     void endOfTargetFileBlocks(void);
     void receiveControlFile(void);
     void progress(int);
     void error(short);
+#ifdef LOGGING_ENABLED
     void logger(QString);
+#endif // LOGGING_ENABLED
 private:
     QMutex _pMutex;
     QString _sZsyncMakeVersion,
             _sTargetFileName,
             _sTargetFileSHA1,
+#ifdef LOGGING_ENABLED
             _sControlFileName,
-            _sLogBuffer;
+	    _sLogBuffer;
+#else
+    	    _sControlFileName;
+#endif // LOGGING_ENABLED
     QDateTime _pMTime;
     size_t _nTargetFileBlockSize = 0,
            _nTargetFileLength = 0,
@@ -85,7 +96,9 @@ private:
          _uControlFileUrl;
 
     QSharedPointer<QNetworkAccessManager> _pNManager = nullptr;
+#ifdef LOGGING_ENABLED
     QSharedPointer<QDebug> _pLogger = nullptr;
+#endif // LOGGING_ENABLED
     QSharedPointer<QBuffer> _pControlFile = nullptr;
 };
 }

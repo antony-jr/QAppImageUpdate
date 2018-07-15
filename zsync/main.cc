@@ -12,7 +12,9 @@ int main(int ac, char **av)
     QUrl controlFile(av[1]);
     QString seedFile(av[2]);
     ZsyncCorePrivate z;
+#ifdef LOGGING_ENABLED
     z.setShowLog(true);
+#endif
     z.setControlFileUrl(controlFile);
     
     z.addSourceFile(seedFile);
