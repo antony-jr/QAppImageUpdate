@@ -7,7 +7,9 @@
 #include <QNetworkReply>
 #include <ZsyncInternalStructures_p.hpp>
 
-namespace AppImageUpdaterBridgePrivate
+namespace AppImageUpdaterBridge
+{
+namespace Private
 {
 class ZsyncRemoteControlFileParserPrivate : public QObject
 {
@@ -33,9 +35,6 @@ public:
     explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *NetworkManager = nullptr);
     explicit ZsyncRemoteControlFileParserPrivate(const QUrl&, QNetworkAccessManager *NetworkManager = nullptr);
     void setControlFileUrl(const QUrl&);
-#ifdef LOGGING_ENABLED
-    void setShowLog(bool);
-#endif // LOGGING_ENABLED
     void clear(void);
     ~ZsyncRemoteControlFileParserPrivate();
 
@@ -61,29 +60,26 @@ private Q_SLOTS:
     void handleControlFile(void);
     void handleNetworkError(QNetworkReply::NetworkError);
     void handleErrorSignal(short);
-#ifdef LOGGING_ENABLED
-    void handleLogMessage(QString);
-#endif // LOGGING_ENABLED
 Q_SIGNALS:
     void receiveTargetFileBlocks(zs_blockid, rsum, void*);
     void endOfTargetFileBlocks(void);
     void receiveControlFile(void);
     void progress(int);
     void error(short);
-#ifdef LOGGING_ENABLED
+#ifndef LOGGING_DISABLED
     void logger(QString);
-#endif // LOGGING_ENABLED
+#endif // LOGGING_DISABLED
 private:
     QMutex _pMutex;
     QString _sZsyncMakeVersion,
             _sTargetFileName,
             _sTargetFileSHA1,
-#ifdef LOGGING_ENABLED
+#ifndef LOGGING_DISABLED
             _sControlFileName,
-	    _sLogBuffer;
+            _sLogBuffer;
 #else
-    	    _sControlFileName;
-#endif // LOGGING_ENABLED
+            _sControlFileName;
+#endif // LOGGING_DISABLED
     QDateTime _pMTime;
     size_t _nTargetFileBlockSize = 0,
            _nTargetFileLength = 0,
@@ -96,11 +92,12 @@ private:
          _uControlFileUrl;
 
     QSharedPointer<QNetworkAccessManager> _pNManager = nullptr;
-#ifdef LOGGING_ENABLED
+#ifndef LOGGING_DISABLED
     QSharedPointer<QDebug> _pLogger = nullptr;
-#endif // LOGGING_ENABLED
+#endif // LOGGING_DISABLED
     QSharedPointer<QBuffer> _pControlFile = nullptr;
 };
+}
 }
 
 #endif //ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
