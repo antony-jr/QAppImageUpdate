@@ -256,7 +256,31 @@ static void doNotDelete(QFile *file)
 AppImageUpdateInformation::AppImageUpdateInformation(QObject *parent)
     : QObject(parent)
 {
-    CONSTRUCT(nullptr);
+    /*
+     * Check if QCoreApplication got something on argv[0].
+     * The main payload is not the one we want to operate this on 
+     * but the AppImage itself , So we cannot use the actual application executable
+     * path processed by qt but argv[0].
+     *
+     * Only with argv[0] we cannot determine the path of the actual AppImage
+     * so we will also need the application directory path which is also 
+     * available by QCoreApplication.
+     *
+     * Therefore ,
+     *     AppImagePath = Application Directory + "/" + filename in argv[0].
+     *
+     * Note: We don't need to use a native seperator since Qt itself will manage 
+     * that if we use '/' , Also AppImage is exclusive for linux and thus '/' is 
+     * default for any linux filesystem even if not so , Qt will handle it.
+     */
+    auto arguments = QCoreApplication::arguments();
+    if(!arguments.isEmpty()){
+    	CONSTRUCT(QCoreApplication::applicationDirPath() + 
+		  "/" + 
+		  QFileInfo(arguments.at(0)).fileName());
+    }else{
+    	CONSTRUCT(nullptr);
+    }
     return;
 }
 

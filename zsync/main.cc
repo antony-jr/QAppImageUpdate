@@ -1,10 +1,18 @@
-#include <ZsyncCore_p.hpp>
+#include <AppImageUpdateInformation.hpp>
 
-using namespace AppImageUpdaterBridgePrivate;
+using namespace AppImageUpdaterBridge;
 
 int main(int ac, char **av)
 {
-    if(ac < 2) {
+    QCoreApplication app(ac , av);
+    AppImageUpdateInformation UpdInfo;
+    
+    QObject::connect(&UpdInfo , &AppImageUpdateInformation::finished , [&](){
+	app.quit();
+	return;
+    });
+    UpdInfo.setShowLog(true).start();
+/*    if(ac < 2) {
         qInfo().noquote() << "Usage: " << av[0] << " [zsync meta file]";
         return 0;
     }
@@ -18,5 +26,6 @@ int main(int ac, char **av)
     z.setControlFileUrl(controlFile);
     
     z.addSourceFile(seedFile);
+*/
     return app.exec();
 }
