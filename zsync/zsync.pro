@@ -1,9 +1,4 @@
-include(../include/include.pri)
-include(../src/src_without_lib.pri)
-
-
-QT += network
-
+include(../AppImageUpdaterBridge.pri)
 TEMPLATE = app
 CONFIG += debug
 TARGET = zsync

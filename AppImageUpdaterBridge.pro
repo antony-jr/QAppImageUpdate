@@ -28,9 +28,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-TEMPLATE = subdirs
-CONFIG += ordered release
-SUBDIRS = lib \
-	  src
-
-src.depends = lib
+include(AppImageUpdaterBridge.pri)
+TEMPLATE = lib
+CONFIG += staticlib release
