@@ -33,14 +33,14 @@ public:
     } error_code;
 
     explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *NetworkManager = nullptr);
-    explicit ZsyncRemoteControlFileParserPrivate(const QUrl&, QNetworkAccessManager *NetworkManager = nullptr);
-    void setControlFileUrl(const QUrl&);
-    void clear(void);
     ~ZsyncRemoteControlFileParserPrivate();
 
     /* static function to return a QString for corresponding error code.*/
     static QString errorCodeToString(short);
 public Q_SLOTS:
+    bool isEmpty(void);
+    void clear(void);
+    void setControlFileUrl(const QUrl&);
     void getControlFile(void);
     void getTargetFileBlocks(void);
     size_t getTargetFileBlocksCount(void);
@@ -70,7 +70,6 @@ Q_SIGNALS:
     void logger(QString);
 #endif // LOGGING_DISABLED
 private:
-    QMutex _pMutex;
     QString _sZsyncMakeVersion,
             _sTargetFileName,
             _sTargetFileSHA1,

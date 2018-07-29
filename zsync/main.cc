@@ -22,5 +22,6 @@ int main(int ac, char **av)
     UpdateInformation.setShowLog(true)
 	    	     .setAppImage(path)
 		     .getInfo();
+    
     return app.exec();
 }

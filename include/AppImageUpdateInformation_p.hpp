@@ -31,6 +31,7 @@ public:
 
 public Q_SLOTS:
     bool isEmpty(void);
+    void setLoggerName(const QString&);
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setShowLog(bool);
@@ -52,7 +53,8 @@ private:
     QJsonObject _jInfo;
     QString _sLogBuffer,
             _sAppImageName,
-            _sAppImagePath;
+            _sAppImagePath,
+	    _sLoggerName;
     QSharedPointer<QDebug> _pLogger = nullptr;
     QSharedPointer<QFile>  _pAppImage = nullptr;
    

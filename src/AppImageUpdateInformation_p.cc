@@ -250,6 +250,12 @@ bool AppImageUpdateInformationPrivate::isEmpty(void)
     return (_jInfo.isEmpty());
 }
 
+void AppImageUpdateInformationPrivate::setLoggerName(const QString &name)
+{
+	_sLoggerName = QString(name);
+	return;
+}
+
 /*
  * This method returns nothing and sets the AppImage
  * referenced by the given QString , The QString is expected to be a
@@ -651,9 +657,11 @@ void AppImageUpdateInformationPrivate::logPrinter(QString msg , QString path)
     (void)path;
     qDebug().noquote() << "["
                        <<  QDateTime::currentDateTime().toString(Qt::ISODate)
-                       << "] ["
+                       << " | "
 		       <<  QThread::currentThreadId()
-		       << "] AppImageUpdateInformation("
+		       << "] "
+		       << _sLoggerName
+		       << "("
                        << _sAppImageName << ")::" << msg;
     return;
 }

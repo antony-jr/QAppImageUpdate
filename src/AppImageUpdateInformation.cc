@@ -20,6 +20,7 @@ static void safeDeleteQThread(QThread *thread)
 						 (new AppImageUpdateInformationPrivate); \
 		     _pUpdateInformationParserThread = QSharedPointer<QThread>(new QThread , safeDeleteQThread); \
 		     _pUpdateInformationParser->moveToThread(_pUpdateInformationParserThread.data()); \
+		     _pUpdateInformationParser->setLoggerName("AppImageUpdateInformation"); \
 		     connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::info , \
 			      this , &AppImageUpdateInformation::info); \
 		     connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::progress , \
