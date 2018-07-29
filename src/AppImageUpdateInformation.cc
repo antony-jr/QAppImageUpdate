@@ -59,6 +59,15 @@ AppImageUpdateInformation::~AppImageUpdateInformation()
 }
 
 
+bool AppImageUpdateInformation::isEmpty(void)
+{
+	bool ret = false;
+	auto metaObject = _pUpdateInformationParser->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("isEmpty(void)")))
+		    .invoke(_pUpdateInformationParser.data() , Qt::DirectConnection , Q_RETURN_ARG(bool , ret));
+	return ret;
+}
+
 AppImageUpdateInformation &AppImageUpdateInformation::setAppImage(const QString &AppImagePath)
 {
 	auto metaObject = _pUpdateInformationParser->metaObject();

@@ -31,6 +31,7 @@ public:
     static QString errorCodeToString(short);
 
 public Q_SLOTS:
+    bool isEmpty(void);
     AppImageUpdateInformation &setAppImage(const QString&);
     AppImageUpdateInformation &setAppImage(QFile *);
     AppImageUpdateInformation &setShowLog(bool);
