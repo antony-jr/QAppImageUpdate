@@ -2,8 +2,9 @@
 #define ZSYNC_INTERNAL_STRUCTURES_HPP_INCLUDED
 #include <QtGlobal>
 
-namespace AppImageUpdaterBridgePrivate
+namespace AppImageUpdaterBridge
 {
+namespace Private {
 static constexpr unsigned short CHECKSUM_SIZE = 16;
 static constexpr unsigned short BITHASHBITS = 3;
 typedef qint32 zs_blockid;
@@ -18,5 +19,6 @@ struct hash_entry {
     struct rsum r;
     unsigned char checksum[CHECKSUM_SIZE];
 };
+}
 }
 #endif // ZSYNC_INTERNAL_STRUCTURES_HPP_INCLUDED

@@ -1,31 +1,26 @@
-#include <AppImageUpdateInformation.hpp>
+#include <AppImageUpdateInformation>
 
 using namespace AppImageUpdaterBridge;
 
 int main(int ac, char **av)
 {
     QCoreApplication app(ac , av);
-    AppImageUpdateInformation UpdInfo;
-    
-    QObject::connect(&UpdInfo , &AppImageUpdateInformation::finished , [&](){
-	app.quit();
-	return;
+    if(ac == 1){
+	    return -1;
+    }    
+    AppImageUpdateInformation UpdateInformation;
+    QString path(av[1]);
+
+    QObject::connect(&UpdateInformation , &AppImageUpdateInformation::info , [&](QJsonObject information)
+    {
+    	qDebug() << "APPIMAGE PATH:: " << UpdateInformation.getAppImagePath();
+    	qDebug() << "INFO:: " << information;
+    	app.quit();
+    	return;
     });
-    UpdInfo.setShowLog(true).start();
-/*    if(ac < 2) {
-        qInfo().noquote() << "Usage: " << av[0] << " [zsync meta file]";
-        return 0;
-    }
-    QCoreApplication app(ac , av);
-    QUrl controlFile(av[1]);
-    QString seedFile(av[2]);
-    ZsyncCorePrivate z;
-#ifdef LOGGING_ENABLED
-    z.setShowLog(true);
-#endif
-    z.setControlFileUrl(controlFile);
-    
-    z.addSourceFile(seedFile);
-*/
+
+    UpdateInformation.setShowLog(true)
+	    	     .setAppImage(path)
+		     .getInfo();
     return app.exec();
 }

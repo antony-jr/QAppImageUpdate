@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-using namespace AppImageUpdaterBridgePrivate;
+using namespace AppImageUpdaterBridge::Private;
 
 #define UPDATE_RSUM(a, b, oldc, newc, bshift) do { (a) += ((unsigned char)(newc)) - ((unsigned char)(oldc)); (b) += (a) - ((oldc) << (bshift)); } while (0)
 
@@ -94,7 +94,7 @@ void ZsyncCorePrivate::setControlFileUrl(const QUrl &url)
 #ifdef LOGGING_ENABLED
 void ZsyncCorePrivate::setShowLog(bool choose)
 {
-    _pControlFileParser->setShowLog(choose);
+    // _pControlFileParser->setShowLog(choose);
     return;
 }
 #endif // LOGGING_ENABLED

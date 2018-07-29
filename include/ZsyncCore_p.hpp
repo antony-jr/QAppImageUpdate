@@ -5,8 +5,9 @@
 #include <ZsyncInternalStructures_p.hpp>
 #include <ZsyncRemoteControlFileParser_p.hpp>
 
-namespace AppImageUpdaterBridgePrivate
+namespace AppImageUpdaterBridge
 {
+namespace Private {
 class ZsyncCorePrivate : public QObject
 {
     Q_OBJECT
@@ -80,5 +81,6 @@ private:
     QSharedPointer<QThread> _pControlFileParserThread = nullptr; // Thread affinity of the control file parser.
     QSharedPointer<ZsyncRemoteControlFileParserPrivate> _pControlFileParser = nullptr; // Zsync control file.
 };
+}
 }
 #endif // ZSYNC_CORE_PRIVATE_INCLUDED

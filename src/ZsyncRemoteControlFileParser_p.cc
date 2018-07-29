@@ -1,6 +1,6 @@
 #include <ZsyncRemoteControlFileParser_p.hpp>
 
-using AppImageUpdaterBridge::Private;
+using namespace AppImageUpdaterBridge::Private;
 
 /*
  * Prints to the log.
