@@ -9,8 +9,9 @@ int main(int ac, char **av)
     if(ac == 1){
 	    return -1;
     }    
+    QNetworkAccessManager qnam;
     AppImageUpdateInformation UpdateInformation;
-    AppImageInspector Inspector(&UpdateInformation);
+    AppImageInspector Inspector(&UpdateInformation , &qnam);
     QString path(av[1]);
 
     QObject::connect(&Inspector , &AppImageInspector::updatesAvailable , [&](bool isUpdatesAvailable)

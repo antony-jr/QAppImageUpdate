@@ -1,10 +1,10 @@
 #ifndef ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
 #define ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
 #define LOGGING_ENABLED
-#include <QtCore>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QNAMHandler.hpp>
 #include <ZsyncInternalStructures_p.hpp>
 
 namespace AppImageUpdaterBridge

@@ -1,6 +1,8 @@
 #include <ZsyncRemoteControlFileParser_p.hpp>
+#include <QNAMHandler.hpp>
 
 using namespace AppImageUpdaterBridge::Private;
+using namespace QNetworkAccessManagerHandler;
 
 /*
  * Prints to the log.
@@ -88,7 +90,6 @@ ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate(QNetwor
                  QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doDeleteNetworkManager): 
                  QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doNotDeleteNetworkManager);
     connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
-
     return;
 }
 
@@ -158,12 +159,13 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 
 	_sZsyncFileName = information["filename"].toString();
 
+	QNAMHandler handler(_pNManager.data());
 	QNetworkRequest request;
 	request.setUrl(apiLink);
     	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
    
         INFO_START " setControlFileUrl : github api request(" LOGR apiLink LOGR ")." INFO_END;	
-	QNetworkReply *reply = _pNManager->get(request);
+	QNetworkReply *reply = handler.get(request);
 
     	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
@@ -226,13 +228,13 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
 
     INFO_START LOGR " getControlFile : sending get request to " LOGR _uControlFileUrl LOGR "." INFO_END;
 
+    QNAMHandler handler(_pNManager.data());
     QNetworkRequest request;
     request.setUrl(_uControlFileUrl);
     request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
-    QNetworkReply *reply = _pNManager->get(request);
-
+    QNetworkReply *reply = handler.get(request);
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
     connect(reply, SIGNAL(finished(void)), this, SLOT(handleControlFile(void)));
@@ -555,12 +557,13 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
      * of the file pointer , Therefore we will use a temporary variable.
      */
     {
-        INFO_START LOGR " handleControlFile : search for checksum blocks offset in the zsync control file." INFO_END;
+        INFO_START LOGR " handleControlFile : searching for checksum blocks offset in the zsync control file." INFO_END;
         qint64 pos = 0;
-        int bufferSize = 2; // 2 bytes.
+	char previousMark;
+        int bufferSize = 1; // 1 Byte for now.
         while(!senderReply->atEnd()) {
             /*
-             * Read two bytes at a time , Since the marker for the
+             * Read one byte at a time , Since the marker for the
              * offset of the checksum blocks is \n\n.
              *
              * Therefore,
@@ -569,8 +572,8 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
              * Checksums = (offset , EOF)
             */
             QByteArray data = senderReply->read(bufferSize);
-            pos += bufferSize;
-            if(bufferSize < 1024 && data.at(0) == 10 && data.at(1) == 10) {
+	    pos += bufferSize;
+	    if(bufferSize < 1024 && previousMark == 10 && data.at(0) == 10) {
                 /*
                  * Set the offset and increase the buffer size
                  * to finish the rest of the copy faster.
@@ -578,7 +581,9 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
                 INFO_START LOGR " handleControlFile : found checksum blocks offset(" LOGR pos LOGR ") in zsync control file." INFO_END;
                 _nCheckSumBlocksOffset = pos;
                 bufferSize = 1024; /* Use standard size of 1024 bytes. */
-            }
+            }else{
+		previousMark = data.at(0);
+	    }
             _pControlFile->write(data);
         }
     }
