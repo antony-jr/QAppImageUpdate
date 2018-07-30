@@ -18,7 +18,7 @@ using namespace AppImageUpdaterBridge::Private;
 #define LOGS *(_pLogger.data()) LOGR
 #define LOGR <<
 #define LOGE ; \
-             emit(logger(_sLogBuffer)); \
+             emit(logger(_sLogBuffer , _uControlFileUrl)); \
              _sLogBuffer.clear();
 #else
 #define LOGS (void)
@@ -33,31 +33,6 @@ using namespace AppImageUpdaterBridge::Private;
 
 #define FATAL_START LOGS "  FATAL: "
 #define FATAL_END LOGE
-
-/*
- * Since this code is repeated in the constructed
- * we can use this macro to reduce lines of code
- * in the source and thus avoid repeated code.
- *
- * Warning:
- * 	Hard coded macro , do not use this outside
- * 	ZsyncRemoteControlFileParserPrivate.
- *
- * Example:
- * 	CONSTRUCT();
-*/
-#ifndef LOGGING_DISABLED
-#define CONSTRUCT() _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));\
-    		    _pNManager = (NetworkManager == nullptr) ? \
-                    QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doDeleteNetworkManager): \
-                    QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doNotDeleteNetworkManager); \
-    		    connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
-#else
-#define CONSTRUCT() _pNManager = (NetworkManager == nullptr) ? \
-                    QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doDeleteNetworkManager): \
-                    QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doNotDeleteNetworkManager); \
-    		    connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
-#endif // LOGGING_DISABLED
 
 /*
  * Static functions to deallocate QNetworkAccessManager ,
@@ -92,25 +67,28 @@ static void doNotDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
  * Example:
  *
  * 	ZsyncRemoteControlFileParserPrivate rcfp;
+ *      //or
+ *      QNetworkAccessManager qnam;
+ *      ZsyncRemoteControlFileParserPrivate rcfp(&qnam);
  *
- *	// Overloaded Constructor.
- * 	ZsyncRemoteControlFileParserPrivate rcfp(QUrl("https://example.com/yourapp.zsync"));
- * 	ZsyncRemoteControlFileParserPrivate rcfp(QUrl("file:///home/user/yourapp.zsync"));
+ * Note:
+ *    This class will not use the QNetworkAccessManager as the parent ,
+ *    Therefore the developer as to deallocate if he allocates it.
+ *    That is , Qt parent to child deallocation does not work in this class
+ *    for a reason(i.e , This class is intended to run in a QThread.).
  *
 */
-ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *NetworkManager)
-    : QObject(NetworkManager)
+ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *networkManager)
+    : QObject(nullptr)
 {
-    CONSTRUCT();
-    return;
-}
+#ifndef LOGGING_DISABLED
+    _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
+#endif // LOGGING_DISABLED
+    _pNManager = (networkManager == nullptr) ? 
+                 QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doDeleteNetworkManager): 
+                 QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doNotDeleteNetworkManager);
+    connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
 
-ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate
-(const QUrl &controlFileUrl, QNetworkAccessManager *NetworkManager)
-    : QObject(NetworkManager),
-      _uControlFileUrl(controlFileUrl)
-{
-    CONSTRUCT();
     return;
 }
 
@@ -124,60 +102,125 @@ ZsyncRemoteControlFileParserPrivate::~ZsyncRemoteControlFileParserPrivate()
     return;
 }
 
+bool ZsyncRemoteControlFileParserPrivate::isEmpty(void)
+{
+	return (_uControlFileUrl.isEmpty());
+}
+
+#ifndef LOGGING_DISABLED
+void ZsyncRemoteControlFileParserPrivate::setLoggerName(const QString &name)
+{
+	_sLoggerName = QString(name);
+	return;
+}
+
+/* This public method safely turns on and off the internal logger. */
+void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose)
+{
+    if(choose) {
+        disconnect(this, SIGNAL(logger(QString , QUrl)),
+                   this, SLOT(handleLogMessage(QString , QUrl)));
+        connect(this, SIGNAL(logger(QString , QUrl)),
+                this, SLOT(handleLogMessage(QString , QUrl)));
+	INFO_START LOGR " setShowLog : started logging." INFO_END;
+    } else {
+	INFO_START LOGR " setShowLog : stopping logging." INFO_END;
+        disconnect(this, SIGNAL(logger(QString , QUrl)),
+                   this, SLOT(handleLogMessage(QString , QUrl)));
+    }
+    return;
+}
+#endif // LOGGING_DISABLED
 
 /* This public method safely sets the zsync control file url. */
 void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(const QUrl &controlFileUrl)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " setControlFileUrl : mutex is locked , operation ignored." WARNING_END;
-        return;
-    }
-    INFO_START LOGR " setControlFileUrl : using " LOGR controlFileUrl LOGR " for zsync control file." INFO_END;
+    INFO_START LOGR " setControlFileUrl : using " LOGR controlFileUrl LOGR " as zsync control file." INFO_END;
     _uControlFileUrl = controlFileUrl;
-    _pMutex.unlock();
+    return;
+}
+
+void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject information)
+{
+     if(information["transport"].toString() == "zsync" ) {
+	INFO_START " setControlFileUrl : using direct zsync transport." INFO_END;
+        setControlFileUrl(QUrl(information["zsyncUrl"].toString()));
+    	getControlFile();
+     } else if(information["transport"].toString() == "gh-releases-zsync") {
+	INFO_START " setControlFileUrl : using github releases zsync transport." INFO_END;
+        QUrl apiLink = QUrl("https://api.github.com/repos/" + information["username"].toString() +
+                           "/"  + information["repo"].toString() + "/releases/");
+        if(information["tag"].toString() == "latest") {
+            apiLink = QUrl(apiLink.toString() + information["tag"].toString());
+        } else {
+            apiLink = QUrl(apiLink.toString() + "tags/" + information["tag"].toString());
+        }
+
+	_sZsyncFileName = information["filename"].toString();
+
+	QNetworkRequest request;
+	request.setUrl(apiLink);
+    	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+   
+        INFO_START " setControlFileUrl : github api request(" LOGR apiLink LOGR ")." INFO_END;	
+	QNetworkReply *reply = _pNManager->get(request);
+
+    	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
+            this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+    	connect(reply, SIGNAL(finished(void)), this, SLOT(handleGithubAPIResponse(void))); 
+     } else {
+        /*
+	 * if its not github releases zsync or generic zsync
+	 * then it must be bintray-zsync.
+	 * Note: Since AppImageUpdateInformation can handle errors , So
+	 * we don't really have to check for integrity now.
+	*/
+	INFO_START " setControlFileUrl : using bintray zsync transport." INFO_END;
+ 	QUrl latestLink;
+        latestLink = QUrl("https://bintray.com/" + information["username"].toString() +
+                          "/" + information["repo"].toString() + "/" + information["packageName"].toString() + "/_latestVersion");
+	
+	_sZsyncFileName = information["filename"].toString();
+    
+	QNetworkRequest request;
+	request.setUrl(latestLink);
+    	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+     
+	QNetworkReply *reply = _pNManager->head(request);
+
+    	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
+            this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+    	connect(reply, &QNetworkReply::redirected , this, &ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection);
+     }
     return;
 }
 
 /* clears all internal cache in the class. */
 void ZsyncRemoteControlFileParserPrivate::clear(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " clear : mutex is locked , operation ignored." WARNING_END;
-        return;
-    }
-
     INFO_START LOGR " clear : flushed everything." INFO_END;
-
     _sZsyncMakeVersion.clear();
     _sTargetFileName.clear();
     _sTargetFileSHA1.clear();
-    _sControlFileName.clear();
+    _sZsyncFileName.clear();
 #ifndef LOGGING_DISABLED
     _sLogBuffer.clear();
 #endif // LOGGING_DISABLED
     _pMTime = QDateTime();
-    _nTargetFileBlockSize = _nTargetFileLength = _nTargetFileBlocks =
-                                _nWeakCheckSumBytes = _nStrongCheckSumBytes = _nConsecutiveMatchNeeded =
-                                            _nCheckSumBlocksOffset = 0;
+    _nTargetFileBlockSize = _nTargetFileLength = _nTargetFileBlocks = _nWeakCheckSumBytes = 0;
+    _nStrongCheckSumBytes = _nConsecutiveMatchNeeded = _nCheckSumBlocksOffset = 0;
     _uTargetFileUrl.clear();
     _uControlFileUrl.clear();
     _pControlFile.clear();
     _pControlFile = nullptr;
-    _pMutex.unlock();
     return;
 }
 
 /* Starts an async request to the given zsync control file. */
 void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getControlFile : mutex is locked , operation ignored." WARNING_END;
-        return;
-    }
-
     if(_uControlFileUrl.isEmpty() || !_uControlFileUrl.isValid()) {
         WARNING_START LOGR " getControlFile : no zsync control file url(" LOGR _uControlFileUrl LOGR ") is given or valid." WARNING_END;
-        _pMutex.unlock();
         return;
     }
 
@@ -202,21 +245,14 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
  * Starts to send zsync control file's checksum blocks through
  * Qt signals , One has to connect this signal to the ZsyncCore
  * class to fill in the checksum blocks.
- * Does nothing if a async request is beign processed.
 */
 void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getTargetFileBlocks : mutex is locked , operation ignored." WARNING_END;
-        return;
-    }
-
     if(!_pControlFile ||
        !_pControlFile->isOpen() ||
        _pControlFile->size() - _nCheckSumBlocksOffset < (_nWeakCheckSumBytes + _nStrongCheckSumBytes) ||
        !_nCheckSumBlocksOffset) {
-        FATAL_START LOGR " getTargetFileBlocks : zsync control file is not valid." FATAL_END;
-        _pMutex.unlock();
+        FATAL_START LOGR " getTargetFileBlocks : zsync control file is invalid." FATAL_END;
         return;
     }
 
@@ -265,7 +301,6 @@ void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
 
         emit receiveTargetFileBlocks(id, r, checksum);
     }
-    _pMutex.unlock();
     INFO_START LOGR " getTargetFileBlocks : finished sending target file blocks." INFO_END;
     emit endOfTargetFileBlocks(); // Tell the user to start adding seed files.
     return;
@@ -273,33 +308,18 @@ void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
 
 /*
  * Returns the number blocks in the target file.
- * If an async request is processed currently , This will return a 0.
 */
 size_t ZsyncRemoteControlFileParserPrivate::getTargetFileBlocksCount(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getTargetFileBlocksCount : mutex is locked , operation ignored." WARNING_END;
-        return 0;
-    }
-    auto ret = _nTargetFileBlocks;
-    _pMutex.unlock();
-    return ret;
+    return _nTargetFileBlocks;
 }
 
 /*
  * Returns the url of the zsync control file.
- * If an async request is processed currently , This will return an
- * empty url.
 */
 QUrl ZsyncRemoteControlFileParserPrivate::getControlFileUrl(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getControlFileUrl : mutex is locked , operation ignored." WARNING_END;;
-        return QUrl();
-    }
-    auto ret = _uControlFileUrl;
-    _pMutex.unlock();
-    return ret;
+    return _uControlFileUrl;
 }
 
 /*
@@ -310,13 +330,7 @@ QUrl ZsyncRemoteControlFileParserPrivate::getControlFileUrl(void)
 */
 QString ZsyncRemoteControlFileParserPrivate::getZsyncMakeVersion(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getZsyncMakeVersion : mutex is locked , operation ignored." WARNING_END;
-        return QString();
-    }
-    auto ret = _sZsyncMakeVersion;
-    _pMutex.unlock();
-    return ret;
+    return _sZsyncMakeVersion;
 }
 
 /*
@@ -326,13 +340,7 @@ QString ZsyncRemoteControlFileParserPrivate::getZsyncMakeVersion(void)
 */
 QString ZsyncRemoteControlFileParserPrivate::getTargetFileName(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getTargetFileName : mutex is locked , operation ignored." WARNING_END;
-        return QString();
-    }
-    auto ret = _sTargetFileName;
-    _pMutex.unlock();
-    return ret;
+    return _sTargetFileName;
 }
 
 /*
@@ -342,12 +350,9 @@ QString ZsyncRemoteControlFileParserPrivate::getTargetFileName(void)
 */
 QUrl ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getTargetFileUrl : mutex is locked , operation ignored." WARNING_END;
-        return QUrl();
-    }
-    auto ret = _uTargetFileUrl;
-    _pMutex.unlock();
+    QUrl ret = (_uTargetFileUrl.isRelative()) ? 
+	       QUrl(_uControlFileUrl.adjusted(QUrl::RemoveFilename).toString() + _sTargetFileName)
+	       : _uTargetFileUrl;
     return ret;
 }
 
@@ -358,13 +363,7 @@ QUrl ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
 */
 QString ZsyncRemoteControlFileParserPrivate::getTargetFileSHA1(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getTargetFileSHA1 : mutex is locked , operation ignored." WARNING_END;
-        return QString();
-    }
-    auto ret = _sTargetFileSHA1;
-    _pMutex.unlock();
-    return ret;
+    return _sTargetFileSHA1;
 }
 
 /*
@@ -374,13 +373,7 @@ QString ZsyncRemoteControlFileParserPrivate::getTargetFileSHA1(void)
 */
 QDateTime ZsyncRemoteControlFileParserPrivate::getMTime(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getMTime : mutex is locked , operation ignored." WARNING_END;
-        return QDateTime();
-    }
-    auto ret = _pMTime;
-    _pMutex.unlock();
-    return ret;
+    return _pMTime;
 }
 
 /*
@@ -390,13 +383,7 @@ QDateTime ZsyncRemoteControlFileParserPrivate::getMTime(void)
 */
 size_t ZsyncRemoteControlFileParserPrivate::getTargetFileBlockSize(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getTargetFileBlockSize : mutex is locked , operation ignored." WARNING_END;
-        return 0;
-    }
-    auto ret = _nTargetFileBlockSize;
-    _pMutex.unlock();
-    return ret;
+    return _nTargetFileBlockSize;
 }
 
 /*
@@ -406,13 +393,7 @@ size_t ZsyncRemoteControlFileParserPrivate::getTargetFileBlockSize(void)
 */
 size_t ZsyncRemoteControlFileParserPrivate::getTargetFileLength(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getTargetFileLength : mutex is locked , operation ignored." WARNING_END;
-        return 0;
-    }
-    auto ret = _nTargetFileLength;
-    _pMutex.unlock();
-    return ret;
+    return _nTargetFileLength;
 }
 
 /*
@@ -421,13 +402,7 @@ size_t ZsyncRemoteControlFileParserPrivate::getTargetFileLength(void)
 */
 qint32 ZsyncRemoteControlFileParserPrivate::getWeakCheckSumBytes(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getWeakCheckSumBytes : mutex is locked , operation ignored." WARNING_END;
-        return 0;
-    }
-    auto ret = _nWeakCheckSumBytes;
-    _pMutex.unlock();
-    return ret;
+    return _nWeakCheckSumBytes;
 }
 
 /*
@@ -436,13 +411,7 @@ qint32 ZsyncRemoteControlFileParserPrivate::getWeakCheckSumBytes(void)
 */
 qint32 ZsyncRemoteControlFileParserPrivate::getStrongCheckSumBytes(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getStrongCheckSumBytes : mutex is locked , operation ignored." WARNING_END;
-        return 0;
-    }
-    auto ret = _nStrongCheckSumBytes;
-    _pMutex.unlock();
-    return ret;
+    return _nStrongCheckSumBytes;
 }
 
 /*
@@ -450,13 +419,7 @@ qint32 ZsyncRemoteControlFileParserPrivate::getStrongCheckSumBytes(void)
 */
 qint32 ZsyncRemoteControlFileParserPrivate::getConsecutiveMatchNeeded(void)
 {
-    if(!_pMutex.tryLock()) {
-        WARNING_START LOGR " getConsecutiveMatchNeeded : mutex is locked , operation ignored." WARNING_END;
-        return 0;
-    }
-    auto ret = _nConsecutiveMatchNeeded;
-    _pMutex.unlock();
-    return ret;
+    return _nConsecutiveMatchNeeded;
 }
 
 /*
@@ -481,6 +444,83 @@ void ZsyncRemoteControlFileParserPrivate::handleDownloadProgress(qint64 bytesRec
 }
 
 /*
+ * This private slot parses the latest bintray package url.
+*/
+void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &url)
+{
+    INFO_START LOGR " handleBintrayRedirection : start to parse latest package url." INFO_END;
+    QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
+    int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    INFO_START LOGR " handleBintrayRedirection : http response code(" LOGR responseCode LOGR ")." INFO_END;
+    if(responseCode > 400) { // Check if we have a bad response code.
+        senderReply->abort();
+	senderReply->deleteLater();
+	emit error(ERROR_RESPONSE_CODE);
+        return;
+    }
+    /* cut all ties. */
+    disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
+               this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+    disconnect(senderReply, &QNetworkReply::redirected , this, &ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection);
+
+    senderReply->abort();
+    senderReply->deleteLater();
+
+    INFO_START LOGR " handleBintrayRedirection : redirected url(" LOGR url LOGR ")." INFO_END;
+
+    QStringList information = url.toString().split("/");
+    _sZsyncFileName.replace("_latestVersion", url.fileName());
+    setControlFileUrl(QUrl("https://dl.bintray.com/" + information[3] + "/" + information[4] + "/" + _sZsyncFileName));
+    getControlFile();
+    return;
+} 
+
+/*
+ * This private slot parses the github api response.
+*/
+void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
+{
+    INFO_START LOGR " handleGithubAPIResponse : starting to parse github api response." INFO_END;
+    QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
+    int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    INFO_START LOGR " handleGithubAPIResponse : http response code(" LOGR responseCode LOGR ")." INFO_END;
+    if(responseCode > 400) { // Check if we have a bad response code.
+        senderReply->deleteLater();
+	emit error(ERROR_RESPONSE_CODE);
+        return;
+    }
+
+    /* Disconnect all ties. */
+    disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
+               this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+    disconnect(senderReply, SIGNAL(finished(void)), this, SLOT(handleGithubAPIResponse(void)));
+   
+    QJsonDocument jsonResponse = QJsonDocument::fromJson(senderReply->readAll());
+    senderReply->deleteLater();
+    
+    QJsonObject jsonObject = jsonResponse.object();
+    QJsonArray assetsArray = jsonObject["assets"].toArray();
+    QString version = jsonObject["tag_name"].toString();
+    QVector<QJsonObject> assets;
+    QRegExp rx(_sZsyncFileName); // Patern Matching with wildcards!
+    rx.setPatternSyntax(QRegExp::Wildcard);
+
+    INFO_START " handleGithubAPIResponse : latest version is " LOGR version INFO_END;
+    INFO_START " handleGithubAPIResponse : asset required is " LOGR _sZsyncFileName INFO_END;
+
+    foreach (const QJsonValue &value, assetsArray){
+	auto asset = value.toObject();
+	INFO_START " handleGithubAPIResponse : inspecting asset(" LOGR asset["name"].toString() INFO_END;
+        if(rx.exactMatch(asset["name"].toString())) {
+            setControlFileUrl(QUrl(asset["browser_download_url"].toString()));
+            getControlFile();
+	    break;
+        }
+    }
+    return;
+}
+
+/*
  * This private slot parses the control file.
 */
 void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
@@ -490,6 +530,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleControlFile : http response code(" LOGR responseCode LOGR ")." INFO_END;
     if(responseCode > 400) {
+	senderReply->deleteLater();
         emit error(ERROR_RESPONSE_CODE);
         return;
     }
@@ -541,6 +582,8 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
             _pControlFile->write(data);
         }
     }
+    senderReply->deleteLater();
+
     _pControlFile->seek(0); /* seek to the top again. */
     if(!_nCheckSumBlocksOffset) {
         /* error , we don't know the marker and therefore
@@ -623,12 +666,12 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         emit error(INVALID_TARGET_FILE_SHA1);
         return;
     }
+    _sTargetFileSHA1 = _sTargetFileSHA1.toUpper();
     INFO_START LOGR " handleControlFile : zsync target file sha1 hash is confirmed to be " LOGR _sTargetFileSHA1 LOGR "." INFO_END;
 
     _nTargetFileBlocks = (_nTargetFileLength + _nTargetFileBlockSize - 1) / _nTargetFileBlockSize;
     INFO_START LOGR " handleControlFile : zsync target file has " LOGR _nTargetFileBlocks LOGR " number of blocks." INFO_END;
 
-    _pMutex.unlock();
     emit receiveControlFile();
     return;
 }
@@ -658,30 +701,29 @@ void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::Netw
 */
 void ZsyncRemoteControlFileParserPrivate::handleErrorSignal(short errorCode)
 {
-    /*
-     * Since unlocking a unlocked mutex can cause
-     * undefined behaviour , We have to be carefull on
-     * this.
-    */
-    if(_pMutex.tryLock()) { // Check if it is locked.
-        _pMutex.unlock(); // Unlock if locked.
-    } else {
-        /*
-        * Unlock even if it is not locked
-        * since tryLock() will lock the mutex again.
-        */
-        _pMutex.unlock();
-    }
-
     FATAL_START LOGR " error : " LOGR errorCodeToString(errorCode) LOGR " occured.";
-
     clear(); // clear all data to prevent later corrupted data collisions.
+    return;
+}
+
+void ZsyncRemoteControlFileParserPrivate::handleLogMessage(QString message , QUrl controlFileUrl)
+{
+    qInfo().noquote() << "["
+	     << QDateTime::currentDateTime().toString(Qt::ISODate)
+	     << " | "
+	     << QThread::currentThreadId()
+	     << "] "
+	     << _sLoggerName
+	     << "("
+	     << controlFileUrl.fileName()
+	     << "):: "
+	     << message;
     return;
 }
 
 QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
 {
-    QString errorCodeString = "ZsyncRemoteControlFileParserPrivate::error_code(";
+    QString errorCodeString = "AppImageInspector::error_code("; /* since this is exclusively used in the inspector. */
     switch(errorCode) {
     case UNKNOWN_NETWORK_ERROR:
         errorCodeString.append("UNKNOWN_NETWORK_ERROR");

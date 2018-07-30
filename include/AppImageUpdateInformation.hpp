@@ -36,6 +36,7 @@ public Q_SLOTS:
     AppImageUpdateInformation &setAppImage(QFile *);
     AppImageUpdateInformation &setShowLog(bool);
     AppImageUpdateInformation &getInfo(void);
+    QString getAppImageSHA1(void);
     QString getAppImageName(void);
     QString getAppImagePath(void);
     AppImageUpdateInformation &clear(void);

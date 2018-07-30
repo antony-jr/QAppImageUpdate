@@ -32,7 +32,7 @@ public:
         INVALID_TARGET_FILE_SHA1
     } error_code;
 
-    explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *NetworkManager = nullptr);
+    explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *networkManager = nullptr);
     ~ZsyncRemoteControlFileParserPrivate();
 
     /* static function to return a QString for corresponding error code.*/
@@ -41,6 +41,9 @@ public Q_SLOTS:
     bool isEmpty(void);
     void clear(void);
     void setControlFileUrl(const QUrl&);
+    void setControlFileUrl(QJsonObject);
+    void setLoggerName(const QString&);
+    void setShowLog(bool);
     void getControlFile(void);
     void getTargetFileBlocks(void);
     size_t getTargetFileBlocksCount(void);
@@ -56,10 +59,13 @@ public Q_SLOTS:
     qint32 getStrongCheckSumBytes(void);
     qint32 getConsecutiveMatchNeeded(void);
 private Q_SLOTS:
+    void handleBintrayRedirection(const QUrl&);
+    void handleGithubAPIResponse(void);
     void handleDownloadProgress(qint64, qint64);
     void handleControlFile(void);
     void handleNetworkError(QNetworkReply::NetworkError);
     void handleErrorSignal(short);
+    void handleLogMessage(QString , QUrl);
 Q_SIGNALS:
     void receiveTargetFileBlocks(zs_blockid, rsum, void*);
     void endOfTargetFileBlocks(void);
@@ -67,17 +73,16 @@ Q_SIGNALS:
     void progress(int);
     void error(short);
 #ifndef LOGGING_DISABLED
-    void logger(QString);
+    void logger(QString , QUrl);
 #endif // LOGGING_DISABLED
 private:
     QString _sZsyncMakeVersion,
+	    _sZsyncFileName, //Only used for github and bintray api responses.
             _sTargetFileName,
             _sTargetFileSHA1,
 #ifndef LOGGING_DISABLED
-            _sControlFileName,
+            _sLoggerName,
             _sLogBuffer;
-#else
-            _sControlFileName;
 #endif // LOGGING_DISABLED
     QDateTime _pMTime;
     size_t _nTargetFileBlockSize = 0,

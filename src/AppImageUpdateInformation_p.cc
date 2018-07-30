@@ -220,14 +220,7 @@ AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(void)
      * that if we use '/' , Also AppImage is exclusive for linux and thus '/' is 
      * default for any linux filesystem even if not so , Qt will handle it.
      */
-    auto arguments = QCoreApplication::arguments();
-    if(!arguments.isEmpty()){
-    	CONSTRUCT(QCoreApplication::applicationDirPath() + 
-		  "/" + 
-		  QFileInfo(arguments.at(0)).fileName());
-    }else{
-    	CONSTRUCT(nullptr);
-    }
+    CONSTRUCT(nullptr);
     return;
 }
 
@@ -422,18 +415,48 @@ void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
 void AppImageUpdateInformationPrivate::getInfo(void)
 {
     /*
+     * If this class is constructed without a 
+     * AppImage to operate on ,Then lets guess it.
+    */
+    if(_pAppImage.isNull()){
+    /*
+     * Check if QCoreApplication got something on argv[0].
+     * The main payload is not the one we want to operate this on 
+     * but the AppImage itself , So we cannot use the actual application executable
+     * path processed by qt but argv[0].
+     *
+     * Only with argv[0] we cannot determine the path of the actual AppImage
+     * so we will also need the application directory path which is also 
+     * available by QCoreApplication.
+     *
+     * Therefore ,
+     *     AppImagePath = Application Directory + "/" + filename in argv[0].
+     *
+     * Note: We don't need to use a native seperator since Qt itself will manage 
+     * that if we use '/' , Also AppImage is exclusive for linux and thus '/' is 
+     * default for any linux filesystem even if not so , Qt will handle it.
+    */
+    auto arguments = QCoreApplication::arguments();
+    if(!arguments.isEmpty()){
+    	setAppImage(QCoreApplication::applicationDirPath() + 
+		    "/" + 
+		    QFileInfo(arguments.at(0)).fileName());
+    }
+    }
+
+    /*
      * Check if the user called this twice ,
      * If so , We don't need to waste our time on
      * calculating the obvious.
      * Note: _jInfo will always will be empty for a new
      * AppImage , And so if it is not empty then that implies
-     * the user called getInfo() twice or more.
+     * that the user called getInfo() twice or more.
      */
     if(!_jInfo.isEmpty()){
 	    emit this->info(_jInfo);
 	    return;
     }
-
+    
     QString updateString;
     QStringList info;
 
@@ -534,15 +557,6 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         }
     }
 
-    /*
-     * Safely close the AppImage since we no longer need
-     * access to the AppImage.
-     */
-    /*_pAppImage->close();
-    _pAppImage.clear(); /* delete QFile */
-
-    //INFO_START  " getInfo : closed AppImage safely." INFO_END;
-
     if(updateString.isEmpty()) {
         FATAL_START  " getInfo : update information is empty." FATAL_END;
         APPIMAGE_EMPTY_UI_ERROR();
@@ -605,6 +619,34 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     return;
 }
 
+QString AppImageUpdateInformationPrivate::getAppImageSHA1(void)
+{
+	if(!_sAppImageSHA1.isEmpty()){
+		return _sAppImageSHA1;
+	}
+
+	if(!_pAppImage){
+		return QString();
+	}else if(!_pAppImage->isOpen() || !_pAppImage->isReadable()){
+		return QString();
+	}
+
+	qint64 bufferSize = 4096/*bytes*/;
+	QCryptographicHash *SHA1Hasher = new QCryptographicHash(QCryptographicHash::Sha1);
+
+	while(!_pAppImage->atEnd()){
+		SHA1Hasher->addData(_pAppImage->read(bufferSize));
+	}
+
+	_pAppImage->seek(0); // rewind file to the top for later use.
+
+	_sAppImageSHA1 = QString(SHA1Hasher->result().toHex().toUpper());
+	
+	delete SHA1Hasher; 
+
+	return _sAppImageSHA1;
+}
+
 /*
  * This returns the current AppImage name which is
  * cached by setAppImage.
@@ -644,6 +686,7 @@ void AppImageUpdateInformationPrivate::clear(void)
     _sLogBuffer.clear();
     _sAppImagePath.clear();
     _sAppImageName.clear();
+    _sAppImageSHA1.clear();
     _pAppImage.clear();
     INFO_START  " clear : flushed everything." INFO_END;
     return;
@@ -676,7 +719,7 @@ void AppImageUpdateInformationPrivate::logPrinter(QString msg , QString path)
 */
 QString AppImageUpdateInformationPrivate::errorCodeToString(short errorCode)
 {
-    QString ret = "AppImageUpdateInformationPrivate::errorCode(";
+    QString ret = "AppImageUpdateInformation::errorCode(";
     switch(errorCode) {
     case 0:
         ret += "APPIMAGE_NOT_READABLE)";

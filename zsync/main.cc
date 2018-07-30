@@ -1,4 +1,5 @@
 #include <AppImageUpdateInformation>
+#include <AppImageInspector>
 
 using namespace AppImageUpdaterBridge;
 
@@ -9,19 +10,20 @@ int main(int ac, char **av)
 	    return -1;
     }    
     AppImageUpdateInformation UpdateInformation;
+    AppImageInspector Inspector(&UpdateInformation);
     QString path(av[1]);
 
-    QObject::connect(&UpdateInformation , &AppImageUpdateInformation::info , [&](QJsonObject information)
+    QObject::connect(&Inspector , &AppImageInspector::updatesAvailable , [&](bool isUpdatesAvailable)
     {
-    	qDebug() << "APPIMAGE PATH:: " << UpdateInformation.getAppImagePath();
-    	qDebug() << "INFO:: " << information;
+        qDebug() << "Updates Available:: " << isUpdatesAvailable;
     	app.quit();
-    	return;
+        return;
     });
 
     UpdateInformation.setShowLog(true)
-	    	     .setAppImage(path)
-		     .getInfo();
+	    	     .setAppImage(path);
+
+    Inspector.setShowLog(true).checkForUpdates();
     
     return app.exec();
 }

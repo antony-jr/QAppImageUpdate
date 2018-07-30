@@ -35,6 +35,7 @@ public Q_SLOTS:
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setShowLog(bool);
+    QString getAppImageSHA1(void);
     QString getAppImageName(void);
     QString getAppImagePath(void);
     void getInfo(void);
@@ -54,7 +55,8 @@ private:
     QString _sLogBuffer,
             _sAppImageName,
             _sAppImagePath,
-	    _sLoggerName;
+	    _sLoggerName,
+	    _sAppImageSHA1;
     QSharedPointer<QDebug> _pLogger = nullptr;
     QSharedPointer<QFile>  _pAppImage = nullptr;
    

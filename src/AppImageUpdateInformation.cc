@@ -41,12 +41,14 @@ AppImageUpdateInformation::AppImageUpdateInformation(QObject *parent)
 }
 
 AppImageUpdateInformation::AppImageUpdateInformation(const QString &AppImagePath, QObject *parent)
+	: QObject(parent)
 {
 	CONSTRUCT(AppImagePath);
 	return;
 }
  
 AppImageUpdateInformation::AppImageUpdateInformation(QFile *AppImage, QObject *parent)
+	: QObject(parent)
 {
 	CONSTRUCT(AppImage);
 	return;
@@ -102,7 +104,16 @@ AppImageUpdateInformation &AppImageUpdateInformation::getInfo(void)
 		    .invoke(_pUpdateInformationParser.data() , Qt::QueuedConnection);
 	return *this;
 }	
-    
+
+QString AppImageUpdateInformation::getAppImageSHA1(void)
+{
+	QString ret;
+	auto metaObject = _pUpdateInformationParser->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getAppImageSHA1(void)")))
+		    .invoke(_pUpdateInformationParser.data() , Qt::DirectConnection , Q_RETURN_ARG(QString, ret));
+	return ret;
+}
+
 QString AppImageUpdateInformation::getAppImageName(void)
 {
 	QString ret;
