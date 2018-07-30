@@ -559,7 +559,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
     {
         INFO_START LOGR " handleControlFile : searching for checksum blocks offset in the zsync control file." INFO_END;
         qint64 pos = 0;
-	char previousMark;
+	char previousMark = 0;
         int bufferSize = 1; // 1 Byte for now.
         while(!senderReply->atEnd()) {
             /*

@@ -227,7 +227,8 @@ void AppImageInspector::handleUpdateInformationError(short)
 
 void AppImageInspector::handleControlFile(void)
 {
-	emit updatesAvailable(isUpdatesAvailable());
+	bool result = isUpdatesAvailable();
+	emit updatesAvailable(result);
 	return;
 }
 

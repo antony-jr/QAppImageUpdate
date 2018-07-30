@@ -16,8 +16,8 @@ int main(int ac, char **av)
 
     QObject::connect(&Inspector , &AppImageInspector::updatesAvailable , [&](bool isUpdatesAvailable)
     {
-        qDebug() << "Updates Available:: " << isUpdatesAvailable;
-    	app.quit();
+        qDebug() << "Update Available:: " << isUpdatesAvailable;
+	app.quit();
         return;
     });
 
