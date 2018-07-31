@@ -89,7 +89,7 @@ AppImageInspector &AppImageInspector::setShowLog(bool choice)
 {
 	auto metaObject = _pControlFileParser->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setShowLog(bool)")))
-		    .invoke(_pControlFileParser.data() , Qt::DirectConnection , Q_ARG(bool , choice));
+		    .invoke(_pControlFileParser.data() , Qt::QueuedConnection , Q_ARG(bool , choice));
 	return *this;
 }
 

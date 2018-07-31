@@ -614,8 +614,8 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     }
 
     emit(progress(100)); /*Signal progress.*/
+    emit this->info(_jInfo);
     INFO_START  " getInfo : finished." INFO_END;
-    emit this->info(_jInfo);/*Signal finished.*/
     return;
 }
 
