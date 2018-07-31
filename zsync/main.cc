@@ -1,5 +1,7 @@
 #include <AppImageUpdateInformation>
 #include <AppImageInspector>
+#include <QtConcurrent>
+#include <QFuture>
 
 using namespace AppImageUpdaterBridge;
 
@@ -10,21 +12,13 @@ int main(int ac, char **av)
 	    return -1;
     }    
     QNetworkAccessManager qnam;
-    AppImageUpdateInformation UpdateInformation;
-    AppImageInspector Inspector(&UpdateInformation , &qnam);
     QString path(av[1]);
-
-    QObject::connect(&Inspector , &AppImageInspector::updatesAvailable , [&](bool isUpdatesAvailable)
+    QtConcurrent::run([&]()
     {
-        qDebug() << "Update Available:: " << isUpdatesAvailable;
-	app.quit();
-        return;
+    	AppImageUpdateInformation *info = new AppImageUpdateInformation;
+	info->setShowLog(true).setAppImage(path);
+	AppImageInspector *ins = new AppImageInspector(info , &qnam);
+	ins->setShowLog(true).checkForUpdates();
     });
-
-    UpdateInformation.setShowLog(true)
-	    	     .setAppImage(path);
-
-    Inspector.setShowLog(true).checkForUpdates();
-    
     return app.exec();
 }

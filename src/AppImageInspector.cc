@@ -3,19 +3,8 @@
 using namespace AppImageUpdaterBridge;
 using namespace AppImageUpdaterBridge::Private;
 
-static void safeDeleteQThread(QThread *thread)
-{
-	if(!thread){
-		return;
-	}
-	thread->quit();
-	thread->wait();
-	thread->deleteLater();
-	return;
-}
-
 AppImageInspector::AppImageInspector(AppImageUpdateInformation *updateInformation , QNetworkAccessManager *networkManager)
-	: QObject(networkManager)
+	: QObject(nullptr)
 {
 	_pUpdateInformation = (!updateInformation) ? new AppImageUpdateInformation(this) : updateInformation;
 	connect(_pUpdateInformation , &AppImageUpdateInformation::error , 
@@ -23,11 +12,10 @@ AppImageInspector::AppImageInspector(AppImageUpdateInformation *updateInformatio
 
 	_pControlFileParser = QSharedPointer<ZsyncRemoteControlFileParserPrivate>
 			      (new ZsyncRemoteControlFileParserPrivate(networkManager));
-	_pControlFileParserThread = QSharedPointer<QThread>(new QThread , safeDeleteQThread);
 
 	_pControlFileParser->setLoggerName("AppImageInspector");
-	_pControlFileParser->moveToThread(_pControlFileParserThread.data());
-
+	_pUpdateInformation->shareThreadWith(_pControlFileParser.data());
+	
 	connect(_pUpdateInformation , SIGNAL(info(QJsonObject)) ,
 		_pControlFileParser.data() , SLOT(setControlFileUrl(QJsonObject)));
 
@@ -49,14 +37,22 @@ AppImageInspector::AppImageInspector(AppImageUpdateInformation *updateInformatio
 	connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::endOfTargetFileBlocks ,
 		this , &AppImageInspector::endOfTargetFileCheckSumBlocks);
 
-	_pControlFileParserThread->start();
 	return;
 }
 
 AppImageInspector::~AppImageInspector()
 {
-	_pControlFileParserThread.clear();
+	_pUpdateInformation->waitForSharedThread();
 	_pControlFileParser.clear();
+	return;
+}
+
+void AppImageInspector::shareThreadWith(QObject *other)
+{
+	if(!other){
+		return;
+	}
+	_pUpdateInformation->shareThreadWith(other);
 	return;
 }
 
@@ -93,7 +89,7 @@ AppImageInspector &AppImageInspector::setShowLog(bool choice)
 {
 	auto metaObject = _pControlFileParser->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setShowLog(bool)")))
-		    .invoke(_pControlFileParser.data() , Qt::QueuedConnection , Q_ARG(bool , choice));
+		    .invoke(_pControlFileParser.data() , Qt::DirectConnection , Q_ARG(bool , choice));
 	return *this;
 }
 

@@ -33,6 +33,7 @@ namespace AppImageUpdaterBridge {
 	    static QString errorCodeToString(short);
 
 	public Q_SLOTS:
+	    void shareThreadWith(QObject*);
 	    bool isEmpty(void);
 	    bool isUpdatesAvailable(void);
 	    AppImageInspector &clear(void);
@@ -66,7 +67,6 @@ namespace AppImageUpdaterBridge {
 	
 	private:
 	    QSharedPointer<Private::ZsyncRemoteControlFileParserPrivate> _pControlFileParser = nullptr;
-	    QSharedPointer<QThread> _pControlFileParserThread = nullptr;
 	    AppImageUpdateInformation *_pUpdateInformation = nullptr;
 	};
 }

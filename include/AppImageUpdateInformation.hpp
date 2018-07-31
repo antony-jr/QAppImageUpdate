@@ -31,6 +31,8 @@ public:
     static QString errorCodeToString(short);
 
 public Q_SLOTS:
+    void shareThreadWith(QObject*);
+    void waitForSharedThread(void);
     bool isEmpty(void);
     AppImageUpdateInformation &setAppImage(const QString&);
     AppImageUpdateInformation &setAppImage(QFile *);
@@ -49,7 +51,7 @@ Q_SIGNALS:
 
 private:
     QSharedPointer<Private::AppImageUpdateInformationPrivate> _pUpdateInformationParser = nullptr;
-    QSharedPointer<QThread> _pUpdateInformationParserThread = nullptr;
+    QSharedPointer<QThread> _pSharedThread = nullptr;
 };
 }
 #endif // APPIMAGE_UPDATE_INFORMATION_HPP_INCLUDED

@@ -18,8 +18,8 @@ static void safeDeleteQThread(QThread *thread)
 
 #define CONSTRUCT(x) _pUpdateInformationParser = QSharedPointer<AppImageUpdateInformationPrivate>\
 						 (new AppImageUpdateInformationPrivate); \
-		     _pUpdateInformationParserThread = QSharedPointer<QThread>(new QThread , safeDeleteQThread); \
-		     _pUpdateInformationParser->moveToThread(_pUpdateInformationParserThread.data()); \
+		     _pSharedThread = QSharedPointer<QThread>(new QThread , safeDeleteQThread); \
+		     _pUpdateInformationParser->moveToThread(_pSharedThread.data()); \
 		     _pUpdateInformationParser->setLoggerName("AppImageUpdateInformation"); \
 		     connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::info , \
 			      this , &AppImageUpdateInformation::info); \
@@ -29,7 +29,7 @@ static void safeDeleteQThread(QThread *thread)
 			      this , &AppImageUpdateInformation::error); \
 	             connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::logger , \
 			      this , &AppImageUpdateInformation::logger); \
-		     _pUpdateInformationParserThread->start(); \
+		     _pSharedThread->start(); \
 		     setAppImage(x);
 
 
@@ -56,11 +56,25 @@ AppImageUpdateInformation::AppImageUpdateInformation(QFile *AppImage, QObject *p
     
 AppImageUpdateInformation::~AppImageUpdateInformation()
 {
-	_pUpdateInformationParserThread.clear();
+	_pSharedThread.clear();
 	_pUpdateInformationParser.clear();
 	return;
 }
 
+void AppImageUpdateInformation::shareThreadWith(QObject *other)
+{
+	if(!other){
+		return;
+	}
+	other->moveToThread(_pSharedThread.data());
+	return;
+}
+
+void AppImageUpdateInformation::waitForSharedThread(void)
+{
+	_pSharedThread->wait();
+	return;
+}
 
 bool AppImageUpdateInformation::isEmpty(void)
 {
