@@ -23,15 +23,10 @@ public:
 	explicit QNAMHandler(QNetworkAccessManager*);
 	~QNAMHandler();
 public Q_SLOTS:
-	QNetworkReply *get(const QNetworkRequest&);
-private Q_SLOTS:
-	void handleGetReply(QNetworkReply*);
+	void get(const QNetworkRequest&);
 Q_SIGNALS:
-	void quitLoop(void);
 	void getReply(QNetworkReply*);
 private:
-	QEventLoop _pELoop;
-	QNetworkReply *returnReply = nullptr;
 	QSharedPointer<Private::QNAMHandlerPrivate> _pHandler = nullptr;
 };
 }

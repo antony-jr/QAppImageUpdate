@@ -11,8 +11,7 @@ QNAMHandler::QNAMHandler(QNetworkAccessManager *networkManager)
 	{
 		_pHandler->moveToThread(networkManager->thread());
 	}
-	connect(_pHandler.data() , &QNAMHandlerPrivate::getReply , this , &QNAMHandler::handleGetReply);
-	connect(this , &QNAMHandler::quitLoop , &_pELoop , &QEventLoop::quit);
+	connect(_pHandler.data() , &QNAMHandlerPrivate::getReply , this , &QNAMHandler::getReply , Qt::DirectConnection);
 	return;
 }
 
@@ -22,7 +21,7 @@ QNAMHandler::~QNAMHandler()
 	return;
 }
 
-QNetworkReply *QNAMHandler::get(const QNetworkRequest &request)
+void QNAMHandler::get(const QNetworkRequest &request)
 {
 	/*
 	 * No need to use mutex since this will be executed in the caller
@@ -32,13 +31,5 @@ QNetworkReply *QNAMHandler::get(const QNetworkRequest &request)
 	auto metaObject = _pHandler->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("get(const QNetworkRequest&)")))
 		    	   .invoke(_pHandler.data() , Qt::QueuedConnection , Q_ARG(QNetworkRequest , request));
-	_pELoop.exec();
 	return returnReply;
-}
-
-void QNAMHandler::handleGetReply(QNetworkReply *reply)
-{
-	returnReply = reply;
-	emit quitLoop();
-	return;
 }

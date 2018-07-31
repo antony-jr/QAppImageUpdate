@@ -94,9 +94,7 @@ AppImageInspector &AppImageInspector::setShowLog(bool choice)
 
 AppImageInspector &AppImageInspector::checkForUpdates(void)
 {
-	auto metaObject = _pUpdateInformation->metaObject();
-	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getInfo(void)")))
-		    .invoke(_pUpdateInformation , Qt::QueuedConnection);	
+	_pUpdateInformation->getInfo();
 	return *this;
 }
 

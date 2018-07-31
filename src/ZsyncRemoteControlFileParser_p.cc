@@ -167,6 +167,8 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
         INFO_START " setControlFileUrl : github api request(" LOGR apiLink LOGR ")." INFO_END;	
 	QNetworkReply *reply = handler.get(request);
 
+	qDebug() << "REPLY:: " << reply;
+
     	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
     	connect(reply, SIGNAL(finished(void)), this, SLOT(handleGithubAPIResponse(void))); 
