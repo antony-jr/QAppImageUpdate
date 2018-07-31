@@ -26,8 +26,7 @@ namespace AppImageUpdaterBridge {
 	    APPIMAGE_UPDATE_INFORMATION_ERRORED
     	    } error_code;
 
-	    explicit AppImageInspector(AppImageUpdateInformation * ,
-			    	       QNetworkAccessManager *networkManager = nullptr);
+	    explicit AppImageInspector(AppImageUpdateInformation *);
 	    ~AppImageInspector();
 
 	    static QString errorCodeToString(short);

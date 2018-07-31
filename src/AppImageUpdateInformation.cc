@@ -15,11 +15,20 @@ static void safeDeleteQThread(QThread *thread)
 	return;
 }
 
+static void doNotDelete(QNetworkAccessManager *m)
+{
+	(void)m;
+	return;
+}
 
 #define CONSTRUCT(x) _pUpdateInformationParser = QSharedPointer<AppImageUpdateInformationPrivate>\
 						 (new AppImageUpdateInformationPrivate); \
 		     _pSharedThread = QSharedPointer<QThread>(new QThread , safeDeleteQThread); \
+		     _pSharedNetworkManager = (!networkManager) ?  \
+					      QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager) : \
+					      QSharedPointer<QNetworkAccessManager>(networkManager , doNotDelete); \
 		     _pUpdateInformationParser->moveToThread(_pSharedThread.data()); \
+		     _pSharedNetworkManager->moveToThread(_pSharedThread.data()); \
 		     _pUpdateInformationParser->setLoggerName("AppImageUpdateInformation"); \
 		     connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::info , \
 			      this , &AppImageUpdateInformation::info , Qt::DirectConnection); \
@@ -33,22 +42,22 @@ static void safeDeleteQThread(QThread *thread)
 		     setAppImage(x);
 
 
-AppImageUpdateInformation::AppImageUpdateInformation(QObject *parent)
-	: QObject(parent)
+AppImageUpdateInformation::AppImageUpdateInformation(QNetworkAccessManager *networkManager)
+	: QObject()
 {
 	CONSTRUCT(nullptr);
 	return;
 }
 
-AppImageUpdateInformation::AppImageUpdateInformation(const QString &AppImagePath, QObject *parent)
-	: QObject(parent)
+AppImageUpdateInformation::AppImageUpdateInformation(const QString &AppImagePath, QNetworkAccessManager *networkManager)
+	: QObject()
 {
 	CONSTRUCT(AppImagePath);
 	return;
 }
  
-AppImageUpdateInformation::AppImageUpdateInformation(QFile *AppImage, QObject *parent)
-	: QObject(parent)
+AppImageUpdateInformation::AppImageUpdateInformation(QFile *AppImage, QNetworkAccessManager *networkManager)
+	: QObject()
 {
 	CONSTRUCT(AppImage);
 	return;
@@ -57,6 +66,7 @@ AppImageUpdateInformation::AppImageUpdateInformation(QFile *AppImage, QObject *p
 AppImageUpdateInformation::~AppImageUpdateInformation()
 {
 	_pSharedThread.clear();
+	_pSharedNetworkManager.clear();
 	_pUpdateInformationParser.clear();
 	return;
 }
@@ -68,6 +78,11 @@ void AppImageUpdateInformation::shareThreadWith(QObject *other)
 	}
 	other->moveToThread(_pSharedThread.data());
 	return;
+}
+
+QNetworkAccessManager *AppImageUpdateInformation::getSharedNetworkManager(void)
+{
+	return _pSharedNetworkManager.data();
 }
 
 bool AppImageUpdateInformation::isEmpty(void)

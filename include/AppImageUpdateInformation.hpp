@@ -1,6 +1,7 @@
 #ifndef APPIMAGE_UPDATE_INFORMATION_HPP_INCLUDED
 #define APPIMAGE_UPDATE_INFORMATION_HPP_INCLUDED
 #include <AppImageUpdateInformation_p.hpp>
+#include <QNetworkAccessManager>
 
 namespace AppImageUpdaterBridge {
 class AppImageUpdateInformation : public QObject
@@ -22,9 +23,9 @@ public:
         UNSUPPORTED_TRANSPORT
     } error_code;
 
-    explicit AppImageUpdateInformation(QObject *parent = nullptr);
-    explicit AppImageUpdateInformation(const QString&, QObject *parent = nullptr);
-    explicit AppImageUpdateInformation(QFile *, QObject *parent = nullptr);
+    explicit AppImageUpdateInformation(QNetworkAccessManager *networkManager = nullptr);
+    explicit AppImageUpdateInformation(const QString&, QNetworkAccessManager *networkManager = nullptr);
+    explicit AppImageUpdateInformation(QFile *, QNetworkAccessManager *networkManager = nullptr);
     ~AppImageUpdateInformation();
 
     /* Public static methods. */
@@ -32,6 +33,7 @@ public:
 
 public Q_SLOTS:
     void shareThreadWith(QObject*);
+    QNetworkAccessManager *getSharedNetworkManager(void);
     bool isEmpty(void);
     AppImageUpdateInformation &setAppImage(const QString&);
     AppImageUpdateInformation &setAppImage(QFile *);
@@ -51,6 +53,7 @@ Q_SIGNALS:
 private:
     QSharedPointer<Private::AppImageUpdateInformationPrivate> _pUpdateInformationParser = nullptr;
     QSharedPointer<QThread> _pSharedThread = nullptr;
+    QSharedPointer<QNetworkAccessManager> _pSharedNetworkManager = nullptr;
 };
 }
 #endif // APPIMAGE_UPDATE_INFORMATION_HPP_INCLUDED

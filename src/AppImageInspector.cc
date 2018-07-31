@@ -3,15 +3,15 @@
 using namespace AppImageUpdaterBridge;
 using namespace AppImageUpdaterBridge::Private;
 
-AppImageInspector::AppImageInspector(AppImageUpdateInformation *updateInformation , QNetworkAccessManager *networkManager)
+AppImageInspector::AppImageInspector(AppImageUpdateInformation *updateInformation)
 	: QObject()
 {
-	_pUpdateInformation = (!updateInformation) ? new AppImageUpdateInformation(this) : updateInformation;
+	_pUpdateInformation = updateInformation;
 	connect(_pUpdateInformation , &AppImageUpdateInformation::error , 
 		this , &AppImageInspector::handleUpdateInformationError);
 
 	_pControlFileParser = QSharedPointer<ZsyncRemoteControlFileParserPrivate>
-			      (new ZsyncRemoteControlFileParserPrivate(networkManager));
+			      (new ZsyncRemoteControlFileParserPrivate(_pUpdateInformation->getSharedNetworkManager()));
 
 	_pControlFileParser->setLoggerName("AppImageInspector");
 	_pUpdateInformation->shareThreadWith(_pControlFileParser.data());

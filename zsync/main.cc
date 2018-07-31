@@ -1,6 +1,8 @@
 #include <AppImageUpdateInformation>
 #include <AppImageInspector>
 #include <QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
 
 using namespace AppImageUpdaterBridge;
 
@@ -12,7 +14,7 @@ int main(int argc, char **argv)
     }
 
     QCoreApplication app(argc, argv);
-    QNetworkAccessManager qnam;
+    AppImageUpdateInformation info;
     QStringList files;
 
     /* print copyright. */
@@ -27,12 +29,32 @@ int main(int argc, char **argv)
 
     qInfo() << "files  :: " << files;
     
-    QtConcurrent::map(files, [&](QString AppImagePath) { 
-	AppImageUpdateInformation *updateInformation = new AppImageUpdateInformation;
-	updateInformation->setShowLog(true).setAppImage(AppImagePath);
-	AppImageInspector *inspector = new AppImageInspector(updateInformation , &qnam);
-	inspector->setShowLog(true).checkForUpdates();
+    info.setAppImage(files.at(0));
+
+    QFutureWatcher<void> watcher;
+
+    QObject::connect(&watcher , &QFutureWatcher<void>::finished , [&]()
+    {
+    qDebug() << "Everything Finished.";
+    app.quit();
+    return;
+    });
+
+    QFuture<void> future = QtConcurrent::map(files, [&](QString AppImagePath) { 
+	QEventLoop loop;
+	AppImageInspector *inspector = new AppImageInspector(&info);
+	QObject::connect(inspector , &AppImageInspector::updatesAvailable , &loop , &QEventLoop::quit);
+	QObject::connect(inspector , &AppImageInspector::updatesNotAvailable , &loop , &QEventLoop::quit);
+	inspector->checkForUpdates();
+	loop.exec();
+
+	qDebug() << "AppImageUpdaterBridge(" << info.getAppImagePath() << "):: Update Needed(" <<
+		 inspector->isUpdatesAvailable() << ").";
+	delete inspector;
 	return;
     });
+
+    watcher.setFuture(future);
+
     return app.exec();
 }

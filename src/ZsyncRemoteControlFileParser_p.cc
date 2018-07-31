@@ -53,7 +53,6 @@ static void doDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
 */
 static void doNotDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
 {
-    (void)NetworkManager;
     return;
 }
 
@@ -86,9 +85,9 @@ ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate(QNetwor
 #ifndef LOGGING_DISABLED
     _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
 #endif // LOGGING_DISABLED
-    _pNManager = (networkManager == nullptr) ? 
+    _pNManager = (!networkManager) ? 
                  QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doDeleteNetworkManager): 
-                 QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doNotDeleteNetworkManager);
+                 QSharedPointer<QNetworkAccessManager>(networkManager, doNotDeleteNetworkManager);
     connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
     return;
 }
@@ -159,19 +158,18 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 
 	_sZsyncFileName = information["filename"].toString();
 
-	QNAMHandler handler(_pNManager.data());
 	QNetworkRequest request;
 	request.setUrl(apiLink);
     	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
    
         INFO_START " setControlFileUrl : github api request(" LOGR apiLink LOGR ")." INFO_END;	
-	QNetworkReply *reply = handler.get(request);
-
-	qDebug() << "REPLY:: " << reply;
+	
+	auto reply = _pNManager->get(request);
 
     	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
     	connect(reply, SIGNAL(finished(void)), this, SLOT(handleGithubAPIResponse(void))); 
+//	});
      } else {
         /*
 	 * if its not github releases zsync or generic zsync
@@ -230,13 +228,13 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
 
     INFO_START LOGR " getControlFile : sending get request to " LOGR _uControlFileUrl LOGR "." INFO_END;
 
-    QNAMHandler handler(_pNManager.data());
     QNetworkRequest request;
     request.setUrl(_uControlFileUrl);
     request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
-    QNetworkReply *reply = handler.get(request);
+    auto reply = _pNManager->get(request); 
+
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
     connect(reply, SIGNAL(finished(void)), this, SLOT(handleControlFile(void)));
