@@ -60,7 +60,8 @@ namespace AppImageUpdaterBridge {
         Q_SIGNALS:
 	    void targetFileCheckSumBlock(Private::zs_blockid , Private::rsum , void*);
 	    void endOfTargetFileCheckSumBlocks(void);
-	    void updatesAvailable(bool);
+	    void updatesAvailable(void);
+	    void updatesNotAvailable(void);
 	    void progress(int);
 	    void error(short);
 	    void logger(QString , QUrl); /* log msg , control file url. */

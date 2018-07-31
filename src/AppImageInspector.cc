@@ -4,7 +4,7 @@ using namespace AppImageUpdaterBridge;
 using namespace AppImageUpdaterBridge::Private;
 
 AppImageInspector::AppImageInspector(AppImageUpdateInformation *updateInformation , QNetworkAccessManager *networkManager)
-	: QObject(nullptr)
+	: QObject()
 {
 	_pUpdateInformation = (!updateInformation) ? new AppImageUpdateInformation(this) : updateInformation;
 	connect(_pUpdateInformation , &AppImageUpdateInformation::error , 
@@ -15,34 +15,33 @@ AppImageInspector::AppImageInspector(AppImageUpdateInformation *updateInformatio
 
 	_pControlFileParser->setLoggerName("AppImageInspector");
 	_pUpdateInformation->shareThreadWith(_pControlFileParser.data());
-	
+
 	connect(_pUpdateInformation , SIGNAL(info(QJsonObject)) ,
 		_pControlFileParser.data() , SLOT(setControlFileUrl(QJsonObject)));
 
 	connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::error,
-		this , &AppImageInspector::error);
+		this , &AppImageInspector::error , Qt::DirectConnection);
 	
 	connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::progress ,
-		this , &AppImageInspector::progress);
+		this , &AppImageInspector::progress , Qt::DirectConnection);
 
 	connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveControlFile ,
 		this , &AppImageInspector::handleControlFile);
 	
 	connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveTargetFileBlocks ,
-		this , &AppImageInspector::targetFileCheckSumBlock);
+		this , &AppImageInspector::targetFileCheckSumBlock , Qt::DirectConnection);
 
 	connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::logger ,
-		this , &AppImageInspector::logger);
+		this , &AppImageInspector::logger , Qt::DirectConnection);
 
 	connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::endOfTargetFileBlocks ,
-		this , &AppImageInspector::endOfTargetFileCheckSumBlocks);
+		this , &AppImageInspector::endOfTargetFileCheckSumBlocks , Qt::DirectConnection);
 
 	return;
 }
 
 AppImageInspector::~AppImageInspector()
 {
-	_pUpdateInformation->waitForSharedThread();
 	_pControlFileParser.clear();
 	return;
 }
@@ -95,7 +94,9 @@ AppImageInspector &AppImageInspector::setShowLog(bool choice)
 
 AppImageInspector &AppImageInspector::checkForUpdates(void)
 {
-	_pUpdateInformation->getInfo();
+	auto metaObject = _pUpdateInformation->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getInfo(void)")))
+		    .invoke(_pUpdateInformation , Qt::QueuedConnection);	
 	return *this;
 }
 
@@ -224,7 +225,11 @@ void AppImageInspector::handleUpdateInformationError(short)
 void AppImageInspector::handleControlFile(void)
 {
 	bool result = isUpdatesAvailable();
-	emit updatesAvailable(result);
+	if(result){
+	emit updatesAvailable();
+	}else{
+	emit updatesNotAvailable();
+	}
 	return;
 }
 

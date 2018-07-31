@@ -32,7 +32,6 @@ public:
 
 public Q_SLOTS:
     void shareThreadWith(QObject*);
-    void waitForSharedThread(void);
     bool isEmpty(void);
     AppImageUpdateInformation &setAppImage(const QString&);
     AppImageUpdateInformation &setAppImage(QFile *);

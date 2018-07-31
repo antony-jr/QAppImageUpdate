@@ -22,13 +22,13 @@ static void safeDeleteQThread(QThread *thread)
 		     _pUpdateInformationParser->moveToThread(_pSharedThread.data()); \
 		     _pUpdateInformationParser->setLoggerName("AppImageUpdateInformation"); \
 		     connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::info , \
-			      this , &AppImageUpdateInformation::info); \
+			      this , &AppImageUpdateInformation::info , Qt::DirectConnection); \
 		     connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::progress , \
-	 		      this , &AppImageUpdateInformation::progress); \
+	 		      this , &AppImageUpdateInformation::progress , Qt::DirectConnection); \
 	             connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::error , \
-			      this , &AppImageUpdateInformation::error); \
+			      this , &AppImageUpdateInformation::error , Qt::DirectConnection); \
 	             connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::logger , \
-			      this , &AppImageUpdateInformation::logger); \
+			      this , &AppImageUpdateInformation::logger , Qt::DirectConnection); \
 		     _pSharedThread->start(); \
 		     setAppImage(x);
 
@@ -67,12 +67,6 @@ void AppImageUpdateInformation::shareThreadWith(QObject *other)
 		return;
 	}
 	other->moveToThread(_pSharedThread.data());
-	return;
-}
-
-void AppImageUpdateInformation::waitForSharedThread(void)
-{
-	_pSharedThread->wait();
 	return;
 }
 
