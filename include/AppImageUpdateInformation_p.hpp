@@ -3,7 +3,6 @@
 #include <QtCore>
 
 namespace AppImageUpdaterBridge {
-namespace Private {
 class AppImageUpdateInformationPrivate : public QObject
 {
     Q_OBJECT
@@ -23,21 +22,17 @@ public:
         UNSUPPORTED_TRANSPORT
     } error_code;
 
-    explicit AppImageUpdateInformationPrivate(void);
+    explicit AppImageUpdateInformationPrivate(QObject *parent = nullptr);
     ~AppImageUpdateInformationPrivate();
 
     /* Public static methods. */
     static QString errorCodeToString(short);
 
 public Q_SLOTS:
-    bool isEmpty(void);
     void setLoggerName(const QString&);
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setShowLog(bool);
-    QString getAppImageSHA1(void);
-    QString getAppImageName(void);
-    QString getAppImagePath(void);
     void getInfo(void);
     void clear(void);
 
@@ -170,6 +165,5 @@ private:
         Elf64_Xword	sh_entsize;	/* table entry size */
     } Elf64_Shdr;
 };
-}
 }
 #endif // APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED

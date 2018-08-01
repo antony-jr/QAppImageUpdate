@@ -1,9 +1,11 @@
 #ifndef APPIMAGE_UPDATE_INFORMATION_HPP_INCLUDED
 #define APPIMAGE_UPDATE_INFORMATION_HPP_INCLUDED
-#include <AppImageUpdateInformation_p.hpp>
-#include <QNetworkAccessManager>
+#include <QtCore>
 
 namespace AppImageUpdaterBridge {
+
+class AppImageUpdateInformationPrivate;
+
 class AppImageUpdateInformation : public QObject
 {
     Q_OBJECT
@@ -23,37 +25,29 @@ public:
         UNSUPPORTED_TRANSPORT
     } error_code;
 
-    explicit AppImageUpdateInformation(QNetworkAccessManager *networkManager = nullptr);
-    explicit AppImageUpdateInformation(const QString&, QNetworkAccessManager *networkManager = nullptr);
-    explicit AppImageUpdateInformation(QFile *, QNetworkAccessManager *networkManager = nullptr);
+    explicit AppImageUpdateInformation(QObject *parent = nullptr);
+    explicit AppImageUpdateInformation(const QString&, QObject *parent = nullptr);
+    explicit AppImageUpdateInformation(QFile *, QObject *parent = nullptr);
     ~AppImageUpdateInformation();
 
     /* Public static methods. */
     static QString errorCodeToString(short);
 
 public Q_SLOTS:
-    void shareThreadWith(QObject*);
-    QNetworkAccessManager *getSharedNetworkManager(void);
-    bool isEmpty(void);
     AppImageUpdateInformation &setAppImage(const QString&);
     AppImageUpdateInformation &setAppImage(QFile *);
     AppImageUpdateInformation &setShowLog(bool);
     AppImageUpdateInformation &getInfo(void);
-    QString getAppImageSHA1(void);
-    QString getAppImageName(void);
-    QString getAppImagePath(void);
     AppImageUpdateInformation &clear(void);
 
 Q_SIGNALS:
     void info(QJsonObject);
     void progress(int);
     void error(short);
-    void logger(QString , QString); /* log msg , appiamge path */
+    void logger(QString , QString); /* log msg , appimage path */
 
 private:
-    QSharedPointer<Private::AppImageUpdateInformationPrivate> _pUpdateInformationParser = nullptr;
-    QSharedPointer<QThread> _pSharedThread = nullptr;
-    QSharedPointer<QNetworkAccessManager> _pSharedNetworkManager = nullptr;
+    AppImageUpdateInformationPrivate *_pUpdateInformation = nullptr;
 };
 }
 #endif // APPIMAGE_UPDATE_INFORMATION_HPP_INCLUDED

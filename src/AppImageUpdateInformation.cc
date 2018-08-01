@@ -1,63 +1,44 @@
 #include <AppImageUpdateInformation.hpp>
+#include <AppImageUpdateInformation_p.hpp>
+
+#define APPIMAGE_UPDATE_INFORMATION QString("AppImageUpdateInformation")
+#define APPIMAGE_UPDATE_INFORMATION_PRIVATE QString("AppImageUpdateInformationPrivate")
+#define APPIMAGE_UPDATE_INFORMATION_LOGGER_NAME APPIMAGE_UPDATE_INFORMATION
 
 using namespace AppImageUpdaterBridge;
-using namespace AppImageUpdaterBridge::Private;
 
-static void safeDeleteQThread(QThread *thread)
-{
-	if(!thread){
-		return;
-	}
 
-	thread->quit();
-	thread->wait();
-	thread->deleteLater();
-	return;
-}
-
-static void doNotDelete(QNetworkAccessManager *m)
-{
-	(void)m;
-	return;
-}
-
-#define CONSTRUCT(x) _pUpdateInformationParser = QSharedPointer<AppImageUpdateInformationPrivate>\
-						 (new AppImageUpdateInformationPrivate); \
-		     _pSharedThread = QSharedPointer<QThread>(new QThread , safeDeleteQThread); \
-		     _pSharedNetworkManager = (!networkManager) ?  \
-					      QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager) : \
-					      QSharedPointer<QNetworkAccessManager>(networkManager , doNotDelete); \
-		     _pUpdateInformationParser->moveToThread(_pSharedThread.data()); \
-		     _pSharedNetworkManager->moveToThread(_pSharedThread.data()); \
-		     _pUpdateInformationParser->setLoggerName("AppImageUpdateInformation"); \
-		     connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::info , \
+#define CONSTRUCT(x) _pUpdateInformation = new AppImageUpdateInformationPrivate(this); \
+		     _pUpdateInformation->setObjectName(APPIMAGE_UPDATE_INFORMATION_PRIVATE); \
+		     _pUpdateInformation->setLoggerName(APPIMAGE_UPDATE_INFORMATION_LOGGER_NAME); \
+		     setObjectName(APPIMAGE_UPDATE_INFORMATION); \
+		     connect(_pUpdateInformation , &AppImageUpdateInformationPrivate::info , \
 			      this , &AppImageUpdateInformation::info , Qt::DirectConnection); \
-		     connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::progress , \
+		     connect(_pUpdateInformation , &AppImageUpdateInformationPrivate::progress , \
 	 		      this , &AppImageUpdateInformation::progress , Qt::DirectConnection); \
-	             connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::error , \
+	             connect(_pUpdateInformation , &AppImageUpdateInformationPrivate::error , \
 			      this , &AppImageUpdateInformation::error , Qt::DirectConnection); \
-	             connect(_pUpdateInformationParser.data() , &AppImageUpdateInformationPrivate::logger , \
+	             connect(_pUpdateInformation , &AppImageUpdateInformationPrivate::logger , \
 			      this , &AppImageUpdateInformation::logger , Qt::DirectConnection); \
-		     _pSharedThread->start(); \
 		     setAppImage(x);
 
 
-AppImageUpdateInformation::AppImageUpdateInformation(QNetworkAccessManager *networkManager)
-	: QObject()
+AppImageUpdateInformation::AppImageUpdateInformation(QObject *parent)
+	: QObject(parent)
 {
 	CONSTRUCT(nullptr);
 	return;
 }
 
-AppImageUpdateInformation::AppImageUpdateInformation(const QString &AppImagePath, QNetworkAccessManager *networkManager)
-	: QObject()
+AppImageUpdateInformation::AppImageUpdateInformation(const QString &AppImagePath, QObject *parent)
+	: QObject(parent)
 {
 	CONSTRUCT(AppImagePath);
 	return;
 }
  
-AppImageUpdateInformation::AppImageUpdateInformation(QFile *AppImage, QNetworkAccessManager *networkManager)
-	: QObject()
+AppImageUpdateInformation::AppImageUpdateInformation(QFile *AppImage, QObject *parent)
+	: QObject(parent)
 {
 	CONSTRUCT(AppImage);
 	return;
@@ -65,40 +46,22 @@ AppImageUpdateInformation::AppImageUpdateInformation(QFile *AppImage, QNetworkAc
     
 AppImageUpdateInformation::~AppImageUpdateInformation()
 {
-	_pSharedThread.clear();
-	_pSharedNetworkManager.clear();
-	_pUpdateInformationParser.clear();
+	/*
+	 * No need to deallocate anything because of Qt Parent to Child
+	 * deallocation.
+	 * i.e., it will automatically delete its children in its destructor. 
+	 * You can look for an object by name and optionally type using findChild() or findChildren().
+	 *
+	 * See https://doc.qt.io/qt-5/qobject.html#details.
+	*/
 	return;
-}
-
-void AppImageUpdateInformation::shareThreadWith(QObject *other)
-{
-	if(!other){
-		return;
-	}
-	other->moveToThread(_pSharedThread.data());
-	return;
-}
-
-QNetworkAccessManager *AppImageUpdateInformation::getSharedNetworkManager(void)
-{
-	return _pSharedNetworkManager.data();
-}
-
-bool AppImageUpdateInformation::isEmpty(void)
-{
-	bool ret = false;
-	auto metaObject = _pUpdateInformationParser->metaObject();
-	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("isEmpty(void)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::DirectConnection , Q_RETURN_ARG(bool , ret));
-	return ret;
 }
 
 AppImageUpdateInformation &AppImageUpdateInformation::setAppImage(const QString &AppImagePath)
 {
-	auto metaObject = _pUpdateInformationParser->metaObject();
+	auto metaObject = _pUpdateInformation->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setAppImage(const QString&)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::QueuedConnection , Q_ARG(QString , AppImagePath));
+		    .invoke(_pUpdateInformation , Qt::QueuedConnection , Q_ARG(QString , AppImagePath));
 	return *this;
 }
 AppImageUpdateInformation &AppImageUpdateInformation::setAppImage(QFile *AppImage)
@@ -106,60 +69,33 @@ AppImageUpdateInformation &AppImageUpdateInformation::setAppImage(QFile *AppImag
 	if(!AppImage){
 	return *this;
 	}
-	auto metaObject = _pUpdateInformationParser->metaObject();
+	auto metaObject = _pUpdateInformation->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setAppImage(QFile*)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::QueuedConnection , Q_ARG(QFile* , AppImage));
+		    .invoke(_pUpdateInformation , Qt::QueuedConnection , Q_ARG(QFile* , AppImage));
 	return *this;
 }
 
 AppImageUpdateInformation &AppImageUpdateInformation::setShowLog(bool choice)
 {
-	auto metaObject = _pUpdateInformationParser->metaObject();
+	auto metaObject = _pUpdateInformation->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setShowLog(bool)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::QueuedConnection , Q_ARG(bool , choice));
+		    .invoke(_pUpdateInformation , Qt::QueuedConnection , Q_ARG(bool , choice));
 	return *this;
 }
 
 AppImageUpdateInformation &AppImageUpdateInformation::getInfo(void)
 {
-	auto metaObject = _pUpdateInformationParser->metaObject();
+	auto metaObject = _pUpdateInformation->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getInfo(void)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::QueuedConnection);
+		    .invoke(_pUpdateInformation , Qt::QueuedConnection);
 	return *this;
 }	
 
-QString AppImageUpdateInformation::getAppImageSHA1(void)
-{
-	QString ret;
-	auto metaObject = _pUpdateInformationParser->metaObject();
-	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getAppImageSHA1(void)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::DirectConnection , Q_RETURN_ARG(QString, ret));
-	return ret;
-}
-
-QString AppImageUpdateInformation::getAppImageName(void)
-{
-	QString ret;
-	auto metaObject = _pUpdateInformationParser->metaObject();
-	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getAppImageName(void)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::DirectConnection , Q_RETURN_ARG(QString, ret));
-	return ret;
-}
-
-QString AppImageUpdateInformation::getAppImagePath(void)
-{
-	QString ret;
-	auto metaObject = _pUpdateInformationParser->metaObject();
-	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getAppImagePath(void)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::DirectConnection , Q_RETURN_ARG(QString, ret));
-	return ret;
-}
-
 AppImageUpdateInformation &AppImageUpdateInformation::clear(void)
 {
-	auto metaObject = _pUpdateInformationParser->metaObject();
+	auto metaObject = _pUpdateInformation->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("clear(void)")))
-		    .invoke(_pUpdateInformationParser.data() , Qt::QueuedConnection);
+		    .invoke(_pUpdateInformation , Qt::QueuedConnection);
 	return *this;
 }
 

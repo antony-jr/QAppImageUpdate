@@ -1,60 +1,60 @@
 #include <AppImageUpdateInformation>
-#include <AppImageInspector>
-#include <QtConcurrent>
-#include <QFuture>
-#include <QFutureWatcher>
 
 using namespace AppImageUpdaterBridge;
 
 int main(int argc, char **argv)
 {
-    if(argc == 1) {
-        qInfo().noquote() << "Usage  : " << argv[0] << " [OPTIONS] [FILES ...]";
-        return 0;
-    }
-
     QCoreApplication app(argc, argv);
-    AppImageUpdateInformation info;
-    QStringList files;
-
-    /* print copyright. */
-    qInfo().noquote() << "UpdateInformation v3.0.0 , Multi-Threaded AppImage Information extractor.";
-    qInfo().noquote() << "Copyright BSD-3 Clause Licence Antony J.r.";
-
-    argv++;
-    while(*argv) {
-        files.append(*argv);
-        ++argv;
+    if(argc == 1){
+	    return -1;
     }
 
-    qInfo() << "files  :: " << files;
-    
-    info.setAppImage(files.at(0));
+    QString path(argv[1]);
+    AppImageUpdateInformation Information(path);
+    auto count = 100;
+    QTimer timer,
+	   timer2;
+    timer.setSingleShot(true);
+    timer.setInterval(5);
+    timer2.setSingleShot(true);
+    timer2.setInterval(10);
 
-    QFutureWatcher<void> watcher;
-
-    QObject::connect(&watcher , &QFutureWatcher<void>::finished , [&]()
+    QObject::connect(&timer , &QTimer::timeout , [&]()
     {
-    qDebug() << "Everything Finished.";
-    app.quit();
+    timer.stop();
+    timer.setInterval(5);
+    timer.start();
+    qDebug() << "Its Still Non Blocking.";
+    Information.getInfo();
     return;
     });
 
-    QFuture<void> future = QtConcurrent::map(files, [&](QString AppImagePath) { 
-	QEventLoop loop;
-	AppImageInspector *inspector = new AppImageInspector(&info);
-	QObject::connect(inspector , &AppImageInspector::updatesAvailable , &loop , &QEventLoop::quit);
-	QObject::connect(inspector , &AppImageInspector::updatesNotAvailable , &loop , &QEventLoop::quit);
-	inspector->checkForUpdates();
-	loop.exec();
-
-	qDebug() << "AppImageUpdaterBridge(" << info.getAppImagePath() << "):: Update Needed(" <<
-		 inspector->isUpdatesAvailable() << ").";
-	delete inspector;
-	return;
+    QObject::connect(&timer2 , &QTimer::timeout , [&]()
+    {
+    timer2.stop();
+    timer2.setInterval(10);
+    timer2.start();
+    qDebug() << "More Stress.";
+    Information.getInfo();
+    return;
     });
 
-    watcher.setFuture(future);
+    QObject::connect(&Information , &AppImageUpdateInformation::info , [&](QJsonObject info)
+    {
+    qDebug() << "INFO:: " << info;
+    if(!count){
+    timer.stop();
+    timer2.stop();
+    app.quit();
+    }else{
+    --count;
+    }
+    return;
+    });
 
+    Information.getInfo();
+    timer.start();
+    timer2.start();
+    qDebug() << "Non Blocking.";
     return app.exec();
 }
