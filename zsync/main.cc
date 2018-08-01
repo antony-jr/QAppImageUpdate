@@ -10,11 +10,13 @@ int main(int argc, char **argv)
     }
 
     QString path(argv[1]);
-    auto res = new AppImageUpdateResource(path , &app);
+    auto res = new AppImageUpdateResource(path);
     QObject::connect(res , &AppImageUpdateResource::info , [&](QJsonObject infor)
     {
     qDebug() << "INFO:: " << infor;
-    app.quit();
+    res->getInfo();
+   // res->deleteLater();
+   // app.quit();
     return;
     });
     res->setShowLog(true).getInfo();
