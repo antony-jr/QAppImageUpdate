@@ -1,4 +1,4 @@
-#include <AppImageUpdateInformation_p.hpp>
+#include <AppImageUpdateResource_p.hpp>
 
 using namespace AppImageUpdaterBridge;
 
@@ -41,7 +41,7 @@ using namespace AppImageUpdaterBridge;
  * code in the source.
  *
  * Warning:
- *     Hardcoded , Do not use this outside AppImageUpdateInformationPrivate
+ *     Hardcoded , Do not use this outside AppImageUpdateResourcePrivate
  *     class.
  *
  * Example:
@@ -67,7 +67,7 @@ using namespace AppImageUpdaterBridge;
  *
  * Warning:
  * 	This is hardcoded and thus the variable here corresponds
- * 	to the local variable declared in AppImageUpdateInformationPrivate::getInfo
+ * 	to the local variable declared in AppImageUpdateResourcePrivate::getInfo
  *
 */
 #define TYPE_1_APPIMAGE ((int)magicBytes[2] == 1)
@@ -79,7 +79,7 @@ using namespace AppImageUpdaterBridge;
  *
  * Warning:
  * 	This is hardcoded and thus the variable here corresponds
- * 	to the local variable declared in AppImageUpdateInformationPrivate::getInfo
+ * 	to the local variable declared in AppImageUpdateResourcePrivate::getInfo
  *
 */
 #define isElf32(data) (((Elf32_Ehdr*)data)->e_ident[EI_CLASS] == ELFCLASS32)
@@ -90,7 +90,7 @@ using namespace AppImageUpdaterBridge;
  * from a elf file.
  *
  * Warning:
- * 	Heavily hardcoded , Do not use this outside of AppImageUpdateInformationPrivate::getInfo.
+ * 	Heavily hardcoded , Do not use this outside of AppImageUpdateResourcePrivate::getInfo.
  *
  * Example:
  * 	long unsigned offset = 0 , length = 0;
@@ -104,7 +104,6 @@ using namespace AppImageUpdaterBridge;
  */
 #define lookupSectionHeaders(strTab , shdr , elf , section) for(int i = 0; i < elf->e_shnum; i++) { \
 						  emit(progress((int)((i * 100)/elf->e_shnum))); \
-						  QCoreApplication::processEvents(); \
 						  if(!strcmp(&strTab[shdr[i].sh_name] , section)){ \
 							  offset = shdr[i].sh_offset; \
 							  length = shdr[i].sh_size; \
@@ -187,19 +186,19 @@ static void doNotDelete(QFile *file)
 
 
 /*
- * AppImageUpdateInformationPrivate is the worker class that provides the
+ * AppImageUpdateResourcePrivate is the worker class that provides the
  * ability to easily get the update information from an AppImage.
  * This class can be constructed in three ways.
  * The default construct sets the QObject parent to be null and
- * creates an empty AppImageUpdateInformationPrivate Object.
+ * creates an empty AppImageUpdateResourcePrivate Object.
  *
  * Example:
  * 	QObject parent;
- * 	AppImageUpdateInformationPrivate AppImageInfo(&parent);
+ * 	AppImageUpdateResourcePrivate AppImageInfo(&parent);
  *	// or
- *	AppImageUpdateInformationPrivate AppImageInfo;
+ *	AppImageUpdateResourcePrivate AppImageInfo;
 */
-AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *parent)
+AppImageUpdateResourcePrivate::AppImageUpdateResourcePrivate(QObject *parent)
     : QObject(parent)
 {
     try {
@@ -212,19 +211,19 @@ AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *pare
 }
 
 /*
- * Destructs the AppImageUpdateInformationPrivate ,
+ * Destructs the AppImageUpdateResourcePrivate ,
  * When the user provides the AppImage as a QFile ,
  * QFile is not closed , the user is fully responsible
  * to deallocate or close the QFile.
 */
-AppImageUpdateInformationPrivate::~AppImageUpdateInformationPrivate()
+AppImageUpdateResourcePrivate::~AppImageUpdateResourcePrivate()
 {
     _pLogger.clear();
     _pAppImage.clear();
     return;
 }
 
-void AppImageUpdateInformationPrivate::setLoggerName(const QString &name)
+void AppImageUpdateResourcePrivate::setLoggerName(const QString &name)
 {
 	_sLoggerName = QString(name);
 	return;
@@ -239,11 +238,11 @@ void AppImageUpdateInformationPrivate::setLoggerName(const QString &name)
  * the error signal.
  *
  * Example:
- * 	AppImageUpdateInformationPrivate AppImageInfo;
+ * 	AppImageUpdateResourcePrivate AppImageInfo;
  * 	AppImageInfo.setAppImage("PathTo.AppImage");
  *
  */
-void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
+void AppImageUpdateResourcePrivate::setAppImage(const QString &AppImagePath)
 {
     clear(); /* clear old data */
     if(AppImagePath.isEmpty()) {
@@ -311,13 +310,13 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
  * must be readable.
  *
  * Example:
- * 	AppImageUpdateInformationPrivate AppImageInfo;
+ * 	AppImageUpdateResourcePrivate AppImageInfo;
  * 	QFile file("PathTo.AppImage");
  * 	file.open(QIODevice::ReadOnly);
  * 	AppImageInfo.setAppImage(&file);
  * 	file.close();
 */
-void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
+void AppImageUpdateResourcePrivate::setAppImage(QFile *AppImage)
 {
     clear(); /* clear old data. */
     if(AppImage == nullptr) {
@@ -367,19 +366,19 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
  * On false this disconnects the logPrinter.
  *
  * Example:
- * 	AppImageUpdateInformationPrivate AppImageInfo("PathTo.AppImage");
+ * 	AppImageUpdateResourcePrivate AppImageInfo("PathTo.AppImage");
  * 	AppImageInfo.setShowLog(true);
 */
-void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
+void AppImageUpdateResourcePrivate::setShowLog(bool logNeeded)
 {
     if(logNeeded) {
-        disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::logPrinter);
-        connect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::logPrinter);
+        disconnect(this, &AppImageUpdateResourcePrivate::logger, this, &AppImageUpdateResourcePrivate::logPrinter);
+        connect(this, &AppImageUpdateResourcePrivate::logger, this, &AppImageUpdateResourcePrivate::logPrinter);
         INFO_START  " setShowLog : true  , started logging." INFO_END;
 
     } else {
         INFO_START  " setShowLog : false , finishing logging." INFO_END;
-        disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::logPrinter);
+        disconnect(this, &AppImageUpdateResourcePrivate::logger, this, &AppImageUpdateResourcePrivate::logPrinter);
     }
     return;
 }
@@ -393,7 +392,7 @@ void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
  * Example:
  * 	QJsonObject info = AppImageInfo.getInfo();
 */
-void AppImageUpdateInformationPrivate::getInfo(void)
+void AppImageUpdateResourcePrivate::getInfo(void)
 {
     /*
      * If this class is constructed without a 
@@ -463,13 +462,6 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     QCryptographicHash *SHA1Hasher = new QCryptographicHash(QCryptographicHash::Sha1);
     while(!_pAppImage->atEnd()){
 	SHA1Hasher->addData(_pAppImage->read(bufferSize));
-	/*
-	 * Since this is single threaded non blocking api , We 
-	 * should not block the even loop in any case.
-	 * Calling this static member from anywhere should
-	 * process the current thread's event loop.
-	*/
-    	QCoreApplication::processEvents();
     }
     _pAppImage->seek(0); // rewind file to the top for later use.
     AppImageSHA1 = QString(SHA1Hasher->result().toHex().toUpper());	
@@ -502,8 +494,6 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         INFO_START  " getInfo : AppImage is confirmed to be type 1." INFO_END;
 
         progress(/*percentage=*/80); /*Signal progress.*/
-	QCoreApplication::processEvents();
-
         updateString = QString::fromUtf8(read(_pAppImage, APPIMAGE_TYPE1_UPDATE_INFO_POS, APPIMAGE_TYPE1_UPDATE_INFO_LEN));
 
     } else if(TYPE_2_APPIMAGE) {
@@ -555,7 +545,6 @@ void AppImageUpdateInformationPrivate::getInfo(void)
                 FATAL_START  " getInfo : cannot find '"
                     	     LOGR APPIMAGE_TYPE2_UPDATE_INFO_SHDR LOGR "' section header." FATAL_END;
                 SECTION_HEADER_NOT_FOUND_ERROR();
-		QCoreApplication::processEvents();
             } else {
                 updateString = QString::fromUtf8(read(_pAppImage, offset, length));
             }
@@ -568,7 +557,6 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         ) {
             WARNING_START  " getInfo : guessing AppImage type to be 1." WARNING_END;
             emit(progress(80));
-	    QCoreApplication::processEvents();
             updateString = QString::fromUtf8(read(_pAppImage, APPIMAGE_TYPE1_UPDATE_INFO_POS, APPIMAGE_TYPE1_UPDATE_INFO_LEN));
         } else {
             FATAL_START  " getInfo : invalid AppImage type(" LOGR (unsigned)magicBytes[2] LOGR ")." FATAL_END;
@@ -656,7 +644,6 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     }
 
     emit(progress(100)); /*Signal progress.*/
-    QCoreApplication::processEvents();
 
     emit(info(_jInfo));
     INFO_START  " getInfo : finished." INFO_END;
@@ -671,7 +658,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
  * Example:
  * 	AppImageInfo.clear();
 */
-void AppImageUpdateInformationPrivate::clear(void)
+void AppImageUpdateResourcePrivate::clear(void)
 {
     _jInfo = QJsonObject();
     _sLogBuffer.clear();
@@ -685,7 +672,7 @@ void AppImageUpdateInformationPrivate::clear(void)
 /* This private slot proxies the log messages from
  * the logger signal to qDebug().
 */
-void AppImageUpdateInformationPrivate::logPrinter(QString msg , QString path)
+void AppImageUpdateResourcePrivate::logPrinter(QString msg , QString path)
 {
     (void)path;
     qDebug().noquote() << "["
@@ -701,13 +688,13 @@ void AppImageUpdateInformationPrivate::logPrinter(QString msg , QString path)
 
 /*
  * This static method returns a QString which corresponds the
- * AppImageUpdateInformationPrivate::error_code , Useful when logging and debuging.
+ * AppImageUpdateResourcePrivate::error_code , Useful when logging and debuging.
  *
  * Example:
  * 	qDebug()
- * 	<< AppImageUpdateInformationPrivate::errorCodeToString(AppImageUpdateInformationPrivate::APPIMAGE_NOT_FOUND);
+ * 	<< AppImageUpdateResourcePrivate::errorCodeToString(AppImageUpdateResourcePrivate::APPIMAGE_NOT_FOUND);
 */
-QString AppImageUpdateInformationPrivate::errorCodeToString(short errorCode)
+QString AppImageUpdateResourcePrivate::errorCodeToString(short errorCode)
 {
     QString ret = "AppImageUpdateInformation::errorCode(";
     switch(errorCode) {

@@ -35,6 +35,7 @@
 #if !defined(AIUPDATER_BRIDGE_HPP_INCLUDED)
 #define AIUPDATER_BRIDGE_HPP_INCLUDED
 #include <QtCore>
+#include <QNetworkAccessManager>
 
 namespace AppImageUpdaterBridge
 {

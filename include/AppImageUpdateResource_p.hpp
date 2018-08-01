@@ -1,9 +1,9 @@
-#ifndef APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED
-#define APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED
+#ifndef APPIMAGE_UPDATE_RESOURCE_PRIVATE_HPP_INCLUDED
+#define APPIMAGE_UPDATE_RESOURCE_PRIVATE_HPP_INCLUDED
 #include <QtCore>
 
 namespace AppImageUpdaterBridge {
-class AppImageUpdateInformationPrivate : public QObject
+class AppImageUpdateResourcePrivate : public QObject
 {
     Q_OBJECT
 public:
@@ -22,8 +22,8 @@ public:
         UNSUPPORTED_TRANSPORT
     } error_code;
 
-    explicit AppImageUpdateInformationPrivate(QObject *parent = nullptr);
-    ~AppImageUpdateInformationPrivate();
+    explicit AppImageUpdateResourcePrivate(QObject *parent = nullptr);
+    ~AppImageUpdateResourcePrivate();
 
     /* Public static methods. */
     static QString errorCodeToString(short);
@@ -166,4 +166,4 @@ private:
     } Elf64_Shdr;
 };
 }
-#endif // APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED
+#endif // APPIMAGE_UPDATE_RESOURCE_PRIVATE_HPP_INCLUDED

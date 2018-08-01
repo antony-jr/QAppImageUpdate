@@ -34,4 +34,7 @@
 */
 #include <AppImageUpdaterBridge>
 
-/* ... */
+namespace AppImageUpdaterBridge
+{
+}
+
