@@ -13,7 +13,7 @@ class ZsyncRemoteControlFileParserPrivate : public QObject
     Q_OBJECT
 public:
     enum : short {
-        UNKNOWN_NETWORK_ERROR,
+        UNKNOWN_NETWORK_ERROR = 50,
         IO_READ_ERROR,
         ERROR_RESPONSE_CODE,
         NO_MARKER_FOUND_IN_CONTROL_FILE,
@@ -28,12 +28,29 @@ public:
         INVALID_TARGET_FILE_URL,
         INVALID_TARGET_FILE_SHA1
     } error_code;
+    
+    enum : short {
+	INITIALIZING = 0,
+	IDLE = 1,
+	PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION = 50,
+	REQUESTING_GITHUB_API,
+	PARSING_GITHUB_API_RESPONSE,
+	REQUESTING_ZSYNC_CONTROL_FILE,
+	REQUESTING_BINTRAY,
+	PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL,
+	PARSING_ZSYNC_CONTROL_FILE,
+	SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE,
+	STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY,
+	FINALIZING_PARSING_ZSYNC_CONTROL_FILE,
+	EMITTING_TARGET_FILE_CHECKSUM_BLOCKS,
+	FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS
+    } status_code;
 
     explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
     ~ZsyncRemoteControlFileParserPrivate();
 
-    /* static function to return a QString for corresponding error code.*/
     static QString errorCodeToString(short);
+    static QString statusCodeToString(short);
 public Q_SLOTS:
     bool isEmpty(void);
     void clear(void);
@@ -70,6 +87,7 @@ Q_SIGNALS:
     void receiveControlFile(void);
     void progress(int);
     void error(short);
+    void statusChanged(short);
 #ifndef LOGGING_DISABLED
     void logger(QString , QUrl);
 #endif // LOGGING_DISABLED

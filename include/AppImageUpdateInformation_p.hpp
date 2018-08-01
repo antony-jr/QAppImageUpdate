@@ -1,14 +1,14 @@
-#ifndef APPIMAGE_UPDATE_RESOURCE_PRIVATE_HPP_INCLUDED
-#define APPIMAGE_UPDATE_RESOURCE_PRIVATE_HPP_INCLUDED
+#ifndef APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED
+#define APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED
 #include <QtCore>
 
 namespace AppImageUpdaterBridge {
-class AppImageUpdateResourcePrivate : public QObject
+class AppImageUpdateInformationPrivate : public QObject
 {
     Q_OBJECT
 public:
     enum : short {
-        APPIMAGE_NOT_READABLE,
+        APPIMAGE_NOT_READABLE = 0,
         NO_READ_PERMISSION,
         APPIMAGE_NOT_FOUND,
         CANNOT_OPEN_APPIMAGE,
@@ -22,11 +22,27 @@ public:
         UNSUPPORTED_TRANSPORT
     } error_code;
 
-    explicit AppImageUpdateResourcePrivate(QObject *parent = nullptr);
-    ~AppImageUpdateResourcePrivate();
+    enum : short {
+	INITIALIZING = 0,
+	IDLE = 1,
+	OPENING_APPIMAGE,
+	CALCULATING_APPIMAGE_SHA1_HASH,
+	READING_APPIMAGE_MAGIC_BYTES,
+	FINDING_APPIMAGE_TYPE,
+	FINDING_APPIMAGE_ARCHITECTURE,
+	MAPPING_APPIMAGE_TO_MEMORY,
+	READING_APPIMAGE_UPDATE_INFORMATION,
+	SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER,
+	UNMAPPING_APPIMAGE_FROM_MEMORY,
+	FINALIZING_APPIMAGE_EMBEDED_UPDATE_INFORMATION
+    } status_code;
+
+    explicit AppImageUpdateInformationPrivate(QObject *parent = nullptr);
+    ~AppImageUpdateInformationPrivate();
 
     /* Public static methods. */
     static QString errorCodeToString(short);
+    static QString statusCodeToString(short);
 
 public Q_SLOTS:
     void setLoggerName(const QString&);
@@ -43,8 +59,8 @@ Q_SIGNALS:
     void info(QJsonObject);
     void progress(int);
     void error(short);
+    void statusChanged(short);
     void logger(QString , QString); /* log msg , appimage path */
-
 private:
     QJsonObject _jInfo;
     QString _sLogBuffer,
@@ -166,4 +182,4 @@ private:
     } Elf64_Shdr;
 };
 }
-#endif // APPIMAGE_UPDATE_RESOURCE_PRIVATE_HPP_INCLUDED
+#endif // APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED

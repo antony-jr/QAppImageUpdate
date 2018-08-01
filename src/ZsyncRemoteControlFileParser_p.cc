@@ -60,16 +60,19 @@ using namespace AppImageUpdaterBridge;
 ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *networkManager)
     : QObject()
 {
+    emit statusChanged(INITIALIZING);
 #ifndef LOGGING_DISABLED
     _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
 #endif // LOGGING_DISABLED
     _pNManager = networkManager;
     connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
+    emit statusChanged(IDLE);
     return;
 }
 
 ZsyncRemoteControlFileParserPrivate::~ZsyncRemoteControlFileParserPrivate()
 {
+    emit statusChanged(IDLE);
 #ifndef LOGGING_DISABLED
     _pLogger.clear();
 #endif // LOGGING_DISABLED
@@ -120,6 +123,8 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
      if(information["IsEmpty"].toBool()){
 	     return;
      }
+     
+     emit statusChanged(PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION);
      information = information["UpdateInformation"].toObject();
      if(information["transport"].toString() == "zsync" ) {
 	INFO_START " setControlFileUrl : using direct zsync transport." INFO_END;
@@ -142,7 +147,8 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
     	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
    
         INFO_START " setControlFileUrl : github api request(" LOGR apiLink LOGR ")." INFO_END;	
-	
+
+	emit statusChanged(REQUESTING_GITHUB_API);
 	auto reply = _pNManager->get(request);
 
     	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
@@ -166,7 +172,8 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 	QNetworkRequest request;
 	request.setUrl(latestLink);
     	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
-     
+    
+        emit statusChanged(REQUESTING_BINTRAY);	
 	QNetworkReply *reply = _pNManager->head(request);
 
     	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
@@ -212,6 +219,7 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
     request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
+    emit statusChanged(REQUESTING_ZSYNC_CONTROL_FILE);	
     auto reply = _pNManager->get(request); 
 
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
@@ -255,6 +263,7 @@ void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
     */
     _pControlFile->seek(_nCheckSumBlocksOffset); /* Seek to the offset of the checksum block. */
     INFO_START LOGR " getTargetFileBlocks : starting to send target file checksum blocks." INFO_END;
+    emit statusChanged(EMITTING_TARGET_FILE_CHECKSUM_BLOCKS);
     for(zs_blockid id = 0; id < _nTargetFileBlocks ; ++id) {
         rsum r = { 0, 0 };
         unsigned char checksum[16];
@@ -262,7 +271,7 @@ void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
         /* Read on. */
         if (_pControlFile->read(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
             || _pControlFile->read((char *)&checksum, _nStrongCheckSumBytes) < 1) {
-            emit error(IO_READ_ERROR);
+	    emit error(IO_READ_ERROR);
             return;
         }
 
@@ -283,6 +292,7 @@ void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
         emit receiveTargetFileBlocks(id, r, checksum);
     }
     INFO_START LOGR " getTargetFileBlocks : finished sending target file blocks." INFO_END;
+    emit statusChanged(FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS);
     emit endOfTargetFileBlocks(); // Tell the user to start adding seed files.
     return;
 }
@@ -429,6 +439,7 @@ void ZsyncRemoteControlFileParserPrivate::handleDownloadProgress(qint64 bytesRec
 void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &url)
 {
     INFO_START LOGR " handleBintrayRedirection : start to parse latest package url." INFO_END;
+    emit statusChanged(PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL);
     QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleBintrayRedirection : http response code(" LOGR responseCode LOGR ")." INFO_END;
@@ -461,6 +472,7 @@ void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &u
 void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
 {
     INFO_START LOGR " handleGithubAPIResponse : starting to parse github api response." INFO_END;
+    emit statusChanged(PARSING_GITHUB_API_RESPONSE);
     QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleGithubAPIResponse : http response code(" LOGR responseCode LOGR ")." INFO_END;
@@ -506,6 +518,7 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
 void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
 {
     INFO_START LOGR " handleControlFile : starting to parse zsync control file." INFO_END;
+    emit statusChanged(PARSING_ZSYNC_CONTROL_FILE);	
     QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleControlFile : http response code(" LOGR responseCode LOGR ")." INFO_END;
@@ -539,7 +552,8 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         qint64 pos = 0;
 	char previousMark = 0;
         int bufferSize = 1; // 1 Byte for now.
-        while(!senderReply->atEnd()) {
+        emit statusChanged(SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE);
+	while(!senderReply->atEnd()) {
             /*
              * Read one byte at a time , Since the marker for the
              * offset of the checksum blocks is \n\n.
@@ -574,6 +588,9 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         emit error(NO_MARKER_FOUND_IN_CONTROL_FILE );
         return;
     }
+
+    emit statusChanged(STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY);
+
     QString ZsyncHeader(_pControlFile->read(_nCheckSumBlocksOffset - 2)); /* avoid reading the marker. */
     QStringList ZsyncHeaderList = QString(ZsyncHeader).split("\n");
     if(ZsyncHeaderList.size() < 8) {
@@ -655,6 +672,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
     _nTargetFileBlocks = (_nTargetFileLength + _nTargetFileBlockSize - 1) / _nTargetFileBlockSize;
     INFO_START LOGR " handleControlFile : zsync target file has " LOGR _nTargetFileBlocks LOGR " number of blocks." INFO_END;
 
+    emit statusChanged(FINALIZING_PARSING_ZSYNC_CONTROL_FILE);
     emit receiveControlFile();
     return;
 }
@@ -684,6 +702,7 @@ void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::Netw
 */
 void ZsyncRemoteControlFileParserPrivate::handleErrorSignal(short errorCode)
 {
+    emit statusChanged(IDLE);
     FATAL_START LOGR " error : " LOGR errorCodeToString(errorCode) LOGR " occured.";
     clear(); // clear all data to prevent later corrupted data collisions.
     return;
@@ -706,7 +725,7 @@ void ZsyncRemoteControlFileParserPrivate::handleLogMessage(QString message , QUr
 
 QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
 {
-    QString errorCodeString = "AppImageInspector::error_code("; /* since this is exclusively used in the inspector. */
+    QString errorCodeString = "AppImageDeltaWriter::errorCode(";
     switch(errorCode) {
     case UNKNOWN_NETWORK_ERROR:
         errorCodeString.append("UNKNOWN_NETWORK_ERROR");
@@ -757,4 +776,58 @@ QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
 
     errorCodeString.append(")");
     return errorCodeString;
+}
+
+QString ZsyncRemoteControlFileParserPrivate::statusCodeToString(short code)
+{
+	QString statusCodeString = "AppImageDeltaWriter::statusCode(";
+	switch(code){
+		case INITIALIZING:
+			statusCodeString.append("INITIALIZING");
+			break;
+		case IDLE:
+			statusCodeString.append("IDLE");
+			break;
+		case PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION:
+			statusCodeString.append("PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION");
+			break;
+		case REQUESTING_GITHUB_API:
+			statusCodeString.append("REQUESTING_GITHUB_API");
+			break;
+		case PARSING_GITHUB_API_RESPONSE:
+			statusCodeString.append("PARSING_GITHUB_API_RESPONSE");
+			break;
+		case REQUESTING_ZSYNC_CONTROL_FILE:
+			statusCodeString.append("REQUESTING_ZSYNC_CONTROL_FILE");
+			break;
+		case REQUESTING_BINTRAY:
+			statusCodeString.append("REQUESTING_BINTRAY");
+			break;
+		case PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL:
+			statusCodeString.append("PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL");
+			break;
+		case PARSING_ZSYNC_CONTROL_FILE:
+			statusCodeString.append("PARSING_ZSYNC_CONTROL_FILE");
+			break;
+		case SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE:
+			statusCodeString.append("SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE");
+			break;
+		case STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY:
+			statusCodeString.append("STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY");
+			break;
+		case FINALIZING_PARSING_ZSYNC_CONTROL_FILE:
+			statusCodeString.append("FINALIZING_PARSING_ZSYNC_CONTROL_FILE");
+			break;
+		case EMITTING_TARGET_FILE_CHECKSUM_BLOCKS:
+			statusCodeString.append("EMITTING_TARGET_FILE_CHECKSUM_BLOCKS");
+			break;
+		case FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS:
+			statusCodeString.append("FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS");
+			break;
+		default:
+			statusCodeString.append("Unknown");
+			break;
+	}
+	statusCodeString.append(")");
+	return statusCodeString;
 }
