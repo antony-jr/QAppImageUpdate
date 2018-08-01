@@ -1,15 +1,12 @@
 #ifndef ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
 #define ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
-#define LOGGING_ENABLED
+#include <QtCore>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QNAMHandler.hpp>
 #include <ZsyncInternalStructures_p.hpp>
 
 namespace AppImageUpdaterBridge
-{
-namespace Private
 {
 class ZsyncRemoteControlFileParserPrivate : public QObject
 {
@@ -32,7 +29,7 @@ public:
         INVALID_TARGET_FILE_SHA1
     } error_code;
 
-    explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *networkManager = nullptr);
+    explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
     ~ZsyncRemoteControlFileParserPrivate();
 
     /* static function to return a QString for corresponding error code.*/
@@ -51,7 +48,7 @@ public Q_SLOTS:
     QString getZsyncMakeVersion(void);
     QString getTargetFileName(void);
     QUrl getTargetFileUrl(void);
-    QString getTargetFileSHA1(void);
+    void getTargetFileSHA1(void);
     QDateTime getMTime(void);
     size_t getTargetFileBlockSize(void);
     size_t getTargetFileLength(void);
@@ -67,6 +64,7 @@ private Q_SLOTS:
     void handleErrorSignal(short);
     void handleLogMessage(QString , QUrl);
 Q_SIGNALS:
+    void targetFileSHA1(QString);
     void receiveTargetFileBlocks(zs_blockid, rsum, void*);
     void endOfTargetFileBlocks(void);
     void receiveControlFile(void);
@@ -95,13 +93,12 @@ private:
     QUrl _uTargetFileUrl,
          _uControlFileUrl;
 
-    QSharedPointer<QNetworkAccessManager> _pNManager = nullptr;
 #ifndef LOGGING_DISABLED
     QSharedPointer<QDebug> _pLogger = nullptr;
 #endif // LOGGING_DISABLED
     QSharedPointer<QBuffer> _pControlFile = nullptr;
+    QNetworkAccessManager *_pNManager = nullptr;
 };
-}
 }
 
 #endif //ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED

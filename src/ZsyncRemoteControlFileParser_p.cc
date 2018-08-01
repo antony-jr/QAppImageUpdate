@@ -1,8 +1,6 @@
 #include <ZsyncRemoteControlFileParser_p.hpp>
-#include <QNAMHandler.hpp>
 
-using namespace AppImageUpdaterBridge::Private;
-using namespace QNetworkAccessManagerHandler;
+using namespace AppImageUpdaterBridge;
 
 /*
  * Prints to the log.
@@ -36,26 +34,6 @@ using namespace QNetworkAccessManagerHandler;
 #define FATAL_START LOGS "  FATAL: "
 #define FATAL_END LOGE
 
-/*
- * Static functions to deallocate QNetworkAccessManager ,
- * Made to be used for smart pointers.
-*/
-static void doDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
-{
-    NetworkManager->deleteLater();
-    return;
-}
-
-/*
- * Dummy deallocator for QNetworkAccessManager ,
- * Made to be used for smart pointers where we don't want to delete
- * the QNetworkAccessManager.
-*/
-static void doNotDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
-{
-    return;
-}
-
 
 /*
  * ZsyncRemoteControlFileParserPrivate is the private class to handle all things
@@ -80,21 +58,18 @@ static void doNotDeleteNetworkManager(QNetworkAccessManager *NetworkManager)
  *
 */
 ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *networkManager)
-    : QObject(nullptr)
+    : QObject()
 {
 #ifndef LOGGING_DISABLED
     _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
 #endif // LOGGING_DISABLED
-    _pNManager = (!networkManager) ? 
-                 QSharedPointer<QNetworkAccessManager>(new QNetworkAccessManager, doDeleteNetworkManager): 
-                 QSharedPointer<QNetworkAccessManager>(networkManager, doNotDeleteNetworkManager);
+    _pNManager = networkManager;
     connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
     return;
 }
 
 ZsyncRemoteControlFileParserPrivate::~ZsyncRemoteControlFileParserPrivate()
 {
-    _pNManager.clear();
 #ifndef LOGGING_DISABLED
     _pLogger.clear();
 #endif // LOGGING_DISABLED
@@ -142,6 +117,10 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(const QUrl &controlF
 
 void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject information)
 {
+     if(information["IsEmpty"].toBool()){
+	     return;
+     }
+     information = information["UpdateInformation"].toObject();
      if(information["transport"].toString() == "zsync" ) {
 	INFO_START " setControlFileUrl : using direct zsync transport." INFO_END;
         setControlFileUrl(QUrl(information["zsyncUrl"].toString()));
@@ -359,13 +338,12 @@ QUrl ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
 }
 
 /*
- * Returns the SHA1 Hash of the target file.
- * This returns an empty string if a process is busy or the control
- * file was never parsed.
+ * Emits the SHA1 Hash of the target file.
 */
-QString ZsyncRemoteControlFileParserPrivate::getTargetFileSHA1(void)
+void ZsyncRemoteControlFileParserPrivate::getTargetFileSHA1(void)
 {
-    return _sTargetFileSHA1;
+    emit targetFileSHA1(_sTargetFileSHA1);
+    return;
 }
 
 /*

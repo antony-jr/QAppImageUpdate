@@ -1,4 +1,4 @@
-#include <AppImageUpdateResource>
+#include <AppImageDeltaWriter.hpp>
 
 using namespace AppImageUpdaterBridge;
 
@@ -10,15 +10,16 @@ int main(int argc, char **argv)
     }
 
     QString path(argv[1]);
-    auto res = new AppImageUpdateResource(path);
-    QObject::connect(res , &AppImageUpdateResource::info , [&](QJsonObject infor)
-    {
-    qDebug() << "INFO:: " << infor;
-    res->getInfo();
-   // res->deleteLater();
-   // app.quit();
-    return;
+    AppImageUpdateResource res(path);
+    res.setShowLog(true);
+    AppImageDeltaWriter dwriter(&res);
+
+    QObject::connect(&dwriter , &AppImageDeltaWriter::updateAvailable , [&](bool check, QString appimage){
+	 qDebug().noquote() << QFileInfo(appimage).fileName() << ":: Update Available(" << check << ").";
+	 app.quit();
+	 return;
     });
-    res->setShowLog(true).getInfo();
+
+    dwriter.checkForUpdate();
     return app.exec();
 }

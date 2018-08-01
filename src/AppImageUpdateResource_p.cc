@@ -571,7 +571,7 @@ void AppImageUpdateResourcePrivate::getInfo(void)
         return;
     }
 
-    INFO_START  " getInfo : updateString("LOGR updateString LOGR ")." INFO_END;
+    INFO_START " getInfo : updateString(" LOGR updateString LOGR ")." INFO_END;
 
     /*
      * Split the raw update information with the specified
@@ -629,7 +629,7 @@ void AppImageUpdateResourcePrivate::getInfo(void)
         }
 
     } else {
-        FATAL_START  " getInfo : update information has invalid number of entries("LOGR data.size() LOGR ")." FATAL_END;
+        FATAL_START " getInfo : update information has invalid number of entries(" LOGR data.size() LOGR ")." FATAL_END;
         APPIMAGE_INVALID_UI_ERROR();
         return;
     }
