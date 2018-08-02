@@ -230,6 +230,26 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
     return;
 }
 
+QBuffer *ZsyncRemoteControlFileParserPrivate::getCheckSumBlocksBuffer(void)
+{
+   if(!_pControlFile ||
+       !_pControlFile->isOpen() ||
+       _pControlFile->size() - _nCheckSumBlocksOffset < (_nWeakCheckSumBytes + _nStrongCheckSumBytes) ||
+       !_nCheckSumBlocksOffset) {
+        return nullptr;
+    }
+    auto buffer = new QBuffer;
+    buffer->open(QIODevice::WriteOnly);
+    _pControlFile->seek(_nCheckSumBlocksOffset); /* Seek to the offset of the checksum block. */
+    
+    while(!_pControlFile->atEnd()){
+	    buffer->write(_pControlFile->read(_nWeakCheckSumBytes + _nStrongCheckSumBytes));
+    }
+
+    buffer->close();
+    return buffer;
+}
+
 /*
  * Starts to send zsync control file's checksum blocks through
  * Qt signals , One has to connect this signal to the ZsyncCore

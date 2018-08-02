@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-using namespace AppImageUpdaterBridge::Private;
+using namespace AppImageUpdaterBridge;
 
 #define UPDATE_RSUM(a, b, oldc, newc, bshift) do { (a) += ((unsigned char)(newc)) - ((unsigned char)(oldc)); (b) += (a) - ((oldc) << (bshift)); } while (0)
 
@@ -47,59 +47,20 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
 /*
  * Constructor and Destructor
 */
-ZsyncCorePrivate::ZsyncCorePrivate(QNetworkAccessManager *NetworkManager)
-    : QObject(NetworkManager)
-{
-    _pControlFileParserThread = QSharedPointer<QThread>(new QThread);
-    _pControlFileParser = QSharedPointer<ZsyncRemoteControlFileParserPrivate>(new ZsyncRemoteControlFileParserPrivate(NetworkManager));
-    
-    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveControlFile ,
-            this , &ZsyncCorePrivate::processControlFile);
-    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveTargetFileBlocks ,
-            this , &ZsyncCorePrivate::addTargetFileCheckSumBlocks);
-    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::endOfTargetFileBlocks ,
-            this , &ZsyncCorePrivate::completeTargetFileCheckSumBlocks);
-    
-    _pControlFileParser->moveToThread(_pControlFileParserThread.data());
-    _pControlFileParserThread->start();
-    return;
-}
-
-ZsyncCorePrivate::ZsyncCorePrivate(const QUrl &controlFileUrl , QNetworkAccessManager *NetworkManager)
-    : QObject(NetworkManager)
-{
-    _pControlFileParserThread = QSharedPointer<QThread>(new QThread);
-    _pControlFileParser = QSharedPointer<ZsyncRemoteControlFileParserPrivate>(new ZsyncRemoteControlFileParserPrivate(NetworkManager));
-    
-    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveControlFile ,
-            this , &ZsyncCorePrivate::processControlFile);
-    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::receiveTargetFileBlocks ,
-            this , &ZsyncCorePrivate::addTargetFileCheckSumBlocks);
-    connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::endOfTargetFileBlocks ,
-            this , &ZsyncCorePrivate::completeTargetFileCheckSumBlocks);
-    
-    _pControlFileParser->moveToThread(_pControlFileParserThread.data());
-    _pControlFileParserThread->start();
-    setControlFileUrl(controlFileUrl);
-    return;
-}
-
-void ZsyncCorePrivate::setControlFileUrl(const QUrl &url)
-{
-    _pControlFileParser->setControlFileUrl(url);
-    _pControlFileParser->getControlFile();
-    return;
-}
-
-#ifdef LOGGING_ENABLED
-void ZsyncCorePrivate::setShowLog(bool choose)
-{
-    // _pControlFileParser->setShowLog(choose);
-    return;
-}
-#endif // LOGGING_ENABLED
-
-void ZsyncCorePrivate::clear(void)
+ZsyncCorePrivate::ZsyncCorePrivate(size_t blockSize , zs_blockid blockIdOffset , size_t blocks , qint32 weakCheckSumBytes, 
+		qint32 strongCheckSumBytes , qint32 seqMatches , QBuffer *checkSumBlocks , QFile *targetFile)
+	: _nBlockSize(blockSize),
+	  _nBlockIdOffset(blockIdOffset),
+	  _nBlocks(blocks),
+	  _pWeakCheckSumMask(weakCheckSumBytes < 3 ? 0 : weakCheckSumBytes == 3 ? 0xff : 0xffff),
+	  _nWeakCheckSumBytes(weakCheckSumBytes),
+	  _nStrongCheckSumBytes(strongCheckSumBytes),
+	  _nSeqMatches(seqMatches),
+	  _nContext(blockSize * seqMatches),
+	  _pTargetFile(targetFile),
+	  _nBlockShift(blockSize == 1024 ? 10 : blockSize == 2048 ? 11 : log2(blockSize)),
+	  _pBlockHashes((hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]))),
+	  _pTargetFileCheckSumBlocks(checkSumBlocks)
 {
     return;
 }
@@ -114,14 +75,63 @@ ZsyncCorePrivate::~ZsyncCorePrivate()
 }
 
 
-/* ZsyncCorePrivate::add_target_block(self, blockid, rsum, checksum)
- * Sets the stored hash values for the given blockid to the given values.
- */
-void ZsyncCorePrivate::addTargetFileCheckSumBlocks(zs_blockid b, rsum r, void *checksum)
+QPair</*number of blocks got=*/qint32 , /*required block ranges=*/QVector<QPair<zs_blockid, zs_blockid>>*> *ZsyncCorePrivate::start(const QString &sourceFilePath)
 {
-    if (b < _nBlocks) {
+    QPair<qint32 , QVector<QPair<zs_blockid , zs_blockid>>*> *result = nullptr;
+    result = new QPair<qint32 , QVector<QPair<zs_blockid , zs_blockid>>*>;
+    result->first = 0;
+    result->second = nullptr;
+
+    if(!_pBlockHashes){
+	    return result;
+    }
+
+    if(!_pTargetFileCheckSumBlocks ||
+       _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
+        //FATAL_START LOGR " getTargetFileBlocks : zsync control file is invalid." FATAL_END;
+        result->first = -1;
+	return result;
+    }
+
+    // INFO_START LOGR " getTargetFileBlocks : This system uses " LOGR Q_BYTE_ORDER LOGR "." INFO_END;
+    // INFO_START LOGR " getTargetFileBlocks : starting to send target file checksum blocks." INFO_END;
+    // emit statusChanged(EMITTING_TARGET_FILE_CHECKSUM_BLOCKS);
+    
+    if(!_pTargetFileCheckSumBlocks->open(QIODevice::ReadOnly)){
+	    result->first = -2;
+	    return result;
+    }
+
+    for(zs_blockid id = 0; id < _nBlocks ; ++id) {
+        rsum r = { 0, 0 };
+        unsigned char checksum[16];
+
+        /* Read on. */
+        if (_pTargetFileCheckSumBlocks->read(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
+            || _pTargetFileCheckSumBlocks->read((char *)&checksum, _nStrongCheckSumBytes) < 1) {
+	    // emit error(IO_READ_ERROR);
+            result->first = -3;
+	    return result;
+        }
+
+        /* Convert to host endian and store.
+         * We need to convert from network endian to host endian ,
+         * Network endian is nothing but big endian byte order , So if we have little endian byte order ,
+         * We need to convert the data but if we have a big endian byte order ,
+         * We can simply avoid this conversion to save computation power.
+         *
+         * But most of the time we will need little endian since intel's microproccessors always follows
+         * the little endian byte order.
+        */
+        if(Q_BYTE_ORDER == Q_LITTLE_ENDIAN) {
+            r.a = qFromBigEndian(r.a);
+            r.b = qFromBigEndian(r.b);
+        }
+
+
+	if (id < _nBlocks) {
         /* Get hash entry with checksums for this block */
-        hash_entry *e = &(_pBlockHashes[b]);
+        hash_entry *e = &(_pBlockHashes[id]);
 
         /* Enter checksums */
         memcpy(e->checksum, checksum, _nStrongCheckSumBytes);
@@ -135,69 +145,71 @@ void ZsyncCorePrivate::addTargetFileCheckSumBlocks(zs_blockid b, rsum r, void *c
             free(_pBitHash);
             _pBitHash = NULL;
         }
+	}
     }
-}
+    //INFO_START LOGR " getTargetFileBlocks : finished sending target file blocks." INFO_END;
+    //emit statusChanged(FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS);
+    //emit endOfTargetFileBlocks(); // Tell the user to start adding seed files.
+ 
 
-
-void ZsyncCorePrivate::addSourceFile(const QString &file)
-{
-    sourceFiles.append(file);
-    return;
-}
-
-void ZsyncCorePrivate::completeTargetFileCheckSumBlocks(void)
-{
-    /*
-     * Delete unwanted buffers.
-    */
-    _pControlFileParser.clear();
-    
-    for(auto i = 0; i < sourceFiles.size() ; ++i){
-        QFile *file = new QFile(sourceFiles.at(i));
-        file->open(QIODevice::ReadOnly);
-        _nGotBlocks += submitSourceFile(file);
-        file->close();
-        delete file;
+    QFile *file = new QFile(sourceFilePath);
+    if(!file->open(QIODevice::ReadOnly)){
+		/*
+		 * FILE IO ERROR
+		*/
     }
-    if(_nGotBlocks >= _nBlocks){
-    _pTargetFile->resize(_nTargetFileLength);
-    _pTargetFile->close();
-    }
-    return;
-}
+    _nGotBlocks += submitSourceFile(file);
+    file->close();
+    delete file;
 
-/* ZsyncCorePrivate::submitTargetFileBlocks(self, data, startblock, endblock)
- * The data in data[] (which should be (endblock - startblock + 1) * blocksize * bytes)
- * is tested block-by-block as valid data against the target checksums for
- * those blocks and, if valid, accepted and written to the working output.
- *
- * Use this when you have obtained data that you know corresponds to given
- * blocks in the output file (i.e. you've downloaded them from a real copy of
- * the target).
- */
-qint32 ZsyncCorePrivate::submitTargetFileBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
-{
-    zs_blockid x;
-    unsigned char md4sum[CHECKSUM_SIZE];
 
-    /* Build checksum hash tables if we don't have them yet */
-    if (!_pRsumHash)
-        if (!buildHash())
-            return -1;
+    result->first = _nGotBlocks;
+    {
+    qint32 i, n;
+    zs_blockid from = 0 + _nBlockIdOffset , to = _nBlocks + _nBlockIdOffset;
+    QVector<QPair<zs_blockid, zs_blockid>>* ret_ranges = new QVector<QPair<zs_blockid , zs_blockid>>;
 
-    /* Check each block */
-    for (x = bfrom; x <= bto; x++) {
-        calc_checksum(&md4sum[0], data + ((x - bfrom) << _nBlockShift), _nBlockSize);
-        if (memcmp(&md4sum, &(_pBlockHashes[x].checksum[0]), _nStrongCheckSumBytes)) {
-            if (x > bfrom)      /* Write any good blocks we did get */
-                writeBlocks(data, bfrom, x - 1);
-            return -1;
+    ret_ranges->append(qMakePair(from, to));
+    ret_ranges->append(qMakePair(0, 0));
+    n = 1;
+    /* Note r[2*n-1] is the last range in our prospective list */
+
+    for (i = 0; i < _nRanges; i++) {
+        if(n == 1) {
+            ret_ranges->append(qMakePair(from, to));
+        } else {
+            ret_ranges->append(qMakePair(0, 0));
+        }
+        if (_pRanges[2 * i] + _nBlockIdOffset > ret_ranges->at(n - 1).second) // (2 * n - 1) -> second.
+            continue;
+        if (_pRanges[2 * i + 1] + _nBlockIdOffset < from)
+            continue;
+
+        /* Okay, they intersect */
+        if (n == 1 && _pRanges[2 * i] + _nBlockIdOffset <= from) {       /* Overlaps the start of our window */
+            (*ret_ranges)[0].first = _pRanges[2 * i + 1] + 1 + _nBlockIdOffset;
+        } else {
+            /* If the last block that we still (which is the last window end -1, due
+             * to half-openness) then this range just cuts the end of our window */
+            if (_pRanges[2 * i + 1] + _nBlockIdOffset >= ret_ranges->at(n - 1).second - 1) {
+                (*ret_ranges)[n - 1].second = _pRanges[2 * i] + _nBlockIdOffset;
+            } else {
+                /* In the middle of our range, split it */
+                (*ret_ranges)[n].first = _pRanges[2 * i + 1] + 1 + _nBlockIdOffset;
+                (*ret_ranges)[n].second = ret_ranges->at(n-1).second;
+                (*ret_ranges)[n-1].second = _pRanges[2 * i] + _nBlockIdOffset; 
+                n++;
+            }
         }
     }
-
-    /* All blocks are valid; write them and update our state */
-    writeBlocks( data, bfrom, bto);
-    return 0;
+    if (n == 1 && ret_ranges->at(0).first >= ret_ranges->at(0).second) {
+        n = 0;
+        ret_ranges->clear();
+    }
+    ret_ranges->removeAll(qMakePair(0, 0));
+    result->second = ret_ranges;
+    }
+    return result;
 }
 
 /* checkCheckSumsOnHashChain(self, &hash_entry, data[], onlyone)
@@ -502,62 +514,6 @@ qint32 ZsyncCorePrivate::submitSourceFile(QFile *file)
     return got_blocks;
 }
 
-
-/* ZsyncCorePrivate::needed_block_ranges
- * Return the block ranges needed to complete the target file */
-void ZsyncCorePrivate::getNeededRanges(void)
-{
-    qint32 i, n;
-    zs_blockid from = 0 , to = _nBlocks;
-    QVector<QPair<zs_blockid, zs_blockid>> ret_ranges;
-
-    if (to >= _nBlocks)
-        to = _nBlocks;
-
-    ret_ranges.append(qMakePair(from, to));
-    ret_ranges.append(qMakePair(0, 0));
-    n = 1;
-    /* Note r[2*n-1] is the last range in our prospective list */
-
-    for (i = 0; i < _nRanges; i++) {
-        if(n == 1) {
-            ret_ranges.append(qMakePair(from, to));
-        } else {
-            ret_ranges.append(qMakePair(0, 0));
-        }
-        if (_pRanges[2 * i] > ret_ranges.at(n - 1).second) // (2 * n - 1) -> second.
-            continue;
-        if (_pRanges[2 * i + 1] < from)
-            continue;
-
-        /* Okay, they intersect */
-        if (n == 1 && _pRanges[2 * i] <= from) {       /* Overlaps the start of our window */
-            ret_ranges[0].first = _pRanges[2 * i + 1] + 1;
-        } else {
-            /* If the last block that we still (which is the last window end -1, due
-             * to half-openness) then this range just cuts the end of our window */
-            if (_pRanges[2 * i + 1] >= ret_ranges.at(n - 1).second - 1) {
-                ret_ranges[n - 1].second = _pRanges[2 * i];
-            } else {
-                /* In the middle of our range, split it */
-                ret_ranges[n].first = _pRanges[2 * i + 1] + 1;
-                ret_ranges[n].second = ret_ranges.at(n-1).second;
-                ret_ranges[n-1].second = _pRanges[2 * i];
-                n++;
-            }
-        }
-    }
-    if (n == 1 && ret_ranges.at(0).first >= ret_ranges.at(0).second) {
-        n = 0;
-        ret_ranges.clear();
-    }
-
-    ret_ranges.removeAll(qMakePair(0, 0));
-    
-    emit receiveNeededBlockRanges(ret_ranges);
-    return;
-}
-
 /* ZsyncCorePrivate::blocksToDo
  * Return the number of blocks still needed to complete the target file */
 qint32 ZsyncCorePrivate::blocksToDo(void)
@@ -776,8 +732,8 @@ zs_blockid ZsyncCorePrivate::getHashEntryBlockId(const hash_entry *e)
  * under-construction output file */
 void ZsyncCorePrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
-    off_t len = ((off_t) (bto - bfrom + 1)) << _nBlockShift;
-    off_t offset = ((off_t) bfrom) << _nBlockShift;
+    off_t len = ((off_t) ((bto + _nBlockIdOffset) - (bfrom + _nBlockIdOffset) + 1)) << _nBlockShift;
+    off_t offset = ((off_t) (bfrom + _nBlockIdOffset)) << _nBlockShift;
 
     auto pos = _pTargetFile->pos();
     _pTargetFile->seek(offset);
@@ -796,72 +752,4 @@ void ZsyncCorePrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, 
             addToRanges( id);
         }
     }
-}
-
-void ZsyncCorePrivate::processControlFile(void)
-{
-    ZsyncRemoteControlFileParserPrivate *controlFile = (ZsyncRemoteControlFileParserPrivate*)QObject::sender();
-    _nBlockSize = controlFile->getTargetFileBlockSize();
-    _nBlocks    = controlFile->getTargetFileBlocksCount();
-    _pWeakCheckSumMask = (controlFile->getWeakCheckSumBytes() < 3 ? 0 : controlFile->getWeakCheckSumBytes() == 3 ? 0xff : 0xffff);
-    _nStrongCheckSumBytes = controlFile->getStrongCheckSumBytes();
-    _nSeqMatches = controlFile->getConsecutiveMatchNeeded();
-    _nTargetFileLength = controlFile->getTargetFileLength();
-    
-    /* _nSeqMatches is 1 if true; and if true we need 1 block of
-     * _nContext to do block matching */
-    _nContext = _nBlockSize * _nSeqMatches;
-
-    /* Temporary file to hold the target file as we get blocks for it */
-    _pTargetFile = QSharedPointer<QTemporaryFile>(new QTemporaryFile("./" + controlFile->getTargetFileName() + ".xxxxxxxx.part"));
-    
-    if (!(_nBlockSize & (_nBlockSize - 1)) && _nBlocks) {
-        if (!_pTargetFile->open()) {
-            /*
-             * Error.
-             */
-            qCritical() << "cannot create temporary file.";
-        } else {
-            _pTargetFile->setAutoRemove(false);
-            /*
-             * Before we actually calculate the bit-shift for 
-             * the blocksize which is expensive , We can reduce 
-             * the computation here with an if control flow.
-             * Since zsync is an old program and it uses a static
-             * blocksizes for most cases , We can assume that if
-             * the blocksize is 2048 bytes , then the bit-shift must be 11 and
-             * if the blocksize is 1024 bytes , then the bit-shift must be 10.
-             * If those common cases are not met then we move on to the expensive
-             * computation to find the bit-shift.
-            */
-            if(_nBlockSize == 1024){
-                _nBlockShift = 10; // log2(1024) = 10.0
-            }else if(_nBlockSize == 2048){
-                _nBlockShift = 11; // log2(2048) = 11.0
-            }else{
-            /* Calculate bit-shift for blocksize */
-                for (int i = 0; i < 32 ; i++){ // sizeof(int) * 8 = 32 
-                    if (_nBlockSize == (1u << i)) {
-                        _nBlockShift = i;
-                        break;
-                    }
-                }
-            }
-
-            _pBlockHashes = ( hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]));
-            if (_pBlockHashes != NULL) {
-                /*
-                 * Error.
-                */
-            }
-        }
-    }
-    
-    /*
-     * Shoot the control file to get the target file checksum
-     * blocks.
-    */
-    qInfo() << "TargetFile Name:: " << _pTargetFile->fileName();
-    controlFile->getTargetFileBlocks();
-    return;
 }

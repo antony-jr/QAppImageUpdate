@@ -72,6 +72,7 @@ public Q_SLOTS:
     qint32 getWeakCheckSumBytes(void);
     qint32 getStrongCheckSumBytes(void);
     qint32 getConsecutiveMatchNeeded(void);
+    QBuffer *getCheckSumBlocksBuffer(void);
 private Q_SLOTS:
     void handleBintrayRedirection(const QUrl&);
     void handleGithubAPIResponse(void);
