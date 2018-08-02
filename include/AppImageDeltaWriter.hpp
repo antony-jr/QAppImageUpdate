@@ -1,16 +1,21 @@
 #ifndef APPIMAGE_DELTA_WRITER_HPP_INCLUDED
 #define APPIMAGE_DELTA_WRITER_HPP_INCLUDED
 #include <QtCore>
+#include <QtConcurrentMap>
+#include <QFuture>
+#include <QFutureWatcher>
 #include <QNetworkAccessManager>
 
 namespace AppImageUpdaterBridge {
 	class AppImageUpdateInformationPrivate;
 	class ZsyncRemoteControlFileParserPrivate;
+	struct ZsyncCoreJobPrivate::JobResult;
 
 	class AppImageDeltaWriter : public QObject {
 		Q_OBJECT
 	public:
 		enum : short {
+		NO_ERROR = -1,
 		APPIMAGE_NOT_READABLE = 0, //  50< and >=0 , AppImage Update Information Error.
         	NO_READ_PERMISSION,
         	APPIMAGE_NOT_FOUND,
@@ -36,7 +41,14 @@ namespace AppImageUpdaterBridge {
         	INVALID_HASH_LENGTH_LINE,
         	INVALID_HASH_LENGTHS,
         	INVALID_TARGET_FILE_URL,
-        	INVALID_TARGET_FILE_SHA1
+        	INVALID_TARGET_FILE_SHA1,
+        	HASH_TABLE_NOT_ALLOCATED = 100, // >= 100 , Zsync Core Job error.
+        	INVALID_TARGET_FILE_CHECKSUM_BLOCKS,
+        	CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS,
+        	QBUFFER_IO_READ_ERROR,
+        	SOURCE_FILE_NOT_FOUND,
+        	NO_PERMISSION_TO_READ_SOURCE_FILE,
+        	CANNOT_OPEN_SOURCE_FILE
 		} error_code;
 
 		enum : short {
@@ -73,12 +85,24 @@ namespace AppImageUpdaterBridge {
 		static QString statusCodeToString(short);
 	
 	public Q_SLOTS:
+		AppImageDeltaWriter &start(void);
+		AppImageDeltaWriter &cancel(void);
+		AppImageDeltaWriter &pause(void);
+		AppImageDeltaWriter &resume(void);
+		AppImageDeltaWriter &waitForFinished(void);
+		
+		bool isCanceled(void) const;
+		bool isFinished(void) const;
+		bool isPaused(void) const;
+		bool isRunning(void) const;
+		bool isStarted(void) const;
+
 		AppImageDeltaWriter &setAppImage(const QString&);
 		AppImageDeltaWriter &setAppImage(QFile*);
 		AppImageDeltaWriter &setShowLog(bool);
 		AppImageDeltaWriter &getAppImageEmbededInformation(void);
-		AppImageDeltaWriter &clear(void);
 		AppImageDeltaWriter &checkForUpdate(void);
+		AppImageDeltaWriter &clear(void);
 		QThread *sharedQThread(void) const;
 		QNetworkAccessManager *sharedNetworkAccessManager(void) const;
 
@@ -86,6 +110,12 @@ namespace AppImageUpdaterBridge {
 		void compareLocalAndRemoteAppImageSHA1Hash(QString);	
 		void handleInfo(QJsonObject);
 	Q_SIGNALS:
+		void started(void);
+		void canceled(void);
+		void paused(void);
+		void resumed(void);
+		void finished(void);
+
 		void embededInformation(QJsonObject);
 		void updateAvailable(bool , QString);
 		void statusChanged(short);
@@ -99,6 +129,8 @@ namespace AppImageUpdaterBridge {
 		ZsyncRemoteControlFileParserPrivate *_pControlFileParser = nullptr;
 		QThread *_pSharedThread = nullptr;
 		QNetworkAccessManager *_pSharedNetworkAccessManager = nullptr;
+		QFuture<ZsyncCoreJobPrivate::JobResult> *_pFuture = nullptr;
+		QFutureWatcher<ZsyncCoreJobPrivate::JobResult> *_pWatcher = nullptr;
 	};
 }
 

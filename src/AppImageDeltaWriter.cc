@@ -1,5 +1,6 @@
 #include <AppImageUpdateInformation_p.hpp>
 #include <ZsyncRemoteControlFileParser_p.hpp>
+#include <ZsyncCoreJob_p.hpp>
 #include <AppImageDeltaWriter.hpp>
 
 #define APPIMAGE_DELTA_WRITER QString("AppImageDeltaWriter")
@@ -7,6 +8,8 @@
 using namespace AppImageUpdaterBridge;
 
 #define CONSTRUCT(x) setObjectName(APPIMAGE_DELTA_WRITER); \
+		     _pFuture = new QFuture<ZsyncCoreJobPrivate::JobResult>; \
+		     _pFutureWatcher = new QFutureWatcher<ZsyncCoreJobPrivate::JobResult>;\
 		     if(!singleThreaded){ \
 		     _pSharedThread = new QThread(this);\
 		     _pSharedThread->start(); \
@@ -41,6 +44,16 @@ using namespace AppImageUpdaterBridge;
 			      this , &AppImageDeltaWriter::progress , Qt::DirectConnection);  \
 		     connect(_pControlFileParser , &ZsyncRemoteControlFileParserPrivate::logger , \
 			      this , &AppImageDeltaWriter::logger , Qt::DirectConnection); \
+		     connect(_pFutureWatcher , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::started , \
+			      this , &AppImageDeltaWriter::started , Qt::DirectConnection); \
+		     connect(_pFutureWatcher , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::canceled , \
+			      this , &AppImageDeltaWriter::canceled , Qt::DirectConnection); \
+		     connect(_pFutureWatcher , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::paused , \
+			      this , &AppImageDeltaWriter::paused , Qt::DirectConnection); \
+		     connect(_pFutureWatcher , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::resumed , \
+			      this , &AppImageDeltaWriter::resumed , Qt::DirectConnection); \
+		     connect(_pFutureWatcher , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::finished , \
+			      this , &AppImageDeltaWriter::finished , Qt::DirectConnection); \
 		     setAppImage(x);
 
 
@@ -73,6 +86,16 @@ AppImageDeltaWriter::~AppImageDeltaWriter()
 	_pUpdateInformation->deleteLater();
 	_pControlFileParser->deleteLater();
 	_pSharedNetworkAccessManager->deleteLater();
+	
+	if(_pFutureWatcher->isRunning() || _pFutureWatcher->isStarted() || _pFutureWatcher->isPaused())
+	{
+	    _pFutureWatcher->cancel();
+	    _pFutureWatcher->waitForFinished();
+	}
+
+	_pFutureWatcher->deleteLater();
+	_pFuture->deleteLater();
+
 	if(_pSharedThread){
 	_pSharedThread->quit();
 	_pSharedThread->wait();

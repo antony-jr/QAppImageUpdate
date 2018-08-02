@@ -47,7 +47,7 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
 /*
  * Constructor and Destructor
 */
-ZsyncCorePrivate::ZsyncCorePrivate(const JobInformation &info)
+ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(const JobInformation &info)
 	: _nBlockSize(info.blockSize),
 	  _nBlockIdOffset(info.blockIdOffset),
 	  _nBlocks(info.blocks),
@@ -57,6 +57,7 @@ ZsyncCorePrivate::ZsyncCorePrivate(const JobInformation &info)
 	  _nSeqMatches(info.seqMatches),
 	  _nContext(info.blockSize * info.seqMatches),
 	  _pTargetFile(info.targetFile),
+	  _pSeedFile(info.seedFile),
 	  _nBlockShift(info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize)),
 	  _pBlockHashes((hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]))),
 	  _pTargetFileCheckSumBlocks(info.checkSumBlocks)
@@ -68,8 +69,11 @@ ZsyncCorePrivate::ZsyncCorePrivate(const JobInformation &info)
     return;
 }
 
-ZsyncCorePrivate::~ZsyncCorePrivate()
+ZsyncCoreJobPrivate::~ZsyncCoreJobPrivate()
 {
+    delete _pTargetFileCheckSumBlocks;
+    delete _pSeedFile;
+    
     /* Free all allocated memory */
     free(_pRsumHash);
     free(_pRanges);
@@ -78,29 +82,28 @@ ZsyncCorePrivate::~ZsyncCorePrivate()
 }
 
 
-QPair</*number of blocks got=*/qint32 , 
-      /*required block ranges=*/QVector<QPair<zs_blockid, zs_blockid>>*> *ZsyncCorePrivate::start(const QString &sourceFilePath)
+ZsyncCoreJobPrivate::JobResult ZsyncCoreJobPrivate::start(void)
 {
-    QPair<qint32 , QVector<QPair<zs_blockid , zs_blockid>>*> *result = nullptr;
-    result = new QPair<qint32 , QVector<QPair<zs_blockid , zs_blockid>>*>;
-    result->first = 0;
-    result->second = nullptr;
-
+    JobResult result;
+    
     if(!_pBlockHashes){
+        emit error(HASH_TABLE_NOT_ALLOCATED);
 	    return result;
     }
-
+    
     if(!_pTargetFileCheckSumBlocks ||
        _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
-        result->first = -1;
-	return result;
+        result.isErrored = true;
+        result.errorCode = INVALID_TARGET_FILE_CHECKSUM_BLOCKS;
+        return result;
     }
 
     if(!_pTargetFileCheckSumBlocks->open(QIODevice::ReadOnly)){
-	    result->first = -2;
+        result.isErrored = true;
+        result.errorCode = CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS;
 	    return result;
     }
-
+    
     for(zs_blockid id = 0; id < _nBlocks ; ++id) {
         rsum r = { 0, 0 };
         unsigned char checksum[16];
@@ -108,7 +111,8 @@ QPair</*number of blocks got=*/qint32 ,
         /* Read on. */
         if (_pTargetFileCheckSumBlocks->read(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
             || _pTargetFileCheckSumBlocks->read((char *)&checksum, _nStrongCheckSumBytes) < 1) {
-	    result->first = -3;
+        result.isErrored = true;
+        result.errorCode = QBUFFER_IO_READ_ERROR;
 	    return result;
         }
 
@@ -127,7 +131,6 @@ QPair</*number of blocks got=*/qint32 ,
         }
 
 
-	if (id < _nBlocks) {
         /* Get hash entry with checksums for this block */
         hash_entry *e = &(_pBlockHashes[id]);
 
@@ -135,29 +138,27 @@ QPair</*number of blocks got=*/qint32 ,
         memcpy(e->checksum, checksum, _nStrongCheckSumBytes);
         e->r.a = r.a & _pWeakCheckSumMask;
         e->r.b = r.b;
-
-        /* New checksums invalidate any existing checksum hash tables */
-        if (_pRsumHash) {
+    }
+    
+    /* New checksums invalidate any existing checksum hash tables */
+    if (_pRsumHash) {
             free(_pRsumHash);
             _pRsumHash = NULL;
             free(_pBitHash);
             _pBitHash = NULL;
-        }
-	}
     }
-
-    QFile *file = new QFile(sourceFilePath);
-    if(!file->open(QIODevice::ReadOnly)){
-		/*
-		 * FILE IO ERROR
-		*/
+    
+    
+    if(!_pSeedFile || !_pSeedFile->open(QIODevice::ReadOnly)) {
+        result.isErrored = true;
+        result.errorCode = CANNOT_OPEN_SOURCE_FILE;
+        return result;
     }
-    _nGotBlocks += submitSourceFile(file);
-    file->close();
-    delete file;
-
-
-    result->first = _nGotBlocks;
+    
+    result.gotBlocks += submitSourceFile(_pSeedFile); // returns how blocks did we get.
+    _pSeedFile->close();
+    delete _pSeedFile;
+    
     {
     qint32 i, n;
     zs_blockid from = 0 + _nBlockIdOffset , to = _nBlocks + _nBlockIdOffset;
@@ -201,7 +202,7 @@ QPair</*number of blocks got=*/qint32 ,
         ret_ranges->clear();
     }
     ret_ranges->removeAll(qMakePair(0, 0));
-    result->second = ret_ranges;
+    result.requiredRanges = ret_ranges;
     }
     return result;
 }
@@ -217,7 +218,7 @@ QPair</*number of blocks got=*/qint32 ,
  *
  * Return the number of blocks successfully obtained.
  */
-qint32 ZsyncCorePrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, const unsigned char *data,int onlyone)
+qint32 ZsyncCoreJobPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, const unsigned char *data,int onlyone)
 {
     unsigned char md4sum[2][CHECKSUM_SIZE];
     signed int done_md4 = -1;
@@ -317,7 +318,7 @@ qint32 ZsyncCorePrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, c
     return got_blocks;
 }
 
-/* ZsyncCorePrivate::submitSourceData(self, data, datalen, offset)
+/* ZsyncCoreJobPrivate::submitSourceData(self, data, datalen, offset)
  * Reads the supplied data (length datalen) and identifies any contained blocks
  * of data that can be used to make up the target file.
  *
@@ -330,13 +331,13 @@ qint32 ZsyncCorePrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, c
  *
  * IMPLEMENTATION:
  * We maintain the following state:
- * _nSkip - the number of bytes to skip next time we enter ZsyncCorePrivate::submitSourceData
+ * _nSkip - the number of bytes to skip next time we enter ZsyncCoreJobPrivate::submitSourceData
  *        e.g. because we've just matched a block and the forward jump takes
  *        us past the end of the buffer
  * _pCurrentWeakCheckSums.first - rolling checksum of the first blocksize bytes of the buffer
  * _pCurrentWeakCheckSums.second - rolling checksum of the next blocksize bytes of the buffer (if _nSeqMatches > 1)
  */
-qint32 ZsyncCorePrivate::submitSourceData(unsigned char *data,size_t len, off_t offset)
+qint32 ZsyncCoreJobPrivate::submitSourceData(unsigned char *data,size_t len, off_t offset)
 {
     /* The window in data[] currently being considered is
      * [x, x+bs)
@@ -453,12 +454,12 @@ qint32 ZsyncCorePrivate::submitSourceData(unsigned char *data,size_t len, off_t 
     }
 }
 
-/* ZsyncCorePrivate::submitSourceFile(self, stream, progress)
+/* ZsyncCoreJobPrivate::submitSourceFile(self, stream, progress)
  * Read the given stream, applying the rsync rolling checksum algorithm to
  * identify any blocks of data in common with the target file. Blocks found are
  * written to our working target output. Progress reports if progress != 0
  */
-qint32 ZsyncCorePrivate::submitSourceFile(QFile *file)
+qint32 ZsyncCoreJobPrivate::submitSourceFile(QFile *file)
 {
     /* Track progress */
     qint32 got_blocks = 0;
@@ -508,9 +509,9 @@ qint32 ZsyncCorePrivate::submitSourceFile(QFile *file)
     return got_blocks;
 }
 
-/* ZsyncCorePrivate::blocksToDo
+/* ZsyncCoreJobPrivate::blocksToDo
  * Return the number of blocks still needed to complete the target file */
-qint32 ZsyncCorePrivate::blocksToDo(void)
+qint32 ZsyncCoreJobPrivate::blocksToDo(void)
 {
     qint32 i, n = _nBlocks;
     for (i = 0; i < _nRanges; i++) {
@@ -529,7 +530,7 @@ qint32 ZsyncCorePrivate::blocksToDo(void)
  * Build hash tables to quickly lookup a block based on its rsum value.
  * Returns non-zero if successful.
  */
-qint32 ZsyncCorePrivate::buildHash(void)
+qint32 ZsyncCoreJobPrivate::buildHash(void)
 {
     zs_blockid id;
     qint32 i = 16;
@@ -579,7 +580,7 @@ qint32 ZsyncCorePrivate::buildHash(void)
  * Remove the given data block from the rsum hash table, so it won't be
  * returned in a hash lookup again (e.g. because we now have the data)
  */
-void ZsyncCorePrivate::removeBlockFromHash(zs_blockid id)
+void ZsyncCoreJobPrivate::removeBlockFromHash(zs_blockid id)
 {
     hash_entry *t = &(_pBlockHashes[id]);
 
@@ -608,7 +609,7 @@ void ZsyncCorePrivate::removeBlockFromHash(zs_blockid id)
  * ...
  * _nRanges if it is after the last range
  */
-qint32 ZsyncCorePrivate::rangeBeforeBlock(zs_blockid x)
+qint32 ZsyncCoreJobPrivate::rangeBeforeBlock(zs_blockid x)
 {
     /* Lowest number and highest number block that it could be inside (0 based) */
     register qint32 min = 0, max = _nRanges-1;
@@ -634,7 +635,7 @@ qint32 ZsyncCorePrivate::rangeBeforeBlock(zs_blockid x)
 /* addToRanges(rs, blockid)
  * Mark the given blockid as known, updating the stored known ranges
  * appropriately */
-void ZsyncCorePrivate::addToRanges(zs_blockid x)
+void ZsyncCoreJobPrivate::addToRanges(zs_blockid x)
 {
     qint32 r = rangeBeforeBlock(x);
 
@@ -680,7 +681,7 @@ void ZsyncCorePrivate::addToRanges(zs_blockid x)
 
 /* alreadyGotBlock
  * Return true iff blockid x of the target file is already known */
-qint32 ZsyncCorePrivate::alreadyGotBlock(zs_blockid x)
+qint32 ZsyncCoreJobPrivate::alreadyGotBlock(zs_blockid x)
 {
     return (rangeBeforeBlock(x) == -1);
 }
@@ -692,7 +693,7 @@ qint32 ZsyncCorePrivate::alreadyGotBlock(zs_blockid x)
  * If no later blocks are known, it returns numblocks (i.e. the block after
  * the end of the file).
  */
-zs_blockid ZsyncCorePrivate::nextKnownBlock(zs_blockid x)
+zs_blockid ZsyncCoreJobPrivate::nextKnownBlock(zs_blockid x)
 {
     qint32 r = rangeBeforeBlock(x);
     if (r == -1)
@@ -705,7 +706,7 @@ zs_blockid ZsyncCorePrivate::nextKnownBlock(zs_blockid x)
 }
 
 
-unsigned ZsyncCorePrivate::calcRHash(const struct hash_entry *const e)
+unsigned ZsyncCoreJobPrivate::calcRHash(const struct hash_entry *const e)
 {
     unsigned h = e[0].r.b;
 
@@ -715,7 +716,7 @@ unsigned ZsyncCorePrivate::calcRHash(const struct hash_entry *const e)
     return h;
 }
 
-zs_blockid ZsyncCorePrivate::getHashEntryBlockId(const hash_entry *e)
+zs_blockid ZsyncCoreJobPrivate::getHashEntryBlockId(const hash_entry *e)
 {
     return e - _pBlockHashes;
 }
@@ -724,7 +725,7 @@ zs_blockid ZsyncCorePrivate::getHashEntryBlockId(const hash_entry *e)
 /* writeBlocks(rcksum_state, buf, startblock, endblock)
  * Writes the block range (inclusive) from the supplied buffer to our
  * under-construction output file */
-void ZsyncCorePrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
+void ZsyncCoreJobPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
     off_t len = ((off_t) ((bto + _nBlockIdOffset) - (bfrom + _nBlockIdOffset) + 1)) << _nBlockShift;
     off_t offset = ((off_t) (bfrom + _nBlockIdOffset)) << _nBlockShift;

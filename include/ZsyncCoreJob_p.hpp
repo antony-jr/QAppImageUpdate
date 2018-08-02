@@ -1,11 +1,11 @@
-#ifndef ZSYNC_CORE_WORKER_INCLUDED
-#define ZSYNC_CORE_WORKER_INCLUDED
+#ifndef ZSYNC_CORE_JOB_PRIVATE_HPP_INCLUDED
+#define ZSYNC_CORE_JOB_PRIVATE_HPP_INCLUDED
 #include <QtCore>
 #include <ZsyncInternalStructures_p.hpp>
 
 namespace AppImageUpdaterBridge
 {
-class ZsyncCorePrivate
+class ZsyncCoreJobPrivate
 {
 public:
     struct JobInformation {
@@ -17,6 +17,7 @@ public:
 		seqMatches;
 	 QBuffer *checkSumBlocks;
 	 QFile *targetFile;
+     QFile *seedFile;
 
 	 JobInformation(size_t bs,
 			zs_blockid bio,
@@ -35,7 +36,7 @@ public:
 	   checkSumBlocks(ckb),
 	   targetFile(f)
 	 {
-		 if(!checkSumBlocks || !targetFile){
+		 if(!checkSumBlocks || !targetFile || !seedFile){
 			 throw std::runtime_error("invalid memory address given for checksum blocks or target file.");
 		 }
 		 isEmpty = false;
@@ -46,11 +47,29 @@ public:
 	  * So no need to state the obvious. 
 	 */
     };
-
-    explicit ZsyncCorePrivate(const JobInformation&);
-    QPair<qint32 , QVector<QPair<zs_blockid, zs_blockid>>*> *start(const QString&);
-    ~ZsyncCorePrivate();
-
+    
+    struct JobResult {
+        bool isErrored = false;
+        short errorCode = 0;
+        qint32 gotBlocks = 0;
+        QVector<QPair<zs_blockid , zs_blockid>> *requiredRanges = nullptr;
+    };
+    
+    enum : short {
+        NO_ERROR = -1,
+	HASH_TABLE_NOT_ALLOCATED = 100,
+        INVALID_TARGET_FILE_CHECKSUM_BLOCKS,
+        CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS,
+        QBUFFER_IO_READ_ERROR,
+        SOURCE_FILE_NOT_FOUND,
+        NO_PERMISSION_TO_READ_SOURCE_FILE,
+        CANNOT_OPEN_SOURCE_FILE
+    } error_code;
+    
+    explicit ZsyncCoreJobPrivate(const JobInformation&);
+    JobResult start(void);
+    ~ZsyncCoreJobPrivate();
+    
 private:
     void writeBlocks(const unsigned char *, zs_blockid, zs_blockid); 
     void addToRanges(zs_blockid);
@@ -96,6 +115,7 @@ private:
     QBuffer *_pTargetFileCheckSumBlocks = nullptr; // Checksum blocks that needs to be loaded into the memory.
     zs_blockid _nBlockIdOffset;
     QFile *_pTargetFile; // Under construction target file.
+    QFile *_pSeedFile;
 };
 }
-#endif // ZSYNC_CORE_PRIVATE_INCLUDED
+#endif // ZSYNC_CORE_JOB_PRIVATE_HPP_INCLUDED

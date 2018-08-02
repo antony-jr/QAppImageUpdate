@@ -49,7 +49,6 @@ static QList<ZsyncCorePrivate::JobInformation> getJobs(size_t blockSize,
 	partition = new QBuffer;
 	partition->open(QIODevice::WriteOnly);
 	partition->write(buffer->read(otherThreadsBlocksToDo * (wcksumb + scksumb)));
-	qDebug() << "thread(" << threadCount << ") buffer->atEnd() :: " << buffer->atEnd();
 	partition->close();
 	{
 	ZsyncCorePrivate::JobInformation info(blockSize, fromId, otherThreadsBlocksToDo , wcksumb, scksumb,
@@ -88,11 +87,15 @@ int main(int argc, char **argv)
 
 	qDebug() << "Assigned to " << jobs.size() << " Threads.";
 
+	QVector<QPair<qint32 , qint32>> neededRanges;
 	const QString seedFile = cfp.getTargetFileName();
 	auto future = QtConcurrent::map(jobs , [&](ZsyncCorePrivate::JobInformation info){
 	ZsyncCorePrivate zsync(info);
 	auto r = zsync.start(seedFile);
 	qDebug() << "GOT BLOCKS:: " << r->first;
+	neededRanges.append(*(r->second));
+
+	delete r;
 	return;
 	});
 
@@ -101,6 +104,9 @@ int main(int argc, char **argv)
 	}
 
 	future.waitForFinished();
+
+	qDebug() << "NEEDED RANGES:: " << neededRanges;
+
 	targetFile.waitForBytesWritten(10 * 1000);
 	targetFile.resize(cfp.getTargetFileLength());
         targetFile.close();
