@@ -47,27 +47,30 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
 /*
  * Constructor and Destructor
 */
-ZsyncCorePrivate::ZsyncCorePrivate(size_t blockSize , zs_blockid blockIdOffset , size_t blocks , qint32 weakCheckSumBytes, 
-		qint32 strongCheckSumBytes , qint32 seqMatches , QBuffer *checkSumBlocks , QFile *targetFile)
-	: _nBlockSize(blockSize),
-	  _nBlockIdOffset(blockIdOffset),
-	  _nBlocks(blocks),
-	  _pWeakCheckSumMask(weakCheckSumBytes < 3 ? 0 : weakCheckSumBytes == 3 ? 0xff : 0xffff),
-	  _nWeakCheckSumBytes(weakCheckSumBytes),
-	  _nStrongCheckSumBytes(strongCheckSumBytes),
-	  _nSeqMatches(seqMatches),
-	  _nContext(blockSize * seqMatches),
-	  _pTargetFile(targetFile),
-	  _nBlockShift(blockSize == 1024 ? 10 : blockSize == 2048 ? 11 : log2(blockSize)),
+ZsyncCorePrivate::ZsyncCorePrivate(const JobInformation &info)
+	: _nBlockSize(info.blockSize),
+	  _nBlockIdOffset(info.blockIdOffset),
+	  _nBlocks(info.blocks),
+	  _pWeakCheckSumMask(info.weakCheckSumBytes < 3 ? 0 : info.weakCheckSumBytes == 3 ? 0xff : 0xffff),
+	  _nWeakCheckSumBytes(info.weakCheckSumBytes),
+	  _nStrongCheckSumBytes(info.strongCheckSumBytes),
+	  _nSeqMatches(info.seqMatches),
+	  _nContext(info.blockSize * info.seqMatches),
+	  _pTargetFile(info.targetFile),
+	  _nBlockShift(info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize)),
 	  _pBlockHashes((hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]))),
-	  _pTargetFileCheckSumBlocks(checkSumBlocks)
+	  _pTargetFileCheckSumBlocks(info.checkSumBlocks)
 {
+    if(info.isEmpty)
+    {
+	    throw std::runtime_error("cannot construct ZsyncCore with an empty information.");
+    }
     return;
 }
 
 ZsyncCorePrivate::~ZsyncCorePrivate()
 {
-    /* Free other allocated memory */
+    /* Free all allocated memory */
     free(_pRsumHash);
     free(_pRanges);
     free(_pBlockHashes);
@@ -75,7 +78,8 @@ ZsyncCorePrivate::~ZsyncCorePrivate()
 }
 
 
-QPair</*number of blocks got=*/qint32 , /*required block ranges=*/QVector<QPair<zs_blockid, zs_blockid>>*> *ZsyncCorePrivate::start(const QString &sourceFilePath)
+QPair</*number of blocks got=*/qint32 , 
+      /*required block ranges=*/QVector<QPair<zs_blockid, zs_blockid>>*> *ZsyncCorePrivate::start(const QString &sourceFilePath)
 {
     QPair<qint32 , QVector<QPair<zs_blockid , zs_blockid>>*> *result = nullptr;
     result = new QPair<qint32 , QVector<QPair<zs_blockid , zs_blockid>>*>;
@@ -88,15 +92,10 @@ QPair</*number of blocks got=*/qint32 , /*required block ranges=*/QVector<QPair<
 
     if(!_pTargetFileCheckSumBlocks ||
        _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
-        //FATAL_START LOGR " getTargetFileBlocks : zsync control file is invalid." FATAL_END;
         result->first = -1;
 	return result;
     }
 
-    // INFO_START LOGR " getTargetFileBlocks : This system uses " LOGR Q_BYTE_ORDER LOGR "." INFO_END;
-    // INFO_START LOGR " getTargetFileBlocks : starting to send target file checksum blocks." INFO_END;
-    // emit statusChanged(EMITTING_TARGET_FILE_CHECKSUM_BLOCKS);
-    
     if(!_pTargetFileCheckSumBlocks->open(QIODevice::ReadOnly)){
 	    result->first = -2;
 	    return result;
@@ -109,8 +108,7 @@ QPair</*number of blocks got=*/qint32 , /*required block ranges=*/QVector<QPair<
         /* Read on. */
         if (_pTargetFileCheckSumBlocks->read(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
             || _pTargetFileCheckSumBlocks->read((char *)&checksum, _nStrongCheckSumBytes) < 1) {
-	    // emit error(IO_READ_ERROR);
-            result->first = -3;
+	    result->first = -3;
 	    return result;
         }
 
@@ -147,10 +145,6 @@ QPair</*number of blocks got=*/qint32 , /*required block ranges=*/QVector<QPair<
         }
 	}
     }
-    //INFO_START LOGR " getTargetFileBlocks : finished sending target file blocks." INFO_END;
-    //emit statusChanged(FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS);
-    //emit endOfTargetFileBlocks(); // Tell the user to start adding seed files.
- 
 
     QFile *file = new QFile(sourceFilePath);
     if(!file->open(QIODevice::ReadOnly)){
