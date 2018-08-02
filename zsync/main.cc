@@ -10,9 +10,10 @@ int main(int argc, char **argv)
     }
 
     QString path(argv[1]);
-    AppImageDeltaWriter dwriter(path);
+    AppImageDeltaWriter dwriter(path , /*singleThreaded=*/true);
     QObject::connect(&dwriter , &AppImageDeltaWriter::updateAvailable , [&](bool check, QString appimage){
 	 qDebug().noquote() << QFileInfo(appimage).fileName() << ":: Update Available(" << check << ").";
+	 QCoreApplication::processEvents();
 	 app.quit();
 	 return;
     });

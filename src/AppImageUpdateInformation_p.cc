@@ -104,6 +104,7 @@ using namespace AppImageUpdaterBridge;
  */
 #define lookupSectionHeaders(strTab , shdr , elf , section) for(int i = 0; i < elf->e_shnum; i++) { \
 						  emit(progress((int)((i * 100)/elf->e_shnum))); \
+						  QCoreApplication::processEvents(); \
 						  if(!strcmp(&strTab[shdr[i].sh_name] , section)){ \
 							  offset = shdr[i].sh_offset; \
 							  length = shdr[i].sh_size; \
@@ -467,6 +468,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     QCryptographicHash *SHA1Hasher = new QCryptographicHash(QCryptographicHash::Sha1);
     while(!_pAppImage->atEnd()){
 	SHA1Hasher->addData(_pAppImage->read(bufferSize));
+	QCoreApplication::processEvents();
     }
     _pAppImage->seek(0); // rewind file to the top for later use.
     AppImageSHA1 = QString(SHA1Hasher->result().toHex().toUpper());	
@@ -590,6 +592,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     }
 
     emit statusChanged(IDLE);
+    QCoreApplication::processEvents();
 
     if(updateString.isEmpty()) {
         FATAL_START  " getInfo : update information is empty." FATAL_END;

@@ -64,9 +64,9 @@ namespace AppImageUpdaterBridge {
 		FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS
 		} status_code;
 
-		explicit AppImageDeltaWriter(QObject *parent = nullptr);
-		explicit AppImageDeltaWriter(const QString& , QObject *parent = nullptr);
-		explicit AppImageDeltaWriter(QFile * , QObject *parent = nullptr);
+		explicit AppImageDeltaWriter(bool singleThreaded = false , QObject *parent = nullptr);
+		explicit AppImageDeltaWriter(const QString& , bool singleThreaded = false , QObject *parent = nullptr);
+		explicit AppImageDeltaWriter(QFile * , bool singleThreaded = false , QObject *parent = nullptr);
 		~AppImageDeltaWriter();
 
 		static QString errorCodeToString(short);

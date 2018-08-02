@@ -7,14 +7,20 @@
 using namespace AppImageUpdaterBridge;
 
 #define CONSTRUCT(x) setObjectName(APPIMAGE_DELTA_WRITER); \
-		     _pSharedThread = new QThread;\
+		     if(!singleThreaded){ \
+		     _pSharedThread = new QThread(this);\
 		     _pSharedThread->start(); \
+		     } \
 		     _pSharedNetworkAccessManager = new QNetworkAccessManager; \
 		     _pUpdateInformation = new AppImageUpdateInformationPrivate; \
+		     if(!singleThreaded){ \
 		     _pSharedNetworkAccessManager->moveToThread(_pSharedThread); \
 		     _pUpdateInformation->moveToThread(_pSharedThread); \
+		      } \
 		     _pControlFileParser = new ZsyncRemoteControlFileParserPrivate(_pSharedNetworkAccessManager); \
+		     if(!singleThreaded){ \
 		     _pControlFileParser->moveToThread(_pSharedThread); \
+		     } \
 		     _pControlFileParser->setObjectName("ZsyncRemoteControlFileParserPrivate"); \
 		     _pUpdateInformation->setObjectName("AppImageUpdateInformationPrivate"); \
 		     _pUpdateInformation->setLoggerName(APPIMAGE_DELTA_WRITER); \
@@ -39,21 +45,21 @@ using namespace AppImageUpdaterBridge;
 
 
 
-AppImageDeltaWriter::AppImageDeltaWriter(QObject *parent)
+AppImageDeltaWriter::AppImageDeltaWriter(bool singleThreaded , QObject *parent)
 	: QObject(parent)
 {
 	CONSTRUCT(nullptr);
 	return;
 }
 
-AppImageDeltaWriter::AppImageDeltaWriter(const QString &AppImagePath , QObject *parent)
+AppImageDeltaWriter::AppImageDeltaWriter(const QString &AppImagePath , bool singleThreaded , QObject *parent)
 	: QObject(parent)
 {
 	CONSTRUCT(AppImagePath);
 	return;
 }
 
-AppImageDeltaWriter::AppImageDeltaWriter(QFile *AppImage , QObject *parent)
+AppImageDeltaWriter::AppImageDeltaWriter(QFile *AppImage , bool singleThreaded , QObject *parent)
 	: QObject(parent)
 {
 	CONSTRUCT(AppImage);
@@ -67,9 +73,10 @@ AppImageDeltaWriter::~AppImageDeltaWriter()
 	_pUpdateInformation->deleteLater();
 	_pControlFileParser->deleteLater();
 	_pSharedNetworkAccessManager->deleteLater();
+	if(_pSharedThread){
 	_pSharedThread->quit();
 	_pSharedThread->wait();
-	_pSharedThread->deleteLater();
+	}
 	return;
 }
 

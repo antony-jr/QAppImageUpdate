@@ -290,6 +290,7 @@ void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
         }
 
         emit receiveTargetFileBlocks(id, r, checksum);
+	QCoreApplication::processEvents();
     }
     INFO_START LOGR " getTargetFileBlocks : finished sending target file blocks." INFO_END;
     emit statusChanged(FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS);
@@ -508,6 +509,7 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
             getControlFile();
 	    break;
         }
+	QCoreApplication::processEvents();
     }
     return;
 }
