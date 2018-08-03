@@ -5,6 +5,7 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <ZsyncInternalStructures_p.hpp>
+#include <ZsyncCoreJob_p.hpp>
 
 namespace AppImageUpdaterBridge
 {
@@ -61,7 +62,7 @@ public Q_SLOTS:
     void getControlFile(void);
     void getTargetFileBlocks(void);
     void getUpdateCheckInformation(void);
-    void getZsyncCoreJobInformation(QFile*);
+    QList<ZsyncCoreJobPrivate::JobInformation> getZsyncCoreJobInformation(QFile*);
     size_t getTargetFileBlocksCount(void);
     QUrl getControlFileUrl(void);
     QString getZsyncMakeVersion(void);
@@ -83,7 +84,6 @@ private Q_SLOTS:
     void handleErrorSignal(short);
     void handleLogMessage(QString , QUrl);
 Q_SIGNALS:
-    void zsyncCoreJobInformation(QList<ZsyncCoreJobPrivate::JobInformation>);
     void updateCheckInformation(QJsonObject);
     void receiveTargetFileBlocks(zs_blockid, rsum, void*);
     void endOfTargetFileBlocks(void);

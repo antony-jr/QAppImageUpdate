@@ -1,4 +1,4 @@
-#include <ZsyncCore_p.hpp>
+#include <ZsyncCoreJob_p.hpp>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -90,12 +90,11 @@ ZsyncCoreJobPrivate::JobResult ZsyncCoreJobPrivate::start(void)
     JobResult result;
     
     if(!_pBlockHashes){
-        emit error(HASH_TABLE_NOT_ALLOCATED);
 	    return result;
     }
     
     if(!_pTargetFileCheckSumBlocks ||
-       _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
+        _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
         result.isErrored = true;
         result.errorCode = INVALID_TARGET_FILE_CHECKSUM_BLOCKS;
         return result;
@@ -236,15 +235,13 @@ ZsyncCoreJobPrivate::JobResult ZsyncCoreJobPrivate::start(void)
     if(!ret_ranges->isEmpty()){
 	    auto BlocksMd4Sum = new QHash<qint32 , QByteArray>;
 	    for(auto iter = 0; iter < ret_ranges->size() ; ++iter){
-		    auto from = ret_ranges->at(iter).first;
-		    auto to = ret_ranges->at(iter).second; 
-    		    /* Check each block */
+		    auto from = ret_ranges->at(iter).first - _nBlockIdOffset;
+		    auto to = ret_ranges->at(iter).second - _nBlockIdOffset; 
     		    for (auto x = from; x <= to; x++) {
-			   QByteArray checksum(&_pBlockHashes[x].checksum[0] , _nStrongCheckSumBytes);
+			   QByteArray checksum((const char*)&_pBlockHashes[x].checksum[0] , _nStrongCheckSumBytes);
 			   BlocksMd4Sum->insert(x , checksum);
 		    }
     	     }
-
 	    result.requiredBlocksMd4Sum = BlocksMd4Sum;
     	    result.requiredRanges = ret_ranges;
     }

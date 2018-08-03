@@ -1,3 +1,4 @@
+#include <ZsyncCoreJob_p.hpp>
 #include <ZsyncRemoteControlFileParser_p.hpp>
 
 using namespace AppImageUpdaterBridge;
@@ -322,7 +323,7 @@ void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void)
 	return;
 }
 
-void ZsyncRemoteControlFileParserPrivate::getZsyncCoreJobInformation(QFile *targetFile)
+QList<ZsyncCoreJobPrivate::JobInformation> ZsyncRemoteControlFileParserPrivate::getZsyncCoreJobInformation(QFile *targetFile)
 {
    QList<ZsyncCoreJobPrivate::JobInformation> result;
     if(!_pControlFile ||
@@ -330,73 +331,65 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncCoreJobInformation(QFile *targ
        _pControlFile->size() - _nCheckSumBlocksOffset < (_nWeakCheckSumBytes + _nStrongCheckSumBytes) ||
        !_nCheckSumBlocksOffset) {
 	   emit error(IO_READ_ERROR);
-	   return;
+	   return result;
     }
 
     auto buffer = new QBuffer;
-    buffer->open(QIODevice::WriteOnly);
+    QString SeedFilePath = (_jUpdateInformation["FileInformation"].toObject())["AppImageFilePath"].toString();
+    buffer->open(QIODevice::ReadWrite);
     _pControlFile->seek(_nCheckSumBlocksOffset); /* Seek to the offset of the checksum block. */
     
     while(!_pControlFile->atEnd()){
 	    buffer->write(_pControlFile->read(_nWeakCheckSumBytes + _nStrongCheckSumBytes));
-	    QCoreApplication::processEvents();
     }
  
     int firstThreadBlocksToDo = 0,
 	otherThreadsBlocksToDo = 0;
-    auto mod = (int)_nBlocks % QThread::idealThreadCount();
+    auto mod = (int)_nTargetFileBlocks % QThread::idealThreadCount();
     if(mod > 0){
-	firstThreadBlocksToDo = (int)(((int)_nBlocks - mod) / QThread::idealThreadCount()) + mod;
+	firstThreadBlocksToDo = (int)(((int)_nTargetFileBlocks - mod) / QThread::idealThreadCount()) + mod;
 	otherThreadsBlocksToDo = firstThreadBlocksToDo - mod;
     }else{ // mod == 0
-	firstThreadBlocksToDo = (int)((int)_nBlocks / QThread::idealThreadCount());
+	firstThreadBlocksToDo = (int)((int)_nTargetFileBlocks / QThread::idealThreadCount());
 	otherThreadsBlocksToDo = firstThreadBlocksToDo;
     }
 
-    QBuffer *partition = nullptr;
-    qint64 bytesRead = 0;
-    char *readBuffer = (char*)calloc((firstThreadBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) + 1);
+    buffer->seek(0);
 
+    QBuffer *partition = nullptr; 
     partition = new QBuffer;
     partition->open(QIODevice::WriteOnly);
-    bytesRead = buffer->read( readBuffer , firstThreadBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)); 
-    partition->write(readBuffer , bytesRead);
-    memset(readBuffer , 0 , bytesRead * sizeof(char));
+    partition->write(buffer->read(firstThreadBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes))); 
     partition->close();
     {
-    ZsyncCorePrivate::JobInformation info(_nBlockSize, 0 , firstThreadBlocksToDo ,
-		    			  _nWeakCheckSumBytes , _nStrongCheckSumBytes , _nSeqMatches , 
-					  partition , targetFile);
+    ZsyncCoreJobPrivate::JobInformation info(_nTargetFileBlockSize , 0 , firstThreadBlocksToDo ,
+		    			  _nWeakCheckSumBytes , _nStrongCheckSumBytes , _nConsecutiveMatchNeeded , 
+					  partition , targetFile , SeedFilePath);
     result.append(info);
     }
-    
+   
+
     if(otherThreadsBlocksToDo && QThread::idealThreadCount() > 1){
 	int threadCount = 2;
 	while(threadCount <= QThread::idealThreadCount()){
 	auto fromId = firstThreadBlocksToDo * (threadCount - 1);
 	partition = new QBuffer;
 	partition->open(QIODevice::WriteOnly);
-    	bytesRead = buffer->read( readBuffer , otherThreadsBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)); 
-    	partition->write(readBuffer , bytesRead);
-    	memset(readBuffer , 0 , bytesRead * sizeof(char));
+    	partition->write(buffer->read(otherThreadsBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)));
 	partition->close();
 	{
-	ZsyncCorePrivate::JobInformation info(_nBlockSize, fromId, otherThreadsBlocksToDo ,
+	ZsyncCoreJobPrivate::JobInformation info(_nTargetFileBlockSize, fromId, otherThreadsBlocksToDo ,
 					      _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
-					      _nSeqMatches , partition , targetFile);
+					      _nConsecutiveMatchNeeded , partition , targetFile , SeedFilePath);
 	result.append(info);
 	}
-	QCoreApplication::processEvents();
 	++threadCount;
 	}
    }
 
    buffer->close();
    delete buffer;
-   free(readBuffer);
-   
-   emit zsyncCoreJobInformation(result);
-   return;
+   return result;
 }
 /*
  * Returns the number blocks in the target file.

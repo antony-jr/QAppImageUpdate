@@ -56,7 +56,7 @@ public:
 	QHash<qint32 , QByteArray> *requiredBlocksMd4Sum = nullptr;
         QVector<QPair<zs_blockid , zs_blockid>> *requiredRanges = nullptr;
     };
-    
+
     enum : short {
         NO_ERROR = -1,
 	HASH_TABLE_NOT_ALLOCATED = 100,

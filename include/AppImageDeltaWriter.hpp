@@ -5,11 +5,12 @@
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QNetworkAccessManager>
+#include <ZsyncCoreJob_p.hpp>
 
 namespace AppImageUpdaterBridge {
 	class AppImageUpdateInformationPrivate;
 	class ZsyncRemoteControlFileParserPrivate;
-	struct ZsyncCoreJobPrivate::JobResult;
+	
 	class AppImageDeltaWriter : public QObject {
 		Q_OBJECT
 	public:
@@ -110,9 +111,10 @@ namespace AppImageUpdaterBridge {
 		QNetworkAccessManager *sharedNetworkAccessManager(void) const;
 
 	private Q_SLOTS:
+		static ZsyncCoreJobPrivate::JobResult startJob(const ZsyncCoreJobPrivate::JobInformation&);
+		void handleFinished(void);
 		void handleUpdateAvailable(bool , QString);
 		void handleUpdateCheckInformation(QJsonObject);
-		void handleZsyncCoreJobInformation(QList<ZsyncCoreJobPrivate::JobResult>);
 	Q_SIGNALS:
 		void started(void);
 		void canceled(void);
