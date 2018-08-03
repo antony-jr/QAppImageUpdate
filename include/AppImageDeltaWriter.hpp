@@ -10,7 +10,6 @@ namespace AppImageUpdaterBridge {
 	class AppImageUpdateInformationPrivate;
 	class ZsyncRemoteControlFileParserPrivate;
 	struct ZsyncCoreJobPrivate::JobResult;
-
 	class AppImageDeltaWriter : public QObject {
 		Q_OBJECT
 	public:
@@ -48,7 +47,10 @@ namespace AppImageUpdaterBridge {
         	QBUFFER_IO_READ_ERROR,
         	SOURCE_FILE_NOT_FOUND,
         	NO_PERMISSION_TO_READ_SOURCE_FILE,
-        	CANNOT_OPEN_SOURCE_FILE
+        	CANNOT_OPEN_SOURCE_FILE,
+		NO_PERMISSION_TO_READ_WRITE_TARGET_FILE,
+		CANNOT_OPEN_TARGET_FILE,
+		TARGET_FILE_SHA1_HASH_MISMATCH
 		} error_code;
 
 		enum : short {
@@ -102,13 +104,15 @@ namespace AppImageUpdaterBridge {
 		AppImageDeltaWriter &setShowLog(bool);
 		AppImageDeltaWriter &getAppImageEmbededInformation(void);
 		AppImageDeltaWriter &checkForUpdate(void);
+		AppImageDeltaWriter &verifyAndConstructTargetFile(void);
 		AppImageDeltaWriter &clear(void);
 		QThread *sharedQThread(void) const;
 		QNetworkAccessManager *sharedNetworkAccessManager(void) const;
 
 	private Q_SLOTS:
-		void compareLocalAndRemoteAppImageSHA1Hash(QString);	
-		void handleInfo(QJsonObject);
+		void handleUpdateAvailable(bool , QString);
+		void handleUpdateCheckInformation(QJsonObject);
+		void handleZsyncCoreJobInformation(QList<ZsyncCoreJobPrivate::JobResult>);
 	Q_SIGNALS:
 		void started(void);
 		void canceled(void);
@@ -116,6 +120,10 @@ namespace AppImageUpdaterBridge {
 		void resumed(void);
 		void finished(void);
 
+		void verifiedAndConstructedTargetFile(void);
+		void blockDownloaderInformation(QHash<qint32 , QByteArray>*,
+						QVector<QPair<qint32 , qint32>>*,
+						QTemporaryFile *);
 		void embededInformation(QJsonObject);
 		void updateAvailable(bool , QString);
 		void statusChanged(short);
@@ -123,14 +131,16 @@ namespace AppImageUpdaterBridge {
 		void progress(int);
 		void logger(QString , QUrl);
 	private:
-		QString _sLocalAppImageSHA1Hash,
-			_sLocalAppImagePath;
-		AppImageUpdateInformationPrivate *_pUpdateInformation = nullptr;
-		ZsyncRemoteControlFileParserPrivate *_pControlFileParser = nullptr;
-		QThread *_pSharedThread = nullptr;
-		QNetworkAccessManager *_pSharedNetworkAccessManager = nullptr;
-		QFuture<ZsyncCoreJobPrivate::JobResult> *_pFuture = nullptr;
-		QFutureWatcher<ZsyncCoreJobPrivate::JobResult> *_pWatcher = nullptr;
+		QList<ZsyncCoreJobPrivate::JobInformation> jobs;
+		QScopedPointer<QHash<qint32 , QByteArray>> _pBlockHashes;
+		QScopedPointer<QVector<QPair<qint32 , qint32>>> _pRanges;
+		QScopedPointer<QTemporaryFile> _pTargetFile;
+		QScopedPointer<AppImageUpdateInformationPrivate> _pUpdateInformation;
+		QScopedPointer<ZsyncRemoteControlFileParserPrivate> _pControlFileParser;
+		QScopedPointer<QThread> _pSharedThread;
+		QScopedPointer<QNetworkAccessManager> _pSharedNetworkAccessManager;
+		QScopedPointer<QFuture<ZsyncCoreJobPrivate::JobResult>> _pFuture;
+		QScopedPointer<QFutureWatcher<ZsyncCoreJobPrivate::JobResult>> _pWatcher;
 	};
 }
 

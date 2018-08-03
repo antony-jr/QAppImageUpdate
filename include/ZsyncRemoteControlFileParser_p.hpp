@@ -60,19 +60,20 @@ public Q_SLOTS:
     void setShowLog(bool);
     void getControlFile(void);
     void getTargetFileBlocks(void);
+    void getUpdateCheckInformation(void);
+    void getZsyncCoreJobInformation(QFile*);
     size_t getTargetFileBlocksCount(void);
     QUrl getControlFileUrl(void);
     QString getZsyncMakeVersion(void);
     QString getTargetFileName(void);
     QUrl getTargetFileUrl(void);
-    void getTargetFileSHA1(void);
+    QString getTargetFileSHA1(void);
     QDateTime getMTime(void);
     size_t getTargetFileBlockSize(void);
     size_t getTargetFileLength(void);
     qint32 getWeakCheckSumBytes(void);
     qint32 getStrongCheckSumBytes(void);
     qint32 getConsecutiveMatchNeeded(void);
-    QBuffer *getCheckSumBlocksBuffer(void);
 private Q_SLOTS:
     void handleBintrayRedirection(const QUrl&);
     void handleGithubAPIResponse(void);
@@ -82,7 +83,8 @@ private Q_SLOTS:
     void handleErrorSignal(short);
     void handleLogMessage(QString , QUrl);
 Q_SIGNALS:
-    void targetFileSHA1(QString);
+    void zsyncCoreJobInformation(QList<ZsyncCoreJobPrivate::JobInformation>);
+    void updateCheckInformation(QJsonObject);
     void receiveTargetFileBlocks(zs_blockid, rsum, void*);
     void endOfTargetFileBlocks(void);
     void receiveControlFile(void);
@@ -93,6 +95,7 @@ Q_SIGNALS:
     void logger(QString , QUrl);
 #endif // LOGGING_DISABLED
 private:
+    QJsonObject _jUpdateInformation;
     QString _sZsyncMakeVersion,
 	    _sZsyncFileName, //Only used for github and bintray api responses.
             _sTargetFileName,

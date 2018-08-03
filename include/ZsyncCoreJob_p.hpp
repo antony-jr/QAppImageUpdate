@@ -17,8 +17,7 @@ public:
 		seqMatches;
 	 QBuffer *checkSumBlocks;
 	 QFile *targetFile;
-     QFile *seedFile;
-
+	 QString seedFilePath;
 	 JobInformation(size_t bs,
 			zs_blockid bio,
 			size_t nb,
@@ -26,7 +25,8 @@ public:
 			qint32 scksumn,
 			qint32 sm,
 			QBuffer *ckb,
-			QFile *f)
+			QFile *f,
+			const QString &s)
 	 : blockSize(bs),
 	   blockIdOffset(bio),
 	   blocks(nb),
@@ -34,9 +34,10 @@ public:
 	   strongCheckSumBytes(scksumn),
 	   seqMatches(sm),
 	   checkSumBlocks(ckb),
-	   targetFile(f)
+	   targetFile(f),
+	   seedFilePath(s)
 	 {
-		 if(!checkSumBlocks || !targetFile || !seedFile){
+		 if(!checkSumBlocks || !targetFile){
 			 throw std::runtime_error("invalid memory address given for checksum blocks or target file.");
 		 }
 		 isEmpty = false;
@@ -52,6 +53,7 @@ public:
         bool isErrored = false;
         short errorCode = 0;
         qint32 gotBlocks = 0;
+	QHash<qint32 , QByteArray> *requiredBlocksMd4Sum = nullptr;
         QVector<QPair<zs_blockid , zs_blockid>> *requiredRanges = nullptr;
     };
     
@@ -86,15 +88,15 @@ private:
     zs_blockid nextKnownBlock(zs_blockid);
     
     QPair<rsum , rsum> _pCurrentWeakCheckSums = qMakePair(rsum({ 0 , 0 }) , rsum({ 0 , 0 }));
-    size_t _nBlocks , _nBlockSize;
-    qint32 _nBlockShift, // log2(blocksize).
-	   _nContext,    // precalculated blocksize * seq_matches.
-	   _nWeakCheckSumBytes,
-       	   _nStrongCheckSumBytes, // # of bytes available for the strong checksum.
-       	   _nSeqMatches,
+    size_t _nBlocks = 0, _nBlockSize = 0;
+    qint32 _nBlockShift = 0, // log2(blocksize).
+	   _nContext = 0,    // precalculated blocksize * seq_matches.
+	   _nWeakCheckSumBytes = 0,
+       	   _nStrongCheckSumBytes = 0, // # of bytes available for the strong checksum.
+       	   _nSeqMatches = 0,
     	   _nSkip = 0,       // skip forward on next submit_source_data.
 	   _nGotBlocks = 0;  // # of blocks that we currently have in the under construction target file.
-    unsigned short _pWeakCheckSumMask; // This will be applied to the first 16 bits of the weak checksum.
+    unsigned short _pWeakCheckSumMask = 0; // This will be applied to the first 16 bits of the weak checksum.
     
     const hash_entry *_pRover = nullptr,
 	  	     *_pNextMatch = nullptr;
@@ -113,9 +115,9 @@ private:
     qint32 _nRanges = 0;
     zs_blockid *_pRanges = nullptr; // Ranges needed to finish the under construction target file.
     QBuffer *_pTargetFileCheckSumBlocks = nullptr; // Checksum blocks that needs to be loaded into the memory.
-    zs_blockid _nBlockIdOffset;
-    QFile *_pTargetFile; // Under construction target file.
-    QFile *_pSeedFile;
+    zs_blockid _nBlockIdOffset = 0;
+    QFile *_pTargetFile = nullptr; // Under construction target file.
+    QString _sSeedFilePath;
 };
 }
 #endif // ZSYNC_CORE_JOB_PRIVATE_HPP_INCLUDED

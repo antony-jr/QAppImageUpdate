@@ -123,8 +123,21 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
      if(information["IsEmpty"].toBool()){
 	     return;
      }
-     
      emit statusChanged(PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION);
+     /*
+      * Check if we are given the same information 
+      * consecutively , If so then return what we know.
+     */
+     if(!_jUpdateInformation.isEmpty()){
+	     if(_jUpdateInformation == information){
+		     emit statusChanged(IDLE);
+		     emit receiveControlFile();
+		     return;
+	     }
+     }else{
+	     _jUpdateInformation = information;
+     }
+
      information = information["UpdateInformation"].toObject();
      if(information["transport"].toString() == "zsync" ) {
 	INFO_START " setControlFileUrl : using direct zsync transport." INFO_END;
@@ -230,26 +243,6 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
     return;
 }
 
-QBuffer *ZsyncRemoteControlFileParserPrivate::getCheckSumBlocksBuffer(void)
-{
-   if(!_pControlFile ||
-       !_pControlFile->isOpen() ||
-       _pControlFile->size() - _nCheckSumBlocksOffset < (_nWeakCheckSumBytes + _nStrongCheckSumBytes) ||
-       !_nCheckSumBlocksOffset) {
-        return nullptr;
-    }
-    auto buffer = new QBuffer;
-    buffer->open(QIODevice::WriteOnly);
-    _pControlFile->seek(_nCheckSumBlocksOffset); /* Seek to the offset of the checksum block. */
-    
-    while(!_pControlFile->atEnd()){
-	    buffer->write(_pControlFile->read(_nWeakCheckSumBytes + _nStrongCheckSumBytes));
-    }
-
-    buffer->close();
-    return buffer;
-}
-
 /*
  * Starts to send zsync control file's checksum blocks through
  * Qt signals , One has to connect this signal to the ZsyncCore
@@ -318,6 +311,93 @@ void ZsyncRemoteControlFileParserPrivate::getTargetFileBlocks(void)
     return;
 }
 
+void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void)
+{
+	QJsonObject result {
+		{ "EmbededUpdateInformation" , _jUpdateInformation},
+		{ "RemoteTargetFileSHA1Hash" , _sTargetFileSHA1 }
+	};
+
+	emit updateCheckInformation(result);
+	return;
+}
+
+void ZsyncRemoteControlFileParserPrivate::getZsyncCoreJobInformation(QFile *targetFile)
+{
+   QList<ZsyncCoreJobPrivate::JobInformation> result;
+    if(!_pControlFile ||
+       !_pControlFile->isOpen() ||
+       _pControlFile->size() - _nCheckSumBlocksOffset < (_nWeakCheckSumBytes + _nStrongCheckSumBytes) ||
+       !_nCheckSumBlocksOffset) {
+	   emit error(IO_READ_ERROR);
+	   return;
+    }
+
+    auto buffer = new QBuffer;
+    buffer->open(QIODevice::WriteOnly);
+    _pControlFile->seek(_nCheckSumBlocksOffset); /* Seek to the offset of the checksum block. */
+    
+    while(!_pControlFile->atEnd()){
+	    buffer->write(_pControlFile->read(_nWeakCheckSumBytes + _nStrongCheckSumBytes));
+	    QCoreApplication::processEvents();
+    }
+ 
+    int firstThreadBlocksToDo = 0,
+	otherThreadsBlocksToDo = 0;
+    auto mod = (int)_nBlocks % QThread::idealThreadCount();
+    if(mod > 0){
+	firstThreadBlocksToDo = (int)(((int)_nBlocks - mod) / QThread::idealThreadCount()) + mod;
+	otherThreadsBlocksToDo = firstThreadBlocksToDo - mod;
+    }else{ // mod == 0
+	firstThreadBlocksToDo = (int)((int)_nBlocks / QThread::idealThreadCount());
+	otherThreadsBlocksToDo = firstThreadBlocksToDo;
+    }
+
+    QBuffer *partition = nullptr;
+    qint64 bytesRead = 0;
+    char *readBuffer = (char*)calloc((firstThreadBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) + 1);
+
+    partition = new QBuffer;
+    partition->open(QIODevice::WriteOnly);
+    bytesRead = buffer->read( readBuffer , firstThreadBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)); 
+    partition->write(readBuffer , bytesRead);
+    memset(readBuffer , 0 , bytesRead * sizeof(char));
+    partition->close();
+    {
+    ZsyncCorePrivate::JobInformation info(_nBlockSize, 0 , firstThreadBlocksToDo ,
+		    			  _nWeakCheckSumBytes , _nStrongCheckSumBytes , _nSeqMatches , 
+					  partition , targetFile);
+    result.append(info);
+    }
+    
+    if(otherThreadsBlocksToDo && QThread::idealThreadCount() > 1){
+	int threadCount = 2;
+	while(threadCount <= QThread::idealThreadCount()){
+	auto fromId = firstThreadBlocksToDo * (threadCount - 1);
+	partition = new QBuffer;
+	partition->open(QIODevice::WriteOnly);
+    	bytesRead = buffer->read( readBuffer , otherThreadsBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)); 
+    	partition->write(readBuffer , bytesRead);
+    	memset(readBuffer , 0 , bytesRead * sizeof(char));
+	partition->close();
+	{
+	ZsyncCorePrivate::JobInformation info(_nBlockSize, fromId, otherThreadsBlocksToDo ,
+					      _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
+					      _nSeqMatches , partition , targetFile);
+	result.append(info);
+	}
+	QCoreApplication::processEvents();
+	++threadCount;
+	}
+   }
+
+   buffer->close();
+   delete buffer;
+   free(readBuffer);
+   
+   emit zsyncCoreJobInformation(result);
+   return;
+}
 /*
  * Returns the number blocks in the target file.
 */
@@ -369,12 +449,11 @@ QUrl ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
 }
 
 /*
- * Emits the SHA1 Hash of the target file.
+ * Returns the SHA1 Hash of the target file.
 */
-void ZsyncRemoteControlFileParserPrivate::getTargetFileSHA1(void)
+QString ZsyncRemoteControlFileParserPrivate::getTargetFileSHA1(void)
 {
-    emit targetFileSHA1(_sTargetFileSHA1);
-    return;
+    return _sTargetFileSHA1;
 }
 
 /*

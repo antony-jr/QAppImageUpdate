@@ -48,31 +48,34 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
  * Constructor and Destructor
 */
 ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(const JobInformation &info)
-	: _nBlockSize(info.blockSize),
-	  _nBlockIdOffset(info.blockIdOffset),
-	  _nBlocks(info.blocks),
-	  _pWeakCheckSumMask(info.weakCheckSumBytes < 3 ? 0 : info.weakCheckSumBytes == 3 ? 0xff : 0xffff),
-	  _nWeakCheckSumBytes(info.weakCheckSumBytes),
-	  _nStrongCheckSumBytes(info.strongCheckSumBytes),
-	  _nSeqMatches(info.seqMatches),
-	  _nContext(info.blockSize * info.seqMatches),
-	  _pTargetFile(info.targetFile),
-	  _pSeedFile(info.seedFile),
-	  _nBlockShift(info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize)),
-	  _pBlockHashes((hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]))),
-	  _pTargetFileCheckSumBlocks(info.checkSumBlocks)
 {
     if(info.isEmpty)
     {
 	    throw std::runtime_error("cannot construct ZsyncCore with an empty information.");
     }
-    return;
+
+   _nBlockSize = info.blockSize;
+   _nBlockIdOffset = info.blockIdOffset;
+   _nBlocks = info.blocks;
+   _pWeakCheckSumMask = info.weakCheckSumBytes < 3 ? 0 : info.weakCheckSumBytes == 3 ? 0xff : 0xffff;
+   _nWeakCheckSumBytes = info.weakCheckSumBytes;
+   _nStrongCheckSumBytes = info.strongCheckSumBytes;
+   _nSeqMatches = info.seqMatches;
+   _nContext = info.blockSize * info.seqMatches;
+   _pTargetFile = info.targetFile;
+   _nBlockShift = info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize);
+   _pBlockHashes = (hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]));
+   if(!_pBlockHashes){
+	   throw std::runtime_error("cannot allocate memory for hash table.");
+   }
+   _pTargetFileCheckSumBlocks = info.checkSumBlocks;
+   _sSeedFilePath = info.seedFilePath;
+   return;
 }
 
 ZsyncCoreJobPrivate::~ZsyncCoreJobPrivate()
 {
     delete _pTargetFileCheckSumBlocks;
-    delete _pSeedFile;
     
     /* Free all allocated memory */
     free(_pRsumHash);
@@ -148,17 +151,44 @@ ZsyncCoreJobPrivate::JobResult ZsyncCoreJobPrivate::start(void)
             _pBitHash = NULL;
     }
     
-    
-    if(!_pSeedFile || !_pSeedFile->open(QIODevice::ReadOnly)) {
-        result.isErrored = true;
-        result.errorCode = CANNOT_OPEN_SOURCE_FILE;
-        return result;
+    /*
+     * Open Source File.
+    */
+    auto seedFile = new QFile(_sSeedFilePath);
+    /* Check if the file actually exists. */
+    if(!seedFile->exists()) {
+ 	    result.isErrored = true;
+	    result.errorCode = SOURCE_FILE_NOT_FOUND;
+            delete seedFile;
+	    return result;
     }
-    
-    result.gotBlocks += submitSourceFile(_pSeedFile); // returns how blocks did we get.
-    _pSeedFile->close();
-    delete _pSeedFile;
-    
+
+    /* Check if we have the permission to read it. */
+    auto perm = seedFile->permissions();
+    if(
+        	!(perm & QFileDevice::ReadUser) &&
+        	!(perm & QFileDevice::ReadGroup) &&
+        	!(perm & QFileDevice::ReadOther)
+    	       ) {
+			result.isErrored = true;
+			result.errorCode = NO_PERMISSION_TO_READ_SOURCE_FILE;
+        		delete seedFile;
+			return result;
+    		}
+
+    		/*
+     		 * Finally open the file.
+    		*/
+    		if(!seedFile->open(QIODevice::ReadOnly)) {
+			result.isErrored = true;
+			result.errorCode = CANNOT_OPEN_SOURCE_FILE;
+			delete seedFile;
+			return result;
+    		}
+
+
+
+    result.gotBlocks += submitSourceFile(seedFile); // returns how blocks did we get.
     {
     qint32 i, n;
     zs_blockid from = 0 + _nBlockIdOffset , to = _nBlocks + _nBlockIdOffset;
@@ -202,7 +232,22 @@ ZsyncCoreJobPrivate::JobResult ZsyncCoreJobPrivate::start(void)
         ret_ranges->clear();
     }
     ret_ranges->removeAll(qMakePair(0, 0));
-    result.requiredRanges = ret_ranges;
+    
+    if(!ret_ranges->isEmpty()){
+	    auto BlocksMd4Sum = new QHash<qint32 , QByteArray>;
+	    for(auto iter = 0; iter < ret_ranges->size() ; ++iter){
+		    auto from = ret_ranges->at(iter).first;
+		    auto to = ret_ranges->at(iter).second; 
+    		    /* Check each block */
+    		    for (auto x = from; x <= to; x++) {
+			   QByteArray checksum(&_pBlockHashes[x].checksum[0] , _nStrongCheckSumBytes);
+			   BlocksMd4Sum->insert(x , checksum);
+		    }
+    	     }
+
+	    result.requiredBlocksMd4Sum = BlocksMd4Sum;
+    	    result.requiredRanges = ret_ranges;
+    }
     }
     return result;
 }
