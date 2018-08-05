@@ -15,8 +15,8 @@ namespace AppImageUpdaterBridge {
 		Q_OBJECT
 	public:
 		enum : short {
-		NO_ERROR = -1,
-		APPIMAGE_NOT_READABLE = 0, //  50< and >=0 , AppImage Update Information Error.
+		NO_ERROR = 0,
+		APPIMAGE_NOT_READABLE = 1, //  50 < and > 0 , AppImage Update Information Error.
         	NO_READ_PERMISSION,
         	APPIMAGE_NOT_FOUND,
         	CANNOT_OPEN_APPIMAGE,

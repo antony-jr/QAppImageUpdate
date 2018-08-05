@@ -8,57 +8,14 @@ namespace AppImageUpdaterBridge
 class ZsyncCoreJobPrivate
 {
 public:
-    struct JobInformation {
-	 bool isEmpty = true;
-	 size_t blockSize , blocks;
-	 zs_blockid blockIdOffset;
-	 qint32 weakCheckSumBytes,
-		strongCheckSumBytes,
-		seqMatches;
-	 QBuffer *checkSumBlocks;
-	 QFile *targetFile;
-	 QString seedFilePath;
-	 JobInformation(size_t bs,
-			zs_blockid bio,
-			size_t nb,
-			qint32 wcksumn,
-			qint32 scksumn,
-			qint32 sm,
-			QBuffer *ckb,
-			QFile *f,
-			const QString &s)
-	 : blockSize(bs),
-	   blockIdOffset(bio),
-	   blocks(nb),
-	   weakCheckSumBytes(wcksumn),
-	   strongCheckSumBytes(scksumn),
-	   seqMatches(sm),
-	   checkSumBlocks(ckb),
-	   targetFile(f),
-	   seedFilePath(s)
-	 {
-		 if(!checkSumBlocks || !targetFile){
-			 throw std::runtime_error("invalid memory address given for checksum blocks or target file.");
-		 }
-		 isEmpty = false;
-		 return;
-	 }
-
-	 /* Use the default destructor and the copy constructor, 
-	  * So no need to state the obvious. 
-	 */
-    };
-    
-    struct JobResult {
-        bool isErrored = false;
+    struct Result {
         short errorCode = 0;
         qint32 gotBlocks = 0;
-	QHash<qint32 , QByteArray> *requiredBlocksMd4Sum = nullptr;
-        QVector<QPair<zs_blockid , zs_blockid>> *requiredRanges = nullptr;
+        QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *requiredRanges = nullptr;
     };
 
     enum : short {
-        NO_ERROR = -1,
+        NO_ERROR = 0,
 	HASH_TABLE_NOT_ALLOCATED = 100,
         INVALID_TARGET_FILE_CHECKSUM_BLOCKS,
         CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS,
@@ -68,23 +25,28 @@ public:
         CANNOT_OPEN_SOURCE_FILE
     } error_code;
     
-    explicit ZsyncCoreJobPrivate(const JobInformation&);
-    JobResult start(void);
+    explicit ZsyncCoreJobPrivate(size_t, zs_blockid , size_t, 
+		    		 qint32, qint32, qint32 ,
+				 QBuffer*, QFile*,const QString&);
     ~ZsyncCoreJobPrivate();
     
+    Result operator () (void);
 private:
-    void writeBlocks(const unsigned char *, zs_blockid, zs_blockid); 
     void addToRanges(zs_blockid);
+    qint32 alreadyGotBlock(zs_blockid); 
+    qint32 blocksToDo(void);
+    qint32 buildHash(void);
+    qint32 checkCheckSumsOnHashChain(const hash_entry *, const unsigned char *, qint32 );
+    quint32 calcRHash(const hash_entry *const);
+    QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *getRequiredRanges(void);
+    zs_blockid getHashEntryBlockId(const hash_entry *);
+    short tryOpenSeedFile(QFile**);
+    short parseTargetFileCheckSumBlocks(void);
+    void writeBlocks(const unsigned char *, zs_blockid, zs_blockid); 
     void removeBlockFromHash(zs_blockid);
     qint32 submitSourceData(unsigned char*, size_t, off_t);
     qint32 submitSourceFile(QFile*);
-    qint32 checkCheckSumsOnHashChain(const hash_entry *, const unsigned char *, qint32 );
     qint32 rangeBeforeBlock(zs_blockid);
-    qint32 alreadyGotBlock(zs_blockid);
-    qint32 blocksToDo(void);
-    qint32 buildHash(void);
-    quint32 calcRHash(const hash_entry *const);
-    zs_blockid getHashEntryBlockId(const hash_entry *);
     zs_blockid nextKnownBlock(zs_blockid);
     
     QPair<rsum , rsum> _pCurrentWeakCheckSums = qMakePair(rsum({ 0 , 0 }) , rsum({ 0 , 0 }));

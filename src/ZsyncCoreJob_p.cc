@@ -47,29 +47,26 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
 /*
  * Constructor and Destructor
 */
-ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(const JobInformation &info)
+ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(size_t blockSize, zs_blockid blockIdOffset , size_t nblocks, 
+		    		 	 qint32 weakCheckSumBytes , qint32 strongCheckSumBytes , qint32 seqMatches,
+				 	 QBuffer *checkSumBlocks , QFile *targetFile , const QString &seedFilePath)
 {
-    if(info.isEmpty)
-    {
-	    throw std::runtime_error("cannot construct ZsyncCore with an empty information.");
-    }
-
-   _nBlockSize = info.blockSize;
-   _nBlockIdOffset = info.blockIdOffset;
-   _nBlocks = info.blocks;
-   _pWeakCheckSumMask = info.weakCheckSumBytes < 3 ? 0 : info.weakCheckSumBytes == 3 ? 0xff : 0xffff;
-   _nWeakCheckSumBytes = info.weakCheckSumBytes;
-   _nStrongCheckSumBytes = info.strongCheckSumBytes;
-   _nSeqMatches = info.seqMatches;
-   _nContext = info.blockSize * info.seqMatches;
-   _pTargetFile = info.targetFile;
-   _nBlockShift = info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize);
+   _nBlockSize = blockSize;
+   _nBlockIdOffset = blockIdOffset;
+   _nBlocks = nblocks;
+   _pWeakCheckSumMask = weakCheckSumBytes < 3 ? 0 : weakCheckSumBytes == 3 ? 0xff : 0xffff;
+   _nWeakCheckSumBytes = weakCheckSumBytes;
+   _nStrongCheckSumBytes = strongCheckSumBytes;
+   _nSeqMatches = seqMatches;
+   _nContext = blockSize * seqMatches;
+   _pTargetFile = targetFile;
+   _nBlockShift = blockSize == 1024 ? 10 : blockSize == 2048 ? 11 : log2(blockSize);
    _pBlockHashes = (hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]));
    if(!_pBlockHashes){
 	   throw std::runtime_error("cannot allocate memory for hash table.");
    }
-   _pTargetFileCheckSumBlocks = info.checkSumBlocks;
-   _sSeedFilePath = info.seedFilePath;
+   _pTargetFileCheckSumBlocks = checkSumBlocks;
+   _sSeedFilePath = seedFilePath;
    return;
 }
 
@@ -85,114 +82,35 @@ ZsyncCoreJobPrivate::~ZsyncCoreJobPrivate()
 }
 
 
-ZsyncCoreJobPrivate::JobResult ZsyncCoreJobPrivate::start(void)
+ZsyncCoreJobPrivate::Result ZsyncCoreJobPrivate::operator () (void)
 {
-    JobResult result;
-    
-    if(!_pBlockHashes){
+    Result result;
+    if((result.errorCode = parseTargetFileCheckSumBlocks())){
 	    return result;
     }
     
-    if(!_pTargetFileCheckSumBlocks ||
-        _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
-        result.isErrored = true;
-        result.errorCode = INVALID_TARGET_FILE_CHECKSUM_BLOCKS;
-        return result;
-    }
+    QFile *seedFile = nullptr;
 
-    if(!_pTargetFileCheckSumBlocks->open(QIODevice::ReadOnly)){
-        result.isErrored = true;
-        result.errorCode = CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS;
+    if((result.errorCode = tryOpenSeedFile(&seedFile))){
 	    return result;
     }
-    
-    for(zs_blockid id = 0; id < _nBlocks ; ++id) {
-        rsum r = { 0, 0 };
-        unsigned char checksum[16];
-
-        /* Read on. */
-        if (_pTargetFileCheckSumBlocks->read(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
-            || _pTargetFileCheckSumBlocks->read((char *)&checksum, _nStrongCheckSumBytes) < 1) {
-        result.isErrored = true;
-        result.errorCode = QBUFFER_IO_READ_ERROR;
-	    return result;
-        }
-
-        /* Convert to host endian and store.
-         * We need to convert from network endian to host endian ,
-         * Network endian is nothing but big endian byte order , So if we have little endian byte order ,
-         * We need to convert the data but if we have a big endian byte order ,
-         * We can simply avoid this conversion to save computation power.
-         *
-         * But most of the time we will need little endian since intel's microproccessors always follows
-         * the little endian byte order.
-        */
-        if(Q_BYTE_ORDER == Q_LITTLE_ENDIAN) {
-            r.a = qFromBigEndian(r.a);
-            r.b = qFromBigEndian(r.b);
-        }
-
-
-        /* Get hash entry with checksums for this block */
-        hash_entry *e = &(_pBlockHashes[id]);
-
-        /* Enter checksums */
-        memcpy(e->checksum, checksum, _nStrongCheckSumBytes);
-        e->r.a = r.a & _pWeakCheckSumMask;
-        e->r.b = r.b;
-    }
-    
-    /* New checksums invalidate any existing checksum hash tables */
-    if (_pRsumHash) {
-            free(_pRsumHash);
-            _pRsumHash = NULL;
-            free(_pBitHash);
-            _pBitHash = NULL;
-    }
-    
-    /*
-     * Open Source File.
-    */
-    auto seedFile = new QFile(_sSeedFilePath);
-    /* Check if the file actually exists. */
-    if(!seedFile->exists()) {
- 	    result.isErrored = true;
-	    result.errorCode = SOURCE_FILE_NOT_FOUND;
-            delete seedFile;
-	    return result;
-    }
-
-    /* Check if we have the permission to read it. */
-    auto perm = seedFile->permissions();
-    if(
-        	!(perm & QFileDevice::ReadUser) &&
-        	!(perm & QFileDevice::ReadGroup) &&
-        	!(perm & QFileDevice::ReadOther)
-    	       ) {
-			result.isErrored = true;
-			result.errorCode = NO_PERMISSION_TO_READ_SOURCE_FILE;
-        		delete seedFile;
-			return result;
-    		}
-
-    		/*
-     		 * Finally open the file.
-    		*/
-    		if(!seedFile->open(QIODevice::ReadOnly)) {
-			result.isErrored = true;
-			result.errorCode = CANNOT_OPEN_SOURCE_FILE;
-			delete seedFile;
-			return result;
-    		}
-
-
 
     result.gotBlocks += submitSourceFile(seedFile); // returns how blocks did we get.
-    {
+    seedFile->close();
+    delete seedFile;
+
+    result.requiredRanges = getRequiredRanges();
+    return result;
+}
+
+QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *ZsyncCoreJobPrivate::getRequiredRanges(void) 
+{
     qint32 i, n;
     zs_blockid from = 0 + _nBlockIdOffset , to = _nBlocks + _nBlockIdOffset;
-    QVector<QPair<zs_blockid, zs_blockid>>* ret_ranges = new QVector<QPair<zs_blockid , zs_blockid>>;
-
+    QVector<QPair<zs_blockid, zs_blockid>> *ret_ranges = new QVector<QPair<zs_blockid , zs_blockid>>;
+    QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *result = 
+	    new QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>>;
+    
     ret_ranges->append(qMakePair(from, to));
     ret_ranges->append(qMakePair(0, 0));
     n = 1;
@@ -233,21 +151,114 @@ ZsyncCoreJobPrivate::JobResult ZsyncCoreJobPrivate::start(void)
     ret_ranges->removeAll(qMakePair(0, 0));
     
     if(!ret_ranges->isEmpty()){
-	    auto BlocksMd4Sum = new QHash<qint32 , QByteArray>;
 	    for(auto iter = 0; iter < ret_ranges->size() ; ++iter){
+		    QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>> MainPair;
+		    MainPair.first = ret_ranges->at(iter);
+		    
+		    QVector<QByteArray> BlocksMd4Sum;
 		    auto from = ret_ranges->at(iter).first - _nBlockIdOffset;
 		    auto to = ret_ranges->at(iter).second - _nBlockIdOffset; 
     		    for (auto x = from; x <= to; x++) {
-			   QByteArray checksum((const char*)&_pBlockHashes[x].checksum[0] , _nStrongCheckSumBytes);
-			   BlocksMd4Sum->insert(x , checksum);
+			   BlocksMd4Sum.append(QByteArray((const char*)&_pBlockHashes[x].checksum[0] , _nStrongCheckSumBytes ));
 		    }
+		    MainPair.second = BlocksMd4Sum;
+		    result->append(MainPair);
     	     }
-	    result.requiredBlocksMd4Sum = BlocksMd4Sum;
-    	    result.requiredRanges = ret_ranges;
+    }else{
+	   	    delete result;
+		    result = nullptr;
     }
-    }
+    delete ret_ranges;
     return result;
+} 
+
+short ZsyncCoreJobPrivate::tryOpenSeedFile(QFile **sourceFile)
+{
+    auto seedFile = new QFile(_sSeedFilePath);
+    /* Check if the file actually exists. */
+    if(!seedFile->exists()) {
+            delete seedFile;
+	    return SOURCE_FILE_NOT_FOUND;
+    }
+    /* Check if we have the permission to read it. */
+    auto perm = seedFile->permissions();
+    if(
+       !(perm & QFileDevice::ReadUser) &&
+       !(perm & QFileDevice::ReadGroup) &&
+       !(perm & QFileDevice::ReadOther)
+    ){
+        delete seedFile;
+	return NO_PERMISSION_TO_READ_SOURCE_FILE;
+    }
+    /*
+     * Finally open the file.
+     */
+    if(!seedFile->open(QIODevice::ReadOnly)) {
+	delete seedFile;
+	return CANNOT_OPEN_SOURCE_FILE;
+    }
+    *sourceFile = seedFile;
+    return 0;
 }
+
+
+short ZsyncCoreJobPrivate::parseTargetFileCheckSumBlocks(void){ 
+    if(!_pBlockHashes){
+    return HASH_TABLE_NOT_ALLOCATED;
+    }else
+    if(!_pTargetFileCheckSumBlocks ||
+        _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
+        return INVALID_TARGET_FILE_CHECKSUM_BLOCKS;
+    }else
+    if(!_pTargetFileCheckSumBlocks->open(QIODevice::ReadOnly)){
+        return CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS;
+    }
+
+    for(zs_blockid id = 0; id < _nBlocks ; ++id) {
+        rsum r = { 0, 0 };
+        unsigned char checksum[16];
+
+        /* Read on. */
+        if (_pTargetFileCheckSumBlocks->read(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
+            || _pTargetFileCheckSumBlocks->read((char *)&checksum, _nStrongCheckSumBytes) < 1) {
+        return QBUFFER_IO_READ_ERROR;
+        }
+
+        /* Convert to host endian and store.
+         * We need to convert from network endian to host endian ,
+         * Network endian is nothing but big endian byte order , So if we have little endian byte order ,
+         * We need to convert the data but if we have a big endian byte order ,
+         * We can simply avoid this conversion to save computation power.
+         *
+         * But most of the time we will need little endian since intel's microproccessors always follows
+         * the little endian byte order.
+        */
+        if(Q_BYTE_ORDER == Q_LITTLE_ENDIAN) {
+            r.a = qFromBigEndian(r.a);
+            r.b = qFromBigEndian(r.b);
+        }
+
+
+        /* Get hash entry with checksums for this block */
+        hash_entry *e = &(_pBlockHashes[id]);
+
+        /* Enter checksums */
+        memcpy(e->checksum, checksum, _nStrongCheckSumBytes);
+        e->r.a = r.a & _pWeakCheckSumMask;
+        e->r.b = r.b;
+    }
+    
+    /* New checksums invalidate any existing checksum hash tables */
+    if (_pRsumHash) {
+            free(_pRsumHash);
+            _pRsumHash = NULL;
+            free(_pBitHash);
+            _pBitHash = NULL;
+    }
+
+    return 0;
+}
+
 
 /* checkCheckSumsOnHashChain(self, &hash_entry, data[], onlyone)
  * Given a hash table entry, check the data in this block against every entry

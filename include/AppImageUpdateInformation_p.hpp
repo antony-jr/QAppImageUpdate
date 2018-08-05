@@ -8,7 +8,7 @@ class AppImageUpdateInformationPrivate : public QObject
     Q_OBJECT
 public:
     enum : short {
-        APPIMAGE_NOT_READABLE = 0,
+        APPIMAGE_NOT_READABLE = 1,
         NO_READ_PERMISSION,
         APPIMAGE_NOT_FOUND,
         CANNOT_OPEN_APPIMAGE,
