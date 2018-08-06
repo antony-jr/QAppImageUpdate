@@ -254,11 +254,24 @@ void ZsyncWriterPrivate::handleFinished(void)
 	}
 	if(gotBlocks >= _nBlocks){
 		/*
+		 * Rename old files with the same 
+		 * name.
+		 *
+		 * Note: Since we checked for permissions earlier
+		 * , We don't need to verify it again.
+		*/
+		{
+		QFile oldFile(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
+		if(oldFile.exists()){
+			oldFile.rename(_sTargetFileName + ".old-version");
+		}
+		}
+		/*
 		 * Construct the file.
 		*/
 		_pTargetFile->setAutoRemove(false);
 		_pTargetFile->resize(_nTargetFileLength);
-		//_pTargetFile->rename(_sTargetFileName);
+		_pTargetFile->rename(_sTargetFileName);
 		_pTargetFile->close();
 		emit finished(false);
 		return;

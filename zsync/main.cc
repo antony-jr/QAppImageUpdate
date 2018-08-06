@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     QObject::connect(&Writer, &ZsyncWriterPrivate::finishedConfiguring , &Writer , &ZsyncWriterPrivate::start);
     QObject::connect(&Writer, &ZsyncWriterPrivate::finished, [&](bool isDownloadNeeded){
 		    if(isDownloadNeeded){
-		    qDebug() << "Experiment failed.";
+		    qDebug() << "Download Needed";
 		    }
 		    app.quit();
 		    return;
