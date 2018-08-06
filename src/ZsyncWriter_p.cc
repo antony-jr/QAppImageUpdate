@@ -5,7 +5,6 @@ using namespace AppImageUpdaterBridge;
 ZsyncWriterPrivate::ZsyncWriterPrivate(void)
 	: QObject()
 {
-	_pZsyncCoreJobInfos.reset(new QList<ZsyncCoreJobInfo>);
 	_pResults.reset(new QVector<QPair<QPair<zs_blockid , zs_blockid>, QVector<QByteArray>>>);
 	_pWatcher = new QFutureWatcher<ZsyncCoreJobPrivate::Result>(this);
 	connect(_pWatcher , &QFutureWatcher<ZsyncCoreJobPrivate::Result>::started,
@@ -49,9 +48,9 @@ void ZsyncWriterPrivate::clear(void)
 	 isEmpty = true;
 	_nBlockSize = _nBlocks = 0;
 	_nBlockShift = _nWeakCheckSumBytes = _nStrongCheckSumBytes = _nSeqMatches = 0;
-	_pZsyncCoreJobInfos->clear();
 	_pResults->clear();
 	_sSourceFilePath.clear();
+    _pZsyncCoreJobInfos.clear();
 	_sTargetFileName.clear();
 	_sOutputDirectory.clear();
 	return;
@@ -140,50 +139,28 @@ void ZsyncWriterPrivate::writeBlockRanges(const QPair<qint32 , qint32> &range , 
 	return;
 }
 
-void ZsyncWriterPrivate::setConfiguration(size_t blocksize , size_t nblocks , qint32 blockshift, 
-			      qint32 weakCheckSumBytes , qint32 strongCheckSumBytes , qint32 seqMatches, qint32 targetFileLength , 
-			      QBuffer *checkSumBlocks , const QString &seedFilePath , const QString&targetFileName ,
-			      const QString &targetFileOutputDirectory)
+void ZsyncWriterPrivate::setConfiguration(size_t blocksize , size_t nblocks , qint32 weakCheckSumBytes , qint32 strongCheckSumBytes,
+                                          qint32 seqMatches , qint32 targetFileLength , const QString &seedFilePath ,
+					  const QString &targetFileName,
+                                          const QVector<ZsyncCoreJobPrivate::Information> &infos)
 {
 	if(!_pWatcher->isCanceled() && !_pWatcher->isFinished()){
 		if(_pWatcher->isRunning() || _pWatcher->isStarted() || _pWatcher->isPaused()){
 			return;
 		}
 	}
-	int firstThreadBlocksToDo = 0,
-	    otherThreadsBlocksToDo = 0,
-	    bytesRead = 0;
-	auto mod = (int)_nBlocks % QThread::idealThreadCount();
-	QBuffer *partition = nullptr; 
-	char *readBuffer = new char[(firstThreadBlocksToDo * (_nStrongCheckSumBytes + _nWeakCheckSumBytes)) + 1];
-	memset(readBuffer , 0 , (firstThreadBlocksToDo * (_nStrongCheckSumBytes + _nWeakCheckSumBytes))+1);
-
 	isEmpty = false;
 	_nBlockSize = blocksize;
 	_nBlocks = nblocks;
-	_nBlockShift = blockshift;
+	_nBlockShift = (blocksize == 1024) ? 10 : (blocksize == 2048) ? 11 : log2(blocksize);
 	_nWeakCheckSumBytes = weakCheckSumBytes;
 	_nStrongCheckSumBytes = strongCheckSumBytes;
 	_nSeqMatches = seqMatches;
 	_nTargetFileLength = targetFileLength;
 	_sSourceFilePath = seedFilePath;
 	_sTargetFileName = targetFileName;
-	_sOutputDirectory = targetFileOutputDirectory;
-
-    if(!checkSumBlocks ||
-       checkSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
-	   clear();
-	   emit error(INVALID_TARGET_FILE_CHECKSUM_BLOCKS);
-	   return;
-    }else
-    if(!checkSumBlocks->isOpen() || !checkSumBlocks->isReadable()){
-	    checkSumBlocks->close();
-	    checkSumBlocks->open(QIODevice::ReadOnly);
-    	    checkSumBlocks->seek(0);
-    }else{
-	    checkSumBlocks->seek(0);
-    }
-   
+    	_pZsyncCoreJobInfos = infos;
+    
     auto path = (_sOutputDirectory.isEmpty()) ? QFileInfo(_sSourceFilePath).path() : _sOutputDirectory;
     path = (path == "." ) ? QDir::currentPath() : path;
     auto targetFilePath = path + "/XXXXXXXXXX.AppImage.part";
@@ -204,47 +181,17 @@ void ZsyncWriterPrivate::setConfiguration(size_t blocksize , size_t nblocks , qi
      * request fileName() from the temporary file.
      */
     (void)_pTargetFile->fileName();
- 
-
-    if(mod > 0){
-	firstThreadBlocksToDo = (int)(((int)_nBlocks - mod) / QThread::idealThreadCount()) + mod;
-	otherThreadsBlocksToDo = firstThreadBlocksToDo - mod;
-    }else{ // mod == 0
-	firstThreadBlocksToDo = (int)((int)_nBlocks / QThread::idealThreadCount());
-	otherThreadsBlocksToDo = firstThreadBlocksToDo;
-    }
-    partition = new QBuffer;
-    partition->open(QIODevice::WriteOnly);
-    bytesRead = checkSumBlocks->read(readBuffer , firstThreadBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)); 
-    partition->write(readBuffer , bytesRead);
-    memset(readBuffer , 0 , bytesRead);
-    partition->close();
     
-    _pZsyncCoreJobInfos->append(ZsyncCoreJobInfo(_nBlocks , 0 , firstThreadBlocksToDo ,
-		    	  	_nWeakCheckSumBytes , _nStrongCheckSumBytes , _nSeqMatches , 
-			  	partition , _pTargetFile , _sSourceFilePath));
+    for(auto begin = _pZsyncCoreJobInfos.begin(),
+             end = _pZsyncCoreJobInfos.end();
+             begin != end;
+             ++begin)
+    {
+            (*begin).targetFile = (QFile*)_pTargetFile;
+	    QCoreApplication::processEvents();
+    }
 
-    if(otherThreadsBlocksToDo && QThread::idealThreadCount() > 1){
-	int threadCount = 2;
-	while(threadCount <= QThread::idealThreadCount()){
-	auto fromId = firstThreadBlocksToDo * (threadCount - 1);
-	partition = new QBuffer;
-	partition->open(QIODevice::WriteOnly);
-    	bytesRead = checkSumBlocks->read(readBuffer , otherThreadsBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes));
-	partition->write(readBuffer , bytesRead);
-	memset(readBuffer , 0 , bytesRead);
-	partition->close();
-  	_pZsyncCoreJobInfos->append(ZsyncCoreJobInfo(_nBlocks , fromId , otherThreadsBlocksToDo ,
-		    	  	    		     _nWeakCheckSumBytes , _nStrongCheckSumBytes , _nSeqMatches , 
-			  			     partition , _pTargetFile , _sSourceFilePath));
-	++threadCount;
-	QCoreApplication::processEvents();
-	}
-   }
-
-   checkSumBlocks->close();
-   delete checkSumBlocks;
-   delete readBuffer;
+    emit finishedConfiguring();
    return;
 }
 
@@ -273,18 +220,15 @@ bool ZsyncWriterPrivate::isFinished(void) const
 	return _pWatcher->isFinished();
 }
 
-ZsyncCoreJobPrivate::Result ZsyncWriterPrivate::startJob(const ZsyncWriterPrivate::ZsyncCoreJobInfo &info)
+ZsyncCoreJobPrivate::Result ZsyncWriterPrivate::startJob(const ZsyncCoreJobPrivate::Information &info)
 {
-	return ZsyncCoreJobPrivate(info.blockSize, info.blockIdOffset , info.nblocks , 
-				  info.weakCheckSumBytes , info.strongCheckSumBytes ,
-				  info.seqMatches , info.checkSumBlocks , info.targetFile ,
-				  info.seedFilePath)();
+	auto z = ZsyncCoreJobPrivate(info);
+    return z();
 }
-
 
 void ZsyncWriterPrivate::start(void)
 {
-	_pWatcher->setFuture(QtConcurrent::mapped(*(_pZsyncCoreJobInfos.data()) , &ZsyncWriterPrivate::startJob));
+	_pWatcher->setFuture(QtConcurrent::mapped(_pZsyncCoreJobInfos, &ZsyncWriterPrivate::startJob));
 	return;
 }
 
@@ -306,15 +250,15 @@ void ZsyncWriterPrivate::handleFinished(void)
 			_pResults->append(*((*iter).requiredRanges));
 			delete (*iter).requiredRanges;
 		}
-	}
 
+	}
 	if(gotBlocks >= _nBlocks){
 		/*
 		 * Construct the file.
 		*/
 		_pTargetFile->setAutoRemove(false);
 		_pTargetFile->resize(_nTargetFileLength);
-		_pTargetFile->rename(_sTargetFileName);
+		//_pTargetFile->rename(_sTargetFileName);
 		_pTargetFile->close();
 		emit finished(false);
 		return;

@@ -62,7 +62,7 @@ public Q_SLOTS:
     void getControlFile(void);
     void getTargetFileBlocks(void);
     void getUpdateCheckInformation(void);
-    QList<ZsyncCoreJobPrivate::JobInformation> getZsyncCoreJobInformation(QFile*);
+    void getZsyncInformation(void);
     size_t getTargetFileBlocksCount(void);
     QUrl getControlFileUrl(void);
     QString getZsyncMakeVersion(void);
@@ -84,6 +84,8 @@ private Q_SLOTS:
     void handleErrorSignal(short);
     void handleLogMessage(QString , QUrl);
 Q_SIGNALS:
+    void zsyncInformation(size_t , size_t , qint32 , qint32 ,
+                          qint32, qint32 ,QString,QString,QVector<ZsyncCoreJobPrivate::Information>);
     void updateCheckInformation(QJsonObject);
     void receiveTargetFileBlocks(zs_blockid, rsum, void*);
     void endOfTargetFileBlocks(void);

@@ -47,26 +47,20 @@ static void calc_checksum(unsigned char *c, const unsigned char *data,
 /*
  * Constructor and Destructor
 */
-ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(size_t blockSize, zs_blockid blockIdOffset , size_t nblocks, 
-		    		 	 qint32 weakCheckSumBytes , qint32 strongCheckSumBytes , qint32 seqMatches,
-				 	 QBuffer *checkSumBlocks , QFile *targetFile , const QString &seedFilePath)
-{
-   _nBlockSize = blockSize;
-   _nBlockIdOffset = blockIdOffset;
-   _nBlocks = nblocks;
-   _pWeakCheckSumMask = weakCheckSumBytes < 3 ? 0 : weakCheckSumBytes == 3 ? 0xff : 0xffff;
-   _nWeakCheckSumBytes = weakCheckSumBytes;
-   _nStrongCheckSumBytes = strongCheckSumBytes;
-   _nSeqMatches = seqMatches;
-   _nContext = blockSize * seqMatches;
-   _pTargetFile = targetFile;
-   _nBlockShift = blockSize == 1024 ? 10 : blockSize == 2048 ? 11 : log2(blockSize);
+ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(const Information &info){
+   _nBlockSize = info.blockSize;
+   _nBlockIdOffset = info.blockIdOffset;
+   _nBlocks = info.blocks;
+   _pWeakCheckSumMask = info.weakCheckSumBytes < 3 ? 0 : info.weakCheckSumBytes == 3 ? 0xff : 0xffff;
+   _nWeakCheckSumBytes = info.weakCheckSumBytes;
+   _nStrongCheckSumBytes = info.strongCheckSumBytes;
+   _nSeqMatches = info.seqMatches;
+   _nContext = info.blockSize * info.seqMatches;
+   _pTargetFile = info.targetFile;
+   _nBlockShift = info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize);
    _pBlockHashes = (hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]));
-   if(!_pBlockHashes){
-	   throw std::runtime_error("cannot allocate memory for hash table.");
-   }
-   _pTargetFileCheckSumBlocks = checkSumBlocks;
-   _sSeedFilePath = seedFilePath;
+   _pTargetFileCheckSumBlocks = info.checkSumBlocks;
+   _sSeedFilePath = info.seedFilePath;
    return;
 }
 

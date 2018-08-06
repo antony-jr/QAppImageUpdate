@@ -323,15 +323,15 @@ void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void)
 	return;
 }
 
-QList<ZsyncCoreJobPrivate::JobInformation> ZsyncRemoteControlFileParserPrivate::getZsyncCoreJobInformation(QFile *targetFile)
+void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
 {
-   QList<ZsyncCoreJobPrivate::JobInformation> result;
+   QVector<ZsyncCoreJobPrivate::Information> result;
     if(!_pControlFile ||
        !_pControlFile->isOpen() ||
        _pControlFile->size() - _nCheckSumBlocksOffset < (_nWeakCheckSumBytes + _nStrongCheckSumBytes) ||
        !_nCheckSumBlocksOffset) {
 	   emit error(IO_READ_ERROR);
-	   return result;
+	   return;
     }
 
     auto buffer = new QBuffer;
@@ -362,9 +362,9 @@ QList<ZsyncCoreJobPrivate::JobInformation> ZsyncRemoteControlFileParserPrivate::
     partition->write(buffer->read(firstThreadBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes))); 
     partition->close();
     {
-    ZsyncCoreJobPrivate::JobInformation info(_nTargetFileBlockSize , 0 , firstThreadBlocksToDo ,
+    ZsyncCoreJobPrivate::Information info(_nTargetFileBlockSize , 0 , firstThreadBlocksToDo ,
 		    			  _nWeakCheckSumBytes , _nStrongCheckSumBytes , _nConsecutiveMatchNeeded , 
-					  partition , targetFile , SeedFilePath);
+					  partition , nullptr , SeedFilePath);
     result.append(info);
     }
    
@@ -378,18 +378,22 @@ QList<ZsyncCoreJobPrivate::JobInformation> ZsyncRemoteControlFileParserPrivate::
     	partition->write(buffer->read(otherThreadsBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)));
 	partition->close();
 	{
-	ZsyncCoreJobPrivate::JobInformation info(_nTargetFileBlockSize, fromId, otherThreadsBlocksToDo ,
+	ZsyncCoreJobPrivate::Information info(_nTargetFileBlockSize, fromId, otherThreadsBlocksToDo ,
 					      _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
-					      _nConsecutiveMatchNeeded , partition , targetFile , SeedFilePath);
+					      _nConsecutiveMatchNeeded , partition , nullptr , SeedFilePath);
 	result.append(info);
 	}
 	++threadCount;
+	QCoreApplication::processEvents();
 	}
    }
 
    buffer->close();
    delete buffer;
-   return result;
+
+   emit zsyncInformation(_nTargetFileBlockSize, _nTargetFileBlocks, _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
+                          _nConsecutiveMatchNeeded , _nTargetFileLength , SeedFilePath , _sTargetFileName , result);
+   return;
 }
 /*
  * Returns the number blocks in the target file.
