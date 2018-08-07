@@ -105,13 +105,11 @@ namespace AppImageUpdaterBridge {
 		AppImageDeltaWriter &setShowLog(bool);
 		AppImageDeltaWriter &getAppImageEmbededInformation(void);
 		AppImageDeltaWriter &checkForUpdate(void);
-		AppImageDeltaWriter &verifyAndConstructTargetFile(void);
 		AppImageDeltaWriter &clear(void);
 		QThread *sharedQThread(void) const;
 		QNetworkAccessManager *sharedNetworkAccessManager(void) const;
 
 	private Q_SLOTS:
-		static ZsyncCoreJobPrivate::JobResult startJob(const ZsyncCoreJobPrivate::JobInformation&);
 		void handleFinished(void);
 		void handleUpdateAvailable(bool , QString);
 		void handleUpdateCheckInformation(QJsonObject);
@@ -121,11 +119,6 @@ namespace AppImageUpdaterBridge {
 		void paused(void);
 		void resumed(void);
 		void finished(void);
-
-		void verifiedAndConstructedTargetFile(void);
-		void blockDownloaderInformation(QHash<qint32 , QByteArray>*,
-						QVector<QPair<qint32 , qint32>>*,
-						QTemporaryFile *);
 		void embededInformation(QJsonObject);
 		void updateAvailable(bool , QString);
 		void statusChanged(short);
@@ -133,16 +126,10 @@ namespace AppImageUpdaterBridge {
 		void progress(int);
 		void logger(QString , QUrl);
 	private:
-		QList<ZsyncCoreJobPrivate::JobInformation> jobs;
-		QScopedPointer<QHash<qint32 , QByteArray>> _pBlockHashes;
-		QScopedPointer<QVector<QPair<qint32 , qint32>>> _pRanges;
-		QScopedPointer<QTemporaryFile> _pTargetFile;
 		QScopedPointer<AppImageUpdateInformationPrivate> _pUpdateInformation;
 		QScopedPointer<ZsyncRemoteControlFileParserPrivate> _pControlFileParser;
 		QScopedPointer<QThread> _pSharedThread;
 		QScopedPointer<QNetworkAccessManager> _pSharedNetworkAccessManager;
-		QScopedPointer<QFuture<ZsyncCoreJobPrivate::JobResult>> _pFuture;
-		QScopedPointer<QFutureWatcher<ZsyncCoreJobPrivate::JobResult>> _pWatcher;
 	};
 }
 

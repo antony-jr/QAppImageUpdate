@@ -12,7 +12,6 @@ using namespace AppImageUpdaterBridge;
 
 /* rcksum_calc_rsum_block(data, data_len)
  * Calculate the rsum for a single block of data. */
-// calc_rsum_block
 static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, size_t len)
 {
     register unsigned short a = 0;
