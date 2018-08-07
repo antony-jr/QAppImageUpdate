@@ -18,25 +18,25 @@ public:
 	 QBuffer *checkSumBlocks;
 	 QFile *targetFile;
 	 QString seedFilePath;
-	
+
 	 Information(void)
 	 {
 		 return;
 	 } 
 
-	 Information(size_t bs, zs_blockid bio, size_t nb,
-			qint32 wcksumn, qint32 scksumn, qint32 sm,
-			QBuffer *ckb, QFile *f, const QString &s)
+	 Information(size_t bs, zs_blockid offset, size_t nb,
+			qint32 weakCksumb , qint32 strongCksumb, qint32 seq,
+			QBuffer *checksums , QFile *tfile , const QString &sfilePath )
 	 {
  		blockSize = bs;
-	   	blockIdOffset = bio;
+	   	blockIdOffset = offset;
 	   	blocks = nb;
-	   	weakCheckSumBytes = wcksumn;
-	   	strongCheckSumBytes = scksumn;
-	   	seqMatches = sm;
-	   	checkSumBlocks = ckb;
-	   	targetFile = f;
-	   	seedFilePath = s;
+	   	weakCheckSumBytes = weakCksumb;
+	   	strongCheckSumBytes = strongCksumb;
+	   	seqMatches = seq;
+	   	checkSumBlocks = checksums;
+	   	targetFile = tfile;
+	   	seedFilePath = sfilePath;
 		return;
 	 }
 
