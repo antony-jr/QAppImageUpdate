@@ -5,12 +5,12 @@
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QNetworkAccessManager>
-#include <ZsyncCoreJob_p.hpp>
 
 namespace AppImageUpdaterBridge {
 	class AppImageUpdateInformationPrivate;
 	class ZsyncRemoteControlFileParserPrivate;
-	
+	class ZsyncWriterPrivate;
+
 	class AppImageDeltaWriter : public QObject {
 		Q_OBJECT
 	public:
@@ -74,14 +74,12 @@ namespace AppImageUpdaterBridge {
 		PARSING_ZSYNC_CONTROL_FILE,
 		SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE,
 		STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY,
-		FINALIZING_PARSING_ZSYNC_CONTROL_FILE,
-		EMITTING_TARGET_FILE_CHECKSUM_BLOCKS,
-		FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS
+		FINALIZING_PARSING_ZSYNC_CONTROL_FILE
 		} status_code;
 
-		explicit AppImageDeltaWriter(bool singleThreaded = false , QObject *parent = nullptr);
-		explicit AppImageDeltaWriter(const QString& , bool singleThreaded = false , QObject *parent = nullptr);
-		explicit AppImageDeltaWriter(QFile * , bool singleThreaded = false , QObject *parent = nullptr);
+		explicit AppImageDeltaWriter(bool singleThreaded = true , QObject *parent = nullptr);
+		explicit AppImageDeltaWriter(const QString& , bool singleThreaded = true , QObject *parent = nullptr);
+		explicit AppImageDeltaWriter(QFile * , bool singleThreaded = true , QObject *parent = nullptr);
 		~AppImageDeltaWriter();
 
 		static QString errorCodeToString(short);
@@ -124,10 +122,11 @@ namespace AppImageUpdaterBridge {
 		void statusChanged(short);
 		void error(short);
 		void progress(int);
-		void logger(QString , QUrl);
+		void logger(QString , QString);
 	private:
 		QScopedPointer<AppImageUpdateInformationPrivate> _pUpdateInformation;
 		QScopedPointer<ZsyncRemoteControlFileParserPrivate> _pControlFileParser;
+		QScopedPointer<ZsyncWriterPrivate> _pDeltaWriter;
 		QScopedPointer<QThread> _pSharedThread;
 		QScopedPointer<QNetworkAccessManager> _pSharedNetworkAccessManager;
 	};

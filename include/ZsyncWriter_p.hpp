@@ -24,7 +24,9 @@ public:
 	} error_code;
 
 	enum : short {
-
+	INITIALIZING = 0,
+	IDLE = 2,
+	ERRORED = 3
 	} status_code;
 
 	explicit ZsyncWriterPrivate(void);
@@ -49,7 +51,7 @@ private Q_SLOTS:
 	void handleFinished(void);
 
 Q_SIGNALS:
-    void finishedConfiguring();
+        void finishedConfiguring();
 	void blockRange(QSharedPointer<QPair<qint32 , qint32>>);
 	void endOfBlockRanges(void);
 	void blockRangesWritten(QPair<qint32 , qint32> , bool);

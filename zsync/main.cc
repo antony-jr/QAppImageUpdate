@@ -16,9 +16,9 @@ int main(int argc, char **argv)
     QNetworkAccessManager qnam;
     AppImageUpdateInformationPrivate Upd;
     Upd.setAppImage(path);
-    Upd.setShowLog(true);
+    //Upd.setShowLog(true);
     ZsyncRemoteControlFileParserPrivate cfp(&qnam);
-    cfp.setShowLog(true);
+    //cfp.setShowLog(true);
     ZsyncWriterPrivate Writer;
 
     QObject::connect(&Upd , SIGNAL(info(QJsonObject)) , &cfp , SLOT(setControlFileUrl(QJsonObject)));

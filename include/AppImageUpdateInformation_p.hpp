@@ -45,30 +45,40 @@ public:
     static QString statusCodeToString(short);
 
 public Q_SLOTS:
-    void setLoggerName(const QString&);
     void setAppImage(const QString&);
     void setAppImage(QFile *);
+#ifndef LOGGING_DISABLED
     void setShowLog(bool);
+    void setLoggerName(const QString&);
+#endif // LOGGING_DISABLED
     void getInfo(void);
     void clear(void);
 
+#ifndef LOGGING_DISABLED
 private Q_SLOTS:
-    void logPrinter(QString , QString);
+    void handleLogMessage(QString , QString);
+#endif // LOGGING_DISABLED
 
 Q_SIGNALS:
     void info(QJsonObject);
     void progress(int);
     void error(short);
     void statusChanged(short);
-    void logger(QString , QString); /* log msg , appimage path */
+#ifndef LOGGING_DISABLED
+    void logger(QString , QString);
+#endif // LOGGING_DISABLED
 private:
     QJsonObject _jInfo;
-    QString _sLogBuffer,
-            _sAppImageName,
+    QString _sAppImageName,
             _sAppImagePath,
+#ifndef LOGGING_DISABLED
+	    _sLogBuffer,
 	    _sLoggerName,
+#endif // LOGGING_DISABLED
 	    _sAppImageSHA1;
+#ifndef LOGGING_DISABLED
     QSharedPointer<QDebug> _pLogger = nullptr;
+#endif // LOGGING_DISABLED
     QSharedPointer<QFile>  _pAppImage = nullptr;
    
     /*

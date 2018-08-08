@@ -1,4 +1,40 @@
-#include <ZsyncCoreJob_p.hpp>
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2018, Antony jr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * @filename    : ZsyncRemoteControlFileParser_p.cc
+ * @description : This is where the zsync control file parser in written.
+ * The Zsync Control File Parser is responsible to parse the remote 
+ * zsync control file and produce us with a more sensible data to work
+ * with , the parser also creates job information for ZsyncCoreJobPrivate class.
+*/
 #include <ZsyncRemoteControlFileParser_p.hpp>
 
 using namespace AppImageUpdaterBridge;
@@ -19,7 +55,7 @@ using namespace AppImageUpdaterBridge;
 #define LOGS *(_pLogger.data()) LOGR
 #define LOGR <<
 #define LOGE ; \
-             emit(logger(_sLogBuffer , _uControlFileUrl)); \
+             emit(logger(_sLogBuffer , _sAppImageName)); \
              _sLogBuffer.clear();
 #else
 #define LOGS (void)
@@ -40,14 +76,12 @@ using namespace AppImageUpdaterBridge;
  * ZsyncRemoteControlFileParserPrivate is the private class to handle all things
  * related to Zsync Control File. This class must be used privately.
  * This class caches the Zsync Control File in a QBuffer , So when its needed ,We
- * can quickly seek and start feeding in the checksum blocks to ZsyncCore.
+ * can quickly seek and start feeding in the checksum blocks.
  * This class automatically parses the zsync headers on the way to buffer the
  * control file.
  *
  * Example:
  *
- * 	ZsyncRemoteControlFileParserPrivate rcfp;
- *      //or
  *      QNetworkAccessManager qnam;
  *      ZsyncRemoteControlFileParserPrivate rcfp(&qnam);
  *
@@ -81,12 +115,8 @@ ZsyncRemoteControlFileParserPrivate::~ZsyncRemoteControlFileParserPrivate()
     return;
 }
 
-bool ZsyncRemoteControlFileParserPrivate::isEmpty(void)
-{
-	return (_uControlFileUrl.isEmpty());
-}
-
 #ifndef LOGGING_DISABLED
+/* Sets the name of the logger. */
 void ZsyncRemoteControlFileParserPrivate::setLoggerName(const QString &name)
 {
 	_sLoggerName = QString(name);
@@ -119,6 +149,11 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(const QUrl &controlF
     return;
 }
 
+/*
+ * This public overloaded method will use the embeded information in AppImages to get
+ * and parse a remote zsync control file.
+ * This also automatically calls getControlFile() slot.
+*/
 void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject information)
 {
      if(information["IsEmpty"].toBool()){
@@ -136,7 +171,11 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 		     return;
 	     }
      }else{
+	     {
 	     _jUpdateInformation = information;
+	     auto fileInfo = information["FileInformation"].toObject();
+	     _sAppImageName = QFileInfo(fileInfo["AppImageFilePath"].toString()).fileName();
+     	     }
      }
 
      information = information["UpdateInformation"].toObject();
@@ -168,12 +207,11 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
     	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
     	connect(reply, SIGNAL(finished(void)), this, SLOT(handleGithubAPIResponse(void))); 
-//	});
      } else {
         /*
 	 * if its not github releases zsync or generic zsync
 	 * then it must be bintray-zsync.
-	 * Note: Since AppImageUpdateInformation can handle errors , So
+	 * Note: Since AppImageUpdateInformation can handle errors , Thus
 	 * we don't really have to check for integrity now.
 	*/
 	INFO_START " setControlFileUrl : using bintray zsync transport." INFO_END;
@@ -244,6 +282,11 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
     return;
 }
 
+/* Replies with a signal which has a QJsonObject which can be helpful
+ * to check if the given AppImage is a different version from the 
+ * remote version.
+ * Useless if the parser is not working with AppImageUpdateInformationPrivate.
+*/
 void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void)
 {
 	QJsonObject result {
@@ -255,6 +298,14 @@ void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void)
 	return;
 }
 
+/*
+ * Creates ZsyncCoreJob Information , signals a list where the number
+ * of items in the list is equal to the number of cores in the current computer
+ * , The list consist of ZsyncCoreJob Information which can be used to start
+ * the ZsyncCoreJob concurrently across all cores.
+ * The jobs are configured so that the work load is balanced across all cores
+ * approximately.
+*/
 void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
 {
    QVector<ZsyncCoreJobPrivate::Information> result;
@@ -274,7 +325,22 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
     while(!_pControlFile->atEnd()){
 	    buffer->write(_pControlFile->read(_nWeakCheckSumBytes + _nStrongCheckSumBytes));
     }
- 
+
+    /*
+     * This is a very simple algorithm to partition the work load approximately
+     * equal across all cores.
+     *
+     * Let 'nb' be the number of blocks in the target file.
+     * Let 'nt' be the number of ideal threads in the current computer.
+     *
+     * Number of Blocks for First Thread = [nb - (nb mod nt)] / nt + (nb mod nt) ; nb mod nt > 0
+     * 					 = nb / nt ; nb mod nt = 0
+     *
+     * Number of Blocks for Other Threads = Number Of Blocks for First Thread - (nb mod nt) ; nb mod nt > 0
+     * 					  = nb / nt ; nb mod nt = 0
+     *
+     * If the ideal thread is one then 'Number of Blocks for Other Threads' will always return 0.
+    */
     int firstThreadBlocksToDo = 0,
 	otherThreadsBlocksToDo = 0;
     auto mod = (int)_nTargetFileBlocks % QThread::idealThreadCount();
@@ -327,6 +393,7 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
                           _nConsecutiveMatchNeeded , _nTargetFileLength , SeedFilePath , _sTargetFileName , result);
    return;
 }
+
 /*
  * Returns the number blocks in the target file.
 */
@@ -613,8 +680,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
 
     _pControlFile->seek(0); /* seek to the top again. */
     if(!_nCheckSumBlocksOffset) {
-        /* error , we don't know the marker and therefore
-        				it must be an invalid control file.*/
+        /* error , we don't know the marker and therefore it must be an invalid control file.*/
         emit error(NO_MARKER_FOUND_IN_CONTROL_FILE );
         return;
     }
@@ -728,7 +794,6 @@ void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::Netw
 
 /*
  * This slot will be called anytime error signal is emitted.
- * This is to prevent any deadlocks.
 */
 void ZsyncRemoteControlFileParserPrivate::handleErrorSignal(short errorCode)
 {
@@ -738,20 +803,20 @@ void ZsyncRemoteControlFileParserPrivate::handleErrorSignal(short errorCode)
     return;
 }
 
-void ZsyncRemoteControlFileParserPrivate::handleLogMessage(QString message , QUrl controlFileUrl)
+#ifndef LOGGING_DISABLED
+void ZsyncRemoteControlFileParserPrivate::handleLogMessage(QString message , QString AppImageName)
 {
     qInfo().noquote() << "["
 	     << QDateTime::currentDateTime().toString(Qt::ISODate)
-	     << " | "
-	     << QThread::currentThreadId()
 	     << "] "
 	     << _sLoggerName
 	     << "("
-	     << controlFileUrl.fileName()
+	     << AppImageName
 	     << "):: "
 	     << message;
     return;
 }
+#endif // LOGGING_DISABLED
 
 QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
 {
@@ -847,12 +912,6 @@ QString ZsyncRemoteControlFileParserPrivate::statusCodeToString(short code)
 			break;
 		case FINALIZING_PARSING_ZSYNC_CONTROL_FILE:
 			statusCodeString.append("FINALIZING_PARSING_ZSYNC_CONTROL_FILE");
-			break;
-		case EMITTING_TARGET_FILE_CHECKSUM_BLOCKS:
-			statusCodeString.append("EMITTING_TARGET_FILE_CHECKSUM_BLOCKS");
-			break;
-		case FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS:
-			statusCodeString.append("FINALIZING_TRANSMISSION_OF_TARGET_FILE_CHECKSUM_BLOCKS");
 			break;
 		default:
 			statusCodeString.append("Unknown");

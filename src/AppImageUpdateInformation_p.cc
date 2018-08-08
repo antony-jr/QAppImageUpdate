@@ -47,20 +47,18 @@ using namespace AppImageUpdaterBridge;
  * Example:
  * 	MEMORY_ERROR()
 */
-#define ERROR_STATE
-#define MEMORY_ERROR() emit(error(NOT_ENOUGH_MEMORY)); ERROR_STATE
-#define APPIMAGE_OPEN_ERROR() emit(error(CANNOT_OPEN_APPIMAGE)); ERROR_STATE
-#define APPIMAGE_PERMISSION_ERROR() emit(error(NO_READ_PERMISSION)); ERROR_STATE
-#define APPIMAGE_NOT_FOUND_ERROR() emit(error(APPIMAGE_NOT_FOUND)); ERROR_STATE
-#define APPIMAGE_READ_ERROR() emit(error(APPIMAGE_NOT_READABLE)); ERROR_STATE
-#define APPIMAGE_INVALID_UI_ERROR() emit(error(INVALID_UPDATE_INFORMATION)); ERROR_STATE
-#define APPIMAGE_EMPTY_UI_ERROR() emit(error(EMPTY_UPDATE_INFORMATION)); ERROR_STATE
-#define MAGIC_BYTES_ERROR() emit(error(INVALID_MAGIC_BYTES)); ERROR_STATE
-#define ELF_FORMAT_ERROR() emit(error(UNSUPPORTED_ELF_FORMAT)); ERROR_STATE
-#define SECTION_HEADER_NOT_FOUND_ERROR() emit(error(SECTION_HEADER_NOT_FOUND)); ERROR_STATE
-#define APPIMAGE_TYPE_ERROR() emit(error(INVALID_APPIMAGE_TYPE)); ERROR_STATE
-#define UNSUPPORTED_TRANSPORT_ERROR() emit(error(UNSUPPORTED_TRANSPORT)); ERROR_STATE
-
+#define MEMORY_ERROR() emit(error(NOT_ENOUGH_MEMORY));
+#define APPIMAGE_OPEN_ERROR() emit(error(CANNOT_OPEN_APPIMAGE));
+#define APPIMAGE_PERMISSION_ERROR() emit(error(NO_READ_PERMISSION));
+#define APPIMAGE_NOT_FOUND_ERROR() emit(error(APPIMAGE_NOT_FOUND));
+#define APPIMAGE_READ_ERROR() emit(error(APPIMAGE_NOT_READABLE));
+#define APPIMAGE_INVALID_UI_ERROR() emit(error(INVALID_UPDATE_INFORMATION));
+#define APPIMAGE_EMPTY_UI_ERROR() emit(error(EMPTY_UPDATE_INFORMATION));
+#define MAGIC_BYTES_ERROR() emit(error(INVALID_MAGIC_BYTES));
+#define ELF_FORMAT_ERROR() emit(error(UNSUPPORTED_ELF_FORMAT));
+#define SECTION_HEADER_NOT_FOUND_ERROR() emit(error(SECTION_HEADER_NOT_FOUND));
+#define APPIMAGE_TYPE_ERROR() emit(error(INVALID_APPIMAGE_TYPE));
+#define UNSUPPORTED_TRANSPORT_ERROR() emit(error(UNSUPPORTED_TRANSPORT));
 
 /*
  * Returns true if the magic byte is typeX AppImage.
@@ -115,25 +113,6 @@ using namespace AppImageUpdaterBridge;
 
 
 /*
- * Since the constructor uses this code more often and
- * only the type of 'x' is unique we can use a simple
- * macro to reduce the number of lines in the source.
- *
- * Example:
- * 	CONSTRUCT(QFile *) or
- * 	CONSTRUCT(QString&) or
- * 	CONSTRUCT(nullptr)
-*/
-#define CONSTRUCT(x) try { \
- 		     _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer)); \
-		     } catch ( ... ) { \
- 		     MEMORY_ERROR(); \
- 		     throw; \
- 		     } \
-		     setAppImage(x);
-
-
-/*
  * Returns a new QByteArray which contains the contents from
  * the given QFile from the given offset to the given
  * max count.
@@ -179,7 +158,7 @@ static void doNotDelete(QFile *file)
 /*
  * AppImageUpdateInformationPrivate is the worker class that provides the
  * ability to easily get the update information from an AppImage.
- * This class can be constructed in three ways.
+ * This class can be constructed in two ways.
  * The default construct sets the QObject parent to be null and
  * creates an empty AppImageUpdateInformationPrivate Object.
  *
@@ -193,12 +172,14 @@ AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *pare
     : QObject(parent)
 {
     emit statusChanged(INITIALIZING);
+#ifndef LOGGING_DISABLED
     try {
  	_pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
     } catch ( ... ) {
  	MEMORY_ERROR();
  	throw;
-    } 
+    }
+#endif // LOGGING_DISABLED
     emit statusChanged(IDLE);
     return;
 }
@@ -211,16 +192,20 @@ AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *pare
 */
 AppImageUpdateInformationPrivate::~AppImageUpdateInformationPrivate()
 {
+#ifndef LOGGING_DISABLED
     _pLogger.clear();
+#endif // LOGGING_DISABLED
     _pAppImage.clear();
     return;
 }
 
+#ifndef LOGGING_DISABLED
 void AppImageUpdateInformationPrivate::setLoggerName(const QString &name)
 {
 	_sLoggerName = QString(name);
 	return;
 }
+#endif // LOGGING_DISABLED
 
 /*
  * This method returns nothing and sets the AppImage
@@ -364,6 +349,7 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
     return;
 }
 
+#ifndef LOGGING_DISABLED
 /*
  * This returns the caller object , If the given bool
  * is true then it connects the logger signal to the
@@ -377,16 +363,17 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
 void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
 {
     if(logNeeded) {
-        disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::logPrinter);
-        connect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::logPrinter);
+        disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
+        connect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
         INFO_START  " setShowLog : true  , started logging." INFO_END;
 
     } else {
         INFO_START  " setShowLog : false , finishing logging." INFO_END;
-        disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::logPrinter);
+        disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
     }
     return;
 }
+#endif // LOGGING_DISABLED
 
 
 /*
@@ -695,7 +682,9 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 void AppImageUpdateInformationPrivate::clear(void)
 {
     _jInfo = QJsonObject();
+#ifndef LOGGING_DISABLED
     _sLogBuffer.clear();
+#endif
     _sAppImagePath.clear();
     _sAppImageName.clear();
     _pAppImage.clear();
@@ -703,22 +692,22 @@ void AppImageUpdateInformationPrivate::clear(void)
     return;
 }
 
+#ifndef LOGGING_DISABLED
 /* This private slot proxies the log messages from
- * the logger signal to qDebug().
+ * the logger signal to qInfo().
 */
-void AppImageUpdateInformationPrivate::logPrinter(QString msg , QString path)
+void AppImageUpdateInformationPrivate::handleLogMessage(QString msg , QString path)
 {
     (void)path;
-    qDebug().noquote() << "["
+    qInfo().noquote()  << "["
                        <<  QDateTime::currentDateTime().toString(Qt::ISODate)
-                       << " | "
-		       <<  QThread::currentThreadId()
 		       << "] "
 		       << _sLoggerName
 		       << "("
                        << _sAppImageName << ")::" << msg;
     return;
 }
+#endif // LOGGING_DISABLED
 
 /*
  * This static method returns a QString which corresponds the
