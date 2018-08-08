@@ -1,17 +1,13 @@
 #include <ZsyncCoreJob_p.hpp>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <inttypes.h>
 
 using namespace AppImageUpdaterBridge;
 
+
 #define UPDATE_RSUM(a, b, oldc, newc, bshift) do { (a) += ((unsigned char)(newc)) - ((unsigned char)(oldc)); (b) += (a) - ((oldc) << (bshift)); } while (0)
 
-
-
-/* rcksum_calc_rsum_block(data, data_len)
- * Calculate the rsum for a single block of data. */
+/* Calculate the rsum for a single block of data. */
 static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, size_t len)
 {
     register unsigned short a = 0;
@@ -30,18 +26,7 @@ static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, si
 }
 
 
-/* rcksum_calc_checksum(checksum_buf, data, data_len)
- * Returns the MD4 checksum (in checksum_buf) of the given data block */
-// calc_checksum
-static void calc_checksum(unsigned char *c, const unsigned char *data,
-                          size_t len)
-{
-    QCryptographicHash ctx(QCryptographicHash::Md4);
-    ctx.addData((const char*)data, len);
-    auto result = ctx.result();
-    memmove(c, result.constData(), sizeof(const char) * result.size());
-    return;
-}
+
 
 /*
  * Constructor and Destructor
@@ -59,6 +44,7 @@ ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(const Information &info){
    _nBlockShift = info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize);
    _pBlockHashes = (hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]));
    _pTargetFileCheckSumBlocks = info.checkSumBlocks;
+   _pMd4Ctx = new QCryptographicHash(QCryptographicHash::Md4);
    _sSeedFilePath = info.seedFilePath;
    return;
 }
@@ -66,6 +52,7 @@ ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(const Information &info){
 ZsyncCoreJobPrivate::~ZsyncCoreJobPrivate()
 {
     delete _pTargetFileCheckSumBlocks;
+    delete _pMd4Ctx;
     
     /* Free all allocated memory */
     free(_pRsumHash);
@@ -315,7 +302,7 @@ qint32 ZsyncCoreJobPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e
             do {
                 /* We only calculate the MD4 once we need it; but need not do so twice */
                 if (check_md4 > done_md4) {
-                    calc_checksum(&md4sum[check_md4][0],
+                    calcMd4Checksum(&md4sum[check_md4][0],
                                   data + _nBlockSize * check_md4,
                                   _nBlockSize);
                     done_md4 = check_md4;
@@ -555,17 +542,6 @@ qint32 ZsyncCoreJobPrivate::submitSourceFile(QFile *file)
     return got_blocks;
 }
 
-/* ZsyncCoreJobPrivate::blocksToDo
- * Return the number of blocks still needed to complete the target file */
-qint32 ZsyncCoreJobPrivate::blocksToDo(void)
-{
-    qint32 i, n = _nBlocks;
-    for (i = 0; i < _nRanges; i++) {
-        n -= 1 + _pRanges[2 * i + 1] - _pRanges[2 * i];
-    }
-    return n;
-}
-
 
 /*
  * Private Slots.
@@ -688,8 +664,6 @@ void ZsyncCoreJobPrivate::addToRanges(zs_blockid x)
     if (r == -1) {
         /* Already have this block */
     } else {
-        _nGotBlocks++;
-
         /* If between two ranges and exactly filling the hole between them,
          * merge them */
         if (r > 0 && r < _nRanges
@@ -793,4 +767,13 @@ void ZsyncCoreJobPrivate::writeBlocks(const unsigned char *data, zs_blockid bfro
             addToRanges( id);
         }
     }
+}
+
+void ZsyncCoreJobPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *data, size_t len)
+{
+    _pMd4Ctx->reset();
+    _pMd4Ctx->addData((const char*)data, len);
+    auto result = _pMd4Ctx->result();
+    memmove(c, result.constData(), sizeof(const char) * result.size());
+    return;
 }

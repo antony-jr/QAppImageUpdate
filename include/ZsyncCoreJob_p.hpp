@@ -9,6 +9,17 @@ class ZsyncCoreJobPrivate
 {
 public:
 
+    enum : short {
+        NO_ERROR = 0,
+	HASH_TABLE_NOT_ALLOCATED = 100,
+        INVALID_TARGET_FILE_CHECKSUM_BLOCKS,
+        CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS,
+        QBUFFER_IO_READ_ERROR,
+        SOURCE_FILE_NOT_FOUND,
+        NO_PERMISSION_TO_READ_SOURCE_FILE,
+        CANNOT_OPEN_SOURCE_FILE
+    } error_code;
+    
 	struct Information {
 	 size_t blockSize , blocks;
 	 zs_blockid blockIdOffset;
@@ -48,17 +59,6 @@ public:
         QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *requiredRanges = nullptr;
     };
 
-    enum : short {
-        NO_ERROR = 0,
-	HASH_TABLE_NOT_ALLOCATED = 100,
-        INVALID_TARGET_FILE_CHECKSUM_BLOCKS,
-        CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS,
-        QBUFFER_IO_READ_ERROR,
-        SOURCE_FILE_NOT_FOUND,
-        NO_PERMISSION_TO_READ_SOURCE_FILE,
-        CANNOT_OPEN_SOURCE_FILE
-    } error_code;
-    
     explicit ZsyncCoreJobPrivate(const Information&);
     ~ZsyncCoreJobPrivate();
     
@@ -66,7 +66,6 @@ public:
 private:
     void addToRanges(zs_blockid);
     qint32 alreadyGotBlock(zs_blockid); 
-    qint32 blocksToDo(void);
     qint32 buildHash(void);
     qint32 checkCheckSumsOnHashChain(const hash_entry *, const unsigned char *, qint32 );
     quint32 calcRHash(const hash_entry *const);
@@ -80,6 +79,7 @@ private:
     qint32 submitSourceFile(QFile*);
     qint32 rangeBeforeBlock(zs_blockid);
     zs_blockid nextKnownBlock(zs_blockid);
+    void calcMd4Checksum(unsigned char *, const unsigned char*,size_t);
     
     QPair<rsum , rsum> _pCurrentWeakCheckSums = qMakePair(rsum({ 0 , 0 }) , rsum({ 0 , 0 }));
     size_t _nBlocks = 0, _nBlockSize = 0;
@@ -88,8 +88,7 @@ private:
 	   _nWeakCheckSumBytes = 0,
        	   _nStrongCheckSumBytes = 0, // # of bytes available for the strong checksum.
        	   _nSeqMatches = 0,
-    	   _nSkip = 0,       // skip forward on next submit_source_data.
-	   _nGotBlocks = 0;  // # of blocks that we currently have in the under construction target file.
+    	   _nSkip = 0;       // skip forward on next submit_source_data.
     unsigned short _pWeakCheckSumMask = 0; // This will be applied to the first 16 bits of the weak checksum.
     
     const hash_entry *_pRover = nullptr,
@@ -111,6 +110,7 @@ private:
     QBuffer *_pTargetFileCheckSumBlocks = nullptr; // Checksum blocks that needs to be loaded into the memory.
     zs_blockid _nBlockIdOffset = 0;
     QFile *_pTargetFile = nullptr; // Under construction target file.
+    QCryptographicHash *_pMd4Ctx = nullptr; // Md4 Hasher context.
     QString _sSeedFilePath;
 };
 }

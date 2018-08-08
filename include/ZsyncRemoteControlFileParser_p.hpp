@@ -60,7 +60,6 @@ public Q_SLOTS:
     void setLoggerName(const QString&);
     void setShowLog(bool);
     void getControlFile(void);
-    void getTargetFileBlocks(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
     size_t getTargetFileBlocksCount(void);
@@ -87,8 +86,6 @@ Q_SIGNALS:
     void zsyncInformation(size_t , size_t , qint32 , qint32 ,
                           qint32, qint32 ,QString,QString,QVector<ZsyncCoreJobPrivate::Information>);
     void updateCheckInformation(QJsonObject);
-    void receiveTargetFileBlocks(zs_blockid, rsum, void*);
-    void endOfTargetFileBlocks(void);
     void receiveControlFile(void);
     void progress(int);
     void error(short);
