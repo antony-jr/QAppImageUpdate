@@ -1,10 +1,63 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2018, Antony jr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * @filename    : ZsyncCoreJob_p.cc
+ * @description : This is where the core of the Zsync Algorithm is written.
+ * Most of the methods are derived from legacy code written in C but there
+ * is a plan to completely change it in the future. The old source is kept
+ * only because of the performance of the hash table.
+ *
+ * @note        : The old legacy code is written by the original author of the
+ * Zsync Algorithm , Colin Phipps. The source was released under the Artistic License
+ * Version Two.
+ *
+*/
 #include <ZsyncCoreJob_p.hpp>
 #include <stdlib.h>
 #include <string.h>
 
 using namespace AppImageUpdaterBridge;
 
+/*
+ * Calculates the rolling checksum of a given block of data.
+ *
+ * Note: The rolling checksum is very similar to Adler32 rolling checksum
+ * but not the same , So please don't replace this with the Adler32.
+ * Compared to Adler32 , This rolling checksum is weak but very fast.
+ * The weakness is balanced by the use of a strong checksum , In this
+ * case Md4. Md4 checksum length is reduced using the zsync algorithm
+ * mentioned in the technical paper , This is solely done for performance.
+*/
 
+/* Update a already calculated block , This is why a rolling checksum is needed. */
 #define UPDATE_RSUM(a, b, oldc, newc, bshift) do { (a) += ((unsigned char)(newc)) - ((unsigned char)(oldc)); (b) += (a) - ((oldc) << (bshift)); } while (0)
 
 /* Calculate the rsum for a single block of data. */
@@ -25,36 +78,45 @@ static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, si
     }
 }
 
-
-
-
 /*
- * Constructor and Destructor
+ * The main class which does the zsync algorithm.
+ * The constructor needs information on the job it aims to
+ * do , Usually the information formed internally by
+ * zsync control file parser.
+ *
+ * Example:
+ * 	ZsyncCoreJobPrivate z(ZsyncCoreJobPrivate::Information());
 */
-ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(const Information &info){
-   _nBlockSize = info.blockSize;
-   _nBlockIdOffset = info.blockIdOffset;
-   _nBlocks = info.blocks;
-   _pWeakCheckSumMask = info.weakCheckSumBytes < 3 ? 0 : info.weakCheckSumBytes == 3 ? 0xff : 0xffff;
-   _nWeakCheckSumBytes = info.weakCheckSumBytes;
-   _nStrongCheckSumBytes = info.strongCheckSumBytes;
-   _nSeqMatches = info.seqMatches;
-   _nContext = info.blockSize * info.seqMatches;
-   _pTargetFile = info.targetFile;
-   _nBlockShift = info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize);
-   _pBlockHashes = (hash_entry*)calloc(_nBlocks + _nSeqMatches , sizeof(_pBlockHashes[0]));
-   _pTargetFileCheckSumBlocks = info.checkSumBlocks;
-   _pMd4Ctx = new QCryptographicHash(QCryptographicHash::Md4);
-   _sSeedFilePath = info.seedFilePath;
-   return;
+ZsyncCoreJobPrivate::ZsyncCoreJobPrivate(const Information &info)
+{
+    _nBlockSize = info.blockSize;
+    _nBlockIdOffset = info.blockIdOffset;
+    _nBlocks = info.blocks;
+    _pWeakCheckSumMask = info.weakCheckSumBytes < 3 ? 0 : info.weakCheckSumBytes == 3 ? 0xff : 0xffff;
+    _nWeakCheckSumBytes = info.weakCheckSumBytes;
+    _nStrongCheckSumBytes = info.strongCheckSumBytes;
+    _nSeqMatches = info.seqMatches;
+    _nContext = info.blockSize * info.seqMatches;
+    _pTargetFile = info.targetFile;
+    _nBlockShift = info.blockSize == 1024 ? 10 : info.blockSize == 2048 ? 11 : log2(info.blockSize);
+    _pBlockHashes = (hash_entry*)calloc(_nBlocks + _nSeqMatches, sizeof(_pBlockHashes[0]));
+    _pTargetFileCheckSumBlocks = info.checkSumBlocks;
+    _pMd4Ctx = new QCryptographicHash(QCryptographicHash::Md4);
+    _sSeedFilePath = info.seedFilePath;
+    return;
 }
 
+/*
+ * Destructor , Frees all the memory used by
+ * the job.
+*/
 ZsyncCoreJobPrivate::~ZsyncCoreJobPrivate()
 {
+    /* Free all c++ allocator allocated memory */
     delete _pTargetFileCheckSumBlocks;
     delete _pMd4Ctx;
-    
-    /* Free all allocated memory */
+
+    /* Free all c allocator allocated memory */
     free(_pRsumHash);
     free(_pRanges);
     free(_pBlockHashes);
@@ -62,17 +124,40 @@ ZsyncCoreJobPrivate::~ZsyncCoreJobPrivate()
 }
 
 
+/*
+ * () operator overload.
+ * This operator is the function operator and so the constructed class
+ * can be used just like a function. This does the main job and
+ * returns the result in the format of ZsyncCoreJobPrivate::Result
+ * which is described in the header file and intrinsic to this class.
+ *
+ * First we convert the raw checksum blocks to a hash table exactly
+ * the same as the legacy hash table written by the original author.
+ * Then We open the given seed file , We also check the permissions.
+ * We submit the seed file to algorithm and record the number blocks
+ * we got for later use.
+ * (i.e number of blocks from all jobs >= total blocks then the target file
+ * can be verified and constructed.)
+ *
+ * Finally we create a vector for the required ranges to complete the target file
+ * with respect to the job information. The value of vector is a pair of block ranges
+ * and their Md4 checksums from the zsync control file for later verification of the
+ * downloaded blocks.
+ *
+ * Example:
+ * 	auto result = ZsyncCoreJobPrivate(ZsyncCoreJobPrivate::Information())();
+*/
 ZsyncCoreJobPrivate::Result ZsyncCoreJobPrivate::operator () (void)
 {
     Result result;
-    if((result.errorCode = parseTargetFileCheckSumBlocks())){
-	    return result;
+    if((result.errorCode = parseTargetFileCheckSumBlocks())) {
+        return result;
     }
-    
+
     QFile *seedFile = nullptr;
 
-    if((result.errorCode = tryOpenSeedFile(&seedFile))){
-	    return result;
+    if((result.errorCode = tryOpenSeedFile(&seedFile))) {
+        return result;
     }
 
     result.gotBlocks += submitSourceFile(seedFile); // returns how blocks did we get.
@@ -83,14 +168,28 @@ ZsyncCoreJobPrivate::Result ZsyncCoreJobPrivate::operator () (void)
     return result;
 }
 
-QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *ZsyncCoreJobPrivate::getRequiredRanges(void) 
+/*
+ * This is a private method which returns a pointer to vector which has a
+ * list of pair of block ranges and their Md4 Sum with respect to the
+ * zsync control file.
+ *
+ * Note:
+ * 	Only be called after using all the source files else this method
+ * 	will simply return all blocks. This also means that if we cannot
+ * 	find a single block matching then this will return all blocks
+ * 	to download.
+ *
+ * Example:
+ * 	auto rRanges = getRequiredRanges();
+ */
+QVector<QPair<QPair<zs_blockid, zs_blockid>, QVector<QByteArray>>> *ZsyncCoreJobPrivate::getRequiredRanges(void)
 {
     qint32 i, n;
-    zs_blockid from = 0 + _nBlockIdOffset , to = _nBlocks + _nBlockIdOffset;
-    QVector<QPair<zs_blockid, zs_blockid>> *ret_ranges = new QVector<QPair<zs_blockid , zs_blockid>>;
-    QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *result = 
-	    new QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>>;
-    
+    zs_blockid from = 0 + _nBlockIdOffset, to = _nBlocks + _nBlockIdOffset;
+    QVector<QPair<zs_blockid, zs_blockid>> *ret_ranges = new QVector<QPair<zs_blockid, zs_blockid>>;
+    QVector<QPair<QPair<zs_blockid, zs_blockid>, QVector<QByteArray>>> *result =
+        new QVector<QPair<QPair<zs_blockid, zs_blockid>, QVector<QByteArray>>>;
+
     ret_ranges->append(qMakePair(from, to));
     ret_ranges->append(qMakePair(0, 0));
     n = 1;
@@ -119,7 +218,7 @@ QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *ZsyncCoreJ
                 /* In the middle of our range, split it */
                 (*ret_ranges)[n].first = _pRanges[2 * i + 1] + 1 + _nBlockIdOffset;
                 (*ret_ranges)[n].second = ret_ranges->at(n-1).second;
-                (*ret_ranges)[n-1].second = _pRanges[2 * i] + _nBlockIdOffset; 
+                (*ret_ranges)[n-1].second = _pRanges[2 * i] + _nBlockIdOffset;
                 n++;
             }
         }
@@ -129,68 +228,98 @@ QVector<QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>>> *ZsyncCoreJ
         ret_ranges->clear();
     }
     ret_ranges->removeAll(qMakePair(0, 0));
-    
-    if(!ret_ranges->isEmpty()){
-	    for(auto iter = 0; iter < ret_ranges->size() ; ++iter){
-		    QPair<QPair<zs_blockid , zs_blockid> , QVector<QByteArray>> MainPair;
-		    MainPair.first = ret_ranges->at(iter);
-		    
-		    QVector<QByteArray> BlocksMd4Sum;
-		    auto from = ret_ranges->at(iter).first - _nBlockIdOffset;
-		    auto to = ret_ranges->at(iter).second - _nBlockIdOffset; 
-    		    for (auto x = from; x <= to; x++) {
-			   BlocksMd4Sum.append(QByteArray((const char*)&_pBlockHashes[x].checksum[0] , _nStrongCheckSumBytes ));
-		    }
-		    MainPair.second = BlocksMd4Sum;
-		    result->append(MainPair);
-    	     }
-    }else{
-	   	    delete result;
-		    result = nullptr;
+
+    if(!ret_ranges->isEmpty()) {
+        for(auto iter = 0; iter < ret_ranges->size() ; ++iter) {
+            QPair<QPair<zs_blockid, zs_blockid>, QVector<QByteArray>> MainPair;
+            MainPair.first = ret_ranges->at(iter);
+
+            QVector<QByteArray> BlocksMd4Sum;
+            auto from = ret_ranges->at(iter).first - _nBlockIdOffset;
+            auto to = ret_ranges->at(iter).second - _nBlockIdOffset;
+            for (auto x = from; x <= to; x++) {
+                BlocksMd4Sum.append(QByteArray((const char*)&_pBlockHashes[x].checksum[0], _nStrongCheckSumBytes ));
+            }
+            MainPair.second = BlocksMd4Sum;
+            result->append(MainPair);
+        }
+    } else {
+        delete result;
+        result = nullptr;
     }
     delete ret_ranges;
     return result;
-} 
+}
 
+/*
+ * This is a private method which tries to open the given seed file
+ * in the given path.
+ * This method checks for the existence and the read permission of
+ * the file.
+ * If any of the two condition does not satisfy , This method returns
+ * a error code with respect the intrinsic error codes defined in this
+ * class , else returns 0.
+ *
+ * Example:
+ * 	QFile *file = new QFile();
+ * 	short errorCode = tryOpenSeedFile(&file);
+ * 	if(errorCode > 0)
+ * 		// handle error.
+ * 	// do something with the file.
+ * 	file->close()
+ * 	delete file;
+*/
 short ZsyncCoreJobPrivate::tryOpenSeedFile(QFile **sourceFile)
 {
     auto seedFile = new QFile(_sSeedFilePath);
     /* Check if the file actually exists. */
     if(!seedFile->exists()) {
-            delete seedFile;
-	    return SOURCE_FILE_NOT_FOUND;
+        delete seedFile;
+        return SOURCE_FILE_NOT_FOUND;
     }
     /* Check if we have the permission to read it. */
     auto perm = seedFile->permissions();
     if(
-       !(perm & QFileDevice::ReadUser) &&
-       !(perm & QFileDevice::ReadGroup) &&
-       !(perm & QFileDevice::ReadOther)
-    ){
+        !(perm & QFileDevice::ReadUser) &&
+        !(perm & QFileDevice::ReadGroup) &&
+        !(perm & QFileDevice::ReadOther)
+    ) {
         delete seedFile;
-	return NO_PERMISSION_TO_READ_SOURCE_FILE;
+        return NO_PERMISSION_TO_READ_SOURCE_FILE;
     }
     /*
      * Finally open the file.
      */
     if(!seedFile->open(QIODevice::ReadOnly)) {
-	delete seedFile;
-	return CANNOT_OPEN_SOURCE_FILE;
+        delete seedFile;
+        return CANNOT_OPEN_SOURCE_FILE;
     }
     *sourceFile = seedFile;
     return 0;
 }
 
-
-short ZsyncCoreJobPrivate::parseTargetFileCheckSumBlocks(void){ 
-    if(!_pBlockHashes){
-    return HASH_TABLE_NOT_ALLOCATED;
-    }else
-    if(!_pTargetFileCheckSumBlocks ||
-        _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
+/*
+ * This private method parses the raw checksum blocks from the zsync control file
+ * and then constructs the hash table , If some error is detected , this returns
+ * a non zero value with respect to the error code intrinsic to this class.
+ *
+ * Note:
+ * 	This has to be called before any other methods , Because without the
+ * 	hash table we cannot compare anything.
+ *
+ * Example:
+ * 	short errorCode = parseTargetFileCheckSumBlocks();
+ * 	if(errorCode > 0)
+ * 		// Handle error.
+*/
+short ZsyncCoreJobPrivate::parseTargetFileCheckSumBlocks(void)
+{
+    if(!_pBlockHashes) {
+        return HASH_TABLE_NOT_ALLOCATED;
+    } else if(!_pTargetFileCheckSumBlocks ||
+              _pTargetFileCheckSumBlocks->size() < (_nWeakCheckSumBytes + _nStrongCheckSumBytes)) {
         return INVALID_TARGET_FILE_CHECKSUM_BLOCKS;
-    }else
-    if(!_pTargetFileCheckSumBlocks->open(QIODevice::ReadOnly)){
+    } else if(!_pTargetFileCheckSumBlocks->open(QIODevice::ReadOnly)) {
         return CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS;
     }
 
@@ -201,7 +330,7 @@ short ZsyncCoreJobPrivate::parseTargetFileCheckSumBlocks(void){
         /* Read on. */
         if (_pTargetFileCheckSumBlocks->read(((char *)&r) + 4 - _nWeakCheckSumBytes, _nWeakCheckSumBytes) < 1
             || _pTargetFileCheckSumBlocks->read((char *)&checksum, _nStrongCheckSumBytes) < 1) {
-        return QBUFFER_IO_READ_ERROR;
+            return QBUFFER_IO_READ_ERROR;
         }
 
         /* Convert to host endian and store.
@@ -227,21 +356,20 @@ short ZsyncCoreJobPrivate::parseTargetFileCheckSumBlocks(void){
         e->r.a = r.a & _pWeakCheckSumMask;
         e->r.b = r.b;
     }
-    
+
     /* New checksums invalidate any existing checksum hash tables */
     if (_pRsumHash) {
-            free(_pRsumHash);
-            _pRsumHash = NULL;
-            free(_pBitHash);
-            _pBitHash = NULL;
+        free(_pRsumHash);
+        _pRsumHash = NULL;
+        free(_pBitHash);
+        _pBitHash = NULL;
     }
 
     return 0;
 }
 
 
-/* checkCheckSumsOnHashChain(self, &hash_entry, data[], onlyone)
- * Given a hash table entry, check the data in this block against every entry
+/* Given a hash table entry, check the data in this block against every entry
  * in the linked list for this hash entry, checking the checksums for this
  * block against those recorded in the hash entries.
  *
@@ -303,8 +431,8 @@ qint32 ZsyncCoreJobPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e
                 /* We only calculate the MD4 once we need it; but need not do so twice */
                 if (check_md4 > done_md4) {
                     calcMd4Checksum(&md4sum[check_md4][0],
-                                  data + _nBlockSize * check_md4,
-                                  _nBlockSize);
+                                    data + _nBlockSize * check_md4,
+                                    _nBlockSize);
                     done_md4 = check_md4;
                     // Checksummed++
                 }
@@ -351,8 +479,7 @@ qint32 ZsyncCoreJobPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e
     return got_blocks;
 }
 
-/* ZsyncCoreJobPrivate::submitSourceData(self, data, datalen, offset)
- * Reads the supplied data (length datalen) and identifies any contained blocks
+/* Reads the supplied data (length datalen) and identifies any contained blocks
  * of data that can be used to make up the target file.
  *
  * offset should be 0 for a new data stream (or if our position in the data
@@ -398,18 +525,6 @@ qint32 ZsyncCoreJobPrivate::submitSourceData(unsigned char *data,size_t len, off
         if (x + _nContext == len) {
             return got_blocks;
         }
-
-#if 0
-        {   /* Catch rolling checksum failure */
-            int k = 0;
-            struct rsum c = calc_rsum_block(data + x + bs * k, bs);
-            if (c.a != r[k].a || c.b != r[k].b) {
-                fprintf(stderr, "rsum miscalc (%d) at %lld\n", k, offset + x);
-                exit(3);
-            }
-        }
-#endif
-
         {
             /* # of blocks of the output file we got from this data */
             qint32 thismatch = 0;
@@ -487,10 +602,9 @@ qint32 ZsyncCoreJobPrivate::submitSourceData(unsigned char *data,size_t len, off
     }
 }
 
-/* ZsyncCoreJobPrivate::submitSourceFile(self, stream, progress)
- * Read the given stream, applying the rsync rolling checksum algorithm to
+/* Read the given stream, applying the rsync rolling checksum algorithm to
  * identify any blocks of data in common with the target file. Blocks found are
- * written to our working target output. Progress reports if progress != 0
+ * written to our working target output.
  */
 qint32 ZsyncCoreJobPrivate::submitSourceFile(QFile *file)
 {
@@ -543,13 +657,8 @@ qint32 ZsyncCoreJobPrivate::submitSourceFile(QFile *file)
 }
 
 
-/*
- * Private Slots.
-*/
 
-
-/* buildHash(self)
- * Build hash tables to quickly lookup a block based on its rsum value.
+/* Build hash tables to quickly lookup a block based on its rsum value.
  * Returns non-zero if successful.
  */
 qint32 ZsyncCoreJobPrivate::buildHash(void)
@@ -598,8 +707,7 @@ qint32 ZsyncCoreJobPrivate::buildHash(void)
     return 1;
 }
 
-/* removeBlockFromHash(self, block_id)
- * Remove the given data block from the rsum hash table, so it won't be
+/* Remove the given data block from the rsum hash table, so it won't be
  * returned in a hash lookup again (e.g. because we now have the data)
  */
 void ZsyncCoreJobPrivate::removeBlockFromHash(zs_blockid id)
@@ -622,8 +730,7 @@ void ZsyncCoreJobPrivate::removeBlockFromHash(zs_blockid id)
 }
 
 
-/* r = rangeBeforeBlock(self, x)
- * This determines which of the existing known ranges x falls in.
+/* This determines which of the existing known ranges x falls in.
  * It returns -1 if it is inside an existing range (it doesn't tell you which
  *  one; if you already have it, that usually is enough to know).
  * Or it returns 0 if x is before the 1st range;
@@ -654,8 +761,7 @@ qint32 ZsyncCoreJobPrivate::rangeBeforeBlock(zs_blockid x)
     return min;
 }
 
-/* addToRanges(rs, blockid)
- * Mark the given blockid as known, updating the stored known ranges
+/* Mark the given blockid as known, updating the stored known ranges
  * appropriately */
 void ZsyncCoreJobPrivate::addToRanges(zs_blockid x)
 {
@@ -689,8 +795,8 @@ void ZsyncCoreJobPrivate::addToRanges(zs_blockid x)
 
         else { /* New range for this block alone */
             _pRanges = (zs_blockid*)
-                     realloc(_pRanges,
-                             (_nRanges + 1) * 2 * sizeof(_pRanges[0]));
+                       realloc(_pRanges,
+                               (_nRanges + 1) * 2 * sizeof(_pRanges[0]));
             memmove(&_pRanges[2 * r + 2], &_pRanges[2 * r],
                     (_nRanges - r) * 2 * sizeof(_pRanges[0]));
             _pRanges[2 * r] = _pRanges[2 * r + 1] = x;
@@ -699,15 +805,13 @@ void ZsyncCoreJobPrivate::addToRanges(zs_blockid x)
     }
 }
 
-/* alreadyGotBlock
- * Return true iff blockid x of the target file is already known */
+/* Return true if blockid x of the target file is already known */
 qint32 ZsyncCoreJobPrivate::alreadyGotBlock(zs_blockid x)
 {
     return (rangeBeforeBlock(x) == -1);
 }
 
-/* next_blockid = nextKnownBlock(rs, blockid)
- * Returns the blockid of the next block which we already have data for.
+/* Returns the blockid of the next block which we already have data for.
  * If we know the requested block, it returns the blockid given; otherwise it
  * will return a later blockid.
  * If no later blocks are known, it returns numblocks (i.e. the block after
@@ -725,8 +829,8 @@ zs_blockid ZsyncCoreJobPrivate::nextKnownBlock(zs_blockid x)
     return _pRanges[2*r];
 }
 
-
-unsigned ZsyncCoreJobPrivate::calcRHash(const struct hash_entry *const e)
+/* Calculates the rsum hash table hash for the given hash entry. */
+unsigned ZsyncCoreJobPrivate::calcRHash(const hash_entry *const e)
 {
     unsigned h = e[0].r.b;
 
@@ -736,14 +840,14 @@ unsigned ZsyncCoreJobPrivate::calcRHash(const struct hash_entry *const e)
     return h;
 }
 
+/* Returns the hash entry's blockid. */
 zs_blockid ZsyncCoreJobPrivate::getHashEntryBlockId(const hash_entry *e)
 {
     return e - _pBlockHashes;
 }
 
 
-/* writeBlocks(rcksum_state, buf, startblock, endblock)
- * Writes the block range (inclusive) from the supplied buffer to our
+/* Writes the block range (inclusive) from the supplied buffer to the given
  * under-construction output file */
 void ZsyncCoreJobPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
@@ -769,6 +873,7 @@ void ZsyncCoreJobPrivate::writeBlocks(const unsigned char *data, zs_blockid bfro
     }
 }
 
+/* Calculates the Md4 Checksum of the given data with respect to the given len. */
 void ZsyncCoreJobPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *data, size_t len)
 {
     _pMd4Ctx->reset();
