@@ -51,7 +51,8 @@ public:
         UNKNOWN_NETWORK_ERROR = 50,
         IO_READ_ERROR,
         ERROR_RESPONSE_CODE,
-        NO_MARKER_FOUND_IN_CONTROL_FILE,
+        GITHUB_API_RATE_LIMIT_REACHED,
+	NO_MARKER_FOUND_IN_CONTROL_FILE,
         INVALID_ZSYNC_HEADERS_NUMBER,
         INVALID_ZSYNC_MAKE_VERSION,
         INVALID_ZSYNC_TARGET_FILENAME,
@@ -119,7 +120,7 @@ private Q_SLOTS:
 #endif // LOGGING_DISABLED
 Q_SIGNALS:
     void zsyncInformation(size_t , size_t , qint32 , qint32 ,
-                          qint32, qint32 ,QString,QString,QVector<ZsyncCoreJobPrivate::Information>);
+                          qint32, qint32 ,QString,QString,QString,QVector<ZsyncCoreJobPrivate::Information>);
     void updateCheckInformation(QJsonObject);
     void receiveControlFile(void);
     void progress(int);
@@ -133,7 +134,7 @@ private:
     QString _sZsyncMakeVersion,
 	    _sZsyncFileName, //Only used for github and bintray API responses.
             _sTargetFileName,
-	    _sAppImageName,
+	    _sAppImagePath,
             _sTargetFileSHA1
 #ifndef LOGGING_DISABLED
             ,_sLoggerName,

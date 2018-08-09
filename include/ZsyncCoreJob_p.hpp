@@ -90,7 +90,7 @@ public:
     struct Result {
         short errorCode = 0;
         qint32 gotBlocks = 0;
-        QVector<QPair<QPair<zs_blockid, zs_blockid>, QVector<QByteArray>>> *requiredRanges = nullptr;
+        QVector<QPair<QPair</*from=*/zs_blockid,/*to=*/zs_blockid>, QVector<QByteArray>>> *requiredRanges = nullptr;
     };
 
     explicit ZsyncCoreJobPrivate(const Information&);

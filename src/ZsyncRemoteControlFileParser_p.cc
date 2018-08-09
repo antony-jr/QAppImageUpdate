@@ -55,7 +55,7 @@ using namespace AppImageUpdaterBridge;
 #define LOGS *(_pLogger.data()) LOGR
 #define LOGR <<
 #define LOGE ; \
-             emit(logger(_sLogBuffer , _sAppImageName)); \
+             emit(logger(_sLogBuffer , _sAppImagePath)); \
              _sLogBuffer.clear();
 #else
 #define LOGS (void)
@@ -127,15 +127,15 @@ void ZsyncRemoteControlFileParserPrivate::setLoggerName(const QString &name)
 void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose)
 {
     if(choose) {
-        disconnect(this, SIGNAL(logger(QString , QUrl)),
-                   this, SLOT(handleLogMessage(QString , QUrl)));
-        connect(this, SIGNAL(logger(QString , QUrl)),
-                this, SLOT(handleLogMessage(QString , QUrl)));
+        disconnect(this, SIGNAL(logger(QString , QString)),
+                   this, SLOT(handleLogMessage(QString , QString)));
+        connect(this, SIGNAL(logger(QString , QString)),
+                this, SLOT(handleLogMessage(QString , QString)));
 	INFO_START LOGR " setShowLog : started logging." INFO_END;
     } else {
 	INFO_START LOGR " setShowLog : stopping logging." INFO_END;
-        disconnect(this, SIGNAL(logger(QString , QUrl)),
-                   this, SLOT(handleLogMessage(QString , QUrl)));
+        disconnect(this, SIGNAL(logger(QString , QString)),
+                   this, SLOT(handleLogMessage(QString , QString)));
     }
     return;
 }
@@ -174,8 +174,8 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 	     {
 	     _jUpdateInformation = information;
 	     auto fileInfo = information["FileInformation"].toObject();
-	     _sAppImageName = QFileInfo(fileInfo["AppImageFilePath"].toString()).fileName();
-     	     }
+	     _sAppImagePath = fileInfo["AppImageFilePath"].toString();
+	     }     
      }
 
      information = information["UpdateInformation"].toObject();
@@ -390,7 +390,8 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
    delete buffer;
 
    emit zsyncInformation(_nTargetFileBlockSize, _nTargetFileBlocks, _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
-                          _nConsecutiveMatchNeeded , _nTargetFileLength , SeedFilePath , _sTargetFileName , result);
+                          _nConsecutiveMatchNeeded , _nTargetFileLength , SeedFilePath , _sTargetFileName , 
+			  _sTargetFileSHA1 , result);
    return;
 }
 
@@ -574,11 +575,15 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
     INFO_START LOGR " handleGithubAPIResponse : http response code(" LOGR responseCode LOGR ")." INFO_END;
     if(responseCode > 400) { // Check if we have a bad response code.
         senderReply->deleteLater();
-	emit error(ERROR_RESPONSE_CODE);
-        return;
+	if(responseCode == 403){ // Check if we hit rate limit.
+		emit error(GITHUB_API_RATE_LIMIT_REACHED);
+	}else { 
+		emit error(ERROR_RESPONSE_CODE);
+	}
+	return;
     }
 
-    /* Disconnect all ties. */
+    /* Cut all ties. */
     disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
     disconnect(senderReply, SIGNAL(finished(void)), this, SLOT(handleGithubAPIResponse(void)));
@@ -770,6 +775,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
 
     emit statusChanged(FINALIZING_PARSING_ZSYNC_CONTROL_FILE);
     emit receiveControlFile();
+    emit statusChanged(IDLE);
     return;
 }
 

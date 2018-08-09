@@ -1,23 +1,22 @@
 #include <AppImageUpdateInformation_p.hpp>
 #include <ZsyncRemoteControlFileParser_p.hpp>
-#include <ZsyncCoreJob_p.hpp>
+#include <ZsyncWriter_p.hpp>
 #include <AppImageDeltaWriter.hpp>
-
-#define APPIMAGE_DELTA_WRITER QString("AppImageDeltaWriter")
 
 using namespace AppImageUpdaterBridge;
 
-#define CONSTRUCT(x) setObjectName(APPIMAGE_DELTA_WRITER); \
-		     _pWatcher.reset(new QFutureWatcher<ZsyncCoreJobPrivate::JobResult>);\
+#define CONSTRUCT(x) setObjectName("AppImageDeltaWriter"); \
 		     if(!singleThreaded){ \
 		     _pSharedThread.reset(new QThread);\
 		     _pSharedThread->start(); \
 		     } \
 		     _pSharedNetworkAccessManager.reset(new QNetworkAccessManager); \
 		     _pUpdateInformation.reset(new AppImageUpdateInformationPrivate); \
+		     _pDeltaWriter.reset(new ZsyncWriterPrivate); \
 		     if(!singleThreaded){ \
 		     _pSharedNetworkAccessManager->moveToThread(_pSharedThread.data()); \
 		     _pUpdateInformation->moveToThread(_pSharedThread.data()); \
+		     _pDeltaWriter->moveToThread(_pSharedThread.data()); \
 		      } \
 		     _pControlFileParser.reset(new ZsyncRemoteControlFileParserPrivate(_pSharedNetworkAccessManager.data())); \
 		     if(!singleThreaded){ \
@@ -25,8 +24,12 @@ using namespace AppImageUpdaterBridge;
 		     } \
 		     _pControlFileParser->setObjectName("ZsyncRemoteControlFileParserPrivate"); \
 		     _pUpdateInformation->setObjectName("AppImageUpdateInformationPrivate"); \
-		     _pUpdateInformation->setLoggerName(APPIMAGE_DELTA_WRITER); \
-		     _pControlFileParser->setLoggerName(APPIMAGE_DELTA_WRITER); \
+		     _pDeltaWriter->setObjectName("ZsyncWriterPrivate"); \
+		     _pUpdateInformation->setLoggerName("UpdateInformation"); \
+		     _pControlFileParser->setLoggerName("ControlFileParser"); \
+		     _pDeltaWriter->setLoggerName("AppImageDeltaWriter"); \
+		     connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::statusChanged , \
+			      this , &AppImageDeltaWriter::statusChanged , Qt::DirectConnection); \
 		     connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::info , \
 			      this , &AppImageDeltaWriter::embededInformation , Qt::DirectConnection); \
 		     connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::progress , \
@@ -43,16 +46,28 @@ using namespace AppImageUpdaterBridge;
 			      this , &AppImageDeltaWriter::progress , Qt::DirectConnection);  \
 		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::logger , \
 			      this , &AppImageDeltaWriter::logger , Qt::DirectConnection); \
-		     connect(_pWatcher.data() , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::started , \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::statusChanged , \
+			      this , &AppImageDeltaWriter::statusChanged , Qt::DirectConnection); \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::progress , \
+			      this , &AppImageDeltaWriter::progress , Qt::DirectConnection); \
+                     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::error , \
+			      this , &AppImageDeltaWriter::error , Qt::DirectConnection); \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::logger , \
+			      this , &AppImageDeltaWriter::logger , Qt::DirectConnection); \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::started, \
 			      this , &AppImageDeltaWriter::started , Qt::DirectConnection); \
-		     connect(_pWatcher.data() , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::canceled , \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::canceled , \
 			      this , &AppImageDeltaWriter::canceled , Qt::DirectConnection); \
-		     connect(_pWatcher.data() , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::paused , \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::paused , \
 			      this , &AppImageDeltaWriter::paused , Qt::DirectConnection); \
-		     connect(_pWatcher.data() , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::resumed , \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::resumed , \
 			      this , &AppImageDeltaWriter::resumed , Qt::DirectConnection); \
-		     connect(_pWatcher.data() , &QFutureWatcher<ZsyncCoreJobPrivate::JobResult>::finished , \
-			      this , &AppImageDeltaWriter::handleFinished); \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::finished , \
+			      this , &AppImageDeltaWriter::finished , Qt::DirectConnection); \
+		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::zsyncInformation, \
+			     _pDeltaWriter.data() , &ZsyncWriterPrivate::setConfiguration); \
+		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::finishedConfiguring , \
+			     _pDeltaWriter.data() , &ZsyncWriterPrivate::start); \
 		     setAppImage(x);
 
 
@@ -78,16 +93,8 @@ AppImageDeltaWriter::AppImageDeltaWriter(QFile *AppImage , bool singleThreaded ,
 	return;
 }
 
-
-
 AppImageDeltaWriter::~AppImageDeltaWriter()
 {
-	if(_pWatcher->isRunning() || _pWatcher->isStarted() || _pWatcher->isPaused())
-	{
-	    _pWatcher->cancel();
-	    _pWatcher->waitForFinished();
-	}
-
 	if(!_pSharedThread.isNull()){
 	_pSharedThread->quit();
 	_pSharedThread->wait();
@@ -97,7 +104,6 @@ AppImageDeltaWriter::~AppImageDeltaWriter()
 
 AppImageDeltaWriter &AppImageDeltaWriter::start(void)
 {
-	qDebug() << Q_FUNC_INFO << "::STARTED";
 	connect(this , &AppImageDeltaWriter::updateAvailable , this , &AppImageDeltaWriter::handleUpdateAvailable); 
 	checkForUpdate();
 	return *this;
@@ -105,51 +111,71 @@ AppImageDeltaWriter &AppImageDeltaWriter::start(void)
 
 AppImageDeltaWriter &AppImageDeltaWriter::cancel(void)
 {
-	_pWatcher->cancel();
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("cancel(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::QueuedConnection);
 	return *this;
 }
 
 AppImageDeltaWriter &AppImageDeltaWriter::pause(void)
 {
-	_pWatcher->pause();
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("pause(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::QueuedConnection);
 	return *this;
 }
 
 AppImageDeltaWriter &AppImageDeltaWriter::resume(void)
 {
-	_pWatcher->resume();
-	return *this;
-}
-
-AppImageDeltaWriter &AppImageDeltaWriter::waitForFinished(void)
-{
-	_pWatcher->waitForFinished();
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("resume(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::QueuedConnection);	
 	return *this;
 }
 
 bool AppImageDeltaWriter::isCanceled(void) const
 {
-	return _pWatcher->isCanceled();
+	bool ret;
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("isCanceled(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::DirectConnection , Q_RETURN_ARG(bool , ret));	
+	return ret;
 }
 
 bool AppImageDeltaWriter::isFinished(void) const
 {
-	return _pWatcher->isFinished();
+	bool ret;
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("isFinished(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::DirectConnection , Q_RETURN_ARG(bool , ret));	
+	return ret;
 }
 
 bool AppImageDeltaWriter::isPaused(void) const
 {
-	return _pWatcher->isPaused();
+	bool ret;
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("isPaused(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::DirectConnection , Q_RETURN_ARG(bool , ret));	
+	return ret;
 }
 
 bool AppImageDeltaWriter::isRunning(void) const
 {
-	return _pWatcher->isRunning();
+	bool ret;
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("isRunning(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::DirectConnection , Q_RETURN_ARG(bool , ret));	
+	return ret;
 }
 
 bool AppImageDeltaWriter::isStarted(void) const
 {
-	return _pWatcher->isStarted();
+	bool ret;
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("isStarted(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::DirectConnection , Q_RETURN_ARG(bool , ret));	
+	return ret;
 }
 
 AppImageDeltaWriter &AppImageDeltaWriter::setAppImage(const QString &AppImagePath)
@@ -183,6 +209,12 @@ AppImageDeltaWriter &AppImageDeltaWriter::setShowLog(bool choice)
 		    .invoke(_pControlFileParser.data() , Qt::QueuedConnection , Q_ARG(bool , choice));
 	
 	}
+	{
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setShowLog(bool)")))
+		    .invoke(_pDeltaWriter.data() , Qt::QueuedConnection , Q_ARG(bool , choice));
+	
+	}
 	return *this;
 }
 
@@ -191,48 +223,6 @@ AppImageDeltaWriter &AppImageDeltaWriter::getAppImageEmbededInformation(void)
 	auto metaObject = _pUpdateInformation->metaObject();
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getInfo(void)")))
 		    .invoke(_pUpdateInformation.data() , Qt::QueuedConnection);
-	return *this;
-}
-
-AppImageDeltaWriter &AppImageDeltaWriter::verifyAndConstructTargetFile(void)
-{
-	if(_pTargetFile.isNull()){
-		return *this;
-	}
-	QString CurrentTargetFileSHA1Hash;
-	auto targetFileLength = _pControlFileParser->getTargetFileLength();
-	qint64 bufferSize = 0;
-
-	_pTargetFile->resize(targetFileLength);
-	_pTargetFile->seek(0);
-    	
-	QCryptographicHash *SHA1Hasher = new QCryptographicHash(QCryptographicHash::Sha1);
-    	if(targetFileLength >= 1073741824){ // 1 GiB and more.
-	    bufferSize = 104857600; // copy per 100 MiB.
-    	}
-    	else if(targetFileLength >= 1048576 ){ // 1 MiB and more.
-	    bufferSize = 1048576; // copy per 1 MiB.
-   	}else if(targetFileLength >= 1024){ // 1 KiB and more.
-	    bufferSize = 4096; // copy per 4 KiB.
-   	}else{ // less than 1 KiB
-	    bufferSize = 1024; // copy per 1 KiB.
-    	}
-	while(!_pTargetFile->atEnd()){
-	SHA1Hasher->addData(_pTargetFile->read(bufferSize));
-	QCoreApplication::processEvents();
-    	}
-    	CurrentTargetFileSHA1Hash= QString(SHA1Hasher->result().toHex().toUpper());	
-	delete SHA1Hasher; 
-
-	_pTargetFile->seek(0);
-
-	if(CurrentTargetFileSHA1Hash == _pControlFileParser->getTargetFileSHA1()){
-		_pTargetFile->rename(_pControlFileParser->getTargetFileName());
-		_pTargetFile->setAutoRemove(false);
-		_pTargetFile->close();
-		_pTargetFile.reset(nullptr);
-		emit verifiedAndConstructedTargetFile();
-	}
 	return *this;
 }
 
@@ -248,6 +238,11 @@ AppImageDeltaWriter &AppImageDeltaWriter::clear(void)
 	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("clear(void)")))
 		    .invoke(_pControlFileParser.data() , Qt::QueuedConnection);	
 	}
+	{
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("clear(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::QueuedConnection);	
+	}
 	return *this;
 }
 
@@ -255,11 +250,6 @@ AppImageDeltaWriter &AppImageDeltaWriter::clear(void)
 
 AppImageDeltaWriter &AppImageDeltaWriter::checkForUpdate(void)
 { 
-	/*
-	 * First we need the resource from the 
-	 * AppImage binary , such as the update information 
-	 * and the AppImage binary's checksums(SHA1 Hash) and full path.
-	*/
 	connect(_pUpdateInformation.data() , SIGNAL(info(QJsonObject)) , 
 		_pControlFileParser.data() , SLOT(setControlFileUrl(QJsonObject)));
 	connect(_pControlFileParser.data() , SIGNAL(receiveControlFile(void)) ,
@@ -272,79 +262,15 @@ AppImageDeltaWriter &AppImageDeltaWriter::checkForUpdate(void)
 
 void AppImageDeltaWriter::handleUpdateAvailable(bool updateAvailable , QString AppImageFilePath)
 {
+	(void)AppImageFilePath;
 	disconnect(this , &AppImageDeltaWriter::updateAvailable , this , &AppImageDeltaWriter::handleUpdateAvailable); 
 	if(updateAvailable){
-		QString targetFilePath;
-		auto path = QFileInfo(AppImageFilePath).path();
-
-		path = (path == ".") ? QDir::currentPath() : path;
-		targetFilePath = path + "/" + _pControlFileParser->getTargetFileName() + ".XXXXXXXXX.part";
-
-		QFileInfo perm(path);
-		if(!perm.isWritable() || !perm.isReadable()){
-			emit error(NO_PERMISSION_TO_READ_WRITE_TARGET_FILE);
-			return;
-		}
-
-		_pTargetFile.reset(new QTemporaryFile(targetFilePath));
-		if(!_pTargetFile->open()){
-			emit error(CANNOT_OPEN_TARGET_FILE);
-			return;
-		}
-
-		/*
-		 * To open the target file we have to 
-		 * request fileName() from the temporary file.
-		*/
-		(void)_pTargetFile->fileName();
-		qDebug() << "File Created At " << _pTargetFile->fileName();
-		jobs = _pControlFileParser->getZsyncCoreJobInformation((QFile*)_pTargetFile.data());
-		_pFuture.reset(new QFuture<ZsyncCoreJobPrivate::JobResult>);
-		*_pFuture = QtConcurrent::mapped(jobs , startJob);
-		_pWatcher->setFuture(*_pFuture);
-	}
-	return;
-}
-
-ZsyncCoreJobPrivate::JobResult AppImageDeltaWriter::startJob(const ZsyncCoreJobPrivate::JobInformation &info)
-{
-	qDebug() << "Starting Thread:: " << QThread::currentThreadId();
-	ZsyncCoreJobPrivate job(info);
-	return job.start();
-}
-
-void AppImageDeltaWriter::handleFinished(void)
-{
-	_pRanges.reset(new QVector<QPair<qint32 , qint32>>);
-	_pBlockHashes.reset(new QHash<qint32 , QByteArray>);
-	qint32 gotBlocks = 0;
-	for(auto iter = 0; iter < _pFuture->results().size() ; ++iter){
-		auto result = _pFuture->results().at(iter);
-		if(result.isErrored){
-			qDebug() << "ERRORED:: " << result.errorCode;
-			emit error(result.errorCode);
-			return;
-		}
-
-		if(result.requiredBlocksMd4Sum && result.requiredRanges){
-		_pRanges->append(*(result.requiredRanges));
-		delete (result.requiredRanges);
-		_pBlockHashes->unite(*(result.requiredBlocksMd4Sum));
-		delete (result.requiredBlocksMd4Sum);
-		}
-		gotBlocks += result.gotBlocks;
-	}
-
-	qDebug() << "Got Blocks:: " << gotBlocks;
-
-	if(_pRanges->isEmpty() && _pBlockHashes->isEmpty()){
-		_pRanges.reset(nullptr);
-		_pBlockHashes.reset(nullptr);
-		verifyAndConstructTargetFile();
+	auto metaObject = _pControlFileParser->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getZsyncInformation(void)")))
+		    .invoke(_pControlFileParser.data() , Qt::QueuedConnection);	
 	}else{
-		emit blockDownloaderInformation(_pBlockHashes.data() , _pRanges.data() , _pTargetFile.data());
+		emit finished(/*is Download Needed ? = */false);
 	}
-	emit finished();
 	return;
 }
 
@@ -363,9 +289,9 @@ void AppImageDeltaWriter::handleUpdateCheckInformation(QJsonObject information)
 
 	auto embededUpdateInformation = information["EmbededUpdateInformation"].toObject();
 	auto remoteTargetFileSHA1Hash = information["RemoteTargetFileSHA1Hash"].toString();
-	QString localAppImageSHA1Hash = embededUpdateInformation["FileInformation"].toObject()["LocalAppImageSHA1Hash"].toString() ,
+	QString localAppImageSHA1Hash = embededUpdateInformation["FileInformation"].toObject()["AppImageSHA1Hash"].toString() ,
 		localAppImagePath = embededUpdateInformation["FileInformation"].toObject()["AppImageFilePath"].toString();
-	
+
 	emit updateAvailable((localAppImageSHA1Hash != remoteTargetFileSHA1Hash) , localAppImagePath);
 	return;	
 }
@@ -383,11 +309,13 @@ QNetworkAccessManager *AppImageDeltaWriter::sharedNetworkAccessManager(void) con
 QString AppImageDeltaWriter::errorCodeToString(short code)
 {
 	return (code < 50) ? AppImageUpdateInformationPrivate::errorCodeToString(code) :
-			     ZsyncRemoteControlFileParserPrivate::errorCodeToString(code);
+			     (code < 100) ? ZsyncRemoteControlFileParserPrivate::errorCodeToString(code) :
+			     ZsyncWriterPrivate::errorCodeToString(code);
 }
 
 QString AppImageDeltaWriter::statusCodeToString(short code)
 {
 	return (code < 50) ? AppImageUpdateInformationPrivate::statusCodeToString(code) :
-			     ZsyncRemoteControlFileParserPrivate::statusCodeToString(code);
+			     (code < 100) ? ZsyncRemoteControlFileParserPrivate::statusCodeToString(code) :
+			     ZsyncWriterPrivate::statusCodeToString(code);
 }

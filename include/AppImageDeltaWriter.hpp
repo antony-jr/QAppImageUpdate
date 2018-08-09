@@ -31,6 +31,7 @@ namespace AppImageUpdaterBridge {
 		UNKNOWN_NETWORK_ERROR = 50, // >= 50 , Zsync Control File Parser Error.
         	IO_READ_ERROR,
         	ERROR_RESPONSE_CODE,
+		GITHUB_API_RATE_LIMIT_REACHED,
         	NO_MARKER_FOUND_IN_CONTROL_FILE,
         	INVALID_ZSYNC_HEADERS_NUMBER,
         	INVALID_ZSYNC_MAKE_VERSION,
@@ -42,8 +43,8 @@ namespace AppImageUpdaterBridge {
         	INVALID_HASH_LENGTHS,
         	INVALID_TARGET_FILE_URL,
         	INVALID_TARGET_FILE_SHA1,
-        	HASH_TABLE_NOT_ALLOCATED = 100, // >= 100 , Zsync Core Job error.
-        	INVALID_TARGET_FILE_CHECKSUM_BLOCKS,
+        	HASH_TABLE_NOT_ALLOCATED = 100, // >= 100 , Zsync Writer error.
+		INVALID_TARGET_FILE_CHECKSUM_BLOCKS,
         	CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS,
         	QBUFFER_IO_READ_ERROR,
         	SOURCE_FILE_NOT_FOUND,
@@ -51,7 +52,7 @@ namespace AppImageUpdaterBridge {
         	CANNOT_OPEN_SOURCE_FILE,
 		NO_PERMISSION_TO_READ_WRITE_TARGET_FILE,
 		CANNOT_OPEN_TARGET_FILE,
-		TARGET_FILE_SHA1_HASH_MISMATCH
+		TARGET_FILE_SHA1_HASH_MISMATCH	
 		} error_code;
 
 		enum : short {
@@ -74,7 +75,15 @@ namespace AppImageUpdaterBridge {
 		PARSING_ZSYNC_CONTROL_FILE,
 		SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE,
 		STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY,
-		FINALIZING_PARSING_ZSYNC_CONTROL_FILE
+		FINALIZING_PARSING_ZSYNC_CONTROL_FILE,
+		WRITTING_DOWNLOADED_BLOCK_RANGES = 100,
+		EMITTING_REQUIRED_BLOCK_RANGES,
+		SEARCHING_FOR_RANGE_CHECKSUMS,
+		CHECKING_CHECKSUMS_FOR_DOWNLOADED_BLOCK_RANGES,
+		WRITTING_DOWNLOADED_BLOCK_RANGES_TO_TARGET_FILE,
+		ANALYZING_RESULTS_FOR_CONSTRUCTING_TARGET_FILE,
+		CALCULATING_TARGET_FILE_SHA1_HASH,
+		CONSTRUCTING_TARGET_FILE
 		} status_code;
 
 		explicit AppImageDeltaWriter(bool singleThreaded = true , QObject *parent = nullptr);
@@ -90,7 +99,6 @@ namespace AppImageUpdaterBridge {
 		AppImageDeltaWriter &cancel(void);
 		AppImageDeltaWriter &pause(void);
 		AppImageDeltaWriter &resume(void);
-		AppImageDeltaWriter &waitForFinished(void);
 		
 		bool isCanceled(void) const;
 		bool isFinished(void) const;
@@ -108,15 +116,15 @@ namespace AppImageUpdaterBridge {
 		QNetworkAccessManager *sharedNetworkAccessManager(void) const;
 
 	private Q_SLOTS:
-		void handleFinished(void);
 		void handleUpdateAvailable(bool , QString);
 		void handleUpdateCheckInformation(QJsonObject);
+	
 	Q_SIGNALS:
 		void started(void);
 		void canceled(void);
 		void paused(void);
 		void resumed(void);
-		void finished(void);
+		void finished(bool);
 		void embededInformation(QJsonObject);
 		void updateAvailable(bool , QString);
 		void statusChanged(short);
