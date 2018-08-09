@@ -1,4 +1,4 @@
-#include <AppImageDeltaWriter.hpp>
+#include <AppImageDeltaWriter>
 
 using namespace AppImageUpdaterBridge;
 
@@ -17,6 +17,8 @@ int main(int argc, char **argv)
 	if(constructed){
 		qDebug() << "Still need some blocks to complete the target file.";
 		qDebug() << "BlockDownloader yet to implement.";
+	}else{
+		qDebug() << "Constructed Target File , no need to download blocks.";
 	}
 	qDebug() << "Exiting...";
 	app.quit();
