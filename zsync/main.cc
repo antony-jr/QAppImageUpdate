@@ -1,5 +1,6 @@
-#include <AppImageDeltaWriter>
-#include "block_downloader.hpp"
+#include <AppImageUpdateInformation_p.hpp>
+#include <ZsyncRemoteControlFileParser_p.hpp>
+#include <ZsyncWriter_p.hpp>
 
 using namespace AppImageUpdaterBridge;
 
@@ -10,24 +11,28 @@ int main(int argc, char **argv)
     if(argc == 1){
 	    return -1;
     }
-
     QString path(argv[1]);
-    AppImageDeltaWriter Writer(path);
-    BlockDownloader *downloader = new BlockDownloader(&Writer);
+    QNetworkAccessManager nm;
+    AppImageUpdateInformationPrivate ui;
+    ZsyncRemoteControlFileParserPrivate cp(&nm);
+    ZsyncWriterPrivate w;
 
-    QObject::connect(&Writer , &AppImageDeltaWriter::finished , [&](bool constructed){
-	if(constructed){
-		qDebug() << "Still need some blocks to complete the target file.";
-		downloader->start();
-	}else{
-		qDebug() << "Constructed Target File , no need to download blocks.";
-	qDebug() << "Exiting...";
-	app.quit();
-	}
-	return;
+    QObject::connect(&ui , SIGNAL(info(QJsonObject)) , &cp , SLOT(setControlFileUrl(QJsonObject)));
+    QObject::connect(&cp , &ZsyncRemoteControlFileParserPrivate::zsyncInformation ,
+		     &w , &ZsyncWriterPrivate::setConfiguration);
+    QObject::connect(&w , &ZsyncWriterPrivate::finishedConfiguring , &w , &ZsyncWriterPrivate::start);
+    QObject::connect(&cp , &ZsyncRemoteControlFileParserPrivate::receiveControlFile , 
+		     &cp , &ZsyncRemoteControlFileParserPrivate::getZsyncInformation);
+    QObject::connect(&w , &ZsyncWriterPrivate::finished , &app , &QCoreApplication::quit);
+    QObject::connect(&w , &ZsyncWriterPrivate::error , [&](short code){
+		    qDebug() << ZsyncWriterPrivate::errorCodeToString(code);
+		    app.quit();
+		    return;
     });
-
-    Writer.setShowLog(true)
-	  .start();
+    cp.setShowLog(true);    
+    ui.setShowLog(true);
+    w.setShowLog(true);
+    ui.setAppImage(path); 
+    ui.getInfo();
     return app.exec();
 }

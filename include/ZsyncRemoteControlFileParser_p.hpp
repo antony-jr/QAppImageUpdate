@@ -120,8 +120,7 @@ private Q_SLOTS:
 #endif // LOGGING_DISABLED
 Q_SIGNALS:
     void targetFileUrl(QUrl);
-    void zsyncInformation(size_t , size_t , qint32 , qint32 ,
-                          qint32, qint32 ,QString,QString,QString,QVector<ZsyncCoreJobPrivate::Information>);
+    void zsyncInformation(qint32,qint32,qint32,qint32,qint32,qint32,QString,QString,QString,QBuffer*);
     void updateCheckInformation(QJsonObject);
     void receiveControlFile(void);
     void progress(int);

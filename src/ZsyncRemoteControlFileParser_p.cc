@@ -319,79 +319,17 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
 
     auto buffer = new QBuffer;
     QString SeedFilePath = (_jUpdateInformation["FileInformation"].toObject())["AppImageFilePath"].toString();
-    buffer->open(QIODevice::ReadWrite);
+    buffer->open(QIODevice::WriteOnly);
     _pControlFile->seek(_nCheckSumBlocksOffset); /* Seek to the offset of the checksum block. */
     
     while(!_pControlFile->atEnd()){
-	    buffer->write(_pControlFile->read(_nWeakCheckSumBytes + _nStrongCheckSumBytes));
+	    buffer->write(_pControlFile->read((_nWeakCheckSumBytes + _nStrongCheckSumBytes) * 16));
+	    QCoreApplication::processEvents();
     }
-
-    /*
-     * This is a very simple algorithm to partition the work load approximately
-     * equal across all cores.
-     *
-     * Let 'nb' be the number of blocks in the target file.
-     * Let 'nt' be the number of ideal threads in the current computer.
-     *
-     * Number of Blocks for First Thread = [nb - (nb mod nt)] / nt + (nb mod nt) ; nb mod nt > 0
-     * 					 = nb / nt ; nb mod nt = 0
-     *
-     * Number of Blocks for Other Threads = Number Of Blocks for First Thread - (nb mod nt) ; nb mod nt > 0
-     * 					  = nb / nt ; nb mod nt = 0
-     *
-     * If the ideal thread is one then 'Number of Blocks for Other Threads' will always return 0.
-    */
-    int firstThreadBlocksToDo = 0,
-	otherThreadsBlocksToDo = 0;
-    auto mod = (int)_nTargetFileBlocks % QThread::idealThreadCount();
-    if(mod > 0){
-	firstThreadBlocksToDo = (int)(((int)_nTargetFileBlocks - mod) / QThread::idealThreadCount()) + mod;
-	otherThreadsBlocksToDo = firstThreadBlocksToDo - mod;
-    }else{ // mod == 0
-	firstThreadBlocksToDo = (int)((int)_nTargetFileBlocks / QThread::idealThreadCount());
-	otherThreadsBlocksToDo = firstThreadBlocksToDo;
-    }
-
-    buffer->seek(0);
-
-    QBuffer *partition = nullptr; 
-    partition = new QBuffer;
-    partition->open(QIODevice::WriteOnly);
-    partition->write(buffer->read(firstThreadBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes))); 
-    partition->close();
-    {
-    ZsyncCoreJobPrivate::Information info(_nTargetFileBlockSize , 0 , firstThreadBlocksToDo ,
-		    			  _nWeakCheckSumBytes , _nStrongCheckSumBytes , _nConsecutiveMatchNeeded , 
-					  partition , nullptr , SeedFilePath);
-    result.append(info);
-    }
-   
-
-    if(otherThreadsBlocksToDo && QThread::idealThreadCount() > 1){
-	int threadCount = 2;
-	while(threadCount <= QThread::idealThreadCount()){
-	auto fromId = firstThreadBlocksToDo * (threadCount - 1);
-	partition = new QBuffer;
-	partition->open(QIODevice::WriteOnly);
-    	partition->write(buffer->read(otherThreadsBlocksToDo * (_nWeakCheckSumBytes + _nStrongCheckSumBytes)));
-	partition->close();
-	{
-	ZsyncCoreJobPrivate::Information info(_nTargetFileBlockSize, fromId, otherThreadsBlocksToDo ,
-					      _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
-					      _nConsecutiveMatchNeeded , partition , nullptr , SeedFilePath);
-	result.append(info);
-	}
-	++threadCount;
-	QCoreApplication::processEvents();
-	}
-   }
-
-   buffer->close();
-   delete buffer;
-
-   emit zsyncInformation(_nTargetFileBlockSize, _nTargetFileBlocks, _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
+    buffer->close();
+    emit zsyncInformation(_nTargetFileBlockSize, _nTargetFileBlocks, _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
                           _nConsecutiveMatchNeeded , _nTargetFileLength , SeedFilePath , _sTargetFileName , 
-			  _sTargetFileSHA1 , result);
+			  _sTargetFileSHA1 , buffer);
    return;
 }
 

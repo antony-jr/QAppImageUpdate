@@ -201,24 +201,24 @@ QVector<QPair<QPair<zs_blockid, zs_blockid>, QVector<QByteArray>>> *ZsyncCoreJob
         } else {
             ret_ranges->append(qMakePair(0, 0));
         }
-        if (_pRanges[2 * i] + _nBlockIdOffset > ret_ranges->at(n - 1).second) // (2 * n - 1) -> second.
+        if (_pRanges[2 * i] > ret_ranges->at(n - 1).second) // (2 * n - 1) -> second.
             continue;
-        if (_pRanges[2 * i + 1] + _nBlockIdOffset < from)
+        if (_pRanges[2 * i + 1] < from)
             continue;
 
         /* Okay, they intersect */
-        if (n == 1 && _pRanges[2 * i] + _nBlockIdOffset <= from) {       /* Overlaps the start of our window */
-            (*ret_ranges)[0].first = _pRanges[2 * i + 1] + 1 + _nBlockIdOffset;
+        if (n == 1 && _pRanges[2 * i] <= from) {       /* Overlaps the start of our window */
+            (*ret_ranges)[0].first = _pRanges[2 * i + 1] + 1;
         } else {
             /* If the last block that we still (which is the last window end -1, due
              * to half-openness) then this range just cuts the end of our window */
-            if (_pRanges[2 * i + 1] + _nBlockIdOffset >= ret_ranges->at(n - 1).second - 1) {
-                (*ret_ranges)[n - 1].second = _pRanges[2 * i] + _nBlockIdOffset;
+            if (_pRanges[2 * i + 1] >= ret_ranges->at(n - 1).second - 1) {
+                (*ret_ranges)[n - 1].second = _pRanges[2 * i];
             } else {
                 /* In the middle of our range, split it */
-                (*ret_ranges)[n].first = _pRanges[2 * i + 1] + 1 + _nBlockIdOffset;
+                (*ret_ranges)[n].first = _pRanges[2 * i + 1] + 1;
                 (*ret_ranges)[n].second = ret_ranges->at(n-1).second;
-                (*ret_ranges)[n-1].second = _pRanges[2 * i] + _nBlockIdOffset;
+                (*ret_ranges)[n-1].second = _pRanges[2 * i];
                 n++;
             }
         }
@@ -233,14 +233,13 @@ QVector<QPair<QPair<zs_blockid, zs_blockid>, QVector<QByteArray>>> *ZsyncCoreJob
         for(auto iter = 0; iter < ret_ranges->size() ; ++iter) {
             QPair<QPair<zs_blockid, zs_blockid>, QVector<QByteArray>> MainPair;
             MainPair.first = ret_ranges->at(iter);
-
-            QVector<QByteArray> BlocksMd4Sum;
+            auto BlocksMd4Sum = &(MainPair.second);
             auto from = ret_ranges->at(iter).first - _nBlockIdOffset;
             auto to = ret_ranges->at(iter).second - _nBlockIdOffset;
-            for (auto x = from; x <= to; x++) {
-                BlocksMd4Sum.append(QByteArray((const char*)&_pBlockHashes[x].checksum[0], _nStrongCheckSumBytes ));
+
+            for (auto x = from; x <= to; ++x) {
+                BlocksMd4Sum->append(QByteArray((const char*)&_pBlockHashes[x].checksum[0], _nStrongCheckSumBytes ));
             }
-            MainPair.second = BlocksMd4Sum;
             result->append(MainPair);
         }
     } else {
@@ -765,6 +764,7 @@ qint32 ZsyncCoreJobPrivate::rangeBeforeBlock(zs_blockid x)
  * appropriately */
 void ZsyncCoreJobPrivate::addToRanges(zs_blockid x)
 {
+    x += _nBlockIdOffset;
     qint32 r = rangeBeforeBlock(x);
 
     if (r == -1) {
@@ -808,6 +808,7 @@ void ZsyncCoreJobPrivate::addToRanges(zs_blockid x)
 /* Return true if blockid x of the target file is already known */
 qint32 ZsyncCoreJobPrivate::alreadyGotBlock(zs_blockid x)
 {
+    x += _nBlockIdOffset;
     return (rangeBeforeBlock(x) == -1);
 }
 
@@ -819,6 +820,7 @@ qint32 ZsyncCoreJobPrivate::alreadyGotBlock(zs_blockid x)
  */
 zs_blockid ZsyncCoreJobPrivate::nextKnownBlock(zs_blockid x)
 {
+    x += _nBlockIdOffset;
     qint32 r = rangeBeforeBlock(x);
     if (r == -1)
         return x;
