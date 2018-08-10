@@ -46,6 +46,8 @@ using namespace AppImageUpdaterBridge;
 			      this , &AppImageDeltaWriter::progress , Qt::DirectConnection);  \
 		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::logger , \
 			      this , &AppImageDeltaWriter::logger , Qt::DirectConnection); \
+		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::targetFileUrl, \
+			      this , &AppImageDeltaWriter::targetFileUrl , Qt::DirectConnection); \
 		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::statusChanged , \
 			      this , &AppImageDeltaWriter::statusChanged , Qt::DirectConnection); \
 		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::progress , \
@@ -64,6 +66,14 @@ using namespace AppImageUpdaterBridge;
 			      this , &AppImageDeltaWriter::resumed , Qt::DirectConnection); \
 		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::finished , \
 			      this , &AppImageDeltaWriter::finished , Qt::DirectConnection); \
+                     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::blockRange , \
+			      this , &AppImageDeltaWriter::blockRange , Qt::DirectConnection); \
+                     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::endOfBlockRanges , \
+			      this , &AppImageDeltaWriter::endOfBlockRanges , Qt::DirectConnection); \
+                     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::blockRangesWritten , \
+		              this , &AppImageDeltaWriter::blockRangesWritten , Qt::DirectConnection); \
+		     connect( this , &AppImageDeltaWriter::sendBlockRangesToWrite , \
+			      _pDeltaWriter.data() , &ZsyncWriterPrivate::writeBlockRanges); \
 		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::zsyncInformation, \
 			     _pDeltaWriter.data() , &ZsyncWriterPrivate::setConfiguration); \
 		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::finishedConfiguring , \
@@ -217,6 +227,30 @@ AppImageDeltaWriter &AppImageDeltaWriter::setShowLog(bool choice)
 	}
 	return *this;
 }
+
+AppImageDeltaWriter &AppImageDeltaWriter::getBlockRanges(void)
+{
+	auto metaObject = _pDeltaWriter->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getBlockRanges(void)")))
+		    .invoke(_pDeltaWriter.data() , Qt::QueuedConnection);
+	return *this;
+}
+
+AppImageDeltaWriter &AppImageDeltaWriter::writeBlockRanges(const QPair<qint32 , qint32> &range , QByteArray *data)
+{
+	emit sendBlockRangesToWrite(range , data);
+	return *this;
+}
+
+
+AppImageDeltaWriter &AppImageDeltaWriter::getTargetFileUrl(void)
+{
+	auto metaObject = _pControlFileParser->metaObject();
+	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getTargetFileUrl(void)")))
+		    .invoke(_pControlFileParser.data() , Qt::QueuedConnection);
+	return *this;
+}
+
 
 AppImageDeltaWriter &AppImageDeltaWriter::getAppImageEmbededInformation(void)
 {

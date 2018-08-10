@@ -109,7 +109,10 @@ namespace AppImageUpdaterBridge {
 		AppImageDeltaWriter &setAppImage(const QString&);
 		AppImageDeltaWriter &setAppImage(QFile*);
 		AppImageDeltaWriter &setShowLog(bool);
+		AppImageDeltaWriter &getBlockRanges(void);
+		AppImageDeltaWriter &writeBlockRanges(const QPair<qint32 , qint32>& , QByteArray*);
 		AppImageDeltaWriter &getAppImageEmbededInformation(void);
+		AppImageDeltaWriter &getTargetFileUrl(void);
 		AppImageDeltaWriter &checkForUpdate(void);
 		AppImageDeltaWriter &clear(void);
 		QThread *sharedQThread(void) const;
@@ -125,6 +128,11 @@ namespace AppImageUpdaterBridge {
 		void paused(void);
 		void resumed(void);
 		void finished(bool);
+		void targetFileUrl(QUrl);
+		void sendBlockRangesToWrite(QPair<qint32 , qint32> , QByteArray*);
+		void blockRange(QPair<qint32 , qint32>);
+		void endOfBlockRanges(void);
+		void blockRangesWritten(QPair<qint32 , qint32> , bool);
 		void embededInformation(QJsonObject);
 		void updateAvailable(bool , QString);
 		void statusChanged(short);

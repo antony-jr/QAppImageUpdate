@@ -96,11 +96,11 @@ public Q_SLOTS:
     void getControlFile(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
+    void getTargetFileUrl(void);
     size_t getTargetFileBlocksCount(void);
     QUrl getControlFileUrl(void);
     QString getZsyncMakeVersion(void);
     QString getTargetFileName(void);
-    QUrl getTargetFileUrl(void);
     QString getTargetFileSHA1(void);
     QDateTime getMTime(void);
     size_t getTargetFileBlockSize(void);
@@ -119,6 +119,7 @@ private Q_SLOTS:
     void handleLogMessage(QString , QString);
 #endif // LOGGING_DISABLED
 Q_SIGNALS:
+    void targetFileUrl(QUrl);
     void zsyncInformation(size_t , size_t , qint32 , qint32 ,
                           qint32, qint32 ,QString,QString,QString,QVector<ZsyncCoreJobPrivate::Information>);
     void updateCheckInformation(QJsonObject);

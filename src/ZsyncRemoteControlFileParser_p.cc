@@ -433,16 +433,15 @@ QString ZsyncRemoteControlFileParserPrivate::getTargetFileName(void)
 }
 
 /*
- * Returns the target file's url.
- * Returns an empty url incase a process is busy or the control
- * file was never parsed.
+ * emits the target file's url.
 */
-QUrl ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
+void ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
 {
     QUrl ret = (_uTargetFileUrl.isRelative()) ? 
 	       QUrl(_uControlFileUrl.adjusted(QUrl::RemoveFilename).toString() + _sTargetFileName)
 	       : _uTargetFileUrl;
-    return ret;
+    emit targetFileUrl(ret);
+    return;
 }
 
 /*

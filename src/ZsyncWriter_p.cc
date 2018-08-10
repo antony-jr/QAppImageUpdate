@@ -187,14 +187,16 @@ void ZsyncWriterPrivate::writeBlockRanges(const QPair<qint32 , qint32> &range , 
 		if((*iter).first.first == from && (*iter).first.second == to){
 			emit statusChanged(CHECKING_CHECKSUMS_FOR_DOWNLOADED_BLOCK_RANGES);
 			auto Md4Vector = (*iter).second;
-			for(auto x = 0; x <= endb; ++x){
-				INFO_START " writeBlockRanges : comparing MD4 Checksums for range(" LOGR range LOGR ")." INFO_END;
+			INFO_START " writeBlockRanges : comparing MD4 Checksums for range(" LOGR range LOGR ")." INFO_END;
+			for(auto x = 0; x < endb; ++x){
 				QByteArray currentBlock = buffer.read(_nBlockSize),
 					   currentBlockMd4Sum;
 				ctx.addData(currentBlock);
 			        currentBlockMd4Sum = ctx.result();
 				currentBlockMd4Sum.resize(Md4Vector.at(x).size());
 				ctx.reset();
+				qDebug() << "currentBlockMd4Sum:: " << currentBlockMd4Sum.toHex() <<
+					 " , Md4Vector:: " << Md4Vector.at(x).toHex();
 		       		if(currentBlockMd4Sum != Md4Vector.at(x)){
 				WARNING_START " writeBlockRanges : MD4 Checksum mismatch , only writting good blocks." WARNING_END;
 				emit statusChanged(WRITTING_DOWNLOADED_BLOCK_RANGES_TO_TARGET_FILE);
