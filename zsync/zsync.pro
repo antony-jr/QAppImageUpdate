@@ -4,4 +4,4 @@ CONFIG += debug
 TARGET = zsync
 
 SOURCES += main.cc
-#HEADERS += block_downloader.hpp
+HEADERS += block_downloader.hpp

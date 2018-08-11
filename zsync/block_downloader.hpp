@@ -1,23 +1,29 @@
 #ifndef BLOCK_DOWNLOADER_HPP_INCLUDED
 #define BLOCK_DOWNLOADER_HPP_INCLUDED
-#include <AppImageDeltaWriter>
+#include <ZsyncWriter_p.hpp>
+#include <ZsyncRemoteControlFileParser_p.hpp>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+
+Q_DECLARE_METATYPE(QByteArray*);
 
 namespace AppImageUpdaterBridge {
 class BlockDownloader : public QObject {
 	Q_OBJECT
 public:
-	BlockDownloader(AppImageDeltaWriter *writer)
+	BlockDownloader(ZsyncWriterPrivate *writer , ZsyncRemoteControlFileParserPrivate *cp , QNetworkAccessManager *nm)
 		: QObject(writer),
-		  _pDeltaWriter(writer)
+		  _pDeltaWriter(writer),
+		  _pControlFileParser(cp),
+		  _pManager(nm)
 	{
-		connect(writer , &AppImageDeltaWriter::blockRange ,
+		qRegisterMetaType<QByteArray*>();
+		connect(writer , &ZsyncWriterPrivate::blockRange ,
 			this , &BlockDownloader::handleBlockRange);
-		connect(writer , &AppImageDeltaWriter::finished ,
+		connect(writer , &ZsyncWriterPrivate::finished ,
 			this , &BlockDownloader::handleFinished);
-		connect(writer, &AppImageDeltaWriter::targetFileUrl ,
+		connect(cp, &ZsyncRemoteControlFileParserPrivate::targetFileUrl ,
 			this , &BlockDownloader::handleTargetFileUrl);
 		return;
 	}
@@ -28,10 +34,9 @@ public:
 	}
 public Q_SLOTS:
 	void start(void){
-		auto networkManager = (QNetworkAccessManager*)_pDeltaWriter->sharedNetworkAccessManager();
-		connect(networkManager , &QNetworkAccessManager::finished,
+		connect(_pManager , &QNetworkAccessManager::finished,
 			this , &BlockDownloader::handleRequestFinished);
-		_pDeltaWriter->getTargetFileUrl();
+		_pControlFileParser->getTargetFileUrl();
 		return;
 	}
 
@@ -44,8 +49,7 @@ private Q_SLOTS:
 	}
 	void handleFinished(bool targetFileConstructed)
 	{
-		auto networkManager = (QNetworkAccessManager*)_pDeltaWriter->sharedNetworkAccessManager();
-		disconnect(networkManager , &QNetworkAccessManager::finished,
+		disconnect(_pManager , &QNetworkAccessManager::finished,
 			this , &BlockDownloader::handleRequestFinished);
 		if(targetFileConstructed){
 			emit finished();
@@ -53,16 +57,17 @@ private Q_SLOTS:
 		return;
 	}
 
-	void handleBlockRange(QPair<qint32 , qint32> range)
+	void handleBlockRange(qint32 fromRange, qint32 toRange)
 	{
-	QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(range.first) + "-";
-        rangeHeaderValue += QByteArray::number(range.second);
+	qDebug() << "Downloading (" << fromRange << " , " << toRange << " ).";
+	QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(fromRange) + "-";
+        rangeHeaderValue += QByteArray::number(toRange);
 	QNetworkRequest currentRequest;
 	currentRequest.setUrl(_uTargetFileUrl);
 	currentRequest.setRawHeader("Range", rangeHeaderValue);
 	currentRequest.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     	currentRequest.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
-	_pDeltaWriter->sharedNetworkAccessManager()->get(currentRequest);
+	_pManager->get(currentRequest);
 	return;
 	}
 
@@ -76,17 +81,21 @@ private Q_SLOTS:
 		auto from = ((rangeHeader.split('-')).at(0)).toInt();
 		auto to   = ((rangeHeader.split('-')).at(1)).toInt();
 		reply->deleteLater();
+		
+		qDebug() << "Download Finished (" << from << " , " << to << " ).";
 
-		QPair<qint32 , qint32> range = qMakePair( from , to );
-
-		_pDeltaWriter->writeBlockRanges(range , data);
+		auto metaObject = _pDeltaWriter->metaObject();
+		metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("writeBlockRanges(qint32 , qint32 , QByteArray*)")))
+		    .invoke(_pDeltaWriter , Qt::QueuedConnection , Q_ARG(qint32 , from) , Q_ARG(qint32 , to) , Q_ARG(QByteArray* , data));
 		return;
 	}
 Q_SIGNALS:
 	void finished(void);
 private:
 	QUrl _uTargetFileUrl;
-	AppImageDeltaWriter *_pDeltaWriter = nullptr;
+	QNetworkAccessManager *_pManager = nullptr;
+	ZsyncWriterPrivate *_pDeltaWriter = nullptr;
+	ZsyncRemoteControlFileParserPrivate *_pControlFileParser = nullptr;
 };
 }
 #endif // BLOCK_DOWNLOADER_HPP_INCLUDED
