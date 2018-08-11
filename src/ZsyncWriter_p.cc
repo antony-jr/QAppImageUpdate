@@ -135,6 +135,9 @@ void ZsyncWriterPrivate::handleLogMessage(QString msg , QString path)
 void ZsyncWriterPrivate::getBlockRanges(void)
 {
 	if(!_pRanges){
+		emit blockRange( 0 , _nBlocks << _nBlockShift);
+		emit endOfBlockRanges();
+		emit statusChanged(IDLE);
 		return;
 	}
 
@@ -177,10 +180,18 @@ void ZsyncWriterPrivate::getBlockRanges(void)
 
         _pRequiredRanges.removeAll(qMakePair(0, 0));
 	}
-
 	for(auto iter = _pRequiredRanges.constBegin(), end  = _pRequiredRanges.constEnd(); iter != end; ++iter)
 	{
-		emit blockRange(((*iter).first << _nBlockShift)  ,(((*iter).second << _nBlockShift) + _nBlockSize));
+		auto to = (*iter).second;
+		if(to >= _nBlocks){
+			to = _nBlocks;
+			to = to << _nBlockShift;
+		}else{
+			to = to << _nBlockShift;
+			to += _nBlockSize;
+		}
+
+		emit blockRange(((*iter).first << _nBlockShift)  , to);
 		QCoreApplication::processEvents();
 	}
 	emit endOfBlockRanges();
@@ -189,7 +200,7 @@ void ZsyncWriterPrivate::getBlockRanges(void)
 	return;
 }
 
-void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QByteArray *data)
+void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QByteArray *downloadedData)
 {
 	unsigned char md4sum[CHECKSUM_SIZE];
         /* Build checksum hash tables if we don't have them yet */
@@ -200,31 +211,48 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
 	    }
 	}
 
+	QBuffer *buffer = new QBuffer(downloadedData);
+	buffer->open(QIODevice::ReadOnly);
+
 	zs_blockid bfrom = fromRange >> _nBlockShift,
-		   bto   = (toRange - _nBlockSize) >> _nBlockShift;
+		   bto   = (toRange >> _nBlockShift == _nBlocks) ? _nBlocks : (toRange - _nBlockSize) >> _nBlockShift;
+
 	INFO_START " writeBlockRanges : writting given downloaded blocks." INFO_END;
 	emit statusChanged(WRITTING_DOWNLOADED_BLOCK_RANGES);
 	
         /* Check each block */
         for (zs_blockid x = bfrom; x <= bto; ++x){
-            calcMd4Checksum(&md4sum[0], (const unsigned char*)data->constData() + ((x - bfrom) << _nBlockShift), _nBlockSize);
-            
-	    qDebug() << (x << _nBlockShift) << "::" << QByteArray((const char*)&md4sum[0]).toHex() << " ? "
-		     << QByteArray((const char*)&(_pBlockHashes[x].checksum[0])).toHex();
-
+            QByteArray blockData = buffer->read(_nBlockSize);
+	    calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData() , _nBlockSize);
 	    if(memcmp(&md4sum, &(_pBlockHashes[x].checksum[0]), _nStrongCheckSumBytes)) {
-                WARNING_START " writeBlockRanges : md4 checksums mismatch." WARNING_END;
+		WARNING_START " writeBlockRanges : md4 checksums mismatch." WARNING_END;
 		if (x > bfrom){     /* Write any good blocks we did get */
-                    writeBlocks((const unsigned char*)data->constData() , bfrom, x - 1);
+                    writeBlocks((const unsigned char*)downloadedData->constData() , bfrom, x - 1);
+		    _pRequiredRanges.removeAll(qMakePair(bfrom , bto));
+	            bool constructed = false;
+		    if(_pRequiredRanges.isEmpty()){
+			INFO_START " writeBlockRanges : trying to construct target file." INFO_END;
+			constructed = verifyAndConstructTargetFile();
+		    }
+		    if(!constructed){
 		    emit blockRangesWritten(fromRange , toRange , false);
+		    }else{
+		    emit blockRangesWritten(fromRange , toRange , true);
+		    }
+
+		    if(_pRequiredRanges.isEmpty()){
+		    emit finished(!constructed);
+		    }
 		}
+		delete buffer;
+		delete downloadedData;
                 //error
 		return;
             }
 	    QCoreApplication::processEvents();
         }
         /* All blocks are valid; write them and update our state */
-        writeBlocks((const unsigned char*)data->constData() , bfrom , bto );
+        writeBlocks((const unsigned char*)downloadedData->constData() , bfrom , bto );
 	_pRequiredRanges.removeAll(qMakePair(bfrom , bto));
 	emit blockRangesWritten(fromRange , toRange , true);
 	INFO_START " writeBlockRanges : all md4 checksums matched , writting all." INFO_END;
@@ -234,6 +262,8 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
 		emit finished(!constructed);
 	}
 	emit statusChanged(IDLE);
+	delete buffer;
+	delete downloadedData;
 	return;
 }
 
@@ -320,12 +350,12 @@ void ZsyncWriterPrivate::start(void)
 		emit error(errorCode);
 		return;
 	}
-
-	_nGotBlocks += submitSourceFile(sourceFile);
 	
+	_nGotBlocks += submitSourceFile(sourceFile);
+
 	if(_nGotBlocks >= _nBlocks)
 	{
-		bool constructed = verifyAndConstructTargetFile();
+		constructed = verifyAndConstructTargetFile();
 	}
 
 	emit finished(!constructed);

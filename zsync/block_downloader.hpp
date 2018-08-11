@@ -34,8 +34,10 @@ public:
 	}
 public Q_SLOTS:
 	void start(void){
-		connect(_pManager , &QNetworkAccessManager::finished,
-			this , &BlockDownloader::handleRequestFinished);
+		/*
+		connect(_pmanager , &qnetworkaccessmanager::finished,
+			this , &blockdownloader::handlerequestfinished);
+		*/
 		_pControlFileParser->getTargetFileUrl();
 		return;
 	}
@@ -43,10 +45,29 @@ public Q_SLOTS:
 private Q_SLOTS:
 	void handleTargetFileUrl(QUrl url)
 	{
-		_uTargetFileUrl = url;
-		_pDeltaWriter->getBlockRanges();
-		return;
+	QNetworkRequest currentRequest;
+	currentRequest.setUrl(url);
+	currentRequest.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+    	currentRequest.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+	auto reply = _pManager->get(currentRequest);
+	connect(reply , &QNetworkReply::downloadProgress , this , &BlockDownloader::handleGetHeadReq);
+	return;
 	}
+
+	void handleGetHeadReq(qint64 br , qint64 bt)
+	{
+	QNetworkReply *reply = (QNetworkReply*)QObject::sender();
+	disconnect(reply , &QNetworkReply::downloadProgress , this , &BlockDownloader::handleGetHeadReq);
+	_uTargetFileUrl = QUrl(reply->url());
+	reply->abort();
+	reply->deleteLater();
+	connect(_pManager , &QNetworkAccessManager::finished,
+		this , &BlockDownloader::handleRequestFinished);
+	qDebug() << "Using url:: " << _uTargetFileUrl;
+	_pDeltaWriter->getBlockRanges();
+	return;
+	}
+
 	void handleFinished(bool targetFileConstructed)
 	{
 		disconnect(_pManager , &QNetworkAccessManager::finished,
