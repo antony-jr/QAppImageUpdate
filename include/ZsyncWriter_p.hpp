@@ -147,7 +147,7 @@ private:
     	unsigned char *_pBitHash = nullptr;
 
     	qint32 _nRanges = 0;
-    	zs_blockid *_pRanges = nullptr; // Ranges needed to finish the under construction target file.
+	zs_blockid *_pRanges = nullptr; // Ranges needed to finish the under construction target file.
     	QVector<QPair<qint32 , qint32>> _pRequiredRanges;
 	QScopedPointer<QBuffer> _pTargetFileCheckSumBlocks; // Checksum blocks that needs to be loaded into the memory.
     	QScopedPointer<QCryptographicHash> _pMd4Ctx; // Md4 Hasher context.
@@ -156,6 +156,7 @@ private:
 		_sTargetFileSHA1,
 		_sOutputDirectory;
 	QScopedPointer<QTemporaryFile> _pTargetFile; // Under construction target file.
+	QScopedPointer<QTime> _pTransferSpeed;
 #ifndef LOGGING_DISABLED
 	QString _sLogBuffer,
 	    	_sLoggerName;

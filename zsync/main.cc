@@ -25,6 +25,12 @@ int main(int argc, char **argv)
     QObject::connect(&w , &ZsyncWriterPrivate::finishedConfiguring , &w , &ZsyncWriterPrivate::start);
     QObject::connect(&cp , &ZsyncRemoteControlFileParserPrivate::receiveControlFile , 
 		     &cp , &ZsyncRemoteControlFileParserPrivate::getZsyncInformation);
+    QObject::connect(&w , &ZsyncWriterPrivate::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString u)
+    {
+    qInfo().noquote() << "Done: " << percent << " % , " << br << "/" << bt << " bytes at " << speed << " " << u << ".";
+    return;
+    });
+
     QObject::connect(&w , &ZsyncWriterPrivate::finished , [&](bool isDownloadNeeded)
     {
     if(isDownloadNeeded){

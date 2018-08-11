@@ -80,7 +80,6 @@ private Q_SLOTS:
 
 	void handleBlockRange(qint32 fromRange, qint32 toRange)
 	{
-	qDebug() << "Downloading (" << fromRange << " , " << toRange << " ).";
 	QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(fromRange) + "-";
         rangeHeaderValue += QByteArray::number(toRange);
 	QNetworkRequest currentRequest;
@@ -103,7 +102,6 @@ private Q_SLOTS:
 		auto to   = ((rangeHeader.split('-')).at(1)).toInt();
 		reply->deleteLater();
 		
-		qDebug() << "Download Finished (" << from << " , " << to << " ).";
 
 		auto metaObject = _pDeltaWriter->metaObject();
 		metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("writeBlockRanges(qint32 , qint32 , QByteArray*)")))

@@ -211,59 +211,114 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
 	    }
 	}
 
-	QBuffer *buffer = new QBuffer(downloadedData);
+	/* Check if we already written all required blocks. */
+	if(_pRequiredRanges.isEmpty()){
+		INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
+		
+		if(!_pTransferSpeed->isNull()){
+			_pTransferSpeed.reset(new QTime);
+		}
+
+		auto needToDownload = !verifyAndConstructTargetFile();
+		emit finished(needToDownload);
+		return;
+	}
+
+	/* Check if transfer speed time already started , if not start it. */
+	if(_pTransferSpeed->isNull()){
+		qDebug() << "Starting QTime.";
+		_pTransferSpeed->start();
+	}
+
+	qint64 bytesReceived = 0 , bytesTotal = _nTargetFileLength;
+	int nPercentage = 0;
+	double nSpeed = 0;
+	QString sUnit;
+	bool Md4ChecksumsMatched = true;
+	QScopedPointer<QByteArray> downloaded(downloadedData);
+	QScopedPointer<QBuffer> buffer(new QBuffer(downloadedData));
 	buffer->open(QIODevice::ReadOnly);
 
 	zs_blockid bfrom = fromRange >> _nBlockShift,
 		   bto   = (toRange >> _nBlockShift == _nBlocks) ? _nBlocks : (toRange - _nBlockSize) >> _nBlockShift;
 
-	INFO_START " writeBlockRanges : writting given downloaded blocks." INFO_END;
 	emit statusChanged(WRITTING_DOWNLOADED_BLOCK_RANGES);
-	
-        /* Check each block */
+        
+	/* Check each block */
         for (zs_blockid x = bfrom; x <= bto; ++x){
             QByteArray blockData = buffer->read(_nBlockSize);
 	    calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData() , _nBlockSize);
 	    if(memcmp(&md4sum, &(_pBlockHashes[x].checksum[0]), _nStrongCheckSumBytes)) {
+		Md4ChecksumsMatched = false;
 		WARNING_START " writeBlockRanges : md4 checksums mismatch." WARNING_END;
 		if (x > bfrom){     /* Write any good blocks we did get */
-                    writeBlocks((const unsigned char*)downloadedData->constData() , bfrom, x - 1);
+                    INFO_START " writeBlockRanges : only writting good blocks. " INFO_END;
+		    writeBlocks((const unsigned char*)downloaded->constData() , bfrom, x - 1);
+		    
+		    /*
+		     * Remove the entire range eventhough we did'nt write the
+		     * entire range , This is because in some cases only unwanted
+		     * data is marked as mismatched (like trailing zeros).
+		     * So to tolerate this , We remove the entire range only
+		     * if we write something , Thus when all ranges are finished
+		     * verifyAndConstructTargetFile() will automatically check for 
+		     * integrity.
+		     *
+		     * If integrity check failed , When we request required again
+		     * , The _pRequiredRanges vector gets filled with needed blocks.
+		     */
 		    _pRequiredRanges.removeAll(qMakePair(bfrom , bto));
-	            bool constructed = false;
-		    if(_pRequiredRanges.isEmpty()){
-			INFO_START " writeBlockRanges : trying to construct target file." INFO_END;
-			constructed = verifyAndConstructTargetFile();
-		    }
-		    if(!constructed){
-		    emit blockRangesWritten(fromRange , toRange , false);
-		    }else{
-		    emit blockRangesWritten(fromRange , toRange , true);
-		    }
 
-		    if(_pRequiredRanges.isEmpty()){
-		    emit finished(!constructed);
-		    }
+		    /* Set how much blocks did we get. */
+		    _nGotBlocks += (x - 1 == bfrom) ? 1 : x - 1 - bfrom;
 		}
-		delete buffer;
-		delete downloadedData;
-                //error
-		return;
+		break;
             }
 	    QCoreApplication::processEvents();
         }
-        /* All blocks are valid; write them and update our state */
-        writeBlocks((const unsigned char*)downloadedData->constData() , bfrom , bto );
-	_pRequiredRanges.removeAll(qMakePair(bfrom , bto));
-	emit blockRangesWritten(fromRange , toRange , true);
-	INFO_START " writeBlockRanges : all md4 checksums matched , writting all." INFO_END;
+
+	if(Md4ChecksumsMatched){
+	    /* All blocks are valid; write them and update our state */
+	    writeBlocks((const unsigned char*)downloadedData->constData() , bfrom , bto );
+	    emit blockRangesWritten(fromRange , toRange , /*all blocks were written with no md4 mismatch=*/true);
+    
+	    /* Remove the blocks we written successfully. */
+	    _pRequiredRanges.removeAll(qMakePair(bfrom , bto));
+
+	    /* We got all blocks. */
+	    _nGotBlocks += (bto - bfrom);
+	}
+
+	/* Calculate our progress. */
+	bytesReceived = _nGotBlocks * _nBlockSize,
+	nPercentage = static_cast<int>(
+            		(static_cast<float>
+             		 (bytesReceived) * 100.0
+           		) / static_cast<float>
+            		 (bytesTotal)
+        	      );
+	nSpeed =  bytesReceived * 1000.0 / _pTransferSpeed->elapsed();
+    	if (nSpeed < 1024) {
+        	sUnit = "bytes/sec";
+    	} else if (nSpeed < 1024 * 1024) {
+        	nSpeed /= 1024;
+        	sUnit = "kB/s";
+    	} else {
+        	nSpeed /= 1024 * 1024;
+        	sUnit = "MB/s";
+	}
+	emit progress(nPercentage , bytesReceived , bytesTotal , nSpeed , sUnit);
+
+	/* Check if we got all the required blocks and written something ,
+	 * If so then try to construct the target file.
+	*/
 	if(_pRequiredRanges.isEmpty()){
-		INFO_START " writeBlockRanges : trying to construct target file." INFO_END;
-		bool constructed = verifyAndConstructTargetFile();
-		emit finished(!constructed);
+		INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
+		_pTransferSpeed.reset(new QTime);
+		auto needToDownload = !verifyAndConstructTargetFile();
+		emit finished(needToDownload);
 	}
 	emit statusChanged(IDLE);
-	delete buffer;
-	delete downloadedData;
 	return;
 }
 
@@ -812,8 +867,8 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
             return 0;
         }
 
-    QTime transferSpeed;
-    transferSpeed.start();
+    _pTransferSpeed.reset(new QTime);
+    _pTransferSpeed->start();
     while (!file->atEnd()) {
         size_t len;
         off_t start_in = in;
@@ -840,16 +895,19 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
         /* Process the data in the buffer, and report progress */
         got_blocks += submitSourceData( buf, len, start_in);
 	{
+	    qint64 bytesReceived = got_blocks * _nBlockSize,
+		   bytesTotal = _nTargetFileLength;
+
 	    int nPercentage = static_cast<int>(
             			(static_cast<float>
-             			( file->pos() ) * 100.0
+             			( bytesReceived ) * 100.0
            			) / static_cast<float>
             			(
-                		  file->size()
+                		  bytesTotal
             			)
         		      );
 
- 	    double nSpeed = (file->pos()) * 1000.0 / transferSpeed.elapsed();
+ 	    double nSpeed =  bytesReceived * 1000.0 / _pTransferSpeed->elapsed();
     	    QString sUnit;
     	    if (nSpeed < 1024) {
         	sUnit = "bytes/sec";
@@ -861,10 +919,11 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
         	sUnit = "MB/s";
 	    }
 
-	   emit progress(nPercentage , file->pos() , file->size() , nSpeed , sUnit);
+	   emit progress(nPercentage , bytesReceived , bytesTotal , nSpeed , sUnit);
 	}
     	QCoreApplication::processEvents();
     }
+    _pTransferSpeed.reset(new QTime);
     file->close();
     free(buf);
     return got_blocks;
