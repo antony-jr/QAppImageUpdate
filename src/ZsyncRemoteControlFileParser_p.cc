@@ -308,7 +308,6 @@ void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void)
 */
 void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
 {
-   QVector<ZsyncCoreJobPrivate::Information> result;
     if(!_pControlFile ||
        !_pControlFile->isOpen() ||
        _pControlFile->size() - _nCheckSumBlocksOffset < (_nWeakCheckSumBytes + _nStrongCheckSumBytes) ||

@@ -82,12 +82,15 @@ public Q_SLOTS:
         void setConfiguration(qint32,qint32,qint32,qint32,qint32,qint32,
 			      const QString&,const QString&,const QString&,QBuffer*);
 	void start(void);
+	void cancel(void);
 
 private Q_SLOTS:
+	void doStart(void);
 #ifndef LOGGING_DISABLED
     	void handleLogMessage(QString , QString);
 #endif // LOGGING_DISABLED
 	bool verifyAndConstructTargetFile(void);
+	void resetConnections(void);
 	void addToRanges(zs_blockid);
     	qint32 alreadyGotBlock(zs_blockid);
     	qint32 buildHash(void);
@@ -105,20 +108,20 @@ private Q_SLOTS:
     	zs_blockid nextKnownBlock(zs_blockid);
 
 Q_SIGNALS:
-        void finishedConfiguring();
+        void initStart(void);
+	void finishedConfiguring();
 	void blockRange(qint32 , qint32);
 	void endOfBlockRanges(void);
 	void blockRangesWritten(qint32 , qint32 , bool);
 	void started(void);
 	void canceled(void);
 	void finished(bool);
-	void paused(void);
-	void resumed(void);
 	void progress(int percentage , qint64 bytesReceived , qint64 bytesTotal, double speed , QString units);
 	void statusChanged(short);
 	void error(short);
 	void logger(QString , QString);
 private:
+	QAtomicInteger<bool> _bCancelRequested = false;
         QPair<rsum, rsum> _pCurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     	qint32 _nBlocks = 0, 
 	       _nBlockSize = 0,
@@ -157,6 +160,7 @@ private:
 		_sOutputDirectory;
 	QScopedPointer<QTemporaryFile> _pTargetFile; // Under construction target file.
 	QScopedPointer<QTime> _pTransferSpeed;
+	QScopedPointer<QFile> _pSourceFile;
 #ifndef LOGGING_DISABLED
 	QString _sLogBuffer,
 	    	_sLoggerName;

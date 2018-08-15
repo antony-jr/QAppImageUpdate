@@ -36,9 +36,7 @@
 using namespace AppImageUpdaterBridge;
 
 /*
- * Calculates the rolling checksum of a given block of data.
- *
- * Note: The rolling checksum is very similar to Adler32 rolling checksum
+ * The rolling checksum is very similar to Adler32 rolling checksum
  * but not the same , So please don't replace this with the Adler32.
  * Compared to Adler32 , This rolling checksum is weak but very fast.
  * The weakness is balanced by the use of a strong checksum , In this
@@ -75,6 +73,12 @@ ZsyncWriterPrivate::ZsyncWriterPrivate(void)
 #ifndef LOGGING_DISABLED
 	_pLogger.reset(new QDebug(&_sLogBuffer));
 #endif // LOGGING_DISABLED	
+
+	connect(this , &ZsyncWriterPrivate::initStart , this , &ZsyncWriterPrivate::doStart , Qt::QueuedConnection);
+	connect(this , &ZsyncWriterPrivate::error , this , &ZsyncWriterPrivate::resetConnections);
+	connect(this , &ZsyncWriterPrivate::canceled , this , &ZsyncWriterPrivate::resetConnections);
+	connect(this , &ZsyncWriterPrivate::finished , this , &ZsyncWriterPrivate::resetConnections);
+
 	emit statusChanged(IDLE);
 	return;
 }
@@ -226,7 +230,6 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
 
 	/* Check if transfer speed time already started , if not start it. */
 	if(_pTransferSpeed->isNull()){
-		qDebug() << "Starting QTime.";
 		_pTransferSpeed->start();
 	}
 
@@ -362,6 +365,13 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 	_sTargetFileName = targetFileName;
 	_sTargetFileSHA1 = targetFileSHA1;
 
+	short errorCode = 0;
+	if((errorCode = parseTargetFileCheckSumBlocks()) > 0){
+		emit error(errorCode);
+		return;
+	}
+
+
     	INFO_START " setConfiguration : creating temporary file." INFO_END;	
     	auto path = (_sOutputDirectory.isEmpty()) ? QFileInfo(_sSourceFilePath).path() : _sOutputDirectory;
     	path = (path == "." ) ? QDir::currentPath() : path;
@@ -390,30 +400,56 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 
 void ZsyncWriterPrivate::start(void)
 {
+	emit initStart();
+	return;
+}
+
+void ZsyncWriterPrivate::cancel(void)
+{
+	_bCancelRequested = true;
+	return;
+}
+
+void ZsyncWriterPrivate::doStart(void)
+{
 	INFO_START " start : starting delta writer." INFO_END;
+	
+	/*
+	 * Disconnect this slot to prevent consecutive calls.
+	 * Kind of like mutex but better than that.
+	*/
+
+	disconnect(this , &ZsyncWriterPrivate::initStart , this , &ZsyncWriterPrivate::doStart);
+	
 	short errorCode = 0;
-	QFile *sourceFile = nullptr;
 	bool constructed = false;
-	if((errorCode = parseTargetFileCheckSumBlocks()) > 0){
-		qDebug() << "ERROR:: " << errorCode;
-		emit error(errorCode);
-		return;
-	}
+	QFile *sourceFile = nullptr;
 
 	if((errorCode = tryOpenSourceFile(&sourceFile)) > 0){
-		qDebug() << "CANNOT OPEN FILE";
 		emit error(errorCode);
 		return;
 	}
+
+	_pSourceFile.reset(sourceFile);
+
+	emit started();
+	_bCancelRequested = false;
 	
-	_nGotBlocks += submitSourceFile(sourceFile);
-
-	if(_nGotBlocks >= _nBlocks)
-	{
-		constructed = verifyAndConstructTargetFile();
+	if(submitSourceFile(_pSourceFile.data()) < 0){
+		_bCancelRequested = false;
+		connect(this , &ZsyncWriterPrivate::initStart , this , &ZsyncWriterPrivate::doStart , Qt::QueuedConnection);
+		return;
 	}
-
+	constructed = (_nGotBlocks >= _nBlocks ) ? verifyAndConstructTargetFile() : false;
 	emit finished(!constructed);
+	return;
+
+}
+
+void ZsyncWriterPrivate::resetConnections(void)
+{
+	_bCancelRequested = false;
+	connect(this , &ZsyncWriterPrivate::initStart , this , &ZsyncWriterPrivate::doStart , Qt::QueuedConnection);
 	return;
 }
 
@@ -849,25 +885,27 @@ qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_
  */
 qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
 {
-    qDebug() << Q_FUNC_INFO << " called.";
-    /* Track progress */
-    qint32 got_blocks = 0;
+    qint32 error = 0;
     off_t in = 0;
-
     /* Allocate buffer of 16 blocks */
     register qint32 bufsize = _nBlockSize * 16;
     unsigned char *buf = (unsigned char*)malloc(bufsize + _nContext);
     if (!buf)
-        return 0;
+        return (error = -1);
 
     /* Build checksum hash tables ready to analyse the blocks we find */
     if (!_pRsumHash)
         if (!buildHash()) {
             free(buf);
-            return 0;
+            return (error = -2);
         }
 
-    _pTransferSpeed.reset(new QTime);
+    if(_pTransferSpeed.isNull()){
+	    _pTransferSpeed.reset(new QTime);
+    }else if(!_pTransferSpeed->isNull()){
+	    _pTransferSpeed.reset(new QTime);
+    }
+
     _pTransferSpeed->start();
     while (!file->atEnd()) {
         size_t len;
@@ -893,9 +931,9 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
         }
 
         /* Process the data in the buffer, and report progress */
-        got_blocks += submitSourceData( buf, len, start_in);
+        _nGotBlocks += submitSourceData( buf, len, start_in);
 	{
-	    qint64 bytesReceived = got_blocks * _nBlockSize,
+	    qint64 bytesReceived = _nGotBlocks * _nBlockSize,
 		   bytesTotal = _nTargetFileLength;
 
 	    int nPercentage = static_cast<int>(
@@ -922,11 +960,18 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
 	   emit progress(nPercentage , bytesReceived , bytesTotal , nSpeed , sUnit);
 	}
     	QCoreApplication::processEvents();
+	if(_bCancelRequested == true)
+	{
+		error = -3;
+		_bCancelRequested = false;
+		emit canceled();
+		break;
+	}
     }
     _pTransferSpeed.reset(new QTime);
     file->close();
     free(buf);
-    return got_blocks;
+    return error;
 }
 
 

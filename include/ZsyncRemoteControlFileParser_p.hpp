@@ -39,7 +39,6 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <ZsyncInternalStructures_p.hpp>
-#include <ZsyncCoreJob_p.hpp>
 
 namespace AppImageUpdaterBridge
 {
