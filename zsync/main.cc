@@ -27,8 +27,18 @@ int main(int argc, char **argv)
 		     &cp , &ZsyncRemoteControlFileParserPrivate::getZsyncInformation);
     QObject::connect(&w , &ZsyncWriterPrivate::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString u)
     {
+    if(percent >= 85){
+	downloader.cancel();
+    }
+
     qInfo().noquote() << "Done: " << percent << " % , " << br << "/" << bt << " bytes at " << speed << " " << u << ".";
     return;
+    });
+
+    QObject::connect(&downloader , &BlockDownloaderPrivate::canceled , [&](){
+	qDebug() << "Download Canceled!";
+	app.quit();
+	return;
     });
 
     QObject::connect(&w , &ZsyncWriterPrivate::finished , [&](bool isDownloadNeeded)
