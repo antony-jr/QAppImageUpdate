@@ -1,7 +1,7 @@
 #include <AppImageUpdateInformation_p.hpp>
 #include <ZsyncRemoteControlFileParser_p.hpp>
 #include <ZsyncWriter_p.hpp>
-#include <BlockDownloader_p.hpp>
+#include <ZsyncBlockRangeDownloader_p.hpp>
 
 using namespace AppImageUpdaterBridge;
 
@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     AppImageUpdateInformationPrivate ui;
     ZsyncRemoteControlFileParserPrivate cp(&nm);
     ZsyncWriterPrivate w;
-    BlockDownloaderPrivate downloader(&cp , &w , &nm);
+    ZsyncBlockRangeDownloaderPrivate downloader(&cp , &w , &nm);
 
     QObject::connect(&ui , SIGNAL(info(QJsonObject)) , &cp , SLOT(setControlFileUrl(QJsonObject)));
     QObject::connect(&cp , &ZsyncRemoteControlFileParserPrivate::zsyncInformation ,
@@ -27,15 +27,11 @@ int main(int argc, char **argv)
 		     &cp , &ZsyncRemoteControlFileParserPrivate::getZsyncInformation);
     QObject::connect(&w , &ZsyncWriterPrivate::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString u)
     {
-    if(percent >= 85){
-	downloader.cancel();
-    }
-
     qInfo().noquote() << "Done: " << percent << " % , " << br << "/" << bt << " bytes at " << speed << " " << u << ".";
     return;
     });
 
-    QObject::connect(&downloader , &BlockDownloaderPrivate::canceled , [&](){
+    QObject::connect(&downloader , &ZsyncBlockRangeDownloaderPrivate::canceled , [&](){
 	qDebug() << "Download Canceled!";
 	app.quit();
 	return;
@@ -44,8 +40,11 @@ int main(int argc, char **argv)
     QObject::connect(&w , &ZsyncWriterPrivate::finished , [&](bool isDownloadNeeded)
     {
     if(!isDownloadNeeded){
+    	qDebug() << "Downloaded File.";
     	app.quit();
-    }
+    }else{
+    	qDebug() << "Downloading file.";
+    } 
     });
     QObject::connect(&w , &ZsyncWriterPrivate::error , [&](short code){
 		    qDebug() << ZsyncWriterPrivate::errorCodeToString(code);

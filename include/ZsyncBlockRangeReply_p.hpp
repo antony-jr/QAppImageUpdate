@@ -15,7 +15,7 @@ public Q_SLOTS:
 	void cancel(void);
 
 private Q_SLOTS:	
-	void handleError(QNetworkReply::NetworkError ecode)
+	void handleError(QNetworkReply::NetworkError);
 	void handleFinished(void);
 
 Q_SIGNALS:

@@ -1,10 +1,11 @@
 #include <ZsyncBlockRangeDownloader_p.hpp>
+#include <ZsyncBlockRangeReply_p.hpp>
 #include <ZsyncRemoteControlFileParser_p.hpp>
 #include <ZsyncWriter_p.hpp>
 
 using namespace AppImageUpdaterBridge;
 
-explicit ZsyncBlockRangeDownloaderPrivate::ZsyncBlockRangeDownloaderPrivate(ZsyncRemoteControlFileParserPrivate *parser ,
+ZsyncBlockRangeDownloaderPrivate::ZsyncBlockRangeDownloaderPrivate(ZsyncRemoteControlFileParserPrivate *parser ,
 					  				    ZsyncWriterPrivate *writer ,
 					  				    QNetworkAccessManager *nm)
 		 : QObject(),
@@ -69,16 +70,16 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockRange(qint32 fromRange , qint3
 	
 	++_nBlockReply;
 	
-	auto blockReply = new BlockReplyPrivate(_pWriter , _pManager->get(request) , fromRange , toRange);
+	auto blockReply = new ZsyncBlockRangeReplyPrivate(_pWriter , _pManager->get(request) , fromRange , toRange);
 	connect(this , &ZsyncBlockRangeDownloaderPrivate::cancelAllReply ,
-		blockReply , &BlockReplyPrivate::cancel);
-	connect(blockReply , &BlockReplyPrivate::finished ,
+		blockReply , &ZsyncBlockRangeReplyPrivate::cancel);
+	connect(blockReply , &ZsyncBlockRangeReplyPrivate::finished ,
 		this , &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished ,
 		Qt::QueuedConnection);
-	connect(blockReply , &BlockReplyPrivate::canceled ,
+	connect(blockReply , &ZsyncBlockRangeReplyPrivate::canceled ,
 		this , &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyCancel ,
 		Qt::QueuedConnection);
-	connect(blockReply , &BlockReplyPrivate::error ,
+	connect(blockReply , &ZsyncBlockRangeReplyPrivate::error ,
 		this , &ZsyncBlockRangeDownloaderPrivate::error ,
 		Qt::DirectConnection);
 	return;
@@ -86,7 +87,7 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockRange(qint32 fromRange , qint3
 
 void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished(void)
 {
-	auto blockReply = (BlockReplyPrivate*)QObject::sender();
+	auto blockReply = (ZsyncBlockRangeReplyPrivate*)QObject::sender();
 	blockReply->deleteLater();
 	
 	--_nBlockReply;
@@ -105,7 +106,7 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished(void)
 
 void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyCancel(void)
 {
-	auto blockReply = (BlockReplyPrivate*)QObject::sender();
+	auto blockReply = (ZsyncBlockRangeReplyPrivate*)QObject::sender();
 	blockReply->deleteLater();
 	
 	--_nBlockReply;

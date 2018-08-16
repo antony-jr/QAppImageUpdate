@@ -3,6 +3,9 @@
 #include <QtGlobal>
 #include <QObject>
 #include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+
 namespace AppImageUpdaterBridge {
 class ZsyncRemoteControlFileParserPrivate;
 class ZsyncWriterPrivate;
@@ -21,7 +24,7 @@ private Q_SLOTS:
 	void handleBlockReplyFinished(void);
 	void handleBlockReplyCancel(void);
 	void handleCheckHeadError(QNetworkReply::NetworkError);
-	void checkHead(qint64, qint64)
+	void checkHead(qint64, qint64);
 
 Q_SIGNALS:
 	void cancelAllReply(void);
