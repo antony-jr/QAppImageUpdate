@@ -81,16 +81,18 @@ public Q_SLOTS:
 	void setOutputDirectory(const QString&);
         void setConfiguration(qint32,qint32,qint32,qint32,qint32,qint32,
 			      const QString&,const QString&,const QString&,QBuffer*);
+	
 	void start(void);
 	void cancel(void);
 
 private Q_SLOTS:
 	void doStart(void);
+	void resetConnections(void);
+
 #ifndef LOGGING_DISABLED
     	void handleLogMessage(QString , QString);
 #endif // LOGGING_DISABLED
 	bool verifyAndConstructTargetFile(void);
-	void resetConnections(void);
 	void addToRanges(zs_blockid);
     	qint32 alreadyGotBlock(zs_blockid);
     	qint32 buildHash(void);
