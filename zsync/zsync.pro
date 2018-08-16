@@ -4,4 +4,5 @@ CONFIG += debug
 TARGET = zsync
 
 SOURCES += main.cc
-# HEADERS += block_downloader.hpp
+HEADERS += ../include/BlockReply_p.hpp \
+	   ../include/BlockDownloader_p.hpp
