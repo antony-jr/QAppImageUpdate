@@ -406,6 +406,12 @@ void ZsyncWriterPrivate::start(void)
 
 void ZsyncWriterPrivate::cancel(void)
 {
+	emit initCancel();
+	return;
+}
+
+void ZsyncWriterPrivate::doCancel(void)
+{
 	_bCancelRequested = true;
 	return;
 }
@@ -420,7 +426,8 @@ void ZsyncWriterPrivate::doStart(void)
 	*/
 
 	disconnect(this , &ZsyncWriterPrivate::initStart , this , &ZsyncWriterPrivate::doStart);
-	
+	connect(this , &ZsyncWriterPrivate::initCancel , this,  &ZsyncWriterPrivate::doCancel , Qt::QueuedConnection);
+
 	short errorCode = 0;
 	bool constructed = false;
 	QFile *sourceFile = nullptr;
@@ -438,6 +445,7 @@ void ZsyncWriterPrivate::doStart(void)
 	if(submitSourceFile(_pSourceFile.data()) < 0){
 		_bCancelRequested = false;
 		connect(this , &ZsyncWriterPrivate::initStart , this , &ZsyncWriterPrivate::doStart , Qt::QueuedConnection);
+		disconnect(this , &ZsyncWriterPrivate::initCancel , this,  &ZsyncWriterPrivate::doCancel);
 		return;
 	}
 	constructed = (_nGotBlocks >= _nBlocks ) ? verifyAndConstructTargetFile() : false;
@@ -450,6 +458,7 @@ void ZsyncWriterPrivate::resetConnections(void)
 {
 	_bCancelRequested = false;
 	connect(this , &ZsyncWriterPrivate::initStart , this , &ZsyncWriterPrivate::doStart , Qt::QueuedConnection);
+	disconnect(this , &ZsyncWriterPrivate::initCancel , this,  &ZsyncWriterPrivate::doCancel);
 	return;
 }
 

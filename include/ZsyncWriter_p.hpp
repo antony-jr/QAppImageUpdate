@@ -87,6 +87,7 @@ public Q_SLOTS:
 
 private Q_SLOTS:
 	void doStart(void);
+	void doCancel(void);
 	void resetConnections(void);
 
 #ifndef LOGGING_DISABLED
@@ -111,6 +112,7 @@ private Q_SLOTS:
 
 Q_SIGNALS:
         void initStart(void);
+	void initCancel(void);
 	void finishedConfiguring();
 	void blockRange(qint32 , qint32);
 	void endOfBlockRanges(void);
