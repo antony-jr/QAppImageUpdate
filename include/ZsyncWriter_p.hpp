@@ -76,6 +76,7 @@ public Q_SLOTS:
     	void setShowLog(bool);
     	void setLoggerName(const QString&);
 #endif // LOGGING_DISABLED 
+	qint32 getBytesWritten(void);
 	void getBlockRanges(void);
 	void writeBlockRanges(qint32 , qint32 , QByteArray*);
 	void setOutputDirectory(const QString&);
@@ -127,7 +128,8 @@ Q_SIGNALS:
 private:
 	QAtomicInteger<bool> _bCancelRequested = false;
         QPair<rsum, rsum> _pCurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
-    	qint32 _nBlocks = 0, 
+    	qint64 _nBytesWritten = 0;
+	qint32 _nBlocks = 0, 
 	       _nBlockSize = 0,
     	       _nBlockShift = 0, // log2(blocksize).
                _nContext = 0,    // precalculated blocksize * seq_matches.

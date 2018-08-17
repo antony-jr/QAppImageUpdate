@@ -2,6 +2,8 @@
 #include <ZsyncRemoteControlFileParser_p.hpp>
 #include <ZsyncWriter_p.hpp>
 #include <ZsyncBlockRangeDownloader_p.hpp>
+#include "textprogressbar.hpp"
+#include <cstdio>
 
 using namespace AppImageUpdaterBridge;
 
@@ -18,6 +20,7 @@ int main(int argc, char **argv)
     ZsyncRemoteControlFileParserPrivate cp(&nm);
     ZsyncWriterPrivate w;
     ZsyncBlockRangeDownloaderPrivate downloader(&cp , &w , &nm);
+    TextProgressBar progress;
 
     QObject::connect(&ui , SIGNAL(info(QJsonObject)) , &cp , SLOT(setControlFileUrl(QJsonObject)));
     QObject::connect(&cp , &ZsyncRemoteControlFileParserPrivate::zsyncInformation ,
@@ -25,25 +28,30 @@ int main(int argc, char **argv)
     QObject::connect(&w , &ZsyncWriterPrivate::finishedConfiguring , &w , &ZsyncWriterPrivate::start);
     QObject::connect(&cp , &ZsyncRemoteControlFileParserPrivate::receiveControlFile , 
 		     &cp , &ZsyncRemoteControlFileParserPrivate::getZsyncInformation);
-    QObject::connect(&w , &ZsyncWriterPrivate::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString u)
+    
+
+    QObject::connect(&downloader , &ZsyncBlockRangeDownloaderPrivate::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString unit)
     {
-    qInfo().noquote() << "Done: " << percent << " % , " << br << "/" << bt << " bytes at " << speed << " " << u << ".";
-    return;
+    (void)percent;
+    progress.setStatus(br , bt);
+    progress.setMessage(QString::fromLatin1("Downloading Remaining Blocks at %1 %2").arg(speed, 3, 'f', 1).arg(unit));
+    progress.update();
     });
 
-    QObject::connect(&downloader , &ZsyncBlockRangeDownloaderPrivate::canceled , [&](){
-	qDebug() << "Download Canceled!";
-	app.quit();
-	return;
+    QObject::connect(&w , &ZsyncWriterPrivate::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString unit)
+    {
+    (void)percent;
+    progress.setStatus(br , bt);
+    progress.setMessage(QString::fromLatin1("Revising New Version at %1 %2").arg(speed, 3, 'f', 1).arg(unit));
+    progress.update();
+    return;
     });
 
     QObject::connect(&w , &ZsyncWriterPrivate::finished , [&](bool isDownloadNeeded)
     {
     if(!isDownloadNeeded){
-    	qDebug() << "Downloaded File.";
-    	app.quit();
-    }else{
-    	qDebug() << "Downloading file.";
+    printf("\n");	
+    app.quit();
     } 
     });
     QObject::connect(&w , &ZsyncWriterPrivate::error , [&](short code){
@@ -53,7 +61,9 @@ int main(int argc, char **argv)
     });
     cp.setShowLog(true);    
     ui.setShowLog(true);
+    /*
     w.setShowLog(true);
+    */
     ui.setAppImage(path); 
     ui.getInfo();
     return app.exec();

@@ -204,6 +204,11 @@ void ZsyncWriterPrivate::getBlockRanges(void)
 	return;
 }
 
+qint32 ZsyncWriterPrivate::getBytesWritten(void)
+{
+	return _nBytesWritten;
+}
+
 void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QByteArray *downloadedData)
 {
 	unsigned char md4sum[CHECKSUM_SIZE];
@@ -293,7 +298,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
 	}
 
 	/* Calculate our progress. */
-	bytesReceived = _nGotBlocks * _nBlockSize,
+	bytesReceived = _nBytesWritten,
 	nPercentage = static_cast<int>(
             		(static_cast<float>
              		 (bytesReceived) * 100.0
@@ -644,6 +649,9 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
 		_pTargetFile->resize(_nTargetFileLength);
 		_pTargetFile->rename(_sTargetFileName);
 		_pTargetFile->close();
+		
+		emit progress(100 , _nTargetFileLength , _nTargetFileLength , 0 , QString("KiB/s"));
+
 	}else{
 		FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
 		emit statusChanged(IDLE);
@@ -942,7 +950,7 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
         /* Process the data in the buffer, and report progress */
         _nGotBlocks += submitSourceData( buf, len, start_in);
 	{
-	    qint64 bytesReceived = _nGotBlocks * _nBlockSize,
+	    qint64 bytesReceived = _nBytesWritten,
 		   bytesTotal = _nTargetFileLength;
 
 	    int nPercentage = static_cast<int>(
@@ -1188,7 +1196,7 @@ void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom
 
     auto pos = _pTargetFile->pos();
     _pTargetFile->seek(offset);
-    _pTargetFile->write((char*)data, len);
+    _nBytesWritten += _pTargetFile->write((char*)data, len);
     _pTargetFile->seek(pos);
 
 

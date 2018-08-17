@@ -35,6 +35,10 @@ void ZsyncBlockRangeDownloaderPrivate::cancel(void)
 void ZsyncBlockRangeDownloaderPrivate::initDownloader(bool doStart)
 {
 	if(!doStart){ return; }
+	
+	_nBytesReceived = _pWriter->getBytesWritten();
+	_nBytesTotal = _pParser->getTargetFileLength();
+
 	connect(_pParser , &ZsyncRemoteControlFileParserPrivate::targetFileUrl ,
 		this , &ZsyncBlockRangeDownloaderPrivate::handleTargetFileUrl);
 	_pParser->getTargetFileUrl();
@@ -79,9 +83,25 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockRange(qint32 fromRange , qint3
 	connect(blockReply , &ZsyncBlockRangeReplyPrivate::canceled ,
 		this , &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyCancel ,
 		Qt::QueuedConnection);
+	connect(blockReply , &ZsyncBlockRangeReplyPrivate::progress , 
+		this , &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyProgress ,
+		Qt::QueuedConnection);
 	connect(blockReply , &ZsyncBlockRangeReplyPrivate::error ,
 		this , &ZsyncBlockRangeDownloaderPrivate::error ,
 		Qt::DirectConnection);
+	return;
+}
+
+void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyProgress(qint64 bytesReceived , double speed , QString units)
+{
+	_nBytesReceived += bytesReceived;
+	int nPercentage = static_cast<int>(
+            		(static_cast<float>
+             		 (_nBytesReceived.load()) * 100.0
+           		) / static_cast<float>
+            		 (_nBytesTotal)
+        	      );
+	emit progress(nPercentage , _nBytesReceived.load() , _nBytesTotal , speed , units);
 	return;
 }
 
