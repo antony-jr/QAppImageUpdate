@@ -34,7 +34,21 @@
 */
 #ifndef ZSYNC_WRITER_PRIVATE_HPP_INCLUDED
 #define ZSYNC_WRITER_PRIVATE_HPP_INCLUDED
-#include <QtCore>
+#include <QBuffer>
+#include <cmath>
+#include <QCoreApplication>
+#include <QCryptographicHash>
+#include <QDebug>
+#include <QDir>
+#include <QtEndian>
+#include <QFileInfo>
+#include <QtGlobal>
+#include <QJsonObject>
+#include <QObject>
+#include <QString>
+#include <QScopedPointer>
+#include <QTime>
+#include <QTemporaryFile>
 #include <ZsyncInternalStructures_p.hpp>
 
 namespace AppImageUpdaterBridge {
@@ -100,7 +114,7 @@ private Q_SLOTS:
     	quint32 calcRHash(const hash_entry *const);
     	void calcMd4Checksum(unsigned char *, const unsigned char*,size_t);
     	zs_blockid getHashEntryBlockId(const hash_entry *);
-    	short tryOpenSourceFile(QFile**);
+    	short tryOpenSourceFile(const QString& , QFile**);
     	short parseTargetFileCheckSumBlocks(void);
     	void writeBlocks(const unsigned char *, zs_blockid, zs_blockid);
     	void removeBlockFromHash(zs_blockid);
@@ -162,9 +176,8 @@ private:
 		_sTargetFileName,
 		_sTargetFileSHA1,
 		_sOutputDirectory;
-	QScopedPointer<QSaveFile> _pTargetFile; // Under construction target file.
+	QScopedPointer<QTemporaryFile> _pTargetFile; // Under construction target file.
 	QScopedPointer<QTime> _pTransferSpeed;
-	QScopedPointer<QFile> _pSourceFile;
 #ifndef LOGGING_DISABLED
 	QString _sLogBuffer,
 	    	_sLoggerName;

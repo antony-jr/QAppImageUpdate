@@ -9,7 +9,7 @@ namespace AppImageUpdaterBridge {
 	class ZsyncWriterPrivate;
 	class ZsyncBlockRangeDownloaderPrivate;
 
-	class AppImageUpdaterBridge : public QObject {
+	class AppImageDeltaRevisioner : public QObject {
 		Q_OBJECT
 	public:
 		enum : short {
@@ -51,7 +51,8 @@ namespace AppImageUpdaterBridge {
         	CANNOT_OPEN_SOURCE_FILE,
 		NO_PERMISSION_TO_READ_WRITE_TARGET_FILE,
 		CANNOT_OPEN_TARGET_FILE,
-		TARGET_FILE_SHA1_HASH_MISMATCH	
+		TARGET_FILE_SHA1_HASH_MISMATCH,
+		CANNOT_CONSTRUCT_TARGET_FILE	
 		} error_code;
 
 		enum : short {
@@ -83,32 +84,34 @@ namespace AppImageUpdaterBridge {
 		CONSTRUCTING_TARGET_FILE
 		} status_code;
 
-		explicit AppImageUpdaterBridge(bool singleThreaded = true , QObject *parent = nullptr);
-		explicit AppImageUpdaterBridge(const QString& , bool singleThreaded = true , QObject *parent = nullptr);
-		explicit AppImageUpdaterBridge(QFile * , bool singleThreaded = true , QObject *parent = nullptr);
-		~AppImageUpdaterBridge();
+		explicit AppImageDeltaRevisioner(bool singleThreaded = true , QObject *parent = nullptr);
+		explicit AppImageDeltaRevisioner(const QString& , bool singleThreaded = true , QObject *parent = nullptr);
+		explicit AppImageDeltaRevisioner(QFile * , bool singleThreaded = true , QObject *parent = nullptr);
+		~AppImageDeltaRevisioner();
 
 		static QString errorCodeToString(short);
 		static QString statusCodeToString(short);
 	
 	public Q_SLOTS:
-		AppImageUpdaterBridge &start(void);
-		AppImageUpdaterBridge &cancel(void);
-		AppImageUpdaterBridge &setAppImage(const QString&);
-		AppImageUpdaterBridge &setAppImage(QFile*);
-		AppImageUpdaterBridge &setShowLog(bool);
-		AppImageUpdaterBridge &getAppImageEmbededInformation(void);
-		AppImageUpdaterBridge &checkForUpdate(void);
-		AppImageUpdaterBridge &clear(void);
+		AppImageDeltaRevisioner &start(void);
+		AppImageDeltaRevisioner &cancel(void);
+		AppImageDeltaRevisioner &setAppImage(const QString&);
+		AppImageDeltaRevisioner &setAppImage(QFile*);
+		AppImageDeltaRevisioner &setShowLog(bool);
+		AppImageDeltaRevisioner &getAppImageEmbededInformation(void);
+		AppImageDeltaRevisioner &checkForUpdate(void);
+		AppImageDeltaRevisioner &clear(void);
 
 	private Q_SLOTS:
+		void handleBlockDownloaderStarted(void);
+		void handleDeltaWriterFinished(bool);
 		void handleUpdateAvailable(bool , QString);
 		void handleUpdateCheckInformation(QJsonObject);
 	
 	Q_SIGNALS:
 		void started(void);
 		void canceled(void);
-		void finished(bool);
+		void finished(void);
 		void embededInformation(QJsonObject);
 		void updateAvailable(bool , QString);
 		void statusChanged(short);

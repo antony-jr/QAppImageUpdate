@@ -65,20 +65,6 @@ static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, si
     }
 }
 
-/*
- * Based off of 
- * https://stackoverflow.com/questions/3244999/create-a-random-string-or-number-in-qt4#3245124
-*/
-static QString randString(int len)
-{
-    QString str;
-    str.resize(len);
-    for (int s = 0; s < len ; ++s)
-        str[s] = QChar('A' + char(qrand() % ('Z' - 'A')));
-    return str;
-}
-
-
 ZsyncWriterPrivate::ZsyncWriterPrivate(void)
 	: QObject()
 {
@@ -152,20 +138,15 @@ void ZsyncWriterPrivate::handleLogMessage(QString msg , QString path)
 
 void ZsyncWriterPrivate::getBlockRanges(void)
 {
-	if(!_pRanges){
-		if(_bAcceptRange == false){
-			/*
-			 * Emit an invalid block range request to imply
-		         * that there is no range support and thus forcing the
-		         * block downloader to download the entire file.
-		         */
-			WARNING_START " getBlockRanges : no range request supported , sending invalid block range. " WARNING_END;
-			emit blockRange(0 , 0);
-			emit endOfBlockRanges();
-			emit statusChanged(IDLE);
-			return;
-		}
-		emit blockRange( 0 , _nBlocks << _nBlockShift);
+	if(!_pRanges || _bAcceptRange == false){
+	       /* Emitting an empty blockRange implies the downloader to download the
+		 * entire file sequentially.
+		 * In case we have no usable data and have to download the entire file , Also
+		 * if range requests are not support , We need to download the entire file.
+		 * The final SHA1 checksum will ensure that the target file is retrived from 
+		 * a trusted source.
+		*/
+		emit blockRange( 0 , 0);
 		emit endOfBlockRanges();
 		emit statusChanged(IDLE);
 		return;
@@ -429,7 +410,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     	INFO_START " setConfiguration : creating temporary file." INFO_END;	
     	auto path = (_sOutputDirectory.isEmpty()) ? QFileInfo(_sSourceFilePath).path() : _sOutputDirectory;
     	path = (path == "." ) ? QDir::currentPath() : path;
-    	auto targetFilePath = path + "/" + _sTargetFileName + "." + randString(8) + ".part";
+    	auto targetFilePath = path + "/" + _sTargetFileName + ".XXXXXXXXXX.part";
 
 	QFileInfo perm(path);
 	if(!perm.isWritable() || !perm.isReadable()){
@@ -437,8 +418,8 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 		return;
     	}
 	
-	_pTargetFile.reset(new QSaveFile(targetFilePath));
-    	if(!_pTargetFile->open(QIODevice::WriteOnly)){
+	_pTargetFile.reset(new QTemporaryFile(targetFilePath));
+    	if(!_pTargetFile->open()){
 		emit error(CANNOT_OPEN_TARGET_FILE);
 		return;
     	}
@@ -448,7 +429,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
      	*/
     	(void)_pTargetFile->fileName();
     	INFO_START " setConfiguration : temporary file will temporarily reside at " LOGR _pTargetFile->fileName() LOGR "." INFO_END; 
-    	emit finishedConfiguring();
+	emit finishedConfiguring();
    	return;
 }
 
@@ -484,26 +465,63 @@ void ZsyncWriterPrivate::doStart(void)
 
 	short errorCode = 0;
 	bool constructed = false;
-	QFile *sourceFile = nullptr;
+	_bCancelRequested = false;
 
+	/*
+	 * Check if we have some incomplete downloads.
+	 * If so delete them since they are garbage and can
+	 * make the delta writer very slow.
+	*/
+    QStringList foundGarbageFiles;
+    
+    {
+	QStringList filters;
+	filters << _sTargetFileName + ".*.part";
+	
+	QDir dir(QFileInfo(_pTargetFile->fileName()).path());
+	auto foundGarbageFilesInfo = dir.entryInfoList(filters);
+	QDir seedFileDir(QFileInfo(_sSourceFilePath).path());
+	foundGarbageFilesInfo << seedFileDir.entryInfoList(filters);
+
+    
+    for(auto iter = foundGarbageFilesInfo.constBegin(),
+             end = foundGarbageFilesInfo.constEnd();
+             iter != end;
+             ++iter
+    ){
+        foundGarbageFiles << (*iter).absoluteFilePath();
+	QCoreApplication::processEvents();
+    }
+    foundGarbageFiles.removeAll(QFileInfo(_pTargetFile->fileName()).absoluteFilePath());
+    foundGarbageFiles.removeDuplicates();
+    }
+    
+	for(auto iter = foundGarbageFiles.constBegin(),
+		 end  = foundGarbageFiles.constEnd();
+		 iter != end && _nBytesWritten < _nTargetFileLength;
+		 ++iter)
+	{
+	QFile::remove((*iter));
+	QCoreApplication::processEvents();
+	}
+
+	emit started();
 	if(_bAcceptRange == true){
-	if((errorCode = tryOpenSourceFile(&sourceFile)) > 0){
+	QFile *sourceFile = nullptr;
+	if((errorCode = tryOpenSourceFile(_sSourceFilePath , &sourceFile)) > 0){
 		emit error(errorCode);
 		return;
 	}
-	}
 
-	_pSourceFile.reset(sourceFile);
-
-	emit started();
-	_bCancelRequested = false;
-	
-	if(submitSourceFile(_pSourceFile.data()) < 0){
+	if(submitSourceFile(sourceFile) < 0){
 		_bCancelRequested = false;
 		connect(this , &ZsyncWriterPrivate::initStart , this , &ZsyncWriterPrivate::doStart , Qt::QueuedConnection);
 		disconnect(this , &ZsyncWriterPrivate::initCancel , this,  &ZsyncWriterPrivate::doCancel);
 		return;
 	}
+	delete sourceFile;
+	}
+
 	constructed = (_nBytesWritten >= _nTargetFileLength) ? verifyAndConstructTargetFile() : false;
 	emit finished(!constructed);
 	return;
@@ -610,13 +628,13 @@ short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks(void)
  * 	file->close()
  * 	delete file;
 */
-short ZsyncWriterPrivate::tryOpenSourceFile(QFile **sourceFile)
+short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath , QFile **sourceFile)
 {
-    if(_sSourceFilePath.isEmpty()){
+    if(filePath.isEmpty()){
 	    return 0;
     }
 
-    auto seedFile = new QFile(_sSourceFilePath);
+    auto seedFile = new QFile(filePath);
     /* Check if the file actually exists. */
     if(!seedFile->exists()) {
         delete seedFile;
@@ -650,17 +668,13 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
 	bool constructed = false;
 	QString UnderConstructionFileSHA1;
 	qint64 bufferSize = 0;
+	QScopedPointer<QCryptographicHash> SHA1Hasher(new QCryptographicHash(QCryptographicHash::Sha1));
 
+	/*
+	 * Truncate and Seek.
+	 **/
 	_pTargetFile->resize(_nTargetFileLength);
 	_pTargetFile->seek(0);
-	_pTargetFile->commit();
-
-	QScopedPointer<QCryptographicHash> SHA1Hasher(new QCryptographicHash(QCryptographicHash::Sha1));
-	QScopedPointer<QFile> tempFile(new QFile(_pTargetFile->fileName()));
-	if(!tempFile->open(QIODevice::ReadWrite)){
-		emit error(CANNOT_OPEN_TARGET_FILE);
-		return false;
-	}
 
 	INFO_START " verifyAndConstructTargetFile : calculating sha1 hash on temporary target file. " INFO_END;
 	emit statusChanged(CALCULATING_TARGET_FILE_SHA1_HASH);
@@ -675,13 +689,12 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
 			bufferSize = 1024; // copy per 1 KiB.
     	}
 
-    	while(!tempFile->atEnd()){
-		SHA1Hasher->addData(tempFile->read(bufferSize));
+    	while(!_pTargetFile->atEnd()){
+		SHA1Hasher->addData(_pTargetFile->read(bufferSize));
 		QCoreApplication::processEvents();
     	}
     	UnderConstructionFileSHA1 = QString(SHA1Hasher->result().toHex().toUpper());	
-	tempFile->close();
-
+	
 	INFO_START " verifyAndConstructTargetFile : comparing temporary target file sha1 hash(" LOGR UnderConstructionFileSHA1
 		   LOGR ") and remote target file sha1 hash(" LOGR _sTargetFileSHA1 INFO_END;
 
@@ -705,20 +718,15 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
 		}
 		}
 		/*
-		 * Rename the temporary file.
+		 * Construct and rename.
 		*/
-		tempFile->rename(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
+		_pTargetFile->setAutoRemove(false);
+		_pTargetFile->rename(_sTargetFileName);
+		_pTargetFile->close();
 		emit progress(100 , _nTargetFileLength , _nTargetFileLength , 0 , QString("KiB/s"));
 
 	}else{
 		FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
-		
-		/*
-		 * Delete the commited file.
-		*/
-		auto filename = tempFile->fileName();
-		tempFile->close();
-		QFile::remove(filename);
 		emit statusChanged(IDLE);
 		emit error(TARGET_FILE_SHA1_HASH_MISMATCH);
 		return false;
@@ -881,7 +889,7 @@ qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_
     /* Work through the block until the current blocksize bytes being
      * considered, starting at x, is at the end of the buffer */
     for (;;) {
-        if (x + _nContext == len) {
+        if ((size_t)(x + _nContext) == len) {
             return got_blocks;
         }
         {
@@ -926,7 +934,7 @@ qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_
             if (blocks_matched) {
                 x += bs + (blocks_matched > 1 ? bs : 0);
 
-                if (x + _nContext > len) {
+                if ((size_t)(x + _nContext) > len) {
                     /* can't calculate rsum for block after this one, because
                      * it's not in the buffer. So leave a hint for next time so
                      * we know we need to recalculate */

@@ -34,7 +34,20 @@
 */
 #ifndef ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
 #define ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
-#include <QtCore>
+#include <QBuffer>
+#include <cmath>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QtEndian>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QMetaObject>
+#include <QMetaMethod>
+#include <QObject>
+#include <QString>
+#include <QSharedPointer>
+#include <QTime>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>

@@ -1,9 +1,6 @@
-#include <AppImageUpdateInformation_p.hpp>
-#include <ZsyncRemoteControlFileParser_p.hpp>
-#include <ZsyncWriter_p.hpp>
-#include <ZsyncBlockRangeDownloader_p.hpp>
+#include <QCoreApplication>
 #include "textprogressbar.hpp"
-#include <cstdio>
+#include <AppImageDeltaRevisioner.hpp>
 
 using namespace AppImageUpdaterBridge;
 
@@ -15,56 +12,30 @@ int main(int argc, char **argv)
 	    return -1;
     }
     QString path(argv[1]);
-    QNetworkAccessManager nm;
-    AppImageUpdateInformationPrivate ui;
-    ZsyncRemoteControlFileParserPrivate cp(&nm);
-    ZsyncWriterPrivate w;
-    ZsyncBlockRangeDownloaderPrivate downloader(&cp , &w , &nm);
-    TextProgressBar progress;
-
-    QObject::connect(&ui , SIGNAL(info(QJsonObject)) , &cp , SLOT(setControlFileUrl(QJsonObject)));
-    QObject::connect(&cp , &ZsyncRemoteControlFileParserPrivate::zsyncInformation ,
-		     &w , &ZsyncWriterPrivate::setConfiguration);
-    QObject::connect(&w , &ZsyncWriterPrivate::finishedConfiguring , &w , &ZsyncWriterPrivate::start);
-    QObject::connect(&cp , &ZsyncRemoteControlFileParserPrivate::receiveControlFile , 
-		     &cp , &ZsyncRemoteControlFileParserPrivate::getZsyncInformation);
+    AppImageDeltaRevisioner r(path);
+    TextProgressBar progressBar;
     
-
-    QObject::connect(&downloader , &ZsyncBlockRangeDownloaderPrivate::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString unit)
+    QObject::connect(&r , &AppImageDeltaRevisioner::started , [&]()
     {
-    (void)percent;
-    progress.setStatus(br , bt);
-    progress.setMessage(QString::fromLatin1("Downloading Remaining Blocks at %1 %2").arg(speed, 3, 'f', 1).arg(unit));
-    progress.update();
-    });
-
-    QObject::connect(&w , &ZsyncWriterPrivate::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString unit)
-    {
-    (void)percent;
-    progress.setStatus(br , bt);
-    progress.setMessage(QString::fromLatin1("Revising New Version at %1 %2").arg(speed, 3, 'f', 1).arg(unit));
-    progress.update();
+    qInfo().noquote() << "AppImageUpdaterBridge v0.0.1 , Simple AppImage Updater in Qt.";
+    qInfo().noquote() << "Copyright (C) 2018 , Antony J.r.\n";
     return;
     });
 
-    QObject::connect(&w , &ZsyncWriterPrivate::finished , [&](bool isDownloadNeeded)
+    QObject::connect(&r , &AppImageDeltaRevisioner::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString unit)
     {
-    if(!isDownloadNeeded){
-    printf("\n");	
+    progressBar.setStatus(br , bt);
+    progressBar.setMessage(QString::fromLatin1("Revising New Version at %1 %2").arg(speed, 3, 'f', 1).arg(unit));
+    progressBar.update();
+    return;
+    });
+
+    QObject::connect(&r , &AppImageDeltaRevisioner::finished , [&]()
+    {
+    qInfo() << "\nFinished Successfully.";
     app.quit();
-    } 
+    return;
     });
-    QObject::connect(&w , &ZsyncWriterPrivate::error , [&](short code){
-		    qDebug() << ZsyncWriterPrivate::errorCodeToString(code);
-		    app.quit();
-		    return;
-    });
-    cp.setShowLog(true);    
-    ui.setShowLog(true);
-    /*
-    w.setShowLog(true);
-    */
-    ui.setAppImage(path); 
-    ui.getInfo();
+    r.start();
     return app.exec();
 }

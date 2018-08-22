@@ -4,5 +4,5 @@ CONFIG += debug
 TARGET = zsync
 
 SOURCES += main.cc \
-	   textprogressbar.cc
+           textprogressbar.cc
 HEADERS += textprogressbar.hpp

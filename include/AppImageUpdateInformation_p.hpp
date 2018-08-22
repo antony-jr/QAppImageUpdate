@@ -35,7 +35,17 @@
 */
 #ifndef APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED
 #define APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED
-#include <QtCore>
+#include <QCoreApplication>
+#include <QCryptographicHash>
+#include <QDebug>
+#include <QDateTime>
+#include <QFile>
+#include <QFileInfo>
+#include <QtGlobal>
+#include <QJsonObject>
+#include <QObject>
+#include <QString>
+#include <QSharedPointer>
 
 namespace AppImageUpdaterBridge {
 class AppImageUpdateInformationPrivate : public QObject

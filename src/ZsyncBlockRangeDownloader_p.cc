@@ -46,6 +46,7 @@ void ZsyncBlockRangeDownloaderPrivate::initDownloader(bool doStart)
 	 * Start the download , if the host cannot accept range requests then
 	 * blockRange signal will return with both 'from' and 'to' ranges 0.
 	*/
+	emit started();
 	writerMetaObject->method(writerMetaObject->indexOfMethod(QMetaObject::normalizedSignature("getBlockRanges(void)")))
 		   .invoke(_pWriter , Qt::QueuedConnection);
 	return;
