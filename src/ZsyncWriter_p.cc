@@ -65,6 +65,20 @@ static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, si
     }
 }
 
+/*
+ * Based off of 
+ * https://stackoverflow.com/questions/3244999/create-a-random-string-or-number-in-qt4#3245124
+*/
+static QString randString(int len)
+{
+    QString str;
+    str.resize(len);
+    for (int s = 0; s < len ; ++s)
+        str[s] = QChar('A' + char(qrand() % ('Z' - 'A')));
+    return str;
+}
+
+
 ZsyncWriterPrivate::ZsyncWriterPrivate(void)
 	: QObject()
 {
@@ -145,8 +159,7 @@ void ZsyncWriterPrivate::getBlockRanges(void)
 		         * that there is no range support and thus forcing the
 		         * block downloader to download the entire file.
 		         */
-			WARNING_START " getBlockRanges : no range request supported , sending invalid block range. "
-			WARNING_END;
+			WARNING_START " getBlockRanges : no range request supported , sending invalid block range. " WARNING_END;
 			emit blockRange(0 , 0);
 			emit endOfBlockRanges();
 			emit statusChanged(IDLE);
@@ -395,7 +408,8 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     	_pBlockHashes = (hash_entry*)calloc(_nBlocks + _nSeqMatches, sizeof(_pBlockHashes[0]));
 
 	if(_pRanges){
-		memset(_pRanges , 0 , _nRanges * sizeof(zs_blockid));
+		free(_pRanges);
+		_pRanges = nullptr;
 		_nRanges = 0;
 	}
 	_pRequiredRanges.clear();
@@ -415,7 +429,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     	INFO_START " setConfiguration : creating temporary file." INFO_END;	
     	auto path = (_sOutputDirectory.isEmpty()) ? QFileInfo(_sSourceFilePath).path() : _sOutputDirectory;
     	path = (path == "." ) ? QDir::currentPath() : path;
-    	auto targetFilePath = path + "/XXXXXXXXXX.AppImage.part";
+    	auto targetFilePath = path + "/" + _sTargetFileName + "." + randString(8) + ".part";
 
 	QFileInfo perm(path);
 	if(!perm.isWritable() || !perm.isReadable()){
@@ -423,8 +437,8 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 		return;
     	}
 	
-	_pTargetFile.reset(new QTemporaryFile(targetFilePath));
-    	if(!_pTargetFile->open()){
+	_pTargetFile.reset(new QSaveFile(targetFilePath));
+    	if(!_pTargetFile->open(QIODevice::WriteOnly)){
 		emit error(CANNOT_OPEN_TARGET_FILE);
 		return;
     	}
@@ -636,10 +650,17 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
 	bool constructed = false;
 	QString UnderConstructionFileSHA1;
 	qint64 bufferSize = 0;
-	QCryptographicHash *SHA1Hasher = new QCryptographicHash(QCryptographicHash::Sha1);
 
 	_pTargetFile->resize(_nTargetFileLength);
 	_pTargetFile->seek(0);
+	_pTargetFile->commit();
+
+	QScopedPointer<QCryptographicHash> SHA1Hasher(new QCryptographicHash(QCryptographicHash::Sha1));
+	QScopedPointer<QFile> tempFile(new QFile(_pTargetFile->fileName()));
+	if(!tempFile->open(QIODevice::ReadWrite)){
+		emit error(CANNOT_OPEN_TARGET_FILE);
+		return false;
+	}
 
 	INFO_START " verifyAndConstructTargetFile : calculating sha1 hash on temporary target file. " INFO_END;
 	emit statusChanged(CALCULATING_TARGET_FILE_SHA1_HASH);
@@ -654,12 +675,12 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
 			bufferSize = 1024; // copy per 1 KiB.
     	}
 
-    	while(!_pTargetFile->atEnd()){
-		SHA1Hasher->addData(_pTargetFile->read(bufferSize));
+    	while(!tempFile->atEnd()){
+		SHA1Hasher->addData(tempFile->read(bufferSize));
 		QCoreApplication::processEvents();
     	}
     	UnderConstructionFileSHA1 = QString(SHA1Hasher->result().toHex().toUpper());	
-    	delete SHA1Hasher; 
+	tempFile->close();
 
 	INFO_START " verifyAndConstructTargetFile : comparing temporary target file sha1 hash(" LOGR UnderConstructionFileSHA1
 		   LOGR ") and remote target file sha1 hash(" LOGR _sTargetFileSHA1 INFO_END;
@@ -684,17 +705,20 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
 		}
 		}
 		/*
-		 * Construct the file.
+		 * Rename the temporary file.
 		*/
-		_pTargetFile->setAutoRemove(false);
-		_pTargetFile->resize(_nTargetFileLength);
-		_pTargetFile->rename(_sTargetFileName);
-		_pTargetFile->close();
-		
+		tempFile->rename(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
 		emit progress(100 , _nTargetFileLength , _nTargetFileLength , 0 , QString("KiB/s"));
 
 	}else{
 		FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
+		
+		/*
+		 * Delete the commited file.
+		*/
+		auto filename = tempFile->fileName();
+		tempFile->close();
+		QFile::remove(filename);
 		emit statusChanged(IDLE);
 		emit error(TARGET_FILE_SHA1_HASH_MISMATCH);
 		return false;

@@ -93,15 +93,15 @@ public Q_SLOTS:
     void getControlFile(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
-    size_t getTargetFileBlocksCount(void);
+    qint32 getTargetFileBlocksCount(void);
     QUrl getTargetFileUrl(void);
     QUrl getControlFileUrl(void);
     QString getZsyncMakeVersion(void);
     QString getTargetFileName(void);
     QString getTargetFileSHA1(void);
     QDateTime getMTime(void);
-    size_t getTargetFileBlockSize(void);
-    size_t getTargetFileLength(void);
+    qint32 getTargetFileBlockSize(void);
+    qint32 getTargetFileLength(void);
     qint32 getWeakCheckSumBytes(void);
     qint32 getStrongCheckSumBytes(void);
     qint32 getConsecutiveMatchNeeded(void);

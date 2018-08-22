@@ -162,7 +162,7 @@ private:
 		_sTargetFileName,
 		_sTargetFileSHA1,
 		_sOutputDirectory;
-	QScopedPointer<QTemporaryFile> _pTargetFile; // Under construction target file.
+	QScopedPointer<QSaveFile> _pTargetFile; // Under construction target file.
 	QScopedPointer<QTime> _pTransferSpeed;
 	QScopedPointer<QFile> _pSourceFile;
 #ifndef LOGGING_DISABLED

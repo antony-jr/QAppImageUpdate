@@ -335,7 +335,7 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
 /*
  * Returns the number blocks in the target file.
 */
-size_t ZsyncRemoteControlFileParserPrivate::getTargetFileBlocksCount(void)
+qint32 ZsyncRemoteControlFileParserPrivate::getTargetFileBlocksCount(void)
 {
     return _nTargetFileBlocks;
 }
@@ -400,7 +400,7 @@ QDateTime ZsyncRemoteControlFileParserPrivate::getMTime(void)
  * This would return 0 if any process is busy or the control file
  * was never parsed.
 */
-size_t ZsyncRemoteControlFileParserPrivate::getTargetFileBlockSize(void)
+qint32 ZsyncRemoteControlFileParserPrivate::getTargetFileBlockSize(void)
 {
     return _nTargetFileBlockSize;
 }
@@ -410,7 +410,7 @@ size_t ZsyncRemoteControlFileParserPrivate::getTargetFileBlockSize(void)
  * This would return 0 if any process is busy or the control file
  * was never parsed.
 */
-size_t ZsyncRemoteControlFileParserPrivate::getTargetFileLength(void)
+qint32 ZsyncRemoteControlFileParserPrivate::getTargetFileLength(void)
 {
     return _nTargetFileLength;
 }
