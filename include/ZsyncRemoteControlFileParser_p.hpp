@@ -88,15 +88,13 @@ public Q_SLOTS:
     void clear(void);
     void setControlFileUrl(const QUrl&);
     void setControlFileUrl(QJsonObject);
-#ifndef LOGGING_DISABLED
     void setLoggerName(const QString&);
     void setShowLog(bool);
-#endif // LOGGING_DISABLED
     void getControlFile(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
-    void getTargetFileUrl(void);
     size_t getTargetFileBlocksCount(void);
+    QUrl getTargetFileUrl(void);
     QUrl getControlFileUrl(void);
     QString getZsyncMakeVersion(void);
     QString getTargetFileName(void);
@@ -108,6 +106,7 @@ public Q_SLOTS:
     qint32 getStrongCheckSumBytes(void);
     qint32 getConsecutiveMatchNeeded(void);
 private Q_SLOTS:
+    void checkHeadTargetFileUrl(qint64 , qint64);
     void handleBintrayRedirection(const QUrl&);
     void handleGithubAPIResponse(void);
     void handleDownloadProgress(qint64, qint64);
@@ -119,16 +118,15 @@ private Q_SLOTS:
 #endif // LOGGING_DISABLED
 Q_SIGNALS:
     void targetFileUrl(QUrl);
-    void zsyncInformation(qint32,qint32,qint32,qint32,qint32,qint32,QString,QString,QString,QBuffer*);
+    void zsyncInformation(qint32,qint32,qint32,qint32,qint32,qint32,QString,QString,QString,QBuffer*,bool);
     void updateCheckInformation(QJsonObject);
     void receiveControlFile(void);
     void progress(int);
     void error(short);
     void statusChanged(short);
-#ifndef LOGGING_DISABLED
     void logger(QString , QString);
-#endif // LOGGING_DISABLED
 private:
+    bool _bAcceptRange = false;
     QJsonObject _jUpdateInformation;
     QString _sZsyncMakeVersion,
 	    _sZsyncFileName, //Only used for github and bintray API responses.
@@ -142,7 +140,7 @@ private:
     	    ;
 #endif // LOGGING_DISABLED
     QDateTime _pMTime;
-    size_t _nTargetFileBlockSize = 0,
+    qint32 _nTargetFileBlockSize = 0,
            _nTargetFileLength = 0,
            _nTargetFileBlocks = 0;
     qint32 _nWeakCheckSumBytes = 0,

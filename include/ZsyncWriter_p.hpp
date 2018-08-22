@@ -72,17 +72,15 @@ public:
 	static QString errorCodeToString(short);
 	static QString statusCodeToString(short);
 public Q_SLOTS:
-#ifndef LOGGING_DISABLED
     	void setShowLog(bool);
     	void setLoggerName(const QString&);
-#endif // LOGGING_DISABLED 
 	qint32 getBytesWritten(void);
 	void getBlockRanges(void);
+	void rawSeqWrite(QByteArray*);
 	void writeBlockRanges(qint32 , qint32 , QByteArray*);
 	void setOutputDirectory(const QString&);
         void setConfiguration(qint32,qint32,qint32,qint32,qint32,qint32,
-			      const QString&,const QString&,const QString&,QBuffer*);
-	
+			      const QString&,const QString&,const QString&,QBuffer*,bool);	
 	void start(void);
 	void cancel(void);
 
@@ -126,7 +124,8 @@ Q_SIGNALS:
 	void error(short);
 	void logger(QString , QString);
 private:
-	QAtomicInteger<bool> _bCancelRequested = false;
+	QAtomicInteger<bool> _bCancelRequested = false,
+			     _bAcceptRange = true;
         QPair<rsum, rsum> _pCurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     	qint64 _nBytesWritten = 0;
 	qint32 _nBlocks = 0, 
@@ -137,8 +136,7 @@ private:
                _nStrongCheckSumBytes = 0, // # of bytes available for the strong checksum.
                _nSeqMatches = 0,
                _nSkip = 0,     // skip forward on next submit_source_data.
-    	       _nTargetFileLength = 0,
-	       _nGotBlocks = 0;
+    	       _nTargetFileLength = 0;
 	unsigned short _pWeakCheckSumMask = 0; // This will be applied to the first 16 bits of the weak checksum.
 
     	const hash_entry *_pRover = nullptr,

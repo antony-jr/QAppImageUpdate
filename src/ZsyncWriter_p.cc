@@ -139,6 +139,19 @@ void ZsyncWriterPrivate::handleLogMessage(QString msg , QString path)
 void ZsyncWriterPrivate::getBlockRanges(void)
 {
 	if(!_pRanges){
+		if(_bAcceptRange == false){
+			/*
+			 * Emit an invalid block range request to imply
+		         * that there is no range support and thus forcing the
+		         * block downloader to download the entire file.
+		         */
+			WARNING_START " getBlockRanges : no range request supported , sending invalid block range. "
+			WARNING_END;
+			emit blockRange(0 , 0);
+			emit endOfBlockRanges();
+			emit statusChanged(IDLE);
+			return;
+		}
 		emit blockRange( 0 , _nBlocks << _nBlockShift);
 		emit endOfBlockRanges();
 		emit statusChanged(IDLE);
@@ -147,6 +160,7 @@ void ZsyncWriterPrivate::getBlockRanges(void)
 
 	INFO_START " getBlockRanges : emitting required block ranges." INFO_END;
 	emit statusChanged(EMITTING_REQUIRED_BLOCK_RANGES);
+
 
 	if(_pRequiredRanges.isEmpty()){
     	zs_blockid from = 0 , to = _nBlocks;
@@ -184,6 +198,7 @@ void ZsyncWriterPrivate::getBlockRanges(void)
 
         _pRequiredRanges.removeAll(qMakePair(0, 0));
 	}
+	
 	for(auto iter = _pRequiredRanges.constBegin(), end  = _pRequiredRanges.constEnd(); iter != end; ++iter)
 	{
 		auto to = (*iter).second;
@@ -209,10 +224,43 @@ qint32 ZsyncWriterPrivate::getBytesWritten(void)
 	return _nBytesWritten;
 }
 
+void ZsyncWriterPrivate::rawSeqWrite(QByteArray *downloadedData)
+{
+	QScopedPointer<QByteArray> data(downloadedData);
+	if(!_pTargetFile->isOpen()){
+		qDebug() << "Target file is not opened!";
+		/*
+		 * If the target file is not opened then it most likely means
+		 * that the file is constructed successfully and so we have 
+		 * no business in writting any further data.
+		*/
+		return;
+	}
+
+	_nBytesWritten += _pTargetFile->write(*(data.data()));
+
+	/*
+	 * Check if we got all bytes ,
+	 * If so then attempt to construct the file , in sense , 
+	 * Verify checksums , truncate and then close.
+	 */
+	if(_nBytesWritten >= _nTargetFileLength){
+		INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
+		auto needToDownload = !verifyAndConstructTargetFile();
+		emit finished(needToDownload);
+	}
+	return;
+}
+
 void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QByteArray *downloadedData)
 {
+ 	// Check if already constructed.
+	if(!_pTargetFile->isOpen()){
+		return;
+	}
+	
 	unsigned char md4sum[CHECKSUM_SIZE];
-        /* Build checksum hash tables if we don't have them yet */
+	/* Build checksum hash tables if we don't have them yet */
     	if (!_pRsumHash){
             if (!buildHash()){
 		    emit error(CANNOT_CONSTRUCT_HASH_TABLE);
@@ -220,28 +268,11 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
 	    }
 	}
 
-	/* Check if we already written all required blocks. */
-	if(_pRequiredRanges.isEmpty()){
-		INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
-		
-		if(!_pTransferSpeed->isNull()){
-			_pTransferSpeed.reset(new QTime);
-		}
-
-		auto needToDownload = !verifyAndConstructTargetFile();
-		emit finished(needToDownload);
-		return;
-	}
-
 	/* Check if transfer speed time already started , if not start it. */
 	if(_pTransferSpeed->isNull()){
 		_pTransferSpeed->start();
 	}
 
-	qint64 bytesReceived = 0 , bytesTotal = _nTargetFileLength;
-	int nPercentage = 0;
-	double nSpeed = 0;
-	QString sUnit;
 	bool Md4ChecksumsMatched = true;
 	QScopedPointer<QByteArray> downloaded(downloadedData);
 	QScopedPointer<QBuffer> buffer(new QBuffer(downloadedData));
@@ -275,10 +306,9 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
 		     * If integrity check failed , When we request required again
 		     * , The _pRequiredRanges vector gets filled with needed blocks.
 		     */
-		    _pRequiredRanges.removeAll(qMakePair(bfrom , bto));
+		    if(!_pRequiredRanges.isEmpty())
+			    _pRequiredRanges.removeAll(qMakePair(bfrom , bto));
 
-		    /* Set how much blocks did we get. */
-		    _nGotBlocks += (x - 1 == bfrom) ? 1 : x - 1 - bfrom;
 		}
 		break;
             }
@@ -288,24 +318,24 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
 	if(Md4ChecksumsMatched){
 	    /* All blocks are valid; write them and update our state */
 	    writeBlocks((const unsigned char*)downloadedData->constData() , bfrom , bto );
-	    emit blockRangesWritten(fromRange , toRange , /*all blocks were written with no md4 mismatch=*/true);
-    
+	    
 	    /* Remove the blocks we written successfully. */
-	    _pRequiredRanges.removeAll(qMakePair(bfrom , bto));
-
-	    /* We got all blocks. */
-	    _nGotBlocks += (bto - bfrom);
+	    if(!_pRequiredRanges.isEmpty())
+		    _pRequiredRanges.removeAll(qMakePair(bfrom , bto));
 	}
+	emit blockRangesWritten(fromRange , toRange , /*all blocks were written with no md4 mismatch=*/Md4ChecksumsMatched);
 
 	/* Calculate our progress. */
-	bytesReceived = _nBytesWritten,
-	nPercentage = static_cast<int>(
+	{
+	qint64 bytesReceived = _nBytesWritten , bytesTotal = _nTargetFileLength;
+	QString sUnit;	
+	int nPercentage = static_cast<int>(
             		(static_cast<float>
              		 (bytesReceived) * 100.0
            		) / static_cast<float>
             		 (bytesTotal)
         	      );
-	nSpeed =  bytesReceived * 1000.0 / _pTransferSpeed->elapsed();
+	double nSpeed =  bytesReceived * 1000.0 / _pTransferSpeed->elapsed();
     	if (nSpeed < 1024) {
         	sUnit = "bytes/sec";
     	} else if (nSpeed < 1024 * 1024) {
@@ -316,11 +346,13 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange , qint32 toRange , QB
         	sUnit = "MB/s";
 	}
 	emit progress(nPercentage , bytesReceived , bytesTotal , nSpeed , sUnit);
+	}
+
 
 	/* Check if we got all the required blocks and written something ,
 	 * If so then try to construct the target file.
 	*/
-	if(_pRequiredRanges.isEmpty()){
+	if(_nBytesWritten >= _nTargetFileLength){
 		INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
 		_pTransferSpeed.reset(new QTime);
 		auto needToDownload = !verifyAndConstructTargetFile();
@@ -339,7 +371,8 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 					  const QString &sourceFilePath ,
 					  const QString &targetFileName ,
 					  const QString &targetFileSHA1 ,
-					  QBuffer *targetFileCheckSumBlocks) 
+					  QBuffer *targetFileCheckSumBlocks ,
+					  bool rangeSupported) 
 {
 	_pCurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     	_nBlocks = nblocks, 
@@ -354,8 +387,10 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 	_pTargetFileCheckSumBlocks.reset(targetFileCheckSumBlocks);
 	_nSkip = _nNextKnown =_pHashMask = _pBitHashMask = 0;
 	_pRover = _pNextMatch = nullptr;
+	_bAcceptRange = rangeSupported;
 	if(_pBlockHashes){
 		free(_pBlockHashes);
+		_pBlockHashes = nullptr;	
 	}
     	_pBlockHashes = (hash_entry*)calloc(_nBlocks + _nSeqMatches, sizeof(_pBlockHashes[0]));
 
@@ -437,9 +472,11 @@ void ZsyncWriterPrivate::doStart(void)
 	bool constructed = false;
 	QFile *sourceFile = nullptr;
 
+	if(_bAcceptRange == true){
 	if((errorCode = tryOpenSourceFile(&sourceFile)) > 0){
 		emit error(errorCode);
 		return;
+	}
 	}
 
 	_pSourceFile.reset(sourceFile);
@@ -453,7 +490,7 @@ void ZsyncWriterPrivate::doStart(void)
 		disconnect(this , &ZsyncWriterPrivate::initCancel , this,  &ZsyncWriterPrivate::doCancel);
 		return;
 	}
-	constructed = (_nGotBlocks >= _nBlocks ) ? verifyAndConstructTargetFile() : false;
+	constructed = (_nBytesWritten >= _nTargetFileLength) ? verifyAndConstructTargetFile() : false;
 	emit finished(!constructed);
 	return;
 
@@ -561,6 +598,10 @@ short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks(void)
 */
 short ZsyncWriterPrivate::tryOpenSourceFile(QFile **sourceFile)
 {
+    if(_sSourceFilePath.isEmpty()){
+	    return 0;
+    }
+
     auto seedFile = new QFile(_sSourceFilePath);
     /* Check if the file actually exists. */
     if(!seedFile->exists()) {
@@ -902,6 +943,10 @@ qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_
  */
 qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
 {
+    if(!file){
+	    return 0;
+    }
+
     qint32 error = 0;
     off_t in = 0;
     /* Allocate buffer of 16 blocks */
@@ -948,7 +993,7 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
         }
 
         /* Process the data in the buffer, and report progress */
-        _nGotBlocks += submitSourceData( buf, len, start_in);
+        submitSourceData( buf, len, start_in);
 	{
 	    qint64 bytesReceived = _nBytesWritten,
 		   bytesTotal = _nTargetFileLength;

@@ -19,13 +19,10 @@ public Q_SLOTS:
 	void cancel(void);
 private Q_SLOTS:
 	void initDownloader(bool);
-	void handleTargetFileUrl(QUrl);
 	void handleBlockRange(qint32,qint32);
 	void handleBlockReplyFinished(void);
 	void handleBlockReplyCancel(void);
 	void handleBlockReplyProgress(qint64 , double , QString);
-	void handleCheckHeadError(QNetworkReply::NetworkError);
-	void checkHead(qint64, qint64);
 
 Q_SIGNALS:
 	void progress(int , qint64 , qint64 , double , QString);

@@ -12,14 +12,24 @@ ZsyncBlockRangeReplyPrivate::ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate *del
 		  _nRangeTo(rangeTo)
 {
 	downloadSpeed.start();
-	connect(reply , &QNetworkReply::finished ,
-		this , &ZsyncBlockRangeReplyPrivate::handleFinished);
+	_pRawData.reset(new QByteArray);
 	connect(reply , SIGNAL(error(QNetworkReply::NetworkError)) , 
 		this , SLOT(handleError(QNetworkReply::NetworkError)));
+	if(!(_nRangeFrom || _nRangeTo)){
+	connect(reply , &QNetworkReply::finished ,
+		this , &ZsyncBlockRangeReplyPrivate::finished);
+	connect(reply , &QNetworkReply::downloadProgress ,
+		this , &ZsyncBlockRangeReplyPrivate::handleSeqProgress);
+	connect(this , &ZsyncBlockRangeReplyPrivate::sendData , 
+		deltaWriter , &ZsyncWriterPrivate::rawSeqWrite , Qt::QueuedConnection);
+	}else{
+	connect(reply , &QNetworkReply::finished ,
+		this , &ZsyncBlockRangeReplyPrivate::handleFinished);
 	connect(reply , &QNetworkReply::downloadProgress ,
 		this , &ZsyncBlockRangeReplyPrivate::handleProgress);
 	connect(this ,  &ZsyncBlockRangeReplyPrivate::sendBlockDataToWriter ,
-		deltaWriter , &ZsyncWriterPrivate::writeBlockRanges);
+		deltaWriter , &ZsyncWriterPrivate::writeBlockRanges , Qt::QueuedConnection);
+	}
 	connect(this ,  &ZsyncBlockRangeReplyPrivate::cancelReply ,
 		reply , &QNetworkReply::abort);
 	return;
@@ -40,14 +50,8 @@ void ZsyncBlockRangeReplyPrivate::handleFinished(void)
 {
 	auto reply = (QNetworkReply*)QObject::sender();
 	disconnect(this , &ZsyncBlockRangeReplyPrivate::cancelReply , reply , &QNetworkReply::abort);
-	QByteArray *rawData = new QByteArray;
-	
-	while(!reply->atEnd()){
-		rawData->append(reply->read(4096));
-		QCoreApplication::processEvents();
-	}
-
-	emit sendBlockDataToWriter(_nRangeFrom , _nRangeTo , rawData);
+	_pRawData->append(reply->readAll());
+	emit sendBlockDataToWriter(_nRangeFrom , _nRangeTo , _pRawData.take());
 	emit finished();
 	return;
 }
@@ -66,11 +70,44 @@ void ZsyncBlockRangeReplyPrivate::handleError(QNetworkReply::NetworkError ecode)
 	return;
 }
 
+void ZsyncBlockRangeReplyPrivate::handleSeqProgress(qint64 bytesReceived , qint64 bytesTotal)
+{
+	auto reply = (QNetworkReply*)QObject::sender();
+	
+	auto data = new QByteArray(reply->readAll());
+	emit sendData(data);
+
+	int nPercentage = static_cast<int>(
+            		(static_cast<float>
+             		 (bytesReceived) * 100.0
+           		) / static_cast<float>
+            		 (bytesTotal)
+        	      );
+
+	QString sUnit;
+	double nSpeed =  bytesReceived * 1000.0 / downloadSpeed.elapsed();
+    	if (nSpeed < 1024) {
+        	sUnit = "bytes/sec";
+    	} else if (nSpeed < 1024 * 1024) {
+        	nSpeed /= 1024;
+        	sUnit = "kB/s";
+    	} else {
+        	nSpeed /= 1024 * 1024;
+        	sUnit = "MB/s";
+	}
+	emit seqProgress(nPercentage , bytesReceived , bytesTotal , nSpeed , sUnit);
+	return;
+}
+
 void ZsyncBlockRangeReplyPrivate::handleProgress(qint64 bytesReceived , qint64 bytesTotal)
 {
 	Q_UNUSED(bytesTotal);
+	auto reply = (QNetworkReply*)QObject::sender();
 	qint64 nowReceived = bytesReceived - _nPreviousBytesReceived;
 	_nPreviousBytesReceived = bytesReceived;
+
+	_pRawData->append(reply->readAll());
+
 	QString sUnit;
 	double nSpeed =  bytesReceived * 1000.0 / downloadSpeed.elapsed();
     	if (nSpeed < 1024) {

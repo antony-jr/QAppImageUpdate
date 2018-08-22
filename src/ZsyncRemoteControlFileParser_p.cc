@@ -328,7 +328,7 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
     buffer->close();
     emit zsyncInformation(_nTargetFileBlockSize, _nTargetFileBlocks, _nWeakCheckSumBytes , _nStrongCheckSumBytes ,
                           _nConsecutiveMatchNeeded , _nTargetFileLength , SeedFilePath , _sTargetFileName , 
-			  _sTargetFileSHA1 , buffer);
+			  _sTargetFileSHA1 , buffer , _bAcceptRange);
    return;
 }
 
@@ -370,15 +370,11 @@ QString ZsyncRemoteControlFileParserPrivate::getTargetFileName(void)
 }
 
 /*
- * emits the target file's url.
+ * Returns the target file's url.
 */
-void ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
+QUrl ZsyncRemoteControlFileParserPrivate::getTargetFileUrl(void)
 {
-    QUrl ret = (_uTargetFileUrl.isRelative()) ? 
-	       QUrl(_uControlFileUrl.adjusted(QUrl::RemoveFilename).toString() + _sTargetFileName)
-	       : _uTargetFileUrl;
-    emit targetFileUrl(ret);
-    return;
+    return _uTargetFileUrl;
 }
 
 /*
@@ -566,6 +562,13 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         return;
     }
 
+    /* Check if the server supports Range requests. */
+    _bAcceptRange = senderReply->hasRawHeader("Accept-Ranges");
+
+    if(_bAcceptRange == false){
+    WARNING_START " handleControlFile : it seems that the remote server does not support range requests." WARNING_END;
+    }
+
     /*
      * Disconnect all ties before casting it as QIODevice to read.
     */
@@ -656,14 +659,14 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
     }
     INFO_START LOGR " handleControlFile : zsync target file MTime confirmed to be " LOGR _pMTime LOGR "." INFO_END;
 
-    _nTargetFileBlockSize = (size_t)ZsyncHeaderList.at(3).split("Blocksize: ")[1].toInt();
+    _nTargetFileBlockSize = ZsyncHeaderList.at(3).split("Blocksize: ")[1].toInt();
     if(_nTargetFileBlockSize < 1024) {
         emit error(INVALID_ZSYNC_BLOCKSIZE);
         return;
     }
     INFO_START LOGR " handleControlFile : zsync target file blocksize confirmed to be " LOGR _nTargetFileBlockSize LOGR " bytes." INFO_END;
 
-    _nTargetFileLength =  (size_t)ZsyncHeaderList.at(4).split("Length: ")[1].toInt();
+    _nTargetFileLength =  ZsyncHeaderList.at(4).split("Length: ")[1].toInt();
     if(_nTargetFileLength == 0) {
         emit error(INVALID_TARGET_FILE_LENGTH);
         return;
@@ -696,6 +699,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         emit error(INVALID_TARGET_FILE_URL);
         return;
     }
+
     INFO_START LOGR " handleControlFile : zsync target file url is confirmed to be " LOGR _uTargetFileUrl LOGR "." INFO_END;
 
     _sTargetFileSHA1 = ZsyncHeaderList.at(7).split("SHA-1: ")[1];
@@ -709,10 +713,67 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
     _nTargetFileBlocks = (_nTargetFileLength + _nTargetFileBlockSize - 1) / _nTargetFileBlockSize;
     INFO_START LOGR " handleControlFile : zsync target file has " LOGR _nTargetFileBlocks LOGR " number of blocks." INFO_END;
 
-    emit statusChanged(FINALIZING_PARSING_ZSYNC_CONTROL_FILE);
-    emit receiveControlFile();
-    emit statusChanged(IDLE);
+    /*
+     * We need to get the exact url(i.e without any redirections) of the target file and also 
+     * check if target file host server supports range requests.
+     *
+     * If the target file url is relative then we have to construct the url from the control
+     * file url which is given by the developer.
+     **/
+     {
+     QUrl urlToRequest = (_uTargetFileUrl.isRelative()) ? 
+	                 QUrl(_uControlFileUrl.toString().replace(_uControlFileUrl.fileName() , _sTargetFileName))
+	                 : _uTargetFileUrl;
+     QNetworkRequest request;
+     /* Even if the abort does'nt work if range is assumed to be supported then the request will not
+      * spend too much data.
+      **/
+     QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(0) + "-";
+     rangeHeaderValue += QByteArray::number(200); // Just get the first 200 Bytes of data.
+     request.setUrl(urlToRequest);
+     request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+     request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+     request.setRawHeader("Range", rangeHeaderValue);	
+     auto reply = _pNManager->get(request);
+     connect(reply , &QNetworkReply::downloadProgress ,
+	     this , &ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl);
+     connect(reply , SIGNAL(error(QNetworkReply::NetworkError)) ,
+	      this , SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+     }
+
+    /*
+     * When target url request is done control file received 
+     * signal will be emitted.
+     **/
     return;
+}
+
+void ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl(qint64 bytesReceived , qint64 bytesTotal)
+{
+	Q_UNUSED(bytesReceived);
+	Q_UNUSED(bytesTotal);
+
+	auto reply = (QNetworkReply*)QObject::sender();
+	disconnect(reply , &QNetworkReply::downloadProgress ,
+		   this , &ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl);
+	auto replyCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+	if(replyCode >= 400){
+		emit error(UNKNOWN_NETWORK_ERROR);
+		return;
+	}
+
+ 	/* Check if the server supports Range requests. */
+    	_bAcceptRange = reply->hasRawHeader("Accept-Ranges") && replyCode == 206/*HTTP Status code 206 => partial retrival*/;
+	if(_bAcceptRange == false){
+    		WARNING_START 
+		" handleControlFile : its confirmed that the remote server does not support range requests." WARNING_END;
+    	}
+	reply->abort();
+	_uTargetFileUrl = reply->url();	
+	emit statusChanged(FINALIZING_PARSING_ZSYNC_CONTROL_FILE);
+    	emit receiveControlFile();
+    	emit statusChanged(IDLE);
+	return;
 }
 
 void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::NetworkError errorCode)
@@ -724,6 +785,8 @@ void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::Netw
     disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
                this,SLOT(handleNetworkError(QNetworkReply::NetworkError)));
     disconnect(senderReply, SIGNAL(finished(void)), this, SLOT(handleControlFile(void)));
+    disconnect(senderReply , &QNetworkReply::downloadProgress ,
+	     this , &ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl);
     disconnect(senderReply, SIGNAL(downloadProgress(qint64, qint64)),
                this, SLOT(handleDownloadProgress(qint64, qint64)));
 

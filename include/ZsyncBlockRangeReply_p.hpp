@@ -17,18 +17,22 @@ public Q_SLOTS:
 private Q_SLOTS:	
 	void handleError(QNetworkReply::NetworkError);
 	void handleFinished(void);
+	void handleSeqProgress(qint64 , qint64);
 	void handleProgress(qint64 , qint64);
 
 Q_SIGNALS:
 	void cancelReply(void);
 	void canceled(void);
+	void seqProgress(int , qint64 , qint64 , double , QString);
 	void progress(qint64 , double , QString);
 	void error(QNetworkReply::NetworkError);
 	void finished(void);
+	void sendData(QByteArray*);
 	void sendBlockDataToWriter(qint32 , qint32 , QByteArray *);
 
 private:
 	QTime downloadSpeed;
+	QScopedPointer<QByteArray> _pRawData;
 	qint64 _nPreviousBytesReceived = 0;
 	qint32 _nRangeFrom = 0,
 	       _nRangeTo = 0;
