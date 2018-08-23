@@ -3,14 +3,33 @@
 </p>
 
 
-> :rocket: A simple bridge to AppImage's :arrow_double_down: Updating Mechanism written :paintbrush: in C++ using Qt5. This small library :white_check_mark:   
-> helps you to create awesome :sunglasses: AutoUpdater in Qt5 for AppImages. :heart:   
-> -- Antony Jr. :sunglasses:
-
-
 # AppImage Updater Bridge [![GitHub issues](https://img.shields.io/github/issues/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/issues) [![GitHub stars](https://img.shields.io/github/stars/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/stargazers) [![GitHub license](https://img.shields.io/github/license/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/blob/master/LICENSE) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8ec8eac35a304883829b785d298b6fa6)](https://www.codacy.com/app/antony-jr/AppImageUpdaterBridge?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=antony-jr/AppImageUpdaterBridge&amp;utm_campaign=Badge_Grade)
 
-Inorder to build a super cool updater for all open source projects , I required API's to all major distribution methods. AppImage is a super cool method to distribute your Apps in a single file for all Linux Distro's and So AppImageUpdaterBridge was created to give a nice Qt API to the Updating Mechanism of AppImage's. This is not the official AppImageUpdate Library.
+
+AppImage Updater Bridge is a **delta updater** based on the *zsync algorithm* for the *AppImage format* , Using this library you can 
+delta update any AppImage file , That is , Only download the binary data which you need to get the latest version , 
+Therefore saving your time and internet.
+
+AppImage Updater Bridge is not the **official library** to do this stuff , The official library is [here](https://github.com/AppImages/AppImageUpdate) which is also written in **C++** but with no real **Qt support** , So thats why this library is built.
+
+This library gives absolute support for *Qt* , Infact , All you need is the minimal installation of *Qt*(i.e, base ).
+
+
+## Features
+
+* *Single Threaded , Non-Blocking API* - Using Qt's Event Loop.(Optionally , You can use a seperate thread.)
+
+* *Easy to Use API* - Made some effort to match Qt's style.
+
+* *Cyclic API , No use of mutex* - The whole library is fully cyclic and therefore no mutex is used.(Only signals and slots.)
+
+* *Pure C++* - Ported most of the legacy Zsync code to C++.
+
+* *No third party libraries needed* - The reason why you want to use this library.
+
+* *Drink the Qt Kool-aid*.
+
+
 
 # Try it
 
@@ -21,34 +40,17 @@ See this library in **action** at this [repo](https://github.com/antony-jr/AppIm
 
 Please refer the official [documentation](https://antony-jr.github.io/AppImageUpdaterBridge).
 
-# Thank You ![Thank You](https://img.shields.io/badge/Always-Say%20Thank%20You!-blue.svg?style=flat-square)
+# Acknowledgements ![Thank You](https://img.shields.io/badge/Always-Say%20Thank%20You!-blue.svg?style=flat-square)
 
-I really need to thank the developers of this projects for creating it because AppImage Updater Bridge is elegant because of them! :heart:   
-
-* [AppImage](https://github.com/AppImage) ([@probonopd](https://github.com/probonopd) , [@TheAssassin](https://github.com/TheAssassin) , [Alexis López Zubieta](https://github.com/azubieta))
-* [zsync](https://github.com/cph6/zsync) ([Colin Phipps](https://github.com/cph6))
-* [zsync2](https://github.com/AppImage/zsync2) ([@TheAssassin](https://github.com/TheAssassin))
+* [AppImages](https://github.com/AppImages) - Motivation to start this project.
+* [zsync](https://github.com/cph6/zsync) ([Colin Phipps](https://github.com/cph6)) - Zsync algorithm's author.
+* [zsync2](https://github.com/AppImage/zsync2) ([@TheAssassin](https://github.com/TheAssassin)) - Helpful references.
 * [Qt](https://github.com/qt)
 
 
-# Support [![Liberapay](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/antonyjr/donate) [![Twitter](https://img.shields.io/twitter/url/https/github.com/antony-jr/AppImageUpdaterBridge.svg?style=social)](https://twitter.com/intent/tweet?text=Checkout%20%23AppImage%20Updater%20Bridge%20at%20https%3A%2F%2Fgithub.com%2Fantony-jr%2FAppImageUpdaterBridge)
+# Support [![Twitter](https://img.shields.io/twitter/url/https/github.com/antony-jr/AppImageUpdaterBridge.svg?style=social)](https://twitter.com/intent/tweet?text=Checkout%20%23AppImage%20Updater%20Bridge%20at%20https%3A%2F%2Fgithub.com%2Fantony-jr%2FAppImageUpdaterBridge)
 
 If you think that this project is **cool** then you can give it a :star: or :fork_and_knife: it if you want to improve it with me. I really :heart: stars though!   
-
-<p align="center">
-    <a href="https://liberapay.com/antonyjr/donate">
-       <img src="https://liberapay.com/assets/widgets/donate.svg">
-    </a>
-</p>
-
-
-If you want to do something that stands out then you can click the **donate** button at the top to make a monthly donation , So   
-I will make sure that I stay healthy and keep on to do my work. :briefcase: Supporting me means supporting all of my projects , So   
-you are like **Tony Stark** :heart: who backs **Spider-Man**! Thank you for your extra care! :dog:   
-
-You can also tweet about me on twitter , get connected with me [@antonyjr0](https://twitter.com/antonyjr0)
-
-Thank You! :smiley_cat:
 
 # License
 
