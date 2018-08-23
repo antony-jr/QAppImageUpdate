@@ -30,7 +30,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * @filename    : AppImageUpdateInformation_p.hpp
- * @description : This is where the extraction of embeded update information 
+ * @description : This is where the extraction of embeded update information
  * from AppImages is described.
 */
 #ifndef APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED
@@ -47,7 +47,8 @@
 #include <QString>
 #include <QSharedPointer>
 
-namespace AppImageUpdaterBridge {
+namespace AppImageUpdaterBridge
+{
 class AppImageUpdateInformationPrivate : public QObject
 {
     Q_OBJECT
@@ -68,18 +69,18 @@ public:
     } error_code;
 
     enum : short {
-	INITIALIZING = 0,
-	IDLE = 1,
-	OPENING_APPIMAGE,
-	CALCULATING_APPIMAGE_SHA1_HASH,
-	READING_APPIMAGE_MAGIC_BYTES,
-	FINDING_APPIMAGE_TYPE,
-	FINDING_APPIMAGE_ARCHITECTURE,
-	MAPPING_APPIMAGE_TO_MEMORY,
-	READING_APPIMAGE_UPDATE_INFORMATION,
-	SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER,
-	UNMAPPING_APPIMAGE_FROM_MEMORY,
-	FINALIZING_APPIMAGE_EMBEDED_UPDATE_INFORMATION
+        INITIALIZING = 0,
+        IDLE = 1,
+        OPENING_APPIMAGE,
+        CALCULATING_APPIMAGE_SHA1_HASH,
+        READING_APPIMAGE_MAGIC_BYTES,
+        FINDING_APPIMAGE_TYPE,
+        FINDING_APPIMAGE_ARCHITECTURE,
+        MAPPING_APPIMAGE_TO_MEMORY,
+        READING_APPIMAGE_UPDATE_INFORMATION,
+        SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER,
+        UNMAPPING_APPIMAGE_FROM_MEMORY,
+        FINALIZING_APPIMAGE_EMBEDED_UPDATE_INFORMATION
     } status_code;
 
     explicit AppImageUpdateInformationPrivate(QObject *parent = nullptr);
@@ -92,16 +93,14 @@ public:
 public Q_SLOTS:
     void setAppImage(const QString&);
     void setAppImage(QFile *);
-#ifndef LOGGING_DISABLED
     void setShowLog(bool);
     void setLoggerName(const QString&);
-#endif // LOGGING_DISABLED
     void getInfo(void);
     void clear(void);
 
 #ifndef LOGGING_DISABLED
 private Q_SLOTS:
-    void handleLogMessage(QString , QString);
+    void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
 
 Q_SIGNALS:
@@ -109,23 +108,22 @@ Q_SIGNALS:
     void progress(int);
     void error(short);
     void statusChanged(short);
-#ifndef LOGGING_DISABLED
-    void logger(QString , QString);
-#endif // LOGGING_DISABLED
+    void logger(QString, QString);
+
 private:
     QJsonObject _jInfo;
     QString _sAppImageName,
             _sAppImagePath,
 #ifndef LOGGING_DISABLED
-	    _sLogBuffer,
-	    _sLoggerName,
+            _sLogBuffer,
+            _sLoggerName,
 #endif // LOGGING_DISABLED
-	    _sAppImageSHA1;
+            _sAppImageSHA1;
 #ifndef LOGGING_DISABLED
     QSharedPointer<QDebug> _pLogger = nullptr;
 #endif // LOGGING_DISABLED
     QSharedPointer<QFile>  _pAppImage = nullptr;
-   
+
     /*
      * AppImage update information positions and magic values.
      * See https://github.com/AppImage/AppImageSpec/blob/master/draft.md

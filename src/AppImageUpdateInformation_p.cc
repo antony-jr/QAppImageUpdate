@@ -1,3 +1,38 @@
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2018, Antony jr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * @filename    : AppImageUpdateInformation_p.hpp
+ * @description : This is where the extraction of embeded update information
+ * from AppImages is implemented.
+*/
 #include <AppImageUpdateInformation_p.hpp>
 
 using namespace AppImageUpdaterBridge;
@@ -123,7 +158,7 @@ using namespace AppImageUpdaterBridge;
  * 	file.open(QIODevice::ReadOnly);
  * 	QByteArray data = read(&file , 512 , 1024);
 */
-static QByteArray read(QSharedPointer<QFile> IO , qint64 offset, qint64 max)
+static QByteArray read(QSharedPointer<QFile> IO, qint64 offset, qint64 max)
 {
     QByteArray ret;
     qint64 before = IO->pos();
@@ -149,7 +184,7 @@ static QByteArray read(QSharedPointer<QFile> IO , qint64 offset, qint64 max)
  * 	delete file; // But has to deallocated by the user.
 */
 static void doNotDelete(QFile *file)
-{  
+{
     (void)file;
     return;
 }
@@ -174,10 +209,10 @@ AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *pare
     emit statusChanged(INITIALIZING);
 #ifndef LOGGING_DISABLED
     try {
- 	_pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
+        _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
     } catch ( ... ) {
- 	MEMORY_ERROR();
- 	throw;
+        MEMORY_ERROR();
+        throw;
     }
 #endif // LOGGING_DISABLED
     emit statusChanged(IDLE);
@@ -199,13 +234,15 @@ AppImageUpdateInformationPrivate::~AppImageUpdateInformationPrivate()
     return;
 }
 
-#ifndef LOGGING_DISABLED
 void AppImageUpdateInformationPrivate::setLoggerName(const QString &name)
 {
-	_sLoggerName = QString(name);
-	return;
+#ifndef LOGGING_DISABLED
+    _sLoggerName = QString(name);
+#else
+    (void)name;
+#endif
+    return;
 }
-#endif // LOGGING_DISABLED
 
 /*
  * This method returns nothing and sets the AppImage
@@ -228,10 +265,10 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
         return;
     }
 
-   /*
-    * Set the AppImage Name as a nickname for identification
-    * on the logger.
-    */
+    /*
+     * Set the AppImage Name as a nickname for identification
+     * on the logger.
+     */
     _sAppImagePath = AppImagePath;
     _sAppImageName = QFileInfo(AppImagePath).fileName();
 
@@ -253,7 +290,7 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
     if(!_pAppImage->exists()) {
         _pAppImage.clear(); /* delete everything to avoid futher errors. */
         emit statusChanged(IDLE);
-	FATAL_START  " setAppImage : cannot find the AppImage in the given path , file not found." FATAL_END;
+        FATAL_START  " setAppImage : cannot find the AppImage in the given path , file not found." FATAL_END;
         APPIMAGE_NOT_FOUND_ERROR();
         return;
     }
@@ -266,7 +303,7 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
         !(perm & QFileDevice::ReadOther)
     ) {
         _pAppImage.clear();
-	emit statusChanged(IDLE);
+        emit statusChanged(IDLE);
         FATAL_START  " setAppImage : no permission(" LOGR perm LOGR ") for reading the given AppImage." FATAL_END;
         APPIMAGE_PERMISSION_ERROR();
         return;
@@ -278,7 +315,7 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
     if(!_pAppImage->open(QIODevice::ReadOnly)) {
         _pAppImage.clear();
         emit statusChanged(IDLE);
-	FATAL_START  " setAppImage : cannot open AppImage for reading." FATAL_END;
+        FATAL_START  " setAppImage : cannot open AppImage for reading." FATAL_END;
         APPIMAGE_OPEN_ERROR();
         return;
     }
@@ -321,7 +358,7 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
     /* Check if exists */
     if(!_pAppImage->exists()) {
         _pAppImage.clear();
-	emit statusChanged(IDLE);
+        emit statusChanged(IDLE);
         FATAL_START  " setAppImage : cannot find the AppImage from given QFile , file does not exists." FATAL_END;
         APPIMAGE_NOT_FOUND_ERROR();
         return;
@@ -330,7 +367,7 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
     /* Check if readable. */
     if(!_pAppImage->isReadable()) {
         _pAppImage.clear(); /* delete everything */
-	emit statusChanged(IDLE);
+        emit statusChanged(IDLE);
         FATAL_START  " setAppImage : invalid QFile given, not readable." FATAL_END;
         APPIMAGE_READ_ERROR();
         return;
@@ -339,7 +376,7 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
     /* Check if opened. */
     if(!_pAppImage->isOpen()) {
         _pAppImage.clear(); /* delete everything */
-	emit statusChanged(IDLE);
+        emit statusChanged(IDLE);
         FATAL_START  " setAppImage : invalid QFile given, not opened." FATAL_END;
         APPIMAGE_OPEN_ERROR();
         return;
@@ -349,7 +386,6 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
     return;
 }
 
-#ifndef LOGGING_DISABLED
 /*
  * This returns the caller object , If the given bool
  * is true then it connects the logger signal to the
@@ -362,18 +398,19 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
 */
 void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
 {
+#ifndef LOGGING_DISABLED
     if(logNeeded) {
         disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
         connect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
-        INFO_START  " setShowLog : true  , started logging." INFO_END;
 
     } else {
-        INFO_START  " setShowLog : false , finishing logging." INFO_END;
         disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
     }
+#else
+    (void)logNeeded;
+#endif // LOGGING_DISABLED
     return;
 }
-#endif // LOGGING_DISABLED
 
 
 /*
@@ -387,33 +424,33 @@ void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
 void AppImageUpdateInformationPrivate::getInfo(void)
 {
     /*
-     * If this class is constructed without a 
+     * If this class is constructed without a
      * AppImage to operate on ,Then lets guess it.
     */
-    if(_pAppImage.isNull()){
-    /*
-     * Check if QCoreApplication got something on argv[0].
-     * The main payload is not the one we want to operate this on 
-     * but the AppImage itself , So we cannot use the actual application executable
-     * path processed by qt but argv[0].
-     *
-     * Only with argv[0] we cannot determine the path of the actual AppImage
-     * so we will also need the application directory path which is also 
-     * available by QCoreApplication.
-     *
-     * Therefore ,
-     *     AppImagePath = Application Directory + "/" + filename in argv[0].
-     *
-     * Note: We don't need to use a native seperator since Qt itself will manage 
-     * that if we use '/' , Also AppImage is exclusive for linux and thus '/' is 
-     * default for any linux filesystem even if not so , Qt will handle it.
-    */
-    auto arguments = QCoreApplication::arguments();
-    if(!arguments.isEmpty()){
-    	setAppImage(QCoreApplication::applicationDirPath() + 
-		    "/" + 
-		    QFileInfo(arguments.at(0)).fileName());
-    }
+    if(_pAppImage.isNull()) {
+        /*
+         * Check if QCoreApplication got something on argv[0].
+         * The main payload is not the one we want to operate this on
+         * but the AppImage itself , So we cannot use the actual application executable
+         * path processed by qt but argv[0].
+         *
+         * Only with argv[0] we cannot determine the path of the actual AppImage
+         * so we will also need the application directory path which is also
+         * available by QCoreApplication.
+         *
+         * Therefore ,
+         *     AppImagePath = Application Directory + "/" + filename in argv[0].
+         *
+         * Note: We don't need to use a native seperator since Qt itself will manage
+         * that if we use '/' , Also AppImage is exclusive for linux and thus '/' is
+         * default for any linux filesystem even if not so , Qt will handle it.
+        */
+        auto arguments = QCoreApplication::arguments();
+        if(!arguments.isEmpty()) {
+            setAppImage(QCoreApplication::applicationDirPath() +
+                        "/" +
+                        QFileInfo(arguments.at(0)).fileName());
+        }
     }
 
     /*
@@ -424,42 +461,41 @@ void AppImageUpdateInformationPrivate::getInfo(void)
      * AppImage , And so if it is not empty then that implies
      * that the user called getInfo() twice or more.
      */
-    if(!_jInfo.isEmpty()){
-	    emit(info(_jInfo));
-	    return;
+    if(!_jInfo.isEmpty()) {
+        emit(info(_jInfo));
+        return;
     }
-    
+
     QString AppImageSHA1;
     QString updateString;
     QStringList data;
 
     /*
-     * Calculate the AppImages SHA1 Hash which will be 
-     * used later to find if we need to update the 
+     * Calculate the AppImages SHA1 Hash which will be
+     * used later to find if we need to update the
      * AppImage.
     */
     emit statusChanged(CALCULATING_APPIMAGE_SHA1_HASH);
     {
-    qint64 bufferSize = 0;
-    if(_pAppImage->size() >= 1073741824){ // 1 GiB and more.
-	    bufferSize = 104857600; // copy per 100 MiB.
-    }
-    else if(_pAppImage->size() >= 1048576 ){ // 1 MiB and more.
-	    bufferSize = 1048576; // copy per 1 MiB.
-    }else if(_pAppImage->size() >= 1024){ // 1 KiB and more.
-	    bufferSize = 4096; // copy per 4 KiB.
-    }else{ // less than 1 KiB
-	    bufferSize = 1024; // copy per 1 KiB.
-    }
+        qint64 bufferSize = 0;
+        if(_pAppImage->size() >= 1073741824) { // 1 GiB and more.
+            bufferSize = 104857600; // copy per 100 MiB.
+        } else if(_pAppImage->size() >= 1048576 ) { // 1 MiB and more.
+            bufferSize = 1048576; // copy per 1 MiB.
+        } else if(_pAppImage->size() >= 1024) { // 1 KiB and more.
+            bufferSize = 4096; // copy per 4 KiB.
+        } else { // less than 1 KiB
+            bufferSize = 1024; // copy per 1 KiB.
+        }
 
-    QCryptographicHash *SHA1Hasher = new QCryptographicHash(QCryptographicHash::Sha1);
-    while(!_pAppImage->atEnd()){
-	SHA1Hasher->addData(_pAppImage->read(bufferSize));
-	QCoreApplication::processEvents();
-    }
-    _pAppImage->seek(0); // rewind file to the top for later use.
-    AppImageSHA1 = QString(SHA1Hasher->result().toHex().toUpper());	
-    delete SHA1Hasher; 
+        QCryptographicHash *SHA1Hasher = new QCryptographicHash(QCryptographicHash::Sha1);
+        while(!_pAppImage->atEnd()) {
+            SHA1Hasher->addData(_pAppImage->read(bufferSize));
+            QCoreApplication::processEvents();
+        }
+        _pAppImage->seek(0); // rewind file to the top for later use.
+        AppImageSHA1 = QString(SHA1Hasher->result().toHex().toUpper());
+        delete SHA1Hasher;
     }
 
     /*
@@ -473,12 +509,12 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     emit statusChanged(READING_APPIMAGE_MAGIC_BYTES);
     auto magicBytes = read(_pAppImage, /*offset=*/8,/*maxchars=*/ 3);
     if (magicBytes[0] != 'A' && magicBytes[1] != 'I') {
-	emit statusChanged(IDLE);
+        emit statusChanged(IDLE);
         FATAL_START  " getInfo : invalid magic bytes("
-                    LOGR (unsigned)magicBytes[0] LOGR ","
-                    LOGR (unsigned)magicBytes[1] LOGR ")." FATAL_END;
-	MAGIC_BYTES_ERROR();
-	return;
+        LOGR (unsigned)magicBytes[0] LOGR ","
+        LOGR (unsigned)magicBytes[1] LOGR ")." FATAL_END;
+        MAGIC_BYTES_ERROR();
+        return;
     }
 
     /*
@@ -491,7 +527,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         INFO_START  " getInfo : AppImage is confirmed to be type 1." INFO_END;
 
         progress(/*percentage=*/80); /*Signal progress.*/
-	emit statusChanged(READING_APPIMAGE_UPDATE_INFORMATION);
+        emit statusChanged(READING_APPIMAGE_UPDATE_INFORMATION);
         updateString = QString::fromUtf8(read(_pAppImage, APPIMAGE_TYPE1_UPDATE_INFO_POS, APPIMAGE_TYPE1_UPDATE_INFO_LEN));
 
     } else if(TYPE_2_APPIMAGE) {
@@ -505,17 +541,17 @@ void AppImageUpdateInformationPrivate::getInfo(void)
             uchar *mapped = NULL;
             unsigned long offset = 0, length = 0;
 
-	    emit statusChanged(MAPPING_APPIMAGE_TO_MEMORY);
+            emit statusChanged(MAPPING_APPIMAGE_TO_MEMORY);
             mapped = _pAppImage->map(/*offset=*/0, /*max=*/_pAppImage->size()); // mmap in Qt.
 
             if(mapped == NULL) {
-		emit statusChanged(IDLE);
+                emit statusChanged(IDLE);
                 FATAL_START  " getInfo : not enough memory to map AppImage to memory." FATAL_END;
                 MEMORY_ERROR();
                 return;
             }
 
-	    emit statusChanged(FINDING_APPIMAGE_ARCHITECTURE);
+            emit statusChanged(FINDING_APPIMAGE_ARCHITECTURE);
             data = (uint8_t*) mapped;
             if(isElf32(data)) {
                 INFO_START  " getInfo : AppImage architecture is x86 (32 bits)." INFO_END;
@@ -525,7 +561,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 
                 strTab = (char *)(data + shdr32[elf32->e_shstrndx].sh_offset);
                 emit statusChanged(SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER);
-		lookupSectionHeaders(strTab, shdr32, elf32, APPIMAGE_TYPE2_UPDATE_INFO_SHDR);
+                lookupSectionHeaders(strTab, shdr32, elf32, APPIMAGE_TYPE2_UPDATE_INFO_SHDR);
             } else if(isElf64(data)) {
                 INFO_START  " getInfo : AppImage architecture is x86_64 (64 bits)." INFO_END;
 
@@ -534,31 +570,31 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 
                 strTab = (char *)(data + shdr64[elf64->e_shstrndx].sh_offset);
                 emit statusChanged(SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER);
-		lookupSectionHeaders(strTab, shdr64, elf64, APPIMAGE_TYPE2_UPDATE_INFO_SHDR);
+                lookupSectionHeaders(strTab, shdr64, elf64, APPIMAGE_TYPE2_UPDATE_INFO_SHDR);
             } else {
                 emit statusChanged(UNMAPPING_APPIMAGE_FROM_MEMORY);
-		_pAppImage->unmap(mapped);
-		emit statusChanged(IDLE);
+                _pAppImage->unmap(mapped);
+                emit statusChanged(IDLE);
                 FATAL_START  " getInfo : Unsupported elf format." FATAL_END;
                 ELF_FORMAT_ERROR();
                 return;
             }
 
-	    emit statusChanged(UNMAPPING_APPIMAGE_FROM_MEMORY);
+            emit statusChanged(UNMAPPING_APPIMAGE_FROM_MEMORY);
             _pAppImage->unmap(mapped); // equivalent to unmap.
 
 
             if(offset == 0 || length == 0) {
                 emit statusChanged(IDLE);
-		FATAL_START  " getInfo : cannot find '"
-                    	     LOGR APPIMAGE_TYPE2_UPDATE_INFO_SHDR LOGR "' section header." FATAL_END;
+                FATAL_START  " getInfo : cannot find '"
+                LOGR APPIMAGE_TYPE2_UPDATE_INFO_SHDR LOGR "' section header." FATAL_END;
                 SECTION_HEADER_NOT_FOUND_ERROR();
             } else {
                 emit statusChanged(READING_APPIMAGE_UPDATE_INFORMATION);
-		updateString = QString::fromUtf8(read(_pAppImage, offset, length));
+                updateString = QString::fromUtf8(read(_pAppImage, offset, length));
             }
 
-	    emit statusChanged(IDLE);
+            emit statusChanged(IDLE);
         }
     } else {
         WARNING_START  " getInfo : unable to confirm AppImage type." WARNING_END;
@@ -568,10 +604,10 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         ) {
             WARNING_START  " getInfo : guessing AppImage type to be 1." WARNING_END;
             emit(progress(80));
-	    emit statusChanged(READING_APPIMAGE_UPDATE_INFORMATION);
+            emit statusChanged(READING_APPIMAGE_UPDATE_INFORMATION);
             updateString = QString::fromUtf8(read(_pAppImage, APPIMAGE_TYPE1_UPDATE_INFO_POS, APPIMAGE_TYPE1_UPDATE_INFO_LEN));
         } else {
-	    emit statusChanged(IDLE);
+            emit statusChanged(IDLE);
             FATAL_START  " getInfo : invalid AppImage type(" LOGR (unsigned)magicBytes[2] LOGR ")." FATAL_END;
             APPIMAGE_TYPE_ERROR();
             return;
@@ -597,8 +633,8 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 
     // This will be sent along the update information.
     QJsonObject fileInformation {
-	{ "AppImageFilePath" , _sAppImagePath },
-	{ "AppImageSHA1Hash" , AppImageSHA1 }
+        { "AppImageFilePath", _sAppImagePath },
+        { "AppImageSHA1Hash", AppImageSHA1 }
     };
 
     QJsonObject updateInformation; // will be filled up later on.
@@ -606,62 +642,62 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     emit statusChanged(FINALIZING_APPIMAGE_EMBEDED_UPDATE_INFORMATION);
 
     if(data.size() < 2) {
-	emit statusChanged(IDLE);
+        emit statusChanged(IDLE);
         FATAL_START  " getInfo : update information has invalid delimiters." FATAL_END;
         APPIMAGE_INVALID_UI_ERROR();
         return;
     } else if(data.size() == 2) {
-	{
-	QJsonObject buffer {
-            { "transport", data.at(0) },
-            { "zsyncUrl", data.at(1) }
-        };
-        updateInformation = buffer;
-        } 
-   } else if(data.size() == 5) {
+        {
+            QJsonObject buffer {
+                { "transport", data.at(0) },
+                { "zsyncUrl", data.at(1) }
+            };
+            updateInformation = buffer;
+        }
+    } else if(data.size() == 5) {
         if(data.at(0) == "gh-releases-zsync") {
-	    {
-	    QJsonObject buffer {
-                {"transport", data.at(0) },
-                {"username", data.at(1) },
-                {"repo", data.at(2) },
-                {"tag", data.at(3) },
-                {"filename", data.at(4) }
-            };
-            updateInformation = buffer;
+            {
+                QJsonObject buffer {
+                    {"transport", data.at(0) },
+                    {"username", data.at(1) },
+                    {"repo", data.at(2) },
+                    {"tag", data.at(3) },
+                    {"filename", data.at(4) }
+                };
+                updateInformation = buffer;
             }
-	} else if(data.at(0) == "bintray-zsync") {
-	    {
-	    QJsonObject buffer {
-                {"transport", data.at(0) },
-                {"username", data.at(1) },
-                {"repo", data.at(2) },
-                {"packageName", data.at(3) },
-                {"filename", data.at(4) }
-            };
-            updateInformation = buffer;
+        } else if(data.at(0) == "bintray-zsync") {
+            {
+                QJsonObject buffer {
+                    {"transport", data.at(0) },
+                    {"username", data.at(1) },
+                    {"repo", data.at(2) },
+                    {"packageName", data.at(3) },
+                    {"filename", data.at(4) }
+                };
+                updateInformation = buffer;
             }
-	} else {
-	    emit statusChanged(IDLE);
+        } else {
+            emit statusChanged(IDLE);
             FATAL_START  " getInfo : unsupported transport mechanism given." FATAL_END;
             UNSUPPORTED_TRANSPORT_ERROR();
             return;
         }
 
     } else {
-	emit statusChanged(IDLE);
+        emit statusChanged(IDLE);
         FATAL_START " getInfo : update information has invalid number of entries(" LOGR data.size() LOGR ")." FATAL_END;
         APPIMAGE_INVALID_UI_ERROR();
         return;
     }
 
     {
-    QJsonObject buffer {
-	{ "IsEmpty" , updateInformation.isEmpty() },
-	{ "FileInformation" , fileInformation } ,
-	{ "UpdateInformation" , updateInformation }
-    };
-    _jInfo = buffer;
+        QJsonObject buffer {
+            { "IsEmpty", updateInformation.isEmpty() },
+            { "FileInformation", fileInformation },
+            { "UpdateInformation", updateInformation }
+        };
+        _jInfo = buffer;
     }
 
     emit statusChanged(IDLE);
@@ -696,14 +732,14 @@ void AppImageUpdateInformationPrivate::clear(void)
 /* This private slot proxies the log messages from
  * the logger signal to qInfo().
 */
-void AppImageUpdateInformationPrivate::handleLogMessage(QString msg , QString path)
+void AppImageUpdateInformationPrivate::handleLogMessage(QString msg, QString path)
 {
     (void)path;
     qInfo().noquote()  << "["
                        <<  QDateTime::currentDateTime().toString(Qt::ISODate)
-		       << "] "
-		       << _sLoggerName
-		       << "("
+                       << "] "
+                       << _sLoggerName
+                       << "("
                        << _sAppImageName << ")::" << msg;
     return;
 }
@@ -719,7 +755,7 @@ void AppImageUpdateInformationPrivate::handleLogMessage(QString msg , QString pa
 */
 QString AppImageUpdateInformationPrivate::errorCodeToString(short errorCode)
 {
-    QString ret = "AppImageDeltaWriter::errorCode(";
+    QString ret = "AppImageDeltaRevisioner::errorCode(";
     switch(errorCode) {
     case APPIMAGE_NOT_READABLE:
         ret += "APPIMAGE_NOT_READABLE)";
@@ -766,47 +802,47 @@ QString AppImageUpdateInformationPrivate::errorCodeToString(short errorCode)
 
 QString AppImageUpdateInformationPrivate::statusCodeToString(short code)
 {
-	QString ret = "AppImageDeltaWriter::statusCode(";
-	switch(code){
-		case INITIALIZING:
-			ret += "INITIALIZING";
-			break;
-		case IDLE:
-			ret += "IDLE";
-			break;
-		case OPENING_APPIMAGE:
-			ret += "OPENING_APPIMAGE";
-			break;
-		case CALCULATING_APPIMAGE_SHA1_HASH:
-			ret += "CALCULATING_APPIMAGE_SHA1_HASH";
-			break;
-		case READING_APPIMAGE_MAGIC_BYTES:
-			ret += "READING_APPIMAGE_MAGIC_BYTES";
-			break;
-		case FINDING_APPIMAGE_TYPE:
-			ret += "FINDING_APPIMAGE_TYPE";
-			break;
-		case FINDING_APPIMAGE_ARCHITECTURE:
-			ret += "FINDING_APPIMAGE_ARCHITECTURE";
-			break;
-		case MAPPING_APPIMAGE_TO_MEMORY:
-			ret += "MAPPING_APPIMAGE_TO_MEMORY";
-			break;
-		case READING_APPIMAGE_UPDATE_INFORMATION:
-			ret += "READING_APPIMAGE_UPDATE_INFORMATION";
-			break;
-		case SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER:
-			ret += "SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER";
-			break;
-		case UNMAPPING_APPIMAGE_FROM_MEMORY:
-			ret += "UNMAPPING_APPIMAGE_FROM_MEMORY";
-			break;
-		case FINALIZING_APPIMAGE_EMBEDED_UPDATE_INFORMATION:
-			ret += "FINALIZING_APPIMAGE_EMBEDED_UPDATE_INFORMATION";
-			break;
-		default:
-			ret += "Unknown";
-	}
-	ret += ")";
-	return ret;
+    QString ret = "AppImageDeltaRevisioner::statusCode(";
+    switch(code) {
+    case INITIALIZING:
+        ret += "INITIALIZING";
+        break;
+    case IDLE:
+        ret += "IDLE";
+        break;
+    case OPENING_APPIMAGE:
+        ret += "OPENING_APPIMAGE";
+        break;
+    case CALCULATING_APPIMAGE_SHA1_HASH:
+        ret += "CALCULATING_APPIMAGE_SHA1_HASH";
+        break;
+    case READING_APPIMAGE_MAGIC_BYTES:
+        ret += "READING_APPIMAGE_MAGIC_BYTES";
+        break;
+    case FINDING_APPIMAGE_TYPE:
+        ret += "FINDING_APPIMAGE_TYPE";
+        break;
+    case FINDING_APPIMAGE_ARCHITECTURE:
+        ret += "FINDING_APPIMAGE_ARCHITECTURE";
+        break;
+    case MAPPING_APPIMAGE_TO_MEMORY:
+        ret += "MAPPING_APPIMAGE_TO_MEMORY";
+        break;
+    case READING_APPIMAGE_UPDATE_INFORMATION:
+        ret += "READING_APPIMAGE_UPDATE_INFORMATION";
+        break;
+    case SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER:
+        ret += "SEARCHING_FOR_UPDATE_INFORMATION_SECTION_HEADER";
+        break;
+    case UNMAPPING_APPIMAGE_FROM_MEMORY:
+        ret += "UNMAPPING_APPIMAGE_FROM_MEMORY";
+        break;
+    case FINALIZING_APPIMAGE_EMBEDED_UPDATE_INFORMATION:
+        ret += "FINALIZING_APPIMAGE_EMBEDED_UPDATE_INFORMATION";
+        break;
+    default:
+        ret += "Unknown";
+    }
+    ret += ")";
+    return ret;
 }

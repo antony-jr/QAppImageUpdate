@@ -64,7 +64,7 @@ public:
         IO_READ_ERROR,
         ERROR_RESPONSE_CODE,
         GITHUB_API_RATE_LIMIT_REACHED,
-	NO_MARKER_FOUND_IN_CONTROL_FILE,
+        NO_MARKER_FOUND_IN_CONTROL_FILE,
         INVALID_ZSYNC_HEADERS_NUMBER,
         INVALID_ZSYNC_MAKE_VERSION,
         INVALID_ZSYNC_TARGET_FILENAME,
@@ -76,20 +76,20 @@ public:
         INVALID_TARGET_FILE_URL,
         INVALID_TARGET_FILE_SHA1
     } error_code;
-    
+
     enum : short {
-	INITIALIZING = 0,
-	IDLE = 1,
-	PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION = 50,
-	REQUESTING_GITHUB_API,
-	PARSING_GITHUB_API_RESPONSE,
-	REQUESTING_ZSYNC_CONTROL_FILE,
-	REQUESTING_BINTRAY,
-	PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL,
-	PARSING_ZSYNC_CONTROL_FILE,
-	SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE,
-	STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY,
-	FINALIZING_PARSING_ZSYNC_CONTROL_FILE
+        INITIALIZING = 0,
+        IDLE = 1,
+        PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION = 50,
+        REQUESTING_GITHUB_API,
+        PARSING_GITHUB_API_RESPONSE,
+        REQUESTING_ZSYNC_CONTROL_FILE,
+        REQUESTING_BINTRAY,
+        PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL,
+        PARSING_ZSYNC_CONTROL_FILE,
+        SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE,
+        STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY,
+        FINALIZING_PARSING_ZSYNC_CONTROL_FILE
     } status_code;
 
     explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
@@ -119,7 +119,7 @@ public Q_SLOTS:
     qint32 getStrongCheckSumBytes(void);
     qint32 getConsecutiveMatchNeeded(void);
 private Q_SLOTS:
-    void checkHeadTargetFileUrl(qint64 , qint64);
+    void checkHeadTargetFileUrl(qint64, qint64);
     void handleBintrayRedirection(const QUrl&);
     void handleGithubAPIResponse(void);
     void handleDownloadProgress(qint64, qint64);
@@ -127,7 +127,7 @@ private Q_SLOTS:
     void handleNetworkError(QNetworkReply::NetworkError);
     void handleErrorSignal(short);
 #ifndef LOGGING_DISABLED
-    void handleLogMessage(QString , QString);
+    void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
 Q_SIGNALS:
     void targetFileUrl(QUrl);
@@ -136,21 +136,22 @@ Q_SIGNALS:
     void receiveControlFile(void);
     void progress(int);
     void error(short);
+    void networkError(QNetworkReply::NetworkError);
     void statusChanged(short);
-    void logger(QString , QString);
+    void logger(QString, QString);
 private:
     bool _bAcceptRange = false;
     QJsonObject _jUpdateInformation;
     QString _sZsyncMakeVersion,
-	    _sZsyncFileName, //Only used for github and bintray API responses.
+            _sZsyncFileName, //Only used for github and bintray API responses.
             _sTargetFileName,
-	    _sAppImagePath,
+            _sAppImagePath,
             _sTargetFileSHA1
 #ifndef LOGGING_DISABLED
             ,_sLoggerName,
             _sLogBuffer;
-#else 
-    	    ;
+#else
+            ;
 #endif // LOGGING_DISABLED
     QDateTime _pMTime;
     qint32 _nTargetFileBlockSize = 0,
