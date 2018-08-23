@@ -588,19 +588,47 @@ void ZsyncWriterPrivate::doStart(void)
 
     emit started();
     if(_bAcceptRange == true) {
-        QFile *sourceFile = nullptr;
-        if((errorCode = tryOpenSourceFile(_sSourceFilePath, &sourceFile)) > 0) {
-            emit error(errorCode);
-            return;
+        /*
+         * Check if we have the target file already downloaded
+         * in the output of the target file directory.
+        */
+        {
+            QString alreadyDownloadedTargetFile = QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName;
+            QFileInfo info(alreadyDownloadedTargetFile);
+            if(info.exists() && info.isReadable()) {
+                QFile *targetFile = nullptr;
+                if((errorCode = tryOpenSourceFile(alreadyDownloadedTargetFile, &targetFile)) > 0) {
+                    emit error(errorCode);
+                    return;
+                }
+
+                if(submitSourceFile(targetFile) < 0) {
+                    _bCancelRequested = false;
+                    connect(this, &ZsyncWriterPrivate::initStart,
+                            this, &ZsyncWriterPrivate::doStart, Qt::QueuedConnection);
+                    disconnect(this, &ZsyncWriterPrivate::initCancel,
+                               this,  &ZsyncWriterPrivate::doCancel);
+                    return;
+                }
+
+            }
         }
 
-        if(submitSourceFile(sourceFile) < 0) {
-            _bCancelRequested = false;
-            connect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart, Qt::QueuedConnection);
-            disconnect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel);
-            return;
+        if(_nBytesWritten < _nTargetFileLength) {
+            QFile *sourceFile = nullptr;
+            if((errorCode = tryOpenSourceFile(_sSourceFilePath, &sourceFile)) > 0) {
+                emit error(errorCode);
+                return;
+            }
+
+            if(submitSourceFile(sourceFile) < 0) {
+                _bCancelRequested = false;
+                connect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart, Qt::QueuedConnection);
+                disconnect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel);
+                return;
+            }
+            delete sourceFile;
         }
-        delete sourceFile;
     }
 
     constructed = (_nBytesWritten >= _nTargetFileLength) ? verifyAndConstructTargetFile() : false;
@@ -793,14 +821,14 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
             QFile oldFile(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
             if(oldFile.exists()) {
                 INFO_START " verifyAndConstructTargetFile : file with target file name exists , renaming it." INFO_END;
-                oldFile.rename(_sTargetFileName + ".old-version");
+                oldFile.rename(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName + ".old-version");
             }
         }
         /*
          * Construct and rename.
         */
         _pTargetFile->setAutoRemove(false);
-        _pTargetFile->rename(_sTargetFileName);
+        _pTargetFile->rename(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
         _pTargetFile->close();
         emit progress(100, _nTargetFileLength, _nTargetFileLength, 0, QString("KiB/s"));
 

@@ -38,8 +38,8 @@
  * via Qt's signals and slots.
  *
 */
-#ifndef APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
-#define APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
+#ifndef APPIMAGE_DELTA_REVISIONER_HPP_INCLUDED
+#define APPIMAGE_DELTA_REVISIONER_HPP_INCLUDED
 #include <QFile>
 #include <QtGlobal>
 #include <QJsonObject>
@@ -147,6 +147,7 @@ public Q_SLOTS:
     AppImageDeltaRevisioner &setAppImage(const QString&);
     AppImageDeltaRevisioner &setAppImage(QFile*);
     AppImageDeltaRevisioner &setShowLog(bool);
+    AppImageDeltaRevisioner &setOutputDirectory(const QString&);
     AppImageDeltaRevisioner &getAppImageEmbededInformation(void);
     AppImageDeltaRevisioner &checkForUpdate(void);
     AppImageDeltaRevisioner &clear(void);
@@ -182,4 +183,4 @@ private:
 };
 }
 
-#endif // APPIMAGE_DELTA_WRITER_HPP_INCLUDED
+#endif // APPIMAGE_DELTA_REVISIONER_HPP_INCLUDED

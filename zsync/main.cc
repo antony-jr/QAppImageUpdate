@@ -1,6 +1,6 @@
 #include <QCoreApplication>
 #include "textprogressbar.hpp"
-#include <AppImageDeltaRevisioner.hpp>
+#include <AppImageUpdaterBridge>
 
 using namespace AppImageUpdaterBridge;
 
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 
     QObject::connect(&r , &AppImageDeltaRevisioner::progress , [&](int percent , qint64 br , qint64 bt , double speed , QString unit)
     {
-    progressBar.setStatus(br , bt);
+    progressBar.setStatus(percent , br , bt);
     progressBar.setMessage(QString::fromLatin1("Revising New Version at %1 %2").arg(speed, 3, 'f', 1).arg(unit));
     progressBar.update();
     return;

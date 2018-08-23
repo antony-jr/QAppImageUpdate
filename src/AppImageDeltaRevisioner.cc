@@ -108,6 +108,8 @@ using namespace AppImageUpdaterBridge;
 			      this,  &AppImageDeltaRevisioner::handleBlockDownloaderStarted); \
                      connect(_pBlockDownloader.data() , &ZsyncBlockRangeDownloaderPrivate::error , \
 			      this,  &AppImageDeltaRevisioner::handleNetworkError); \
+		     connect(_pBlockDownloader.data() , &ZsyncBlockRangeDownloaderPrivate::completelyFinished , \
+			      this , &AppImageDeltaRevisioner::finished , Qt::DirectConnection); \
 		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::zsyncInformation, \
 			     _pDeltaWriter.data() , &ZsyncWriterPrivate::setConfiguration); \
 		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::finishedConfiguring , \
@@ -201,6 +203,20 @@ AppImageDeltaRevisioner &AppImageDeltaRevisioner::setShowLog(bool choice)
     return *this;
 }
 
+AppImageDeltaRevisioner &AppImageDeltaRevisioner::setOutputDirectory(const QString &dir)
+{
+    if(dir.isEmpty()) {
+        return *this;
+    }
+    QFileInfo info(dir);
+    if(!info.isDir() || !info.isWritable() || !info.isReadable() || !info.exists()) {
+        return *this;
+    }
+    auto metaObject = _pDeltaWriter->metaObject();
+    metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setOutputDirectory(const QString&)")))
+    .invoke(_pDeltaWriter.data(), Qt::QueuedConnection, Q_ARG(QString, info.absoluteFilePath()));
+    return *this;
+}
 
 AppImageDeltaRevisioner &AppImageDeltaRevisioner::getAppImageEmbededInformation(void)
 {

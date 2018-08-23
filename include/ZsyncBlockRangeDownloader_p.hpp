@@ -67,6 +67,7 @@ Q_SIGNALS:
     void canceled(void);
     void error(QNetworkReply::NetworkError);
     void started(void);
+    void completelyFinished(void);
     void finished(void);
 
 private:

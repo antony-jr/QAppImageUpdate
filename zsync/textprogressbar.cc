@@ -21,7 +21,6 @@ void TextProgressBar::update()
     if (maximum > 0) {
         // we know the maximum
         // draw a progress bar
-        int percent = value * 100 / maximum;
         int hashes = percent / 2;
 
         QByteArray progressbar(hashes, '#');
@@ -48,8 +47,9 @@ void TextProgressBar::setMessage(const QString &m)
     message = m;
 }
 
-void TextProgressBar::setStatus(qint64 val, qint64 max)
+void TextProgressBar::setStatus(int per , qint64 val, qint64 max)
 {
+    percent = per;
     value = val;
     maximum = max;
 }

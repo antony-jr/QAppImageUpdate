@@ -29,7 +29,12 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename           : AppImageUpdaterBridge
- * The traditional proxy header file.
+ * @filename    : AppImageUpdaterBridge.cc
+ *
+ * This is where the plugin support will be implemented.
 */
-#include "include/AppImageUpdaterBridge.hpp"
+#include <AppImageUpdaterBridge.hpp>
+
+/*
+ * Plugin stuff comes here
+*/

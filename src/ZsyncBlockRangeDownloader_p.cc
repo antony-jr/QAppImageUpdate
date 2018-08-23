@@ -79,6 +79,7 @@ void ZsyncBlockRangeDownloaderPrivate::cancel(void)
 void ZsyncBlockRangeDownloaderPrivate::initDownloader(bool doStart)
 {
     if(!doStart) {
+        emit completelyFinished();
         return;
     }
 
