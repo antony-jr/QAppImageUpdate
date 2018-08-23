@@ -27,7 +27,7 @@ This library gives absolute support for *Qt* , Infact , All you need is the mini
 
 * *No third party libraries needed* - The reason why you want to use this library.
 
-* *Drink the Qt Kool-aid*.
+* *Drink the Qt Kool-aid* - In a positive way.
 
 
 
