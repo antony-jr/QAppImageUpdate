@@ -10,7 +10,7 @@ AppImage Updater Bridge is a **delta updater** based on the *zsync algorithm* fo
 delta update any AppImage file , That is , Only download the binary data which you need to get the latest version , 
 Therefore saving your time and internet.
 
-AppImage Updater Bridge is not the **official library** to do this stuff , The official library is [here](https://github.com/AppImages/AppImageUpdate) which is also written in **C++** but with no real **Qt support** , So thats why this library is built.
+AppImage Updater Bridge is not the **official library** to do this stuff , The official library is [here](https://github.com/AppImage/AppImageUpdate) which is also written in **C++** but with no real **Qt support** , Thats why this library is built.
 
 This library gives absolute support for *Qt* , Infact , All you need is the minimal installation of *Qt*(i.e, base ).
 
@@ -42,7 +42,7 @@ Please refer the official [documentation](https://antony-jr.github.io/AppImageUp
 
 # Acknowledgements ![Thank You](https://img.shields.io/badge/Always-Say%20Thank%20You!-blue.svg?style=flat-square)
 
-* [AppImages](https://github.com/AppImages) - Motivation to start this project.
+* [AppImages](https://github.com/AppImage) - Motivation to start this project.
 * [zsync](https://github.com/cph6/zsync) ([Colin Phipps](https://github.com/cph6)) - Zsync algorithm's author.
 * [zsync2](https://github.com/AppImage/zsync2) ([@TheAssassin](https://github.com/TheAssassin)) - Helpful references.
 * [Qt](https://github.com/qt)
