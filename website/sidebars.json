@@ -5,13 +5,12 @@
 	   "AddingAppImageUpdaterBridge"
     ],
     "Guides" : [
-	   "UpdatingFromAppImageInformation",
-	   "UpdatingFromProgrammedConfiguration",
-	   "UpdatingFromJsonConfiguration"
+	   "AppImageDeltaRevisionerExample"
     ],
     "API" : [
-	   "AppImageUpdaterBridgeErrorCodes",
-	   "ClassAIUpdaterBridge"
+	   "AppImageDeltaRevisionerErrorCodes",
+	   "AppImageDeltaRevisionerStatusCodes",
+	   "ClassAppImageDeltaRevisioner"
     ]
   }
 }

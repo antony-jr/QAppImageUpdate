@@ -302,9 +302,11 @@ void ZsyncWriterPrivate::rawSeqWrite(QByteArray *downloadedData)
      * Verify checksums , truncate and then close.
      */
     if(_nBytesWritten >= _nTargetFileLength) {
-        INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
-        auto needToDownload = !verifyAndConstructTargetFile();
-        emit finished(needToDownload);
+        if(_pTargetFile->isOpen()) {
+            INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
+            auto needToDownload = !verifyAndConstructTargetFile();
+            emit finished(needToDownload);
+        }
     }
     return;
 }
@@ -416,10 +418,12 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
      * If so then try to construct the target file.
     */
     if(_nBytesWritten >= _nTargetFileLength) {
-        INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
-        _pTransferSpeed.reset(new QTime);
-        auto needToDownload = !verifyAndConstructTargetFile();
-        emit finished(needToDownload);
+        if(_pTargetFile->isOpen()) { // If still under construction then.
+            INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
+            _pTransferSpeed.reset(new QTime);
+            auto needToDownload = !verifyAndConstructTargetFile();
+            emit finished(needToDownload);
+        }
     }
     emit statusChanged(IDLE);
     return;
@@ -829,9 +833,8 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
         */
         _pTargetFile->setAutoRemove(false);
         _pTargetFile->rename(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
+        _pTargetFile->setPermissions(QFileInfo(_sSourceFilePath).permissions()); // Set the same permissions as the old version.
         _pTargetFile->close();
-        emit progress(100, _nTargetFileLength, _nTargetFileLength, 0, QString("KiB/s"));
-
     } else {
         FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
         emit statusChanged(IDLE);

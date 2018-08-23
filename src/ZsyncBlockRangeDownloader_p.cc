@@ -167,7 +167,7 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished(void)
 {
     --_nBlockReply;
 
-    if(_nBlockReply <= 0) {
+    if(_nBlockReply == 0) {
         if(_bCancelRequested == true) {
             _bCancelRequested = false;
             emit canceled();
@@ -188,7 +188,7 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyCancel(void)
 
     --_nBlockReply;
 
-    if(_nBlockReply <= 0) {
+    if(_nBlockReply == 0) {
         _bCancelRequested = false;
         emit canceled();
     }

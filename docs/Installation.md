@@ -4,12 +4,8 @@ title: Installing AppImage Updater Bridge to your Project.
 sidebar_label: Installation
 ---
 
-**AppImage Updater Bridge** is a small library written in C++ using Qt5 Framework. This   
-little library helps you to **create awesome AutoUpdater in Qt5 for AppImages**!
-
-**AppImage Updater Bridge** also supports the **Qt** event loop and does not block your main thread and thus this library is a perfect fit for your Qt Projects.
-
-**Before jumping the gun , make sure you have the [dependencies](#dependencies)**
+Since AppImage Updater Birdge is specifically made for Qt , All you need is Qt's development tools
+and only that, Nothing more and nothing less.
 
 ## Dependencies
 
@@ -18,8 +14,8 @@ little library helps you to **create awesome AutoUpdater in Qt5 for AppImages**!
 	Qt is an amazing **GUI Framework** which is made for the future , it got   
 	**stability , performance and the looks!**. I really recommend you all to   
 	use Qt for your **GUI** Projects. And the best part is , its **Open Source**.   
-	Make sure to install it too. **Curl** is also required but since Qt5 will   
-	have a copy of curl inside it , You do not need to install it seperately.
+	Make sure to install it too.
+
 
 ## Installing the latest release from github
 
@@ -28,7 +24,7 @@ You must have **git** to do this , **don't worry** because most of the linux dis
 have **installed it already** for you , if not install it!
 
 ```
- $ git clone --recursive https://github.com/antony-jr/AppImageUpdaterBridge
+ $ git clone https://github.com/antony-jr/AppImageUpdaterBridge
 ```
 
 or **to install it in your git project folder**
@@ -36,7 +32,8 @@ or **to install it in your git project folder**
 ```
  $ git submodule init
  $ git submodule add https://github.com/antony-jr/AppImageUpdaterBridge
- $ git submodule update --recursive
+ $ git submodule update
 ```
 
 Since **AppImages** are only available to linux , this library is also specific to **Linux**.
+But Qt is cross platform and therefore , This may even run on all platforms where Qt is supported.

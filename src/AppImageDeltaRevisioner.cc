@@ -285,7 +285,7 @@ void AppImageDeltaRevisioner::handleNetworkError(QNetworkReply::NetworkError eco
 void AppImageDeltaRevisioner::handleBlockDownloaderStarted(void)
 {
     connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::finished,
-            this, &AppImageDeltaRevisioner::handleDeltaWriterFinished);
+            this, &AppImageDeltaRevisioner::handleDeltaWriterFinished, Qt::QueuedConnection);
     disconnect(_pDeltaWriter.data(), &ZsyncWriterPrivate::progress,
                this, &AppImageDeltaRevisioner::progress);
     connect(_pBlockDownloader.data(), &ZsyncBlockRangeDownloaderPrivate::progress,
@@ -299,6 +299,8 @@ void AppImageDeltaRevisioner::handleDeltaWriterFinished(bool failed)
                this, &AppImageDeltaRevisioner::handleDeltaWriterFinished);
     disconnect(_pBlockDownloader.data(), &ZsyncBlockRangeDownloaderPrivate::progress,
                this, &AppImageDeltaRevisioner::progress);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::progress,
+            this, &AppImageDeltaRevisioner::progress);
     if(failed) {
         emit error(CANNOT_CONSTRUCT_TARGET_FILE);
     } else {

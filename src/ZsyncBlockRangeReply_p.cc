@@ -58,20 +58,18 @@ ZsyncBlockRangeReplyPrivate::ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate *del
      * a simple sequential download.
     */
     if(!(_nRangeFrom || _nRangeTo)) {
-        connect(reply, &QNetworkReply::finished,
-                this, &ZsyncBlockRangeReplyPrivate::finished);
         connect(reply, &QNetworkReply::downloadProgress,
                 this, &ZsyncBlockRangeReplyPrivate::handleSeqProgress);
         connect(this, &ZsyncBlockRangeReplyPrivate::sendData,
                 deltaWriter, &ZsyncWriterPrivate::rawSeqWrite, Qt::QueuedConnection);
     } else {
-        connect(reply, &QNetworkReply::finished,
-                this, &ZsyncBlockRangeReplyPrivate::handleFinished);
         connect(reply, &QNetworkReply::downloadProgress,
                 this, &ZsyncBlockRangeReplyPrivate::handleProgress);
         connect(this,  &ZsyncBlockRangeReplyPrivate::sendBlockDataToWriter,
                 deltaWriter, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
     }
+    connect(reply, &QNetworkReply::finished,
+            this, &ZsyncBlockRangeReplyPrivate::handleFinished);
     connect(this,  &ZsyncBlockRangeReplyPrivate::cancelReply,
             reply, &QNetworkReply::abort);
     return;
@@ -92,10 +90,15 @@ void ZsyncBlockRangeReplyPrivate::handleFinished(void)
 {
     auto reply = (QNetworkReply*)QObject::sender();
     disconnect(this, &ZsyncBlockRangeReplyPrivate::cancelReply, reply, &QNetworkReply::abort);
-    _pRawData->append(reply->readAll());
+    disconnect(reply, &QNetworkReply::downloadProgress, this, &ZsyncBlockRangeReplyPrivate::handleSeqProgress);
+    disconnect(reply, &QNetworkReply::downloadProgress, this, &ZsyncBlockRangeReplyPrivate::handleProgress);
 
-    /* Send all the data to ZsyncWriterPrivate. */
-    emit sendBlockDataToWriter(_nRangeFrom, _nRangeTo, _pRawData.take());
+    if(!_pRawData->isEmpty()) {
+        _pRawData->append(reply->readAll());
+
+        /* Send all the data to ZsyncWriterPrivate. */
+        emit sendBlockDataToWriter(_nRangeFrom, _nRangeTo, _pRawData.take());
+    }
     emit finished();
     return;
 }

@@ -108,20 +108,19 @@ class Index extends React.Component {
                   title: 'Supports Qt\'s Event Loop.',
                 },
                 {
-                  content: 'Read Update Information Directly from your AppImage with a very clean API , without any'+
-                            ' OS Specifics. Thus giving the best results on extracting Update Information from any'+
-                            ' AppImage.',
+                  content: 'Read Update Information Directly from your AppImage with a very clean API.'+
+                            'Does not require anything other than Qt to do this.' ,
                   image: siteConfig.baseUrl + 'img/bin.png',
                   imageAlign: 'top',
                   title: 'Get Update Information Directly from your AppImage!',
                 },
                 {
-                  content: 'This library was not only designed to be powerfull but also light weight than the official'+
-                           ' AppImage Updater library , As this library only depends on Qt5 , as long as you use Qt5,' +
-                           ' This library will never seem like a weight to you.',
+                  content: 'Since this library is built just for Qt , Using this library with the Qt framework will never '
+			   + 'Cost you more than 620 KiB and if optimized , Only 486 KiB , Therefore you don\'t have to '
+			   + 'worry about any overheads as long as you use Qt for your main program.',
                    image: siteConfig.baseUrl + 'img/light.png',
                    imageAlign: 'top',
-                   title: 'Very Light Wieght!',
+                   title: 'Very Light Weight!',
                 },
                 {
                   content: 'This project is rated by <b>Codacy</b> with a <b>A Project Certification</b>' +
@@ -141,12 +140,8 @@ class Index extends React.Component {
             <GridBlock
               contents={[
                 {
-                  content:
-                    ' AppImage\'s are cool but when it comes to updating package that uses AppImage , it can be pretty hard to workout.' +
-                    ' And Therefore I started creating a lot of libraries that can be used to AutoUpdate any software including AppImages , ' +
-                    ' But AppImages used a seperate efficient way to update packages , Thus I started working on creating a nice bridge to'+
-                    ' this mechanism and So AppImage Updater Bridge was born.',
-                  title: 'Why Create AppImageUpdaterBridge ?',
+			content: 'AppImage Updater Bridge is a delta updater based on the zsync algorithm for the AppImage format , Using this library you can delta update any AppImage file , That is , Only download the binary data which you need to get the latest version , Therefore saving your time and internet.' + ' AppImage Updater Bridge is not the official library to do this stuff , The official library is here(https://github.com/AppImage/AppImageUpdate) which is also written in C++ but with no real Qt support , Thats why this library is built. ' + ' This library gives absolute support for Qt , Infact , All you need is the minimal installation of Qt(i.e, base ). '  , 
+                  title: 'What is AppImage Updater Bridge ?',
                 },
               ]}
             />
