@@ -63,7 +63,7 @@ Please refer the official [documentation](https://antony-jr.github.io/AppImageUp
 * [AppImages](https://github.com/AppImage) - Motivation to start this project.
 * [zsync](https://github.com/cph6/zsync) ([Colin Phipps](https://github.com/cph6)) - Zsync algorithm's author.
 * [zsync2](https://github.com/AppImage/zsync2) ([@TheAssassin](https://github.com/TheAssassin)) - Helpful references.
-* [Qt](https://github.com/qt)
+* [Qt](https://github.com/qt) - And Everything else.
 
 
 # Support [![Twitter](https://img.shields.io/twitter/url/https/github.com/antony-jr/AppImageUpdaterBridge.svg?style=social)](https://twitter.com/intent/tweet?text=Checkout%20%23AppImage%20Updater%20Bridge%20at%20https%3A%2F%2Fgithub.com%2Fantony-jr%2FAppImageUpdaterBridge)

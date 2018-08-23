@@ -1,5 +1,5 @@
 INCLUDEPATH += $$system(pwd) $$system(pwd)/include
-QT += core concurrent network
+QT += core network
 HEADERS += $$system(pwd)/include/AppImageUpdateInformation_p.hpp \ 
 	   $$system(pwd)/include/ZsyncRemoteControlFileParser_p.hpp \
 	   $$system(pwd)/include/ZsyncInternalStructures_p.hpp \
