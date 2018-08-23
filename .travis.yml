@@ -17,4 +17,4 @@ script:
   - make -j$(nproc)
   - cd ..
   - cd tests
-  - bash start_tests.sh # Run Tests
+  - bash start_test.sh # Run Tests
