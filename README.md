@@ -30,6 +30,24 @@ This library gives absolute support for *Qt* , Infact , All you need is the mini
 * *Drink the Qt Kool-aid* - In a positive way.
 
 
+**Witness AppImageUpdaterBridge with your own eyes,**
+
+```
+#include <QCoreApplication>
+#include <AppImageUpdaterBridge>
+
+using namespace AppImageUpdaterBridge;
+
+int main(int argc, char **argv)
+{
+    QCoreApplication app(argc, argv);
+    AppImageDeltaRevisioner DeltaRevisioner;
+    QObject::connect(&DeltaRevisioner, &AppImageDeltaRevisioner::finished, &app, &QCoreApplication::quit);
+    DeltaRevisioner.setShowLog(true).start();
+    return app.exec();
+}
+```
+
 
 # Try it
 
