@@ -1,0 +1,63 @@
+<html><head><meta charset="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1"/><title>Handling Errors from AppImageDeltaRevisioner · AppImage Updater Bridge</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta property="og:title" content="Handling Errors from AppImageDeltaRevisioner · AppImage Updater Bridge"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/AppImageUpdaterBridge/index.html"/><meta property="og:description" content="Using ```AppImageUpdaterBridge::AppImageDeltaRevisioner::errorCodeToString(code)``` you can get the error code name as "/><link rel="shortcut icon" href="/AppImageUpdaterBridge/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><link rel="stylesheet" href="/AppImageUpdaterBridge/css/main.css"/></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/AppImageUpdaterBridge/"><img class="logo" src="/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png"/><h2 class="headerTitle">AppImage Updater Bridge</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li><a href="/AppImageUpdaterBridge/docs/Installation.html" target="_self">Docs</a></li><li><a href="/AppImageUpdaterBridge/en/help.html" target="_self">Help</a></li><li><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><i></i></div><h2><i>›</i><span>API</span></h2></div><div class="navGroups"><div class="navGroup navGroupActive"><h3>Getting Started</h3><ul><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/Installation.html">Installation</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AddingAppImageUpdaterBridge.html">Add AppImage Updater Bridge to your Project.</a></li></ul></div><div class="navGroup navGroupActive"><h3>Guides</h3><ul><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerExample.html">AppImageDeltaRevisioner Simple Update Example</a></li></ul></div><div class="navGroup navGroupActive"><h3>API</h3><ul><li class="navListItem navListItemActive"><a class="navItem navItemActive" href="/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerErrorCodes.html">AppImageDeltaRevisioner Error Codes</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerStatusCodes.html">AppImageDeltaRevisioner Status Codes</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/ClassAppImageDeltaRevisioner.html">Class AppImageDeltaRevisioner</a></li></ul></div></div></section></div><script>
+          var toggler = document.getElementById('navToggler');
+          var nav = document.getElementById('docsNav');
+          toggler.onclick = function() {
+            nav.classList.toggle('docsSliderActive');
+          };
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1>Handling Errors from AppImageDeltaRevisioner</h1></header><article><div><span><p>Using <code>AppImageUpdaterBridge::AppImageDeltaRevisioner::errorCodeToString(code)</code> you can get the error code name as
+a QString , The below table tabulates all error codes with respect to their error name.</p>
+<p>Error codes are usually emitted from <code>AppImageDeltaRevisioner::error</code> signal.</p>
+<p>Error code such as <code>AppImageDeltaRevisioner::UNKNOWN_NETWORK_ERROR</code> can be further investigated to get the actual
+error , In this case you can call <code>AppImageDeltaRevisioner::getNetworkError();</code> to get the recent network error code
+which is of type <a href="https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum">QNetworkReply::NetworkError</a>.</p>
+<blockquote>
+<p><strong>Note</strong>: AppImageDeltaRevisioner is under AppImageUpdaterBridge namespace , So make sure to include it.</p>
+</blockquote>
+<table>
+<thead>
+<tr><th>Error Code</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td>AppImageDeltaRevisioner::NO_ERROR</td><td>0</td></tr>
+<tr><td>AppImageDeltaRevisioner::APPIMAGE_NOT_READABLE</td><td>1</td></tr>
+<tr><td>AppImageDeltaRevisioner::NO_READ_PERMISSION</td><td>2</td></tr>
+<tr><td>AppImageDeltaRevisioner::APPIMAGE_NOT_FOUND</td><td>3</td></tr>
+<tr><td>AppImageDeltaRevisioner::CANNOT_OPEN_APPIMAGE</td><td>4</td></tr>
+<tr><td>AppImageDeltaRevisioner::EMPTY_UPDATE_INFORMATION</td><td>5</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_APPIMAGE_TYPE</td><td>6</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_MAGIC_BYTES</td><td>7</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_UPDATE_INFORMATION</td><td>8</td></tr>
+<tr><td>AppImageDeltaRevisioner::NOT_ENOUGH_MEMORY</td><td>9</td></tr>
+<tr><td>AppImageDeltaRevisioner::SECTION_HEADER_NOT_FOUND</td><td>10</td></tr>
+<tr><td>AppImageDeltaRevisioner::UNSUPPORTED_ELF_FORMAT</td><td>11</td></tr>
+<tr><td>AppImageDeltaRevisioner::UNSUPPORTED_TRANSPORT</td><td>12</td></tr>
+<tr><td>AppImageDeltaRevisioner::UNKNOWN_NETWORK_ERROR</td><td>50</td></tr>
+<tr><td>AppImageDeltaRevisioner::IO_READ_ERROR</td><td>51</td></tr>
+<tr><td>AppImageDeltaRevisioner::ERROR_RESPONSE_CODE</td><td>52</td></tr>
+<tr><td>AppImageDeltaRevisioner::GITHUB_API_RATE_LIMIT_REACHED</td><td>53</td></tr>
+<tr><td>AppImageDeltaRevisioner::NO_MARKER_FOUND_IN_CONTROL_FILE</td><td>54</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_ZSYNC_HEADERS_NUMBER</td><td>55</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_ZSYNC_MAKE_VERSION</td><td>56</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_ZSYNC_TARGET_FILENAME</td><td>57</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_ZSYNC_MTIME</td><td>58</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_ZSYNC_BLOCKSIZE</td><td>59</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_TARGET_FILE_LENGTH</td><td>60</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_HASH_LENGTH_LINE</td><td>61</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_HASH_LENGTHS</td><td>62</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_TARGET_FILE_URL</td><td>63</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_TARGET_FILE_SHA1</td><td>64</td></tr>
+<tr><td>AppImageDeltaRevisioner::HASH_TABLE_NOT_ALLOCATED</td><td>100</td></tr>
+<tr><td>AppImageDeltaRevisioner::INVALID_TARGET_FILE_CHECKSUM_BLOCKS</td><td>101</td></tr>
+<tr><td>AppImageDeltaRevisioner::CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS</td><td>102</td></tr>
+<tr><td>AppImageDeltaRevisioner::CANNOT_CONSTRUCT_HASH_TABLE</td><td>103</td></tr>
+<tr><td>AppImageDeltaRevisioner::QBUFFER_IO_READ_ERROR</td><td>104</td></tr>
+<tr><td>AppImageDeltaRevisioner::SOURCE_FILE_NOT_FOUND</td><td>105</td></tr>
+<tr><td>AppImageDeltaRevisioner::NO_PERMISSION_TO_READ_SOURCE_FILE</td><td>106</td></tr>
+<tr><td>AppImageDeltaRevisioner::CANNOT_OPEN_SOURCE_FILE</td><td>107</td></tr>
+<tr><td>AppImageDeltaRevisioner::NO_PERMISSION_TO_READ_WRITE_TARGET_FILE</td><td>108</td></tr>
+<tr><td>AppImageDeltaRevisioner::CANNOT_OPEN_TARGET_FILE</td><td>109</td></tr>
+<tr><td>AppImageDeltaRevisioner::TARGET_FILE_SHA1_HASH_MISMATCH</td><td>110</td></tr>
+<tr><td>AppImageDeltaRevisioner::CANNOT_CONSTRUCT_TARGET_FILE</td><td>111</td></tr>
+</tbody>
+</table>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="AppImageDeltaRevisionerExample.html">← AppImageDeltaRevisioner Simple Update Example.</a><a class="docs-next button" href="AppImageDeltaRevisionerStatusCodes.html">Handling Status from AppImageDeltaRevisioner →</a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/AppImageUpdaterBridge/" class="nav-home"><img src="/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png" alt="AppImage Updater Bridge" width="66" height="58"/></a><div><h5>Docs</h5><a href="/AppImageUpdaterBridge/docs/Installation.html">Getting Started</a><a href="/AppImageUpdaterBridge/docs/UpdatingFromAppImageInformation.html">Guides</a><a href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html">API Reference</a></div><div><h5>Community</h5><a href="/AppImageUpdaterBridge/en/users.html">User Showcase</a><a href="http://stackoverflow.com/questions/tagged/AppImage/" target="_blank">Stack Overflow</a><a href="https://discordapp.com/">Project Chat</a><a href="https://twitter.com/antonyjr0" target="_blank">Twitter</a></div><div><h5>More</h5><a href="/AppImageUpdaterBridge/blog">Blog</a><a href="https://github.com/antony-jr/AppImageUpdaterBridge">GitHub</a><a class="github-button" href="https://github.com/antony-jr/AppImageUpdaterBridge" data-icon="octicon-star" data-count-href="/antony-jr/AppImageUpdaterBridge/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2018 Antony Jr.</section></footer></div></body></html>
