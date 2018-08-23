@@ -30,13 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * @filename    : AppImageUpdaterBridge.hpp
- *
- * This is where the plugin support will be declared.
 */
 #ifndef APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
 #define APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
 #include <AppImageDeltaRevisioner.hpp>
-namespace AppImageUpdaterBridge {
-
-}
 #endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED

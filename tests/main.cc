@@ -8,15 +8,15 @@ int main(int ac, char **av)
     AppImageUpdateInformation AIUITest;
     ZsyncRemoteControlFileParser ZRCFParserTest;
 
-    auto startTests = [&](){
-	/* Test AppImage Update Information. */
-	QTest::qExec(&AIUITest);
-	QTest::qExec(&ZRCFParserTest);
-	return;
+    auto startTests = [&]() {
+        /* Test AppImage Update Information. */
+        QTest::qExec(&AIUITest);
+        QTest::qExec(&ZRCFParserTest);
+        return;
     };
 
-    QObject::connect(&ZRCFParserTest , &ZsyncRemoteControlFileParser::finished , &app , &QCoreApplication::quit,
-		    Qt::QueuedConnection);
-    QTimer::singleShot(256 , startTests);
+    QObject::connect(&ZRCFParserTest, &ZsyncRemoteControlFileParser::finished, &app, &QCoreApplication::quit,
+                     Qt::QueuedConnection);
+    startTests();
     return app.exec();
 }

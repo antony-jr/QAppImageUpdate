@@ -14,5 +14,4 @@ SOURCES += $$system(pwd)/src/AppImageUpdateInformation_p.cc \
 	   $$system(pwd)/src/ZsyncWriter_p.cc \
            $$system(pwd)/src/ZsyncBlockRangeReply_p.cc \
            $$system(pwd)/src/ZsyncBlockRangeDownloader_p.cc \
-           $$system(pwd)/src/AppImageDeltaRevisioner.cc \
-           $$system(pwd)/src/AppImageUpdaterBridge.cc
+           $$system(pwd)/src/AppImageDeltaRevisioner.cc

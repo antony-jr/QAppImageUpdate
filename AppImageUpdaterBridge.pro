@@ -29,5 +29,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 include(AppImageUpdaterBridge.pri)
+TARGET = AppImageUpdaterBridge
 TEMPLATE = lib
 CONFIG += staticlib release
+
+logging_disabled {
+	message(Logging will be disabled for this build.)
+	DEFINES += LOGGING_DISABLED
+}
