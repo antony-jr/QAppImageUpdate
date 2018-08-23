@@ -30,7 +30,7 @@ This library gives absolute support for *Qt* , Infact , All you need is the mini
 * *Drink the Qt Kool-aid* - In a positive way.
 
 
-**Witness AppImageUpdaterBridge with your own eyes,**
+**Witness it with your own eyes,**
 
 ```
 #include <QCoreApplication>
