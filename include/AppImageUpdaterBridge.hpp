@@ -36,4 +36,7 @@
 #ifndef APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
 #define APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
 #include <AppImageDeltaRevisioner.hpp>
+namespace AppImageUpdaterBridge {
+
+}
 #endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
