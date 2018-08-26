@@ -73,9 +73,9 @@ For most of the time , This class does not leak memory but if it does please rep
 <tbody>
 <tr><td>void</td><td><a href="#void-startedvoid">started(void)</a></td></tr>
 <tr><td>void</td><td><a href="#void-canceledvoid">canceled(void)</a></td></tr>
-<tr><td>void</td><td><a href="#void-finishedvoid">finished(void)</a></td></tr>
+<tr><td>void</td><td><a href="#void-finishedvoid">finished(QJsonObject , QString)</a></td></tr>
 <tr><td>void</td><td><a href="#void-embededinformationqjsonobject">embededInformation(QJsonObject)</a></td></tr>
-<tr><td>void</td><td><a href="#void-updateavailablebool-qstring">updateAvailable(bool, QString)</a></td></tr>
+<tr><td>void</td><td><a href="#void-updateavailablebool-qstring">updateAvailable(bool, QJsonObject)</a></td></tr>
 <tr><td>void</td><td><a href="#void-statuschangedshort">statusChanged(short)</a></td></tr>
 <tr><td>void</td><td><a href="#void-errorshort">error(short)</a></td></tr>
 <tr><td>void</td><td><a href="#void-progressint-percentage-qint64-bytesreceived-qint64-bytestotal-double-speed-qstring-speedunits">progress(int, qint64, qint64, double, QString)</a></td></tr>
@@ -210,8 +210,8 @@ Path and so if the returned AppImage is not a valid , Then it emits an error sig
 <h3><a class="anchor" aria-hidden="true" name="appimagedeltarevisioner-checkforupdatevoid"></a><a href="#appimagedeltarevisioner-checkforupdatevoid" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>AppImageDeltaRevisioner &amp;checkForUpdate(void)</h3>
 <p align="right"> <b>[SLOT]</b> </p>
 <p>Checks update for the current operating AppImage.
-emits <strong>updateAvailable(bool , QString)</strong> , Where the <em>bool</em>  will be <strong>true</strong> if the AppImage
-needs update. The QString in the signal will have the absolute path to the current operating
+emits <strong>updateAvailable(bool , QJsonObject)</strong> , Where the <em>bool</em>  will be <strong>true</strong> if the AppImage
+needs update. The QJsonObject in the signal will have the details of the current operating
 AppImage.</p>
 <h3><a class="anchor" aria-hidden="true" name="appimagedeltarevisioner-clearvoid"></a><a href="#appimagedeltarevisioner-clearvoid" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>AppImageDeltaRevisioner &amp;clear(void)</h3>
 <p align="right"> <b>[SLOT]</b> </p>
@@ -227,15 +227,36 @@ See <a href="https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDelt
 <h3><a class="anchor" aria-hidden="true" name="void-canceledvoid"></a><a href="#void-canceledvoid" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void canceled(void)</h3>
 <p align="right"> <b>[SIGNAL]</b> </p>
 <p>Emitted when the update is canceled successfully.</p>
-<h3><a class="anchor" aria-hidden="true" name="void-finishedvoid"></a><a href="#void-finishedvoid" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void finished(void)</h3>
+<h3><a class="anchor" aria-hidden="true" name="void-finishedqjsonobject-qstring"></a><a href="#void-finishedqjsonobject-qstring" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void finished(QJsonObject , QString)</h3>
 <p align="right"> <b>[SIGNAL]</b> </p>
-<p>Emitted when the update is finished successfully.</p>
+<p>Emitted when the update is finished successfully. The given <em>QJsonObject</em> has the details of the new version
+of the AppImage and the given <em>QString</em> has the absolute path to the old versioin of the AppImage.</p>
+<p>The <em>QJsonObject</em> will follow the folloing format with respect to json ,</p>
+<pre><code class="hljs">{
+    &quot;AbsolutePath&quot; : Absolute path of the new version of the AppImage ,
+    &quot;Sha1Hash&quot;     : Sha1 hash of the new version of the AppImage
+}
+</code></pre>
+<blockquote>
+<p>Note: If the absolute path of the new version of the AppImage is same as the old version then
+it could mean that there were no updates needed , You can however listen to the <em>updateAvailable</em>
+signal to know the exact state of updates. You should call <em>checkForUpdate</em> and then call <em>start</em>
+if updates were really available.</p>
+</blockquote>
 <h3><a class="anchor" aria-hidden="true" name="void-embededinformationqjsonobject"></a><a href="#void-embededinformationqjsonobject" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void embededInformation(QJsonObject)</h3>
 <p align="right"> <b>[SIGNAL]</b> </p>
 <p>Emitted when <em><a href="#appimagedeltarevisioner-getappimageembededinformationvoid">getAppImageEmbededInformation(void)</a></em> is called.</p>
-<h3><a class="anchor" aria-hidden="true" name="void-updateavailablebool-qstring"></a><a href="#void-updateavailablebool-qstring" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void updateAvailable(bool , QString)</h3>
+<h3><a class="anchor" aria-hidden="true" name="void-updateavailablebool-qjsonobject"></a><a href="#void-updateavailablebool-qjsonobject" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void updateAvailable(bool , QJsonObject)</h3>
 <p align="right"> <b>[SIGNAL]</b> </p>
-<p>Emitted when <em><a href="#appimagedeltarevisioner-checkforupdatevoid">checkForUpdate(void)</a></em> is called.</p>
+<p>Emitted when <em><a href="#appimagedeltarevisioner-checkforupdatevoid">checkForUpdate(void)</a></em> is called.
+The given <em>bool</em> states if the operating AppImage needs update and the <em>QJsonObject</em> gives the details of
+the current operating AppImage.</p>
+<p>The <em>QJsonObject</em> will follow the following format with respect to json ,</p>
+<pre><code class="hljs">{
+    &quot;AbsolutePath&quot; : The absolute path of the current operating AppImage ,
+    &quot;Sha1Hash&quot;     : The Sha1 hash of the current operating AppImage
+}
+</code></pre>
 <h3><a class="anchor" aria-hidden="true" name="void-statuschangedshort"></a><a href="#void-statuschangedshort" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void statusChanged(short)</h3>
 <p align="right"> <b>[SIGNAL]</b> </p>
 <p>Emitted when the updater status is changed , The given short integer is the status code.
@@ -256,6 +277,6 @@ See <a href="https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDelt
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" name="void-loggerqstring-qstring"></a><a href="#void-loggerqstring-qstring" aria-hidden="true" class="hash-link" ><svg aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void logger(QString , QString)</h3>
 <p align="right"> <b>[SIGNAL]</b> </p>
-<p>Emitted when the updater issues a log message with the first QString as the log message and
-the second QString as the path to the respective AppImage.</p>
+<p>Emitted when the updater issues a log message with the <em>first QString</em> as the log message and
+the <em>second QString</em> as the path to the respective AppImage.</p>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="AppImageDeltaRevisionerStatusCodes.html">← Handling Status from AppImageDeltaRevisioner</a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/AppImageUpdaterBridge/" class="nav-home"><img src="/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png" alt="AppImage Updater Bridge" width="66" height="58"/></a><div><h5>Docs</h5><a href="/AppImageUpdaterBridge/docs/Installation.html">Getting Started</a><a href="/AppImageUpdaterBridge/docs/UpdatingFromAppImageInformation.html">Guides</a><a href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html">API Reference</a></div><div><h5>Community</h5><a href="/AppImageUpdaterBridge/en/users.html">User Showcase</a><a href="http://stackoverflow.com/questions/tagged/AppImage/" target="_blank">Stack Overflow</a><a href="https://discordapp.com/">Project Chat</a><a href="https://twitter.com/antonyjr0" target="_blank">Twitter</a></div><div><h5>More</h5><a href="/AppImageUpdaterBridge/blog">Blog</a><a href="https://github.com/antony-jr/AppImageUpdaterBridge">GitHub</a><a class="github-button" href="https://github.com/antony-jr/AppImageUpdaterBridge" data-icon="octicon-star" data-count-href="/antony-jr/AppImageUpdaterBridge/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2018 Antony Jr.</section></footer></div></body></html>
