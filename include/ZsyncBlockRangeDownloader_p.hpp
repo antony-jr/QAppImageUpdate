@@ -60,6 +60,7 @@ private Q_SLOTS:
     void handleBlockRange(qint32,qint32);
     void handleBlockReplyFinished(void);
     void handleBlockReplyCancel(void);
+    void handleBlockReplyError(QNetworkReply::NetworkError);
     void handleBlockReplyProgress(qint64, double, QString);
 
 Q_SIGNALS:
@@ -74,6 +75,7 @@ private:
     QUrl _uTargetFileUrl;
     qint64 _nBytesTotal = 0;
     QAtomicInteger<qint64> _nBytesReceived = 0;
+    QAtomicInteger<bool> _bErrored = false;
     QAtomicInteger<bool> _bCancelRequested = false;
     QAtomicInteger<qint64> _nBlockReply = 0;
     ZsyncRemoteControlFileParserPrivate *_pParser = nullptr;

@@ -85,6 +85,7 @@ void ZsyncBlockRangeDownloaderPrivate::initDownloader(void)
     _uTargetFileUrl.clear();
     _nBytesTotal = 0;
     _nBytesReceived = 0;
+    _bErrored = false;
     _bCancelRequested = false;
     _nBlockReply = 0;
 
@@ -131,8 +132,8 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockRange(qint32 fromRange, qint32
             this, &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished,
             Qt::QueuedConnection);
     connect(blockReply, &ZsyncBlockRangeReplyPrivate::error,
-            this, &ZsyncBlockRangeDownloaderPrivate::error,
-            Qt::DirectConnection);
+            this, &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyError,
+            Qt::QueuedConnection);
     if(!(fromRange || toRange)) {
         connect(blockReply, &ZsyncBlockRangeReplyPrivate::seqProgress,
                 this, &ZsyncBlockRangeDownloaderPrivate::progress, Qt::DirectConnection);
@@ -176,6 +177,16 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished(void)
         }
     }
     return;
+}
+
+void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyError(QNetworkReply::NetworkError ecode)
+{
+	if(_bErrored == true){
+		return;
+	}
+	_bErrored = true;
+	emit error(ecode);
+	return;
 }
 
 /* When canceled , check if the current emitting ZsyncBlockRangeReply is the last
