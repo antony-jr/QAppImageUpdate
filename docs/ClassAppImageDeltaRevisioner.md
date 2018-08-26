@@ -282,10 +282,11 @@ Emitted when the update is finished successfully. The given *QJsonObject* has th
 of the AppImage and the given *QString* has the absolute path to the old versioin of the AppImage.
 
 The *QJsonObject* will follow the folloing format with respect to json ,
-	{
-		"AbsolutePath" : Absolute path of the new version of the AppImage ,
-		"Sha1Hash"     : Sha1 hash of the new version of the AppImage
-	}
+	
+    {
+        "AbsolutePath" : Absolute path of the new version of the AppImage ,
+        "Sha1Hash"     : Sha1 hash of the new version of the AppImage
+    }
 
 > Note: If the absolute path of the new version of the AppImage is same as the old version then
 it could mean that there were no updates needed , You can however listen to the *updateAvailable*
@@ -306,10 +307,11 @@ The given *bool* states if the operating AppImage needs update and the *QJsonObj
 the current operating AppImage.
 
 The *QJsonObject* will follow the following format with respect to json , 
-	{
-		"AbsolutePath" : The absolute path of the current operating AppImage ,
-		"Sha1Hash"     : The Sha1 hash of the current operating AppImage
-	}
+	
+    {
+        "AbsolutePath" : The absolute path of the current operating AppImage ,
+        "Sha1Hash"     : The Sha1 hash of the current operating AppImage
+    }
 
 ### void statusChanged(short)
 <p align="right"> <b>[SIGNAL]</b> </p>
