@@ -161,9 +161,16 @@ AppImageDeltaRevisioner &AppImageDeltaRevisioner::start(void)
 
 AppImageDeltaRevisioner &AppImageDeltaRevisioner::cancel(void)
 {
-    auto metaObject = _pDeltaWriter->metaObject();
-    metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("cancel(void)")))
-    .invoke(_pDeltaWriter.data(), Qt::QueuedConnection);
+    {
+        auto metaObject = _pDeltaWriter->metaObject();
+        metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("cancel(void)")))
+        .invoke(_pDeltaWriter.data(), Qt::QueuedConnection);
+    }
+    {
+        auto metaObject = _pBlockDownloader->metaObject();
+        metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("cancel(void)")))
+        .invoke(_pBlockDownloader.data(), Qt::QueuedConnection);
+    }
     return *this;
 }
 

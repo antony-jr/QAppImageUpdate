@@ -181,12 +181,12 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished(void)
 
 void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyError(QNetworkReply::NetworkError ecode)
 {
-	if(_bErrored == true){
-		return;
-	}
-	_bErrored = true;
-	emit error(ecode);
-	return;
+    if(_bErrored == true) {
+        return;
+    }
+    _bErrored = true;
+    emit error(ecode);
+    return;
 }
 
 /* When canceled , check if the current emitting ZsyncBlockRangeReply is the last
