@@ -54,8 +54,9 @@ public:
 
 public Q_SLOTS:
     void cancel(void);
+
 private Q_SLOTS:
-    void initDownloader(bool);
+    void initDownloader(void);
     void handleBlockRange(qint32,qint32);
     void handleBlockReplyFinished(void);
     void handleBlockReplyCancel(void);
@@ -67,7 +68,6 @@ Q_SIGNALS:
     void canceled(void);
     void error(QNetworkReply::NetworkError);
     void started(void);
-    void completelyFinished(void);
     void finished(void);
 
 private:

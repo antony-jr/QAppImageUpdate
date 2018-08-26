@@ -252,16 +252,13 @@ void ZsyncWriterPrivate::getBlockRanges(void)
     }
 
     for(auto iter = _pRequiredRanges.constBegin(), end  = _pRequiredRanges.constEnd(); iter != end; ++iter) {
-        auto to = (*iter).second;
-        if(to >= _nBlocks) {
-            to = _nBlocks;
-            to = to << _nBlockShift;
-        } else {
-            to = to << _nBlockShift;
-            to += _nBlockSize;
-        }
+        auto to = ((*iter).second >= _nBlocks) ? _nTargetFileLength :
+                  ((*iter).second << _nBlockShift) + _nBlockSize;
+        auto from = (*iter).first << _nBlockShift;
 
-        emit blockRange(((*iter).first << _nBlockShift), to);
+        INFO_START " getBlockRanges : (" LOGR from LOGR " , " LOGR to LOGR ")." INFO_END;
+
+        emit blockRange(from, to);
         QCoreApplication::processEvents();
     }
     emit endOfBlockRanges();
@@ -276,6 +273,15 @@ qint32 ZsyncWriterPrivate::getBytesWritten(void)
     return _nBytesWritten;
 }
 
+void ZsyncWriterPrivate::downloadFinished(void)
+{
+    if(!_pTargetFile->isOpen() || !_pTargetFile->autoRemove())
+        return;
+
+    verifyAndConstructTargetFile();
+    return;
+}
+
 /* Simply writes whatever in downloadedData to the working target file ,
  * Used only if the downloader is downloading the entire file.
  * This automatically manages the memory of the given pointer to
@@ -285,7 +291,6 @@ void ZsyncWriterPrivate::rawSeqWrite(QByteArray *downloadedData)
 {
     QScopedPointer<QByteArray> data(downloadedData);
     if(!_pTargetFile->isOpen()) {
-        qDebug() << "Target file is not opened!";
         /*
          * If the target file is not opened then it most likely means
          * that the file is constructed successfully and so we have
@@ -295,19 +300,6 @@ void ZsyncWriterPrivate::rawSeqWrite(QByteArray *downloadedData)
     }
 
     _nBytesWritten += _pTargetFile->write(*(data.data()));
-
-    /*
-     * Check if we got all bytes ,
-     * If so then attempt to construct the file , in sense ,
-     * Verify checksums , truncate and then close.
-     */
-    if(_nBytesWritten >= _nTargetFileLength) {
-        if(_pTargetFile->isOpen()) {
-            INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
-            auto needToDownload = !verifyAndConstructTargetFile();
-            emit finished(needToDownload);
-        }
-    }
     return;
 }
 
@@ -319,10 +311,7 @@ void ZsyncWriterPrivate::rawSeqWrite(QByteArray *downloadedData)
 */
 void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByteArray *downloadedData)
 {
-    // Check if already constructed.
-    if(!_pTargetFile->isOpen()) {
-        return;
-    }
+
 
     unsigned char md4sum[CHECKSUM_SIZE];
     /* Build checksum hash tables if we don't have them yet */
@@ -344,40 +333,49 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
     buffer->open(QIODevice::ReadOnly);
 
     zs_blockid bfrom = fromRange >> _nBlockShift,
-               bto   = (toRange >> _nBlockShift == _nBlocks) ? _nBlocks : (toRange - _nBlockSize) >> _nBlockShift;
+               bto   = (toRange == _nTargetFileLength) ? _nBlocks : (toRange - _nBlockSize) >> _nBlockShift;
 
     emit statusChanged(WRITTING_DOWNLOADED_BLOCK_RANGES);
 
-    /* Check each block */
-    for (zs_blockid x = bfrom; x <= bto; ++x) {
-        QByteArray blockData = buffer->read(_nBlockSize);
-        calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), _nBlockSize);
-        if(memcmp(&md4sum, &(_pBlockHashes[x].checksum[0]), _nStrongCheckSumBytes)) {
-            Md4ChecksumsMatched = false;
-            WARNING_START " writeBlockRanges : md4 checksums mismatch." WARNING_END;
-            if (x > bfrom) {    /* Write any good blocks we did get */
-                INFO_START " writeBlockRanges : only writting good blocks. " INFO_END;
-                writeBlocks((const unsigned char*)downloaded->constData(), bfrom, x - 1);
+    /*
+     * Only check if the to blockid is not the end blockid ,
+     * If we are writting the end blockid then simply write it to file ,
+     * Later the final checksum will verify everything anyways.
+     * This is because the end blockid not always accurate to the target file
+     * length , Therefore the md4 checks fail on the end block which makes it
+     * impossible to finish the delta update eventhough everything is authentic.
+    */
+    if(bto != _nBlocks) {
+        for (zs_blockid x = bfrom; x <= bto; ++x) {
+            QByteArray blockData = buffer->read(_nBlockSize);
+            calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), _nBlockSize);
+            if(memcmp(&md4sum, &(_pBlockHashes[x].checksum[0]), _nStrongCheckSumBytes)) {
+                Md4ChecksumsMatched = false;
+                WARNING_START " writeBlockRanges : md4 checksums mismatch." WARNING_END;
+                if (x > bfrom) {    /* Write any good blocks we did get */
+                    INFO_START " writeBlockRanges : only writting good blocks. " INFO_END;
+                    writeBlocks((const unsigned char*)downloaded->constData(), bfrom, x - 1);
 
-                /*
-                 * Remove the entire range eventhough we did'nt write the
-                 * entire range , This is because in some cases only unwanted
-                 * data is marked as mismatched (like trailing zeros).
-                 * So to tolerate this , We remove the entire range only
-                 * if we write something , Thus when all ranges are finished
-                 * verifyAndConstructTargetFile() will automatically check for
-                 * integrity.
-                 *
-                 * If integrity check failed , When we request required again
-                 * , The _pRequiredRanges vector gets filled with needed blocks.
-                 */
-                if(!_pRequiredRanges.isEmpty())
-                    _pRequiredRanges.removeAll(qMakePair(bfrom, bto));
+                    /*
+                     * Remove the entire range eventhough we did'nt write the
+                     * entire range , This is because in some cases only unwanted
+                     * data is marked as mismatched (like trailing zeros).
+                     * So to tolerate this , We remove the entire range only
+                     * if we write something , Thus when all ranges are finished
+                     * verifyAndConstructTargetFile() will automatically check for
+                     * integrity.
+                     *
+                     * If integrity check failed , When we request required again
+                     * , The _pRequiredRanges vector gets filled with needed blocks.
+                     */
+                    if(!_pRequiredRanges.isEmpty())
+                        _pRequiredRanges.removeAll(qMakePair(bfrom, bto));
 
+                }
+                break;
             }
-            break;
+            QCoreApplication::processEvents();
         }
-        QCoreApplication::processEvents();
     }
 
     if(Md4ChecksumsMatched) {
@@ -412,19 +410,6 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
         }
         emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);
     }
-
-
-    /* Check if we got all the required blocks and written something ,
-     * If so then try to construct the target file.
-    */
-    if(_nBytesWritten >= _nTargetFileLength) {
-        if(_pTargetFile->isOpen()) { // If still under construction then.
-            INFO_START " writeBlockRanges : got all required blocks , trying to construct target file." INFO_END;
-            _pTransferSpeed.reset(new QTime);
-            auto needToDownload = !verifyAndConstructTargetFile();
-            emit finished(needToDownload);
-        }
-    }
     emit statusChanged(IDLE);
     return;
 }
@@ -450,6 +435,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     _nBlocks = nblocks,
     _nBlockSize = blocksize,
     _nBlockShift = (blocksize == 1024) ? 10 : (blocksize == 2048) ? 11 : log2(blocksize);
+    _nBytesWritten = 0;
     _nContext = blocksize * seqMatches;
     _nWeakCheckSumBytes = weakChecksumBytes;
     _pWeakCheckSumMask = _nWeakCheckSumBytes < 3 ? 0 : _nWeakCheckSumBytes == 3 ? 0xff : 0xffff;
@@ -514,7 +500,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 /* Starts the zsync algorithm. */
 void ZsyncWriterPrivate::start(void)
 {
-    emit initStart();
+    QTimer::singleShot(1000, this, SIGNAL(initStart()));
     return;
 }
 
@@ -545,12 +531,11 @@ void ZsyncWriterPrivate::doStart(void)
      * Disconnect this slot to prevent consecutive calls.
      * Kind of like mutex but better than that.
     */
-
     disconnect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart);
     connect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel, Qt::QueuedConnection);
 
+
     short errorCode = 0;
-    bool constructed = false;
     _bCancelRequested = false;
 
     /*
@@ -603,6 +588,7 @@ void ZsyncWriterPrivate::doStart(void)
                 QFile *targetFile = nullptr;
                 if((errorCode = tryOpenSourceFile(alreadyDownloadedTargetFile, &targetFile)) > 0) {
                     emit error(errorCode);
+                    qDebug() << errorCode;
                     return;
                 }
 
@@ -612,13 +598,14 @@ void ZsyncWriterPrivate::doStart(void)
                             this, &ZsyncWriterPrivate::doStart, Qt::QueuedConnection);
                     disconnect(this, &ZsyncWriterPrivate::initCancel,
                                this,  &ZsyncWriterPrivate::doCancel);
+                    qDebug() << "Submit source file returned non zero.";
                     return;
                 }
 
             }
         }
 
-        if(_nBytesWritten < _nTargetFileLength) {
+        if(_nBytesWritten < _nTargetFileLength && _bAcceptRange == true) {
             QFile *sourceFile = nullptr;
             if((errorCode = tryOpenSourceFile(_sSourceFilePath, &sourceFile)) > 0) {
                 emit error(errorCode);
@@ -629,16 +616,19 @@ void ZsyncWriterPrivate::doStart(void)
                 _bCancelRequested = false;
                 connect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart, Qt::QueuedConnection);
                 disconnect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel);
+                qDebug() << "Submit source file returned 2 non zero";
                 return;
             }
             delete sourceFile;
         }
     }
 
-    constructed = (_nBytesWritten >= _nTargetFileLength) ? verifyAndConstructTargetFile() : false;
-    emit finished(!constructed);
+    if(_nBytesWritten >= _nTargetFileLength) {
+        verifyAndConstructTargetFile();
+    } else {
+        emit download();
+    }
     return;
-
 }
 
 /*
@@ -778,6 +768,10 @@ short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath, QFile **sou
 */
 bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
 {
+    if(!_pTargetFile->isOpen() || !_pTargetFile->autoRemove()) {
+        return true;
+    }
+
     bool constructed = false;
     QString UnderConstructionFileSHA1;
     qint64 bufferSize = 0;
@@ -813,34 +807,49 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
     if(UnderConstructionFileSHA1 == _sTargetFileSHA1) {
         INFO_START " verifyAndConstructTargetFile : sha1 hash matches!" INFO_END;
         emit statusChanged(CONSTRUCTING_TARGET_FILE);
-        constructed = true;
+        QString newTargetFileName;
+        _pTargetFile->setAutoRemove(!(constructed = true));
         /*
-         * Rename old files with the same
-         * name.
-         *
-         * Note: Since we checked for permissions earlier
-         * , We don't need to verify it again.
-        */
+        * Rename the new version with current time stamp.
+         * Do not touch anything else.
+               * Note: Since we checked for permissions earlier
+               * , We don't need to verify it again.
+               */
         {
-            QFile oldFile(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
-            if(oldFile.exists()) {
-                INFO_START " verifyAndConstructTargetFile : file with target file name exists , renaming it." INFO_END;
-                oldFile.rename(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName + ".old-version");
+            QFileInfo sameFile(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
+            if(sameFile.exists()) {
+                newTargetFileName = sameFile.baseName() +
+                                    QString("-revised-on-") +
+                                    QDateTime::currentDateTime().toString(Qt::ISODate)
+                                    .replace(":", "-")
+                                    .replace(" ", "-") +
+                                    QString(".") +
+                                    sameFile.completeSuffix();
+
+                INFO_START " verifyAndConstructTargetFile : file with target file name exists." INFO_END;
+                INFO_START " verifyAndConstructTargetFile : renaming new version as " LOGR newTargetFileName LOGR "." INFO_END;
+            } else {
+                newTargetFileName = _sTargetFileName;
             }
         }
-        /*
-         * Construct and rename.
-        */
-        _pTargetFile->setAutoRemove(false);
-        _pTargetFile->rename(QFileInfo(_pTargetFile->fileName()).path() + "/" + _sTargetFileName);
+        _pTargetFile->rename(QFileInfo(_pTargetFile->fileName()).path() + "/" + newTargetFileName);
         _pTargetFile->setPermissions(QFileInfo(_sSourceFilePath).permissions()); // Set the same permissions as the old version.
         _pTargetFile->close();
     } else {
         FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
         emit statusChanged(IDLE);
         emit error(TARGET_FILE_SHA1_HASH_MISMATCH);
-        return false;
+        return constructed;
     }
+
+    /*
+     * Emit finished signal.
+    */
+    QJsonObject newVersionDetails {
+        {"AbsolutePath", QFileInfo(_pTargetFile->fileName()).absoluteFilePath() },
+        {"Sha1Hash", UnderConstructionFileSHA1}
+    };
+    emit finished(newVersionDetails, _sSourceFilePath);
     emit statusChanged(IDLE);
     return constructed;
 }
@@ -1377,6 +1386,10 @@ zs_blockid ZsyncWriterPrivate::getHashEntryBlockId(const hash_entry *e)
  * under-construction output file */
 void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
 {
+    if(!_pTargetFile->isOpen() || !_pTargetFile->autoRemove())
+        return;
+
+
     off_t len = ((off_t) (bto - bfrom + 1)) << _nBlockShift;
     off_t offset = ((off_t)bfrom) << _nBlockShift;
 
@@ -1384,7 +1397,6 @@ void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom
     _pTargetFile->seek(offset);
     _nBytesWritten += _pTargetFile->write((char*)data, len);
     _pTargetFile->seek(pos);
-
 
     {   /* Having written those blocks, discard them from the rsum hashes (as
          * we don't need to identify data for those blocks again, and this may
@@ -1398,6 +1410,7 @@ void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom
             QCoreApplication::processEvents();
         }
     }
+    return;
 }
 
 /* Calculates the Md4 Checksum of the given data with respect to the given len. */

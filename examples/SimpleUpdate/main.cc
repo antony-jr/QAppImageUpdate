@@ -13,9 +13,9 @@ int main(int ac, char **av)
         qInfo().noquote() << "\nUsage: " << av[0] << " [APPIMAGE PATH].";
         return -1;
     }
+    int it = 1;
     QCoreApplication app(ac, av);
-    QString path(av[1]);
-    AppImageDeltaRevisioner DRevisioner(path);
+    AppImageDeltaRevisioner DRevisioner;
     TextProgressBar progressBar;
 
     QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::progress,
@@ -35,12 +35,24 @@ int main(int ac, char **av)
         return;
     });
 
-    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::finished, [&]() {
-        qInfo() << "\nCompleted Delta Update!";
-        app.quit();
+    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::finished, [&](QJsonObject newVersion , QString oldAppImagePath) {
+        qInfo().noquote() << "New Version::  " << newVersion;
+	qInfo().noquote() << "Old Version AppImage Path:: " << oldAppImagePath;
+	qInfo() << "\nCompleted Delta Update!";
+       
+        ++it;	
+	if(it >= ac){	
+		app.quit();
+	}else{
+	++av;
+	QString path(*av);
+	DRevisioner.setAppImage(path).start();
+	}
         return;
     });
 
-    DRevisioner.start();
+    ++av;
+    QString path(*av);
+    DRevisioner.setAppImage(path).start();
     return app.exec();
 }

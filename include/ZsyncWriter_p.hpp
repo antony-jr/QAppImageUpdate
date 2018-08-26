@@ -48,6 +48,7 @@
 #include <QString>
 #include <QScopedPointer>
 #include <QTime>
+#include <QTimer>
 #include <QTemporaryFile>
 #include <ZsyncInternalStructures_p.hpp>
 
@@ -93,6 +94,7 @@ public Q_SLOTS:
     qint32 getBytesWritten(void);
     void getBlockRanges(void);
     void rawSeqWrite(QByteArray*);
+    void downloadFinished(void);
     void writeBlockRanges(qint32, qint32, QByteArray*);
     void setOutputDirectory(const QString&);
     void setConfiguration(qint32,qint32,qint32,qint32,qint32,qint32,
@@ -132,9 +134,10 @@ Q_SIGNALS:
     void blockRange(qint32, qint32);
     void endOfBlockRanges(void);
     void blockRangesWritten(qint32, qint32, bool);
+    void download(void);
     void started(void);
     void canceled(void);
-    void finished(bool);
+    void finished(QJsonObject, QString);
     void progress(int percentage, qint64 bytesReceived, qint64 bytesTotal, double speed, QString units);
     void statusChanged(short);
     void error(short);

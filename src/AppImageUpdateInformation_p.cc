@@ -724,7 +724,6 @@ void AppImageUpdateInformationPrivate::clear(void)
     _sAppImagePath.clear();
     _sAppImageName.clear();
     _pAppImage.clear();
-    INFO_START  " clear : flushed everything." INFO_END;
     return;
 }
 

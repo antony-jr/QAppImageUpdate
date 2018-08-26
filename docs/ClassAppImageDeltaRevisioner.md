@@ -66,9 +66,9 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 |--------------|------------------------------------------------|
 | void | [started(void)](#void-startedvoid) |
 | void | [canceled(void)](#void-canceledvoid) |
-| void | [finished(void)](#void-finishedvoid) |
+| void | [finished(QJsonObject , QString)](#void-finishedvoid) |
 | void | [embededInformation(QJsonObject)](#void-embededinformationqjsonobject) |
-| void | [updateAvailable(bool, QString)](#void-updateavailablebool-qstring) |
+| void | [updateAvailable(bool, QJsonObject)](#void-updateavailablebool-qstring) |
 | void | [statusChanged(short)](#void-statuschangedshort) |
 | void | [error(short)](#void-errorshort) |
 | void | [progress(int, qint64, qint64, double, QString)](#void-progressint-percentage-qint64-bytesreceived-qint64-bytestotal-double-speed-qstring-speedunits) |
@@ -246,8 +246,8 @@ Path and so if the returned AppImage is not a valid , Then it emits an error sig
 <p align="right"> <b>[SLOT]</b> </p>
 
 Checks update for the current operating AppImage.
-emits **updateAvailable(bool , QString)** , Where the *bool*  will be **true** if the AppImage
-needs update. The QString in the signal will have the absolute path to the current operating
+emits **updateAvailable(bool , QJsonObject)** , Where the *bool*  will be **true** if the AppImage
+needs update. The QJsonObject in the signal will have the details of the current operating
 AppImage.
 
 
@@ -275,21 +275,41 @@ Emitted when the updater is started successfully.
 
 Emitted when the update is canceled successfully.
 
-### void finished(void)
+### void finished(QJsonObject , QString)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
-Emitted when the update is finished successfully.
+Emitted when the update is finished successfully. The given *QJsonObject* has the details of the new version
+of the AppImage and the given *QString* has the absolute path to the old versioin of the AppImage.
+
+The *QJsonObject* will follow the folloing format with respect to json ,
+	{
+		"AbsolutePath" : Absolute path of the new version of the AppImage ,
+		"Sha1Hash"     : Sha1 hash of the new version of the AppImage
+	}
+
+> Note: If the absolute path of the new version of the AppImage is same as the old version then
+it could mean that there were no updates needed , You can however listen to the *updateAvailable*
+signal to know the exact state of updates. You should call *checkForUpdate* and then call *start*
+if updates were really available.
+
 
 ### void embededInformation(QJsonObject)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when *[getAppImageEmbededInformation(void)](#appimagedeltarevisioner-getappimageembededinformationvoid)* is called.
 
-### void updateAvailable(bool , QString)
+### void updateAvailable(bool , QJsonObject)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when *[checkForUpdate(void)](#appimagedeltarevisioner-checkforupdatevoid)* is called.
+The given *bool* states if the operating AppImage needs update and the *QJsonObject* gives the details of 
+the current operating AppImage.
 
+The *QJsonObject* will follow the following format with respect to json , 
+	{
+		"AbsolutePath" : The absolute path of the current operating AppImage ,
+		"Sha1Hash"     : The Sha1 hash of the current operating AppImage
+	}
 
 ### void statusChanged(short)
 <p align="right"> <b>[SIGNAL]</b> </p>
@@ -322,7 +342,7 @@ The updater's progress is emitted through this unified signal.
 ### void logger(QString , QString)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
-Emitted when the updater issues a log message with the first QString as the log message and
-the second QString as the path to the respective AppImage.
+Emitted when the updater issues a log message with the *first QString* as the log message and
+the *second QString* as the path to the respective AppImage.
 
 

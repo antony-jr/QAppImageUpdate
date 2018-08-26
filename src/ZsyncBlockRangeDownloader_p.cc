@@ -53,8 +53,10 @@ ZsyncBlockRangeDownloaderPrivate::ZsyncBlockRangeDownloaderPrivate(ZsyncRemoteCo
       _pWriter(writer),
       _pManager(nm)
 {
-    connect(_pWriter, &ZsyncWriterPrivate::finished,
-            this, &ZsyncBlockRangeDownloaderPrivate::initDownloader);
+    connect(_pWriter, &ZsyncWriterPrivate::download,
+            this, &ZsyncBlockRangeDownloaderPrivate::initDownloader, Qt::QueuedConnection);
+    connect(this, &ZsyncBlockRangeDownloaderPrivate::finished,
+            _pWriter, &ZsyncWriterPrivate::downloadFinished, Qt::QueuedConnection);
     connect(_pWriter, &ZsyncWriterPrivate::blockRange,
             this, &ZsyncBlockRangeDownloaderPrivate::handleBlockRange,Qt::QueuedConnection);
     return;
@@ -73,15 +75,18 @@ void ZsyncBlockRangeDownloaderPrivate::cancel(void)
     return;
 }
 
-/* Starts the download of all the required blocks ,
- * Typically this is connected to the finish signal of ZsyncWriterPrivate.
-*/
-void ZsyncBlockRangeDownloaderPrivate::initDownloader(bool doStart)
+/* Starts the download of all the required blocks. */
+void ZsyncBlockRangeDownloaderPrivate::initDownloader(void)
 {
-    if(!doStart) {
-        emit completelyFinished();
-        return;
-    }
+    disconnect(_pWriter, &ZsyncWriterPrivate::download,
+               this, &ZsyncBlockRangeDownloaderPrivate::initDownloader);
+
+    /* Clear internal cache. */
+    _uTargetFileUrl.clear();
+    _nBytesTotal = 0;
+    _nBytesReceived = 0;
+    _bCancelRequested = false;
+    _nBlockReply = 0;
 
     auto writerMetaObject = _pWriter->metaObject();
 
@@ -122,29 +127,20 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockRange(qint32 fromRange, qint32
     connect(blockReply, &ZsyncBlockRangeReplyPrivate::canceled,
             this, &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyCancel,
             Qt::QueuedConnection);
+    connect(blockReply, &ZsyncBlockRangeReplyPrivate::finished,
+            this, &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished,
+            Qt::QueuedConnection);
+    connect(blockReply, &ZsyncBlockRangeReplyPrivate::error,
+            this, &ZsyncBlockRangeDownloaderPrivate::error,
+            Qt::DirectConnection);
     if(!(fromRange || toRange)) {
         connect(blockReply, &ZsyncBlockRangeReplyPrivate::seqProgress,
                 this, &ZsyncBlockRangeDownloaderPrivate::progress, Qt::DirectConnection);
-        connect(blockReply, &ZsyncBlockRangeReplyPrivate::finished,
-                this, &ZsyncBlockRangeDownloaderPrivate::finished,
-                Qt::DirectConnection);
-        connect(blockReply, &ZsyncBlockRangeReplyPrivate::canceled,
-                this, &ZsyncBlockRangeDownloaderPrivate::canceled,
-                Qt::DirectConnection);
     } else {
         connect(blockReply, &ZsyncBlockRangeReplyPrivate::progress,
                 this, &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyProgress,
                 Qt::QueuedConnection);
-        connect(blockReply, &ZsyncBlockRangeReplyPrivate::finished,
-                this, &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished,
-                Qt::QueuedConnection);
-        connect(blockReply, &ZsyncBlockRangeReplyPrivate::canceled,
-                this, &ZsyncBlockRangeDownloaderPrivate::handleBlockReplyCancel,
-                Qt::QueuedConnection);
     }
-    connect(blockReply, &ZsyncBlockRangeReplyPrivate::error,
-            this, &ZsyncBlockRangeDownloaderPrivate::error,
-            Qt::DirectConnection);
     return;
 }
 
@@ -170,8 +166,12 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished(void)
     if(_nBlockReply == 0) {
         if(_bCancelRequested == true) {
             _bCancelRequested = false;
+            connect(_pWriter, &ZsyncWriterPrivate::download,
+                    this, &ZsyncBlockRangeDownloaderPrivate::initDownloader, Qt::QueuedConnection);
             emit canceled();
         } else {
+            connect(_pWriter, &ZsyncWriterPrivate::download,
+                    this, &ZsyncBlockRangeDownloaderPrivate::initDownloader, Qt::QueuedConnection);
             emit finished();
         }
     }
@@ -190,6 +190,8 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyCancel(void)
 
     if(_nBlockReply == 0) {
         _bCancelRequested = false;
+        connect(_pWriter, &ZsyncWriterPrivate::download,
+                this, &ZsyncBlockRangeDownloaderPrivate::initDownloader, Qt::QueuedConnection);
         emit canceled();
     }
     return;

@@ -157,17 +157,15 @@ private Q_SLOTS:
     void handleZsyncRemoteControlFileParserError(short);
     void handleNetworkError(QNetworkReply::NetworkError);
     void handleIndeterminateProgress(int);
-    void handleBlockDownloaderStarted(void);
-    void handleDeltaWriterFinished(bool);
-    void handleUpdateAvailable(bool, QString);
+    void handleUpdateAvailable(bool, QJsonObject);
     void handleUpdateCheckInformation(QJsonObject);
 
 Q_SIGNALS:
     void started(void);
     void canceled(void);
-    void finished(void);
+    void finished(QJsonObject, QString);
     void embededInformation(QJsonObject);
-    void updateAvailable(bool, QString);
+    void updateAvailable(bool, QJsonObject);
     void statusChanged(short);
     void error(short);
     void progress(int, qint64, qint64, double, QString);

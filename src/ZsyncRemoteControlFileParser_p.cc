@@ -72,6 +72,17 @@ using namespace AppImageUpdaterBridge;
 #define FATAL_END LOGE
 
 
+#define STORE_SPLIT(dest , src , key , e) { \
+					  auto s = src.split(key); \
+					  if(s.size() < 2){ \
+					     emit error(e); \
+					     return; \
+					  } \
+					  dest = s[1]; \
+					  }
+
+
+
 /*
  * ZsyncRemoteControlFileParserPrivate is the private class to handle all things
  * related to Zsync Control File. This class must be used privately.
@@ -174,6 +185,7 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
             emit receiveControlFile();
             return;
         }
+        _jUpdateInformation = information;
     } else {
         {
             _jUpdateInformation = information;
@@ -242,8 +254,8 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 /* clears all internal cache in the class. */
 void ZsyncRemoteControlFileParserPrivate::clear(void)
 {
-    INFO_START LOGR " clear : flushed everything." INFO_END;
     _bAcceptRange = true;
+    _jUpdateInformation = QJsonObject();
     _sZsyncMakeVersion.clear();
     _sTargetFileName.clear();
     _sTargetFileSHA1.clear();
@@ -602,75 +614,83 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         return;
     }
 
-    _sZsyncMakeVersion = ZsyncHeaderList.at(0).split("zsync: ")[1];
-    if(_sZsyncMakeVersion == ZsyncHeaderList.at(0)) {
-        emit error(INVALID_ZSYNC_MAKE_VERSION);
-        return;
-    }
+    STORE_SPLIT(_sZsyncMakeVersion, ZsyncHeaderList.at(0), "zsync: ", INVALID_ZSYNC_MAKE_VERSION);
     INFO_START LOGR " handleControlFile : zsync make version confirmed to be " LOGR _sZsyncMakeVersion LOGR "." INFO_END;
 
-    _sTargetFileName = ZsyncHeaderList.at(1).split("Filename: ")[1];
-    if(_sTargetFileName == ZsyncHeaderList.at(1)) {
-        emit error(INVALID_ZSYNC_TARGET_FILENAME);
-        return;
-    }
+    STORE_SPLIT(_sTargetFileName, ZsyncHeaderList.at(1), "Filename: ", INVALID_ZSYNC_TARGET_FILENAME);
     INFO_START LOGR " handleControlFile : zsync target file name confirmed to be " LOGR _sTargetFileName LOGR "." INFO_END;
 
-    _pMTime = QDateTime::fromString(ZsyncHeaderList.at(2).split("MTime: ")[1], "ddd, dd MMM yyyy HH:mm:ss +zzz0");
+    {
+        QString timeStr;
+        STORE_SPLIT(timeStr, ZsyncHeaderList.at(2), "MTime: ", INVALID_ZSYNC_MTIME);
+        _pMTime = QDateTime::fromString(timeStr, "ddd, dd MMM yyyy HH:mm:ss +zzz0");
+    }
+
     if(!_pMTime.isValid()) {
         emit error(INVALID_ZSYNC_MTIME);
         return;
     }
     INFO_START LOGR " handleControlFile : zsync target file MTime confirmed to be " LOGR _pMTime LOGR "." INFO_END;
 
-    _nTargetFileBlockSize = ZsyncHeaderList.at(3).split("Blocksize: ")[1].toInt();
+    {
+        QString nStr;
+        STORE_SPLIT(nStr, ZsyncHeaderList.at(3), "Blocksize: ", INVALID_ZSYNC_BLOCKSIZE);
+        _nTargetFileBlockSize = nStr.toInt();
+    }
     if(_nTargetFileBlockSize < 1024) {
         emit error(INVALID_ZSYNC_BLOCKSIZE);
         return;
     }
     INFO_START LOGR " handleControlFile : zsync target file blocksize confirmed to be " LOGR _nTargetFileBlockSize LOGR " bytes." INFO_END;
 
-    _nTargetFileLength =  ZsyncHeaderList.at(4).split("Length: ")[1].toInt();
+    {
+        QString nStr;
+        STORE_SPLIT(nStr, ZsyncHeaderList.at(4), "Length: ", INVALID_TARGET_FILE_LENGTH);
+        _nTargetFileLength =  nStr.toInt();
+    }
     if(_nTargetFileLength == 0) {
         emit error(INVALID_TARGET_FILE_LENGTH);
         return;
     }
     INFO_START LOGR " handleControlFile : zysnc target file length confirmed to be " LOGR _nTargetFileLength LOGR " bytes." INFO_END;
 
-    QString HashLength = ZsyncHeaderList.at(5).split("Hash-Lengths: ")[1];
-    QStringList HashLengths = HashLength.split(',');
-    if(HashLengths.size() != 3) {
-        emit error(INVALID_HASH_LENGTH_LINE);
-        return;
-    }
 
-    _nConsecutiveMatchNeeded = HashLengths.at(0).toInt();
-    _nWeakCheckSumBytes = HashLengths.at(1).toInt();
-    _nStrongCheckSumBytes = HashLengths.at(2).toInt();
-    if(_nWeakCheckSumBytes < 1 || _nWeakCheckSumBytes > 4
-       || _nStrongCheckSumBytes < 3 || _nStrongCheckSumBytes > 16
-       || _nConsecutiveMatchNeeded > 2 || _nConsecutiveMatchNeeded < 1) {
-        emit error(INVALID_HASH_LENGTHS);
-        return;
+    {
+        QString HashLength;
+        STORE_SPLIT(HashLength, ZsyncHeaderList.at(5), "Hash-Lengths: ", INVALID_HASH_LENGTH_LINE);
+        QStringList HashLengths = HashLength.split(',');
+        if(HashLengths.size() != 3) {
+            emit error(INVALID_HASH_LENGTH_LINE);
+            return;
+        }
+
+        _nConsecutiveMatchNeeded = HashLengths.at(0).toInt();
+        _nWeakCheckSumBytes = HashLengths.at(1).toInt();
+        _nStrongCheckSumBytes = HashLengths.at(2).toInt();
+        if(_nWeakCheckSumBytes < 1 || _nWeakCheckSumBytes > 4
+           || _nStrongCheckSumBytes < 3 || _nStrongCheckSumBytes > 16
+           || _nConsecutiveMatchNeeded > 2 || _nConsecutiveMatchNeeded < 1) {
+            emit error(INVALID_HASH_LENGTHS);
+            return;
+        }
     }
 
     INFO_START LOGR " handleControlFile : " LOGR _nWeakCheckSumBytes LOGR " bytes of weak checksum is available." INFO_END;
     INFO_START LOGR " handleControlFile : " LOGR _nStrongCheckSumBytes LOGR " bytes of strong checksum is available." INFO_END;
     INFO_START LOGR " handleControlFile : " LOGR _nConsecutiveMatchNeeded LOGR " consecutive matches is needed." INFO_END;
 
-    _uTargetFileUrl = QUrl(ZsyncHeaderList.at(6).split("URL: ")[1]);
+    {
+        QString uStr;
+        STORE_SPLIT(uStr, ZsyncHeaderList.at(6), "URL: ", INVALID_TARGET_FILE_URL);
+        _uTargetFileUrl = QUrl(uStr);
+    }
     if(!_uTargetFileUrl.isValid()) {
         emit error(INVALID_TARGET_FILE_URL);
         return;
     }
-
     INFO_START LOGR " handleControlFile : zsync target file url is confirmed to be " LOGR _uTargetFileUrl LOGR "." INFO_END;
 
-    _sTargetFileSHA1 = ZsyncHeaderList.at(7).split("SHA-1: ")[1];
-    if(_sTargetFileSHA1 == ZsyncHeaderList.at(7)) {
-        emit error(INVALID_TARGET_FILE_SHA1);
-        return;
-    }
+    STORE_SPLIT(_sTargetFileSHA1, ZsyncHeaderList.at(7), "SHA-1: ", INVALID_TARGET_FILE_SHA1);
     _sTargetFileSHA1 = _sTargetFileSHA1.toUpper();
     INFO_START LOGR " handleControlFile : zsync target file sha1 hash is confirmed to be " LOGR _sTargetFileSHA1 LOGR "." INFO_END;
 
