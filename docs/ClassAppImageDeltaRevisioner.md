@@ -7,10 +7,9 @@ sidebar_label: Class AppImageDeltaRevisioner
 |	    |	        	                                       |		
 |-----------|----------------------------------------------------------|
 |  Header:  | #include <AppImageUpdaterBridge>                         |
-|   qmake:  | QT += core network concurrent                            |
-|           | include(AppImageUpdaterBridge/AppImageUpdaterBridge.pri) |
+|   qmake:  | include(AppImageUpdaterBridge/AppImageUpdaterBridge.pri) |
 |Inherits:  | [QObject](http://doc.qt.io/qt-5/qobject.html)            |
-
+|Namespace: | **AppImageUpdaterBridge**
 
 
 > **Important**: AppImageDeltaRevisioner is under AppImageUpdaterBridge namespace , Make sure to include it.
