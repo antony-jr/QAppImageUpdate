@@ -35,24 +35,26 @@ int main(int ac, char **av)
         return;
     });
 
-    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::finished, [&](QJsonObject newVersion , QString oldAppImagePath) {
+    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::finished, [&](QJsonObject newVersion, QString oldAppImagePath) {
         qInfo().noquote() << "New Version::  " << newVersion;
-	qInfo().noquote() << "Old Version AppImage Path:: " << oldAppImagePath;
-	qInfo() << "\nCompleted Delta Update!";
-       
-        ++it;	
-	if(it >= ac){	
-		app.quit();
-	}else{
-	++av;
-	QString path(*av);
-	DRevisioner.setAppImage(path).start();
-	}
+        qInfo().noquote() << "Old Version AppImage Path:: " << oldAppImagePath;
+        qInfo() << "\nCompleted Delta Update!";
+
+        ++it;
+        if(it >= ac) {
+            app.quit();
+        } else {
+            ++av;
+            QString path(*av);
+            DRevisioner.setAppImage(path);
+            DRevisioner.start();
+        }
         return;
     });
 
     ++av;
     QString path(*av);
-    DRevisioner.setAppImage(path).start();
+    DRevisioner.setAppImage(path);
+    DRevisioner.start();
     return app.exec();
 }

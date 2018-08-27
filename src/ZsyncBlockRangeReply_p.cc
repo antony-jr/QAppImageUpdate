@@ -120,6 +120,10 @@ void ZsyncBlockRangeReplyPrivate::handleSeqProgress(qint64 bytesReceived, qint64
 {
     auto reply = (QNetworkReply*)QObject::sender();
 
+    if(!reply->isReadable()) {
+        return;
+    }
+
     auto data = new QByteArray(reply->readAll());
 
     /* Send whatever data got to ZsyncWriterPrivate which
@@ -153,6 +157,10 @@ void ZsyncBlockRangeReplyPrivate::handleProgress(qint64 bytesReceived, qint64 by
 {
     Q_UNUSED(bytesTotal);
     auto reply = (QNetworkReply*)QObject::sender();
+    if(!reply->isReadable()) {
+        return;
+    }
+
     qint64 nowReceived = bytesReceived - _nPreviousBytesReceived;
     _nPreviousBytesReceived = bytesReceived;
 

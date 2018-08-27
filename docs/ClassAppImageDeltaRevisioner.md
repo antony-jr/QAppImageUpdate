@@ -49,15 +49,15 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 
 | Return Type  | Name |
 |------------------------------|-------------------------------------------|
-| **AppImageDeltaRevisioner&** | [start(void)](#appimagedeltarevisioner-startvoid) |
-| **AppImageDeltaRevisioner&** | [cancel(void)](#appimagedeltarevisioner-cancelvoid) |
-| **AppImageDeltaRevisioner&** | [setAppImage(const QString&)](#appimagedeltarevisioner-setappimageconst-qstring) |
-| **AppImageDeltaRevisioner&** | [setAppImage(QFile *)](#appimagedeltarevisioner-setappimageqfile) |
-| **AppImageDeltaRevisioner&** | [setShowLog(bool)](#appimagedeltarevisioner-setshowlogbool) |
-| **AppImageDeltaRevisioner&** | [setOutputDirectory(const QString&)](#appimagedeltarevisioner-setoutputdirectoryconst-qstring) |
-| **AppImageDeltaRevisioner&** | [getAppImageEmbededInformation(void)](#appimagedeltarevisioner-getappimageembededinformationvoid) |
-| **AppImageDeltaRevisioner&** | [checkForUpdate(void)](#appimagedeltarevisioner-checkforupdatevoid) |
-| **AppImageDeltaRevisioner&** | [clear(void)](#appimagedeltarevisioner-clearvoid) |
+| **void** | [start(void)](#appimagedeltarevisioner-startvoid) |
+| **void** | [cancel(void)](#appimagedeltarevisioner-cancelvoid) |
+| **void** | [setAppImage(const QString&)](#appimagedeltarevisioner-setappimageconst-qstring) |
+| **void** | [setAppImage(QFile *)](#appimagedeltarevisioner-setappimageqfile) |
+| **void** | [setShowLog(bool)](#appimagedeltarevisioner-setshowlogbool) |
+| **void** | [setOutputDirectory(const QString&)](#appimagedeltarevisioner-setoutputdirectoryconst-qstring) |
+| **void** | [getAppImageEmbededInformation(void)](#appimagedeltarevisioner-getappimageembededinformationvoid) |
+| **void** | [checkForUpdate(void)](#appimagedeltarevisioner-checkforupdatevoid) |
+| **void** | [clear(void)](#appimagedeltarevisioner-clearvoid) |
 | **[QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum)** | [getNetworkError(void)](#qnetworkreply-networkerror-https-docqtio-qt-5-qnetworkreplyhtml-networkerror-enum-getnetworkerrorvoid) |
 
 ## Signals
@@ -66,9 +66,9 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 |--------------|------------------------------------------------|
 | void | [started(void)](#void-startedvoid) |
 | void | [canceled(void)](#void-canceledvoid) |
-| void | [finished(QJsonObject , QString)](#void-finishedvoid) |
+| void | [finished(QJsonObject , QString)](#void-finishedqjsonobject-qstring) |
 | void | [embededInformation(QJsonObject)](#void-embededinformationqjsonobject) |
-| void | [updateAvailable(bool, QJsonObject)](#void-updateavailablebool-qstring) |
+| void | [updateAvailable(bool, QJsonObject)](#void-updateavailablebool-qjsonobject) |
 | void | [statusChanged(short)](#void-statuschangedshort) |
 | void | [error(short)](#void-errorshort) |
 | void | [progress(int, qint64, qint64, double, QString)](#void-progressint-percentage-qint64-bytesreceived-qint64-bytestotal-double-speed-qstring-speedunits) |

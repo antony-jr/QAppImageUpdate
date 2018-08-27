@@ -152,14 +152,14 @@ AppImageDeltaRevisioner::~AppImageDeltaRevisioner()
     return;
 }
 
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::start(void)
+void AppImageDeltaRevisioner::start(void)
 {
     connect(this, &AppImageDeltaRevisioner::updateAvailable, this, &AppImageDeltaRevisioner::handleUpdateAvailable);
     checkForUpdate();
-    return *this;
+    return;
 }
 
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::cancel(void)
+void AppImageDeltaRevisioner::cancel(void)
 {
     {
         auto metaObject = _pDeltaWriter->metaObject();
@@ -171,30 +171,31 @@ AppImageDeltaRevisioner &AppImageDeltaRevisioner::cancel(void)
         metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("cancel(void)")))
         .invoke(_pBlockDownloader.data(), Qt::QueuedConnection);
     }
-    return *this;
+    return;
 }
 
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::setAppImage(const QString &AppImagePath)
+void AppImageDeltaRevisioner::setAppImage(const QString &AppImagePath)
 {
     clear();
     auto metaObject = _pUpdateInformation->metaObject();
     metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setAppImage(const QString&)")))
     .invoke(_pUpdateInformation.data(), Qt::QueuedConnection, Q_ARG(QString, AppImagePath));
-    return *this;
+    return;
 }
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::setAppImage(QFile *AppImage)
+
+void AppImageDeltaRevisioner::setAppImage(QFile *AppImage)
 {
     if(!AppImage) {
-        return *this;
+        return;
     }
     clear();
     auto metaObject = _pUpdateInformation->metaObject();
     metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setAppImage(QFile*)")))
     .invoke(_pUpdateInformation.data(), Qt::QueuedConnection, Q_ARG(QFile*, AppImage));
-    return *this;
+    return;
 }
 
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::setShowLog(bool choice)
+void AppImageDeltaRevisioner::setShowLog(bool choice)
 {
     {
         auto metaObject = _pUpdateInformation->metaObject();
@@ -213,33 +214,33 @@ AppImageDeltaRevisioner &AppImageDeltaRevisioner::setShowLog(bool choice)
         .invoke(_pDeltaWriter.data(), Qt::QueuedConnection, Q_ARG(bool, choice));
 
     }
-    return *this;
+    return;
 }
 
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::setOutputDirectory(const QString &dir)
+void AppImageDeltaRevisioner::setOutputDirectory(const QString &dir)
 {
     if(dir.isEmpty()) {
-        return *this;
+        return;
     }
     QFileInfo info(dir);
     if(!info.isDir() || !info.isWritable() || !info.isReadable() || !info.exists()) {
-        return *this;
+        return;
     }
     auto metaObject = _pDeltaWriter->metaObject();
     metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setOutputDirectory(const QString&)")))
     .invoke(_pDeltaWriter.data(), Qt::QueuedConnection, Q_ARG(QString, info.absoluteFilePath()));
-    return *this;
+    return;
 }
 
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::getAppImageEmbededInformation(void)
+void AppImageDeltaRevisioner::getAppImageEmbededInformation(void)
 {
     auto metaObject = _pUpdateInformation->metaObject();
     metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("getInfo(void)")))
     .invoke(_pUpdateInformation.data(), Qt::QueuedConnection);
-    return *this;
+    return;
 }
 
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::clear(void)
+void AppImageDeltaRevisioner::clear(void)
 {
     {
         auto metaObject = _pUpdateInformation->metaObject();
@@ -252,12 +253,12 @@ AppImageDeltaRevisioner &AppImageDeltaRevisioner::clear(void)
         .invoke(_pControlFileParser.data(), Qt::QueuedConnection);
     }
     _pRecentNetworkErrorCode = QNetworkReply::NoError;
-    return *this;
+    return;
 }
 
 
 
-AppImageDeltaRevisioner &AppImageDeltaRevisioner::checkForUpdate(void)
+void AppImageDeltaRevisioner::checkForUpdate(void)
 {
     connect(_pUpdateInformation.data(), SIGNAL(info(QJsonObject)),
             _pControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
@@ -266,7 +267,7 @@ AppImageDeltaRevisioner &AppImageDeltaRevisioner::checkForUpdate(void)
     connect(_pControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
             this, SLOT(handleUpdateCheckInformation(QJsonObject)));
     getAppImageEmbededInformation();
-    return *this;
+    return;
 }
 
 QNetworkReply::NetworkError AppImageDeltaRevisioner::getNetworkError(void)

@@ -142,15 +142,15 @@ public:
     static QString statusCodeToString(short);
 
 public Q_SLOTS:
-    AppImageDeltaRevisioner &start(void);
-    AppImageDeltaRevisioner &cancel(void);
-    AppImageDeltaRevisioner &setAppImage(const QString&);
-    AppImageDeltaRevisioner &setAppImage(QFile*);
-    AppImageDeltaRevisioner &setShowLog(bool);
-    AppImageDeltaRevisioner &setOutputDirectory(const QString&);
-    AppImageDeltaRevisioner &getAppImageEmbededInformation(void);
-    AppImageDeltaRevisioner &checkForUpdate(void);
-    AppImageDeltaRevisioner &clear(void);
+    void start(void);
+    void cancel(void);
+    void setAppImage(const QString&);
+    void setAppImage(QFile*);
+    void setShowLog(bool);
+    void setOutputDirectory(const QString&);
+    void getAppImageEmbededInformation(void);
+    void checkForUpdate(void);
+    void clear(void);
 
     QNetworkReply::NetworkError getNetworkError(void);
 private Q_SLOTS:
