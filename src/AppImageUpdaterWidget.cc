@@ -11,7 +11,7 @@
 using namespace AppImageUpdaterBridge;
 
 AppImageUpdaterWidget::AppImageUpdaterWidget(int idleSeconds , QWidget *parent)
-	: QWidget(parent)
+	: QWidget(parent , Qt::WindowStaysOnTopHint)
 {
         if (this->objectName().isEmpty())
             this->setObjectName(QStringLiteral("AppImageUpdaterWidget"));
