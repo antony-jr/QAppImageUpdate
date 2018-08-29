@@ -44,6 +44,7 @@ AppImageUpdaterWidget::AppImageUpdaterWidget(int idleSeconds , QWidget *parent)
         _pIconLbl = new QLabel(this);
         _pIconLbl->setObjectName(QStringLiteral("IconLabel"));
         _pIconLbl->setMinimumSize(QSize(100, 100));
+	_pIconLbl->setMaximumSize(QSize(100 , 100));
         _pIconLbl->setScaledContents(true);
         _pIconLbl->setAlignment(Qt::AlignCenter);
         _pGridLayout->addWidget(_pIconLbl, 0, 0, 3, 1);
