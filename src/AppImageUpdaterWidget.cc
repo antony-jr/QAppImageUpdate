@@ -193,6 +193,8 @@ void AppImageUpdaterWidget::handleUpdateAvailable(bool isUpdateAvailable , QJson
 	if(confirmed){
 		_pDRevisioner->start();
 		showWidget();
+	}else{
+		emit finished(QJsonObject());
 	}
 	return;
 }
