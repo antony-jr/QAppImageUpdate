@@ -123,6 +123,14 @@ void AppImageUpdaterWidget::setShowBeforeStarted(bool doShow)
 	return;
 }
 
+void AppImageUpdaterWidget::setShowLog(bool choice)
+{
+	THREAD_SAFE_AREA(
+		_pDRevisioner->setShowLog(choice);
+	, _pMutex)
+	return;
+}
+
 void AppImageUpdaterWidget::setIconPixmap(const QPixmap &pixmap)
 {
 	THREAD_SAFE_AREA(

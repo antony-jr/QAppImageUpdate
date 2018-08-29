@@ -43,9 +43,11 @@ public:
     }
 public Q_SLOTS:
     void init(void);
+    
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setShowBeforeStarted(bool);
+    void setShowLog(bool);
     void setIconPixmap(const QPixmap&);
     void resetIdleTimer(void);
 
