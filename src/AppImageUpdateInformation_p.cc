@@ -346,7 +346,7 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
     }
 
     /* Set nickname and cache path. */
-    _sAppImagePath = AppImage->fileName();
+    _sAppImagePath = QFileInfo(AppImage->fileName()).absolutePath();
     _sAppImageName = QFileInfo(_sAppImagePath).fileName();
 
     _pAppImage = QSharedPointer<QFile>(AppImage, doNotDelete);
@@ -432,24 +432,12 @@ void AppImageUpdateInformationPrivate::getInfo(void)
          * Check if QCoreApplication got something on argv[0].
          * The main payload is not the one we want to operate this on
          * but the AppImage itself , So we cannot use the actual application executable
-         * path processed by qt but argv[0].
+         * path processed by qt , Instead we must use argv[0].
          *
-         * Only with argv[0] we cannot determine the path of the actual AppImage
-         * so we will also need the application directory path which is also
-         * available by QCoreApplication.
-         *
-         * Therefore ,
-         *     AppImagePath = Application Directory + "/" + filename in argv[0].
-         *
-         * Note: We don't need to use a native seperator since Qt itself will manage
-         * that if we use '/' , Also AppImage is exclusive for linux and thus '/' is
-         * default for any linux filesystem even if not so , Qt will handle it.
         */
         auto arguments = QCoreApplication::arguments();
         if(!arguments.isEmpty()) {
-            setAppImage(QCoreApplication::applicationDirPath() +
-                        "/" +
-                        QFileInfo(arguments.at(0)).fileName());
+            setAppImage(QFileInfo(arguments.at(0)).absolutePath());
         }
     }
 
