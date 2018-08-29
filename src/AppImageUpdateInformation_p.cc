@@ -282,6 +282,18 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
 
     INFO_START  " setAppImage : " LOGR AppImagePath LOGR "." INFO_END;
 
+
+    /*
+     * Check if its really a file and not a folder.
+    */
+    if(!QFileInfo(AppImagePath).isFile()){
+	_pAppImage.clear();
+	emit statusChanged(IDLE);
+	FATAL_START " setAppImage : cannot use a directory as a file." FATAL_END;
+	APPIMAGE_NOT_FOUND_ERROR();
+	return;
+    }
+
     _pAppImage->setFileName(AppImagePath);
 
     emit statusChanged(OPENING_APPIMAGE);
@@ -308,7 +320,7 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
         APPIMAGE_PERMISSION_ERROR();
         return;
     }
-
+    
     /*
      * Finally open the file.
     */
@@ -437,7 +449,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         */
         auto arguments = QCoreApplication::arguments();
         if(!arguments.isEmpty()) {
-            setAppImage(QFileInfo(arguments.at(0)).absolutePath());
+            setAppImage(QFileInfo(arguments.at(0)).absolutePath() + QString::fromUtf8("/") + QFileInfo(arguments.at(0)).fileName());
         }
     }
 
