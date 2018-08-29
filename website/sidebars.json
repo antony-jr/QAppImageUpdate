@@ -8,7 +8,7 @@
 	   "AppImageDeltaRevisionerExample"
     ],
     "API" : [
-	   "AppImageUpdaterBirdgeErrorCodes",
+	   "AppImageUpdaterBridgeErrorCodes",
 	   "AppImageUpdaterBridgeStatusCodes",
 	   "ClassAppImageDeltaRevisioner"
     ]

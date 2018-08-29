@@ -54,7 +54,6 @@ private Q_SLOTS:
     void handleIdleTimerTimeout(void);
     void handleUpdateAvailable(bool, QJsonObject);
     void handleError(short);
-    void handleStatus(short);
     void handleFinished(QJsonObject, QString);
     void handleProgress(int, qint64, qint64, double, QString);
 

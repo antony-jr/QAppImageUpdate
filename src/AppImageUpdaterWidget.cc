@@ -59,7 +59,6 @@ AppImageUpdaterWidget::AppImageUpdaterWidget(int idleSeconds , QWidget *parent)
 	/* Translations. */
         this->setWindowTitle(QString::fromUtf8("Updating... "));
         _pCancelBtn->setText(QString::fromUtf8("Cancel"));
-        _pStatusLbl->setText(QString::fromUtf8("Preparing for update... "));
 
 	/* Program Logic. */
 	connect(_pCancelBtn , &QPushButton::pressed , _pDRevisioner , &AppImageDeltaRevisioner::cancel , Qt::QueuedConnection);
@@ -67,7 +66,6 @@ AppImageUpdaterWidget::AppImageUpdaterWidget(int idleSeconds , QWidget *parent)
 	connect(_pDRevisioner , &AppImageDeltaRevisioner::canceled , this , &AppImageUpdaterWidget::canceled , Qt::DirectConnection);
 	connect(_pDRevisioner , &AppImageDeltaRevisioner::updateAvailable , this , &AppImageUpdaterWidget::handleUpdateAvailable);
 	connect(_pDRevisioner , &AppImageDeltaRevisioner::error , this , &AppImageUpdaterWidget::handleError);
-	connect(_pDRevisioner , &AppImageDeltaRevisioner::statusChanged , this , &AppImageUpdaterWidget::handleStatus);
 	connect(_pDRevisioner , &AppImageDeltaRevisioner::started , this , &AppImageUpdaterWidget::started , Qt::DirectConnection);
 	connect(_pDRevisioner , &AppImageDeltaRevisioner::finished , this , &AppImageUpdaterWidget::handleFinished);
 	connect(_pDRevisioner , &AppImageDeltaRevisioner::progress , this , &AppImageUpdaterWidget::handleProgress);
@@ -92,6 +90,8 @@ void AppImageUpdaterWidget::init(void)
 		}
 		/* Start the timer. */
 		_pIdleTimer.start();
+		/* Set the label. */
+  		_pStatusLbl->setText(QString::fromUtf8("Preparing for update... "));
 	, _pMutex)
 	return;
 }
@@ -163,6 +163,7 @@ void AppImageUpdaterWidget::handleIdleTimerTimeout(void)
 {
 	/* Check for updates when the timer calls for it. */
 	_pIdleTimer.stop();
+	_pStatusLbl->setText(QString::fromUtf8("Checking for Update... "));
 	_pDRevisioner->checkForUpdate();
 	return;
 }
@@ -170,6 +171,10 @@ void AppImageUpdaterWidget::handleIdleTimerTimeout(void)
 void AppImageUpdaterWidget::handleUpdateAvailable(bool isUpdateAvailable , QJsonObject CurrentAppImageInfo)
 {
 	bool confirmed = false;
+	this->setWindowTitle(QString::fromUtf8("Updating ") + 
+			     QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).baseName() + 
+			     QString::fromUtf8("... "));
+
 	if(isUpdateAvailable){
 		confirmed = continueWithUpdate(CurrentAppImageInfo);
 	}else{
@@ -197,36 +202,10 @@ void AppImageUpdaterWidget::handleError(short errorCode)
 	return;
 }
 
-void AppImageUpdaterWidget::handleStatus(short statusCode)
-{
-	QString sStr;
-	if(statusCode == AppImageUpdaterBridge::IDLE){
-		return;
-	}else if(statusCode == AppImageUpdaterBridge::WRITTING_DOWNLOADED_BLOCK_RANGES ||
-		 statusCode == AppImageUpdaterBridge::EMITTING_REQUIRED_BLOCK_RANGES   ||
-		 statusCode == AppImageUpdaterBridge::CHECKING_CHECKSUMS_FOR_DOWNLOADED_BLOCK_RANGES)
-	{
-		sStr = QString::fromUtf8("Downloading... ");
-	}else{
-	sStr = AppImageDeltaRevisioner::statusCodeToString(statusCode);
-	sStr = sStr.replace("AppImageUpdaterBridge::statusCode(" , "")
-		   .replace(")" , "... ")
-		   .replace("_" , " ")
-		   .toLower();
-	(sStr.data())[0].toUpper();
-	}
-	_pStatusLbl->setText(sStr);
-	/*
-	auto metaObject = _pStatusLbl->metaObject();
-	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setText(QString)")))
-		   .invoke(_pStatusLbl , Qt::QueuedConnection , Q_ARG(QString , sStr));
-	*/
-	return;
-}
-
 void AppImageUpdaterWidget::handleFinished(QJsonObject newVersion, QString oldVersionPath)
 {
 	(void)oldVersionPath;
+	_pStatusLbl->setText(QString::fromUtf8("Finalizing Update... "));
 	if(openNewVersion(newVersion)){
 	QFileInfo info(newVersion["AbsolutePath"].toString());
 	if(!info.isExecutable()){
@@ -253,15 +232,15 @@ void AppImageUpdaterWidget::handleProgress(int percent,
 					   QString units)
 {
 	_pProgressBar->setValue(percent);
-	/*
-	auto metaObject = _pProgressBar->metaObject();
-	metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature("setValue(int)")))
-		   .invoke(_pProgressBar , Qt::QueuedConnection , Q_ARG(int , percent));
-	*/
-	(void)bytesReceived;
-	(void)bytesTotal;
-	(void)speed;
-	(void)units;
+	QString statusText("Updating ");
+	auto MegaBytesReceived = bytesReceived / 1048576,
+	     MegaBytesTotal = bytesTotal / 1048576;
+	statusText.append(QString::number(MegaBytesReceived) + 
+			  QString::fromUtf8(" MiB of ") + 
+			  QString::number(MegaBytesTotal) +
+			  QString::fromUtf8(" MiB at "));
+	statusText.append(QString::number(speed) + QString::fromUtf8(" ") + units + QString::fromUtf8("."));
+	_pStatusLbl->setText(statusText);
 	return;
 }
 
