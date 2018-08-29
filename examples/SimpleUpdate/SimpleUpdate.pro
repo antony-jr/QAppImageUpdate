@@ -1,7 +1,7 @@
 include(../../AppImageUpdaterBridge.pri)
 INCLUDEPATH += .
 TEMPLATE = app
-CONFIG += release 
+CONFIG += release without_widgets 
 TARGET = SimpleUpdate
 
 SOURCES += main.cc \

@@ -58,4 +58,3 @@ which is of type [QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkre
 | AppImageDeltaRevisioner::NO_PERMISSION_TO_READ_WRITE_TARGET_FILE | 108 |
 | AppImageDeltaRevisioner::CANNOT_OPEN_TARGET_FILE | 109 |
 | AppImageDeltaRevisioner::TARGET_FILE_SHA1_HASH_MISMATCH | 110 |
-| AppImageDeltaRevisioner::CANNOT_CONSTRUCT_TARGET_FILE | 111 |

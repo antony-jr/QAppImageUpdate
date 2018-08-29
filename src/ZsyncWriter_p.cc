@@ -1425,7 +1425,7 @@ void ZsyncWriterPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *
 
 QString ZsyncWriterPrivate::errorCodeToString(short errorCode)
 {
-    QString ret = "AppImageDeltaWriter::errorCode(";
+    QString ret = "AppImageDeltaRevisioner::errorCode(";
     switch (errorCode) {
     case HASH_TABLE_NOT_ALLOCATED:
         ret += "HASH_TABLE_NOT_ALLOCATED)";
@@ -1469,7 +1469,7 @@ QString ZsyncWriterPrivate::errorCodeToString(short errorCode)
 
 QString ZsyncWriterPrivate::statusCodeToString(short statusCode)
 {
-    QString ret = "AppImageDeltaWriter::statusCode(";
+    QString ret = "AppImageDeltaRevisioner::statusCode(";
     switch (statusCode) {
     case WRITTING_DOWNLOADED_BLOCK_RANGES:
         ret += "WRITTING_DOWNLOADED_BLOCK_RANGES)";
