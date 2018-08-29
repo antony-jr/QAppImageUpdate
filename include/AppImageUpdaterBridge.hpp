@@ -33,8 +33,8 @@
 */
 #ifndef APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
 #define APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
+#include <AppImageUpdaterBridgeErrorCodes.hpp>
+#include <AppImageUpdaterBridgeStatusCodes.hpp>
 #include <AppImageDeltaRevisioner.hpp>
-#ifdef WITH_WIDGETS
 #include <AppImageUpdaterWidget.hpp>
-#endif // WITH_WIDGETS
 #endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED

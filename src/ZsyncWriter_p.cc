@@ -1425,7 +1425,7 @@ void ZsyncWriterPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *
 
 QString ZsyncWriterPrivate::errorCodeToString(short errorCode)
 {
-    QString ret = "AppImageDeltaRevisioner::errorCode(";
+    QString ret = "AppImageUpdaterBridge::errorCode(";
     switch (errorCode) {
     case HASH_TABLE_NOT_ALLOCATED:
         ret += "HASH_TABLE_NOT_ALLOCATED)";
@@ -1469,7 +1469,7 @@ QString ZsyncWriterPrivate::errorCodeToString(short errorCode)
 
 QString ZsyncWriterPrivate::statusCodeToString(short statusCode)
 {
-    QString ret = "AppImageDeltaRevisioner::statusCode(";
+    QString ret = "AppImageUpdaterBridge::statusCode(";
     switch (statusCode) {
     case WRITTING_DOWNLOADED_BLOCK_RANGES:
         ret += "WRITTING_DOWNLOADED_BLOCK_RANGES)";
@@ -1487,8 +1487,8 @@ QString ZsyncWriterPrivate::statusCodeToString(short statusCode)
         ret += "CALCULATING_TARGET_FILE_SHA1_HASH)";
         break;
     case CONSTRUCTING_TARGET_FILE:
-        ret += "CONSTRUCTING_TARGET_FILE)";
-        break;
+	ret += "CONSTRUCTING_TARGET_FILE)";
+	break;
     default:
         ret += "Unknown)";
         break;

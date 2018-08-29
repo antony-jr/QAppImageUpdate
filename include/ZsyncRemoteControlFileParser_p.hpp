@@ -51,6 +51,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <AppImageUpdaterBridgeErrorCodes.hpp>
+#include <AppImageUpdaterBridgeStatusCodes.hpp>
 #include <ZsyncInternalStructures_p.hpp>
 
 namespace AppImageUpdaterBridge
@@ -59,39 +61,6 @@ class ZsyncRemoteControlFileParserPrivate : public QObject
 {
     Q_OBJECT
 public:
-    enum : short {
-        UNKNOWN_NETWORK_ERROR = 50,
-        IO_READ_ERROR,
-        ERROR_RESPONSE_CODE,
-        GITHUB_API_RATE_LIMIT_REACHED,
-        NO_MARKER_FOUND_IN_CONTROL_FILE,
-        INVALID_ZSYNC_HEADERS_NUMBER,
-        INVALID_ZSYNC_MAKE_VERSION,
-        INVALID_ZSYNC_TARGET_FILENAME,
-        INVALID_ZSYNC_MTIME,
-        INVALID_ZSYNC_BLOCKSIZE,
-        INVALID_TARGET_FILE_LENGTH,
-        INVALID_HASH_LENGTH_LINE,
-        INVALID_HASH_LENGTHS,
-        INVALID_TARGET_FILE_URL,
-        INVALID_TARGET_FILE_SHA1
-    } error_code;
-
-    enum : short {
-        INITIALIZING = 0,
-        IDLE = 1,
-        PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION = 50,
-        REQUESTING_GITHUB_API,
-        PARSING_GITHUB_API_RESPONSE,
-        REQUESTING_ZSYNC_CONTROL_FILE,
-        REQUESTING_BINTRAY,
-        PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL,
-        PARSING_ZSYNC_CONTROL_FILE,
-        SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE,
-        STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY,
-        FINALIZING_PARSING_ZSYNC_CONTROL_FILE
-    } status_code;
-
     explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
     ~ZsyncRemoteControlFileParserPrivate();
 

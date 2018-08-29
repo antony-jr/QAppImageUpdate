@@ -50,6 +50,8 @@
 #include <QTime>
 #include <QTimer>
 #include <QTemporaryFile>
+#include <AppImageUpdaterBridgeErrorCodes.hpp>
+#include <AppImageUpdaterBridgeStatusCodes.hpp>
 #include <ZsyncInternalStructures_p.hpp>
 
 namespace AppImageUpdaterBridge
@@ -58,31 +60,6 @@ class ZsyncWriterPrivate : public QObject
 {
     Q_OBJECT
 public:
-    enum : short {
-        HASH_TABLE_NOT_ALLOCATED = 100,
-        INVALID_TARGET_FILE_CHECKSUM_BLOCKS,
-        CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS,
-        CANNOT_CONSTRUCT_HASH_TABLE,
-        QBUFFER_IO_READ_ERROR,
-        SOURCE_FILE_NOT_FOUND,
-        NO_PERMISSION_TO_READ_SOURCE_FILE,
-        CANNOT_OPEN_SOURCE_FILE,
-        NO_PERMISSION_TO_READ_WRITE_TARGET_FILE,
-        CANNOT_OPEN_TARGET_FILE,
-        TARGET_FILE_SHA1_HASH_MISMATCH
-    } error_code;
-
-    enum : short {
-        INITIALIZING = 0,
-        IDLE = 1,
-        WRITTING_DOWNLOADED_BLOCK_RANGES = 100,
-        EMITTING_REQUIRED_BLOCK_RANGES,
-        CHECKING_CHECKSUMS_FOR_DOWNLOADED_BLOCK_RANGES,
-        WRITTING_DOWNLOADED_BLOCK_RANGES_TO_TARGET_FILE,
-        CALCULATING_TARGET_FILE_SHA1_HASH,
-        CONSTRUCTING_TARGET_FILE
-    } status_code;
-
     explicit ZsyncWriterPrivate(void);
     ~ZsyncWriterPrivate();
 

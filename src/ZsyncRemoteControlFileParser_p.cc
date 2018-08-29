@@ -814,7 +814,7 @@ void ZsyncRemoteControlFileParserPrivate::handleLogMessage(QString message, QStr
 
 QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
 {
-    QString errorCodeString = "AppImageDeltaRevisioner::errorCode(";
+    QString errorCodeString = "AppImageUpdaterBridge::errorCode(";
     switch(errorCode) {
     case UNKNOWN_NETWORK_ERROR:
         errorCodeString.append("UNKNOWN_NETWORK_ERROR");
@@ -869,7 +869,7 @@ QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
 
 QString ZsyncRemoteControlFileParserPrivate::statusCodeToString(short code)
 {
-    QString statusCodeString = "AppImageDeltaRevisioner::statusCode(";
+    QString statusCodeString = "AppImageUpdaterBridge::statusCode(";
     switch(code) {
     case INITIALIZING:
         statusCodeString.append("INITIALIZING");

@@ -1,6 +1,6 @@
 #include <AppImageUpdaterWidget.hpp>
 
-#define MUTEX_SAFE_AREA(code , m) if(!m.tryLock()) { \
+#define THREAD_SAFE_AREA(code , m) if(!m.tryLock()) { \
 					return; \
 				  } \
 				  code \
@@ -86,7 +86,7 @@ AppImageUpdaterWidget::~AppImageUpdaterWidget()
 
 void AppImageUpdaterWidget::init(void)
 {
-	MUTEX_SAFE_AREA(
+	THREAD_SAFE_AREA(
 		if(_bShowBeforeStarted){
 			showWidget();
 		}
@@ -98,7 +98,7 @@ void AppImageUpdaterWidget::init(void)
 
 void AppImageUpdaterWidget::setAppImage(const QString &path)
 {
-	MUTEX_SAFE_AREA(
+	THREAD_SAFE_AREA(
 		if(!path.isEmpty())
 			_pDRevisioner->setAppImage(path);
 	, _pMutex)
@@ -107,7 +107,7 @@ void AppImageUpdaterWidget::setAppImage(const QString &path)
 
 void AppImageUpdaterWidget::setAppImage(QFile *AppImage)
 {
-	MUTEX_SAFE_AREA(
+	THREAD_SAFE_AREA(
 		if(AppImage)
 			_pDRevisioner->setAppImage(AppImage);
 	, _pMutex)
@@ -116,7 +116,7 @@ void AppImageUpdaterWidget::setAppImage(QFile *AppImage)
 
 void AppImageUpdaterWidget::setShowBeforeStarted(bool doShow)
 {
-	MUTEX_SAFE_AREA(
+	THREAD_SAFE_AREA(
 		_bShowBeforeStarted = doShow;
 	, _pMutex)
 	return;
@@ -124,7 +124,7 @@ void AppImageUpdaterWidget::setShowBeforeStarted(bool doShow)
 
 void AppImageUpdaterWidget::setIconPixmap(const QPixmap &pixmap)
 {
-	MUTEX_SAFE_AREA(
+	THREAD_SAFE_AREA(
 		_pIconLbl->setPixmap(pixmap);
 	, _pMutex)
 	return;
@@ -163,18 +163,19 @@ void AppImageUpdaterWidget::handleIdleTimerTimeout(void)
 {
 	/* Check for updates when the timer calls for it. */
 	_pIdleTimer.stop();
-	connect(_pDRevisioner , &AppImageDeltaRevisioner::updateAvailable , this , &AppImageUpdaterWidget::handleUpdateAvailable);
 	_pDRevisioner->checkForUpdate();
 	return;
 }
 
 void AppImageUpdaterWidget::handleUpdateAvailable(bool isUpdateAvailable , QJsonObject CurrentAppImageInfo)
 {
-	disconnect(_pDRevisioner , &AppImageDeltaRevisioner::updateAvailable , this , &AppImageUpdaterWidget::handleUpdateAvailable);
 	bool confirmed = false;
 	if(isUpdateAvailable){
 		confirmed = continueWithUpdate(CurrentAppImageInfo);
+	}else{
+		emit finished(QJsonObject());
 	}
+
 	/*
 	 * If confirmed to update then start the 
 	 * delta revisioner.
@@ -199,16 +200,16 @@ void AppImageUpdaterWidget::handleError(short errorCode)
 void AppImageUpdaterWidget::handleStatus(short statusCode)
 {
 	QString sStr;
-	if(statusCode == AppImageDeltaRevisioner::IDLE){
+	if(statusCode == AppImageUpdaterBridge::IDLE){
 		return;
-	}else if(statusCode == AppImageDeltaRevisioner::WRITTING_DOWNLOADED_BLOCK_RANGES ||
-		 statusCode == AppImageDeltaRevisioner::EMITTING_REQUIRED_BLOCK_RANGES   ||
-		 statusCode == AppImageDeltaRevisioner::CHECKING_CHECKSUMS_FOR_DOWNLOADED_BLOCK_RANGES)
+	}else if(statusCode == AppImageUpdaterBridge::WRITTING_DOWNLOADED_BLOCK_RANGES ||
+		 statusCode == AppImageUpdaterBridge::EMITTING_REQUIRED_BLOCK_RANGES   ||
+		 statusCode == AppImageUpdaterBridge::CHECKING_CHECKSUMS_FOR_DOWNLOADED_BLOCK_RANGES)
 	{
 		sStr = QString::fromUtf8("Downloading... ");
 	}else{
 	sStr = AppImageDeltaRevisioner::statusCodeToString(statusCode);
-	sStr = sStr.replace("AppImageDeltaRevisioner::statusCode(" , "")
+	sStr = sStr.replace("AppImageUpdaterBridge::statusCode(" , "")
 		   .replace(")" , "... ")
 		   .replace("_" , " ")
 		   .toLower();

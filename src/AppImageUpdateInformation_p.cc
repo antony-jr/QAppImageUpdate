@@ -754,7 +754,7 @@ void AppImageUpdateInformationPrivate::handleLogMessage(QString msg, QString pat
 */
 QString AppImageUpdateInformationPrivate::errorCodeToString(short errorCode)
 {
-    QString ret = "AppImageDeltaRevisioner::errorCode(";
+    QString ret = "AppImageUpdaterBridge::errorCode(";
     switch(errorCode) {
     case APPIMAGE_NOT_READABLE:
         ret += "APPIMAGE_NOT_READABLE)";
@@ -801,7 +801,7 @@ QString AppImageUpdateInformationPrivate::errorCodeToString(short errorCode)
 
 QString AppImageUpdateInformationPrivate::statusCodeToString(short code)
 {
-    QString ret = "AppImageDeltaRevisioner::statusCode(";
+    QString ret = "AppImageUpdaterBridge::statusCode(";
     switch(code) {
     case INITIALIZING:
         ret += "INITIALIZING";

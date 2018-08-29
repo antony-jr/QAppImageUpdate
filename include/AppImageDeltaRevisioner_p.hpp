@@ -29,32 +29,49 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : AppImageDeltaRevisioner.hpp
+ * @filename    : AppImageDeltaRevisioner_p.hpp
  * @description : This where the delta revisioner is described.
- * Delta Revisioner is the public API to manage the entire revision
+ * Delta Revisioner is the private API to manage the entire revision
  * of a AppImage. From retrival of the embeded information from the
  * AppImage to the retrival of required remaining block ranges.
  * This is a controller to all the internal mechanisms , Handled neatly
  * via Qt's signals and slots.
+ *
+ * Since internally there is a need to disconnect and connect certain 
+ * signals and slots in a Queued manner , We still need a even higher
+ * class to manage that which will be the public API.
+ *
 */
-#ifndef APPIMAGE_DELTA_REVISIONER_HPP_INCLUDED
-#define APPIMAGE_DELTA_REVISIONER_HPP_INCLUDED
+#ifndef APPIMAGE_DELTA_REVISIONER_PRIVATE_HPP_INCLUDED
+#define APPIMAGE_DELTA_REVISIONER_PRIVATE_HPP_INCLUDED
+#include <QFile>
+#include <QtGlobal>
+#include <QJsonObject>
+#include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QObject>
-#include <QJsonObject>
 #include <QString>
-#include <QFile>
+#include <QScopedPointer>
+#include <QThread>
+#include <AppImageUpdaterBridgeErrorCodes.hpp>
+#include <AppImageUpdaterBridgeStatusCodes.hpp>
 
-namespace AppImageUpdaterBridge {
-class AppImageDeltaRevisionerPrivate;
+/* Private Libraries needed. */
+#include <AppImageUpdateInformation_p.hpp>
+#include <ZsyncRemoteControlFileParser_p.hpp>
+#include <ZsyncWriter_p.hpp>
+#include <ZsyncBlockRangeDownloader_p.hpp>
 
-class AppImageDeltaRevisioner : public QObject {
-	Q_OBJECT
+namespace AppImageUpdaterBridge
+{
+class AppImageDeltaRevisionerPrivate : public QObject
+{
+    Q_OBJECT
 public:
-    explicit AppImageDeltaRevisioner(bool singleThreaded = true, QObject *parent = nullptr);
-    explicit AppImageDeltaRevisioner(const QString&, bool singleThreaded = true, QObject *parent = nullptr);
-    explicit AppImageDeltaRevisioner(QFile *, bool singleThreaded = true, QObject *parent = nullptr);
-    ~AppImageDeltaRevisioner();
+    explicit AppImageDeltaRevisionerPrivate(bool singleThreaded = true, QObject *parent = nullptr);
+    explicit AppImageDeltaRevisionerPrivate(const QString&, bool singleThreaded = true, QObject *parent = nullptr);
+    explicit AppImageDeltaRevisionerPrivate(QFile *, bool singleThreaded = true, QObject *parent = nullptr);
+    ~AppImageDeltaRevisionerPrivate();
 
     static QString errorCodeToString(short);
     static QString statusCodeToString(short);
@@ -71,6 +88,13 @@ public Q_SLOTS:
     void clear(void);
 
     QNetworkReply::NetworkError getNetworkError(void);
+private Q_SLOTS:
+    void doStart(QJsonObject);
+    void handleZsyncRemoteControlFileParserError(short);
+    void handleNetworkError(QNetworkReply::NetworkError);
+    void handleIndeterminateProgress(int);
+    void handleUpdateCheckInformation(QJsonObject);
+
 Q_SIGNALS:
     void started(void);
     void canceled(void);
@@ -81,10 +105,15 @@ Q_SIGNALS:
     void error(short);
     void progress(int, qint64, qint64, double, QString);
     void logger(QString, QString);
-
 private:
-    AppImageDeltaRevisionerPrivate *_pDeltaRevisioner = nullptr;	
+    QAtomicInteger<int> _pRecentNetworkErrorCode = QNetworkReply::NoError;
+    QScopedPointer<AppImageUpdateInformationPrivate> _pUpdateInformation;
+    QScopedPointer<ZsyncRemoteControlFileParserPrivate> _pControlFileParser;
+    QScopedPointer<ZsyncWriterPrivate> _pDeltaWriter;
+    QScopedPointer<ZsyncBlockRangeDownloaderPrivate> _pBlockDownloader;
+    QScopedPointer<QThread> _pSharedThread;
+    QScopedPointer<QNetworkAccessManager> _pSharedNetworkAccessManager;
 };
 }
 
-#endif // APPIMAGE_DELTA_REVISIONER_HPP_INCLUDED
+#endif // APPIMAGE_DELTA_REVISIONER_PRIVATE_HPP_INCLUDED

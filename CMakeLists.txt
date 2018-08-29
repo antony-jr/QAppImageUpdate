@@ -28,14 +28,18 @@ include_directories(.)
 include_directories(include)
 
 
-add_library(AppImageUpdaterBridge src/AppImageDeltaRevisioner.cc 
+add_library(AppImageUpdaterBridge src/AppImageDeltaRevisioner.cc
+       				  src/AppImageDeltaRevisioner_p.cc	
 	    			  src/ZsyncBlockRangeDownloader_p.cc 
 				  src/ZsyncRemoteControlFileParser_p.cc
 				  src/AppImageUpdateInformation_p.cc  
 				  src/ZsyncBlockRangeReply_p.cc 
 				  src/ZsyncWriter_p.cc
+				  src/AppImageUpdaterWidget.cc
 				  include/AppImageDeltaRevisioner.hpp
 				  include/AppImageUpdaterBridge.hpp
+				  include/AppImageUpdaterWidget.hpp
+				  include/AppImageDeltaRevisioner_p.hpp
 				  include/ZsyncBlockRangeReply_p.hpp
 				  include/ZsyncRemoteControlFileParser_p.hpp
 				  include/AppImageUpdateInformation_p.hpp

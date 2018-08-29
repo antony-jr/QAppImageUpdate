@@ -1,6 +1,5 @@
 #ifndef APPIMAGE_UPDATER_WIDGET_HPP_INCLUDED
 #define APPIMAGE_UPDATER_WIDGET_HPP_INCLUDED
-#include <AppImageDeltaRevisioner.hpp>
 #include <QPixmap>
 #include <QProcess>
 #include <QFile>
@@ -16,6 +15,11 @@
 #include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QWidget>
+
+/* AppImage Updater Bridge libraries. */
+#include <AppImageDeltaRevisioner.hpp>
+#include <AppImageUpdaterBridgeErrorCodes.hpp>
+#include <AppImageUpdaterBridgeStatusCodes.hpp>
 
 namespace AppImageUpdaterBridge
 {
@@ -37,7 +41,6 @@ public:
         (void)info;
         return false;
     }
-
 public Q_SLOTS:
     void init(void);
     void setAppImage(const QString&);
