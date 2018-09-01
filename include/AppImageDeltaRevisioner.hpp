@@ -45,11 +45,13 @@
 #include <QString>
 #include <QFile>
 
-namespace AppImageUpdaterBridge {
+namespace AppImageUpdaterBridge
+{
 class AppImageDeltaRevisionerPrivate;
 
-class AppImageDeltaRevisioner : public QObject {
-	Q_OBJECT
+class AppImageDeltaRevisioner : public QObject
+{
+    Q_OBJECT
 public:
     explicit AppImageDeltaRevisioner(bool singleThreaded = true, QObject *parent = nullptr);
     explicit AppImageDeltaRevisioner(const QString&, bool singleThreaded = true, QObject *parent = nullptr);
@@ -83,7 +85,7 @@ Q_SIGNALS:
     void logger(QString, QString);
 
 private:
-    AppImageDeltaRevisionerPrivate *_pDeltaRevisioner = nullptr;	
+    AppImageDeltaRevisionerPrivate *_pDeltaRevisioner = nullptr;
 };
 }
 

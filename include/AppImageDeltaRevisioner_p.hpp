@@ -37,7 +37,7 @@
  * This is a controller to all the internal mechanisms , Handled neatly
  * via Qt's signals and slots.
  *
- * Since internally there is a need to disconnect and connect certain 
+ * Since internally there is a need to disconnect and connect certain
  * signals and slots in a Queued manner , We still need a even higher
  * class to manage that which will be the public API.
  *

@@ -36,5 +36,5 @@
 #include <AppImageUpdaterBridgeErrorCodes.hpp>
 #include <AppImageUpdaterBridgeStatusCodes.hpp>
 #include <AppImageDeltaRevisioner.hpp>
-#include <AppImageUpdaterWidget.hpp>
+#include <AppImageUpdaterDialog.hpp>
 #endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED

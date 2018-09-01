@@ -286,12 +286,12 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
     /*
      * Check if its really a file and not a folder.
     */
-    if(!QFileInfo(AppImagePath).isFile()){
-	_pAppImage.clear();
-	emit statusChanged(IDLE);
-	FATAL_START " setAppImage : cannot use a directory as a file." FATAL_END;
-	APPIMAGE_NOT_FOUND_ERROR();
-	return;
+    if(!QFileInfo(AppImagePath).isFile()) {
+        _pAppImage.clear();
+        emit statusChanged(IDLE);
+        FATAL_START " setAppImage : cannot use a directory as a file." FATAL_END;
+        APPIMAGE_NOT_FOUND_ERROR();
+        return;
     }
 
     _pAppImage->setFileName(AppImagePath);
@@ -320,7 +320,7 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
         APPIMAGE_PERMISSION_ERROR();
         return;
     }
-    
+
     /*
      * Finally open the file.
     */
@@ -412,8 +412,8 @@ void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
 {
 #ifndef LOGGING_DISABLED
     if(logNeeded) {
-        connect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage ,
-		Qt::UniqueConnection);
+        connect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage,
+                Qt::UniqueConnection);
 
     } else {
         disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);

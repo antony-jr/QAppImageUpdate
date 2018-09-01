@@ -1487,8 +1487,8 @@ QString ZsyncWriterPrivate::statusCodeToString(short statusCode)
         ret += "CALCULATING_TARGET_FILE_SHA1_HASH)";
         break;
     case CONSTRUCTING_TARGET_FILE:
-	ret += "CONSTRUCTING_TARGET_FILE)";
-	break;
+        ret += "CONSTRUCTING_TARGET_FILE)";
+        break;
     default:
         ret += "Unknown)";
         break;

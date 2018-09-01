@@ -143,7 +143,7 @@ void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose)
 #ifndef LOGGING_DISABLED
     if(choose) {
         connect(this, SIGNAL(logger(QString, QString)),
-                this, SLOT(handleLogMessage(QString, QString)) , Qt::UniqueConnection);
+                this, SLOT(handleLogMessage(QString, QString)), Qt::UniqueConnection);
     } else {
         disconnect(this, SIGNAL(logger(QString, QString)),
                    this, SLOT(handleLogMessage(QString, QString)));

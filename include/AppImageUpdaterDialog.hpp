@@ -14,7 +14,9 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QDialog>
 #include <QtWidgets/QWidget>
+#include <QMessageBox>
 
 /* AppImage Updater Bridge libraries. */
 #include <AppImageDeltaRevisioner.hpp>
@@ -23,29 +25,21 @@
 
 namespace AppImageUpdaterBridge
 {
-class AppImageUpdaterWidget : public QWidget
+class AppImageUpdaterDialog : public QDialog
 {
     Q_OBJECT
 public:
-    AppImageUpdaterWidget(int idleSeconds = 0, QWidget *parent = nullptr);
-    ~AppImageUpdaterWidget();
-
-    virtual bool continueWithUpdate(QJsonObject info)
-    {
-        (void)info;
-        return true;
-    }
-
-    virtual bool openNewVersion(QJsonObject info)
-    {
-        (void)info;
-        return false;
-    }
+    AppImageUpdaterDialog(int idleSeconds = 0, QWidget *parent = nullptr);
+    ~AppImageUpdaterDialog();
 public Q_SLOTS:
     void init(void);
-    
+
     void setAppImage(const QString&);
     void setAppImage(QFile *);
+    void setMovePoint(const QPoint&);
+    void setShowUpdateConfirmationDialog(bool);
+    void setShowFinishDialog(bool);
+    void setShowErrorDialog(bool);
     void setShowBeforeStarted(bool);
     void setShowLog(bool);
     void setIconPixmap(const QPixmap&);
@@ -69,7 +63,15 @@ Q_SIGNALS:
 private:
     QMutex _pMutex;
     QTimer _pIdleTimer;
-    bool _bShowBeforeStarted = false;
+    QPoint _pMovePoint;
+    QString _sCurrentAppImagePath; /* Used only for error dialog box. */
+    QPixmap _pAppImageIcon; /* in 100x100 pixels. */
+    double _nMegaBytesTotal = 0;
+    const QString progressTemplate = QString::fromUtf8("Updating %1 MiB of %2 MiB at %3 %4...");
+    bool _bShowBeforeStarted = false,
+         _bShowUpdateConfirmationDialog = false,
+         _bShowFinishDialog = false,
+         _bShowErrorDialog = false;
     AppImageDeltaRevisioner *_pDRevisioner = nullptr;
     QGridLayout *_pGridLayout = nullptr;
     QLabel *_pStatusLbl = nullptr;

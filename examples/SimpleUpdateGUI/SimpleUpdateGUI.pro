@@ -5,4 +5,3 @@ CONFIG += release
 TARGET = SimpleUpdateGUI
 
 SOURCES += main.cc
-HEADERS += MyUpdateWidget.hpp

@@ -1,6 +1,5 @@
 #include <QApplication>
 #include <AppImageUpdaterBridge>
-#include <MyUpdateWidget.hpp>
 
 using namespace AppImageUpdaterBridge;
 
@@ -15,17 +14,17 @@ int main(int ac, char **av)
     }
     int it = 1;
     QApplication app(ac, av);
-    MyUpdateWidget UWidget;
+    AppImageUpdaterDialog UWidget;
     
-    QObject::connect(&UWidget, &AppImageUpdaterWidget::error , [&](QString eStr, short errorCode){
+    QObject::connect(&UWidget, &AppImageUpdaterDialog::error , [&](QString eStr, short errorCode){
 	qInfo() << "ERROR CODE:: " << errorCode;
 	return;
     });
 
-    QObject::connect(&UWidget , &AppImageUpdaterWidget::quit , &app , &QApplication::quit , Qt::QueuedConnection);
-    QObject::connect(&UWidget , &AppImageUpdaterWidget::canceled , &app , &QApplication::quit , Qt::QueuedConnection);
+    QObject::connect(&UWidget , &AppImageUpdaterDialog::quit , &app , &QApplication::quit , Qt::QueuedConnection);
+    QObject::connect(&UWidget , &AppImageUpdaterDialog::canceled , &app , &QApplication::quit , Qt::QueuedConnection);
 
-    QObject::connect(&UWidget, &AppImageUpdaterWidget::finished, [&](QJsonObject newVersion) {
+    QObject::connect(&UWidget, &AppImageUpdaterDialog::finished, [&](QJsonObject newVersion) {
 	(void)newVersion;
 	++it;
         if(it >= ac) {
@@ -42,6 +41,9 @@ int main(int ac, char **av)
     ++av;
     QString path(*av);
     UWidget.setAppImage(path);
+    UWidget.setShowErrorDialog(true);
+    UWidget.setShowUpdateConfirmationDialog(true);
+    UWidget.setShowFinishDialog(true);
     UWidget.init();
     return app.exec();
 }
