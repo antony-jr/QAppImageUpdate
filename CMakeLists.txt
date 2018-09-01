@@ -22,6 +22,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 # Find the QtCore library.
 find_package(Qt5Core)
 find_package(Qt5Network)
+find_package(Qt5Widgets)
 
 # Include Directories.
 include_directories(.)
@@ -35,10 +36,10 @@ add_library(AppImageUpdaterBridge src/AppImageDeltaRevisioner.cc
 				  src/AppImageUpdateInformation_p.cc  
 				  src/ZsyncBlockRangeReply_p.cc 
 				  src/ZsyncWriter_p.cc
-				  src/AppImageUpdaterWidget.cc
+				  src/AppImageUpdaterDialog.cc
 				  include/AppImageDeltaRevisioner.hpp
 				  include/AppImageUpdaterBridge.hpp
-				  include/AppImageUpdaterWidget.hpp
+				  include/AppImageUpdaterDialog.hpp
 				  include/AppImageDeltaRevisioner_p.hpp
 				  include/ZsyncBlockRangeReply_p.hpp
 				  include/ZsyncRemoteControlFileParser_p.hpp
@@ -48,5 +49,5 @@ add_library(AppImageUpdaterBridge src/AppImageDeltaRevisioner.cc
 				  include/ZsyncWriter_p.hpp)
 
 target_compile_definitions(AppImageUpdaterBridge PUBLIC LOGGING_DISABLED=LG)
-target_link_libraries(AppImageUpdaterBridge PUBLIC Qt5::Core Qt5::Network)
+target_link_libraries(AppImageUpdaterBridge PUBLIC Qt5::Core Qt5::Network Qt5::Widgets)
 target_include_directories(AppImageUpdaterBridge PUBLIC . include)
