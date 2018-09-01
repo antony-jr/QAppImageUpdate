@@ -151,11 +151,11 @@ AppImageDeltaRevisionerPrivate::~AppImageDeltaRevisionerPrivate()
 void AppImageDeltaRevisionerPrivate::start(void)
 {
     connect(_pUpdateInformation.data(), SIGNAL(info(QJsonObject)),
-            _pControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
+            _pControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)) , Qt::UniqueConnection);
     connect(_pControlFileParser.data(), SIGNAL(receiveControlFile(void)),
-            _pControlFileParser.data(), SLOT(getUpdateCheckInformation(void)));
+            _pControlFileParser.data(), SLOT(getUpdateCheckInformation(void)) , Qt::UniqueConnection);
     connect(_pControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
-            this, SLOT(doStart(QJsonObject)));
+            this, SLOT(doStart(QJsonObject)) , Qt::UniqueConnection);
     disconnect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::info,
 		this , &AppImageDeltaRevisionerPrivate::embededInformation);	          
     getAppImageEmbededInformation();
@@ -171,7 +171,7 @@ void AppImageDeltaRevisionerPrivate::doStart(QJsonObject information)
     disconnect(_pControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
             this, SLOT(doStart(QJsonObject)));
     connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::info,
-		this , &AppImageDeltaRevisionerPrivate::embededInformation);
+		this , &AppImageDeltaRevisionerPrivate::embededInformation , Qt::UniqueConnection);
     
     if(information.isEmpty()) {
         return;
@@ -300,11 +300,11 @@ void AppImageDeltaRevisionerPrivate::clear(void)
 void AppImageDeltaRevisionerPrivate::checkForUpdate(void)
 {
     connect(_pUpdateInformation.data(), SIGNAL(info(QJsonObject)),
-            _pControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
+            _pControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)) , Qt::UniqueConnection);
     connect(_pControlFileParser.data(), SIGNAL(receiveControlFile(void)),
-            _pControlFileParser.data(), SLOT(getUpdateCheckInformation(void)));
+            _pControlFileParser.data(), SLOT(getUpdateCheckInformation(void)) , Qt::UniqueConnection);
     connect(_pControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
-            this, SLOT(handleUpdateCheckInformation(QJsonObject)));
+            this, SLOT(handleUpdateCheckInformation(QJsonObject)) , Qt::UniqueConnection);
     getAppImageEmbededInformation();
     return;
 }

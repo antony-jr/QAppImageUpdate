@@ -500,7 +500,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 /* Starts the zsync algorithm. */
 void ZsyncWriterPrivate::start(void)
 {
-    QTimer::singleShot(1000, this, SIGNAL(initStart()));
+    emit initStart();
     return;
 }
 
@@ -532,7 +532,7 @@ void ZsyncWriterPrivate::doStart(void)
      * Kind of like mutex but better than that.
     */
     disconnect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart);
-    connect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel, Qt::QueuedConnection);
+    connect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel, (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
 
 
     short errorCode = 0;
@@ -614,7 +614,7 @@ void ZsyncWriterPrivate::doStart(void)
 
             if(submitSourceFile(sourceFile) < 0) {
                 _bCancelRequested = false;
-                connect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart, Qt::QueuedConnection);
+                connect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart, (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
                 disconnect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel);
                 qDebug() << "Submit source file returned 2 non zero";
                 return;
@@ -638,7 +638,7 @@ void ZsyncWriterPrivate::doStart(void)
 void ZsyncWriterPrivate::resetConnections(void)
 {
     _bCancelRequested = false;
-    connect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart, Qt::QueuedConnection);
+    connect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart, (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
     disconnect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel);
     return;
 }

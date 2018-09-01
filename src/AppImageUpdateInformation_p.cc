@@ -412,8 +412,8 @@ void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
 {
 #ifndef LOGGING_DISABLED
     if(logNeeded) {
-        disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
-        connect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
+        connect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage ,
+		Qt::UniqueConnection);
 
     } else {
         disconnect(this, &AppImageUpdateInformationPrivate::logger, this, &AppImageUpdateInformationPrivate::handleLogMessage);
