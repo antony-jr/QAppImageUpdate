@@ -12,8 +12,12 @@ install:
   - source /opt/qt*/bin/qt*-env.sh
 
 script:
-  - mkdir build ; cd build # Check if it builds as a library.
+  - mkdir build-qmake ; cd build-qmake # Check if it builds as a library using qmake.
   - qmake .. 
+  - make -j$(nproc)
+  - cd ..
+  - mkdir build-cmake ; cd build-cmake # Check if it builds as a library using cmake.
+  - cmake ..
   - make -j$(nproc)
   - cd ..
   - cd tests
