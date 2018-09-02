@@ -132,6 +132,14 @@ void AppImageUpdaterDialog::setShowUpdateConfirmationDialog(bool doShow)
     return;
 }
 
+void AppImageUpdaterDialog::setShowNoUpdateDialog(bool doShow)
+{
+    THREAD_SAFE_AREA(
+        _bShowNoUpdateDialog = doShow;
+        , _pMutex);
+    return;
+}
+
 void AppImageUpdaterDialog::setShowFinishDialog(bool doShow)
 {
     THREAD_SAFE_AREA(
@@ -217,18 +225,20 @@ void AppImageUpdaterDialog::handleIdleTimerTimeout(void)
 void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonObject CurrentAppImageInfo)
 {
     bool confirmed = true;
-    bool show = false;
+    bool showUpdateDialog = false;
+    bool showNoUpdateDialog = false;
     QMessageBox box(this);
     this->setWindowTitle(QString::fromUtf8("Updating ") +
                          QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).baseName() +
                          QString::fromUtf8("... "));
 
     THREAD_SAFE_AREA(
-        show = _bShowUpdateConfirmationDialog;
+        showUpdateDialog = _bShowUpdateConfirmationDialog;
+        showNoUpdateDialog = _bShowNoUpdateDialog;
         , _pMutex);
 
     if(isUpdateAvailable) {
-        if(show) {
+        if(showUpdateDialog) {
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
             QMessageBox box(this);
             box.setWindowTitle(QString::fromUtf8("Update Available!"));
@@ -244,7 +254,7 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
             confirmed = (box.exec() == QMessageBox::Yes);
         }
     } else {
-        if(show) {
+        if(showNoUpdateDialog) {
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
             QMessageBox box(this);
             box.setWindowTitle(QString::fromUtf8("No Updates Available!"));

@@ -38,6 +38,7 @@ public Q_SLOTS:
     void setAppImage(QFile *);
     void setMovePoint(const QPoint&);
     void setShowUpdateConfirmationDialog(bool);
+    void setShowNoUpdateDialog(bool);
     void setShowFinishDialog(bool);
     void setShowErrorDialog(bool);
     void setShowBeforeStarted(bool);
@@ -71,7 +72,8 @@ private:
     bool _bShowBeforeStarted = false,
          _bShowUpdateConfirmationDialog = false,
          _bShowFinishDialog = false,
-         _bShowErrorDialog = false;
+         _bShowErrorDialog = false,
+         _bShowNoUpdateDialog = false;
     AppImageDeltaRevisioner *_pDRevisioner = nullptr;
     QGridLayout *_pGridLayout = nullptr;
     QLabel *_pStatusLbl = nullptr;
