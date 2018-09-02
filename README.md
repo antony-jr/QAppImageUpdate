@@ -43,7 +43,8 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
     AppImageDeltaRevisioner DeltaRevisioner;
     QObject::connect(&DeltaRevisioner, &AppImageDeltaRevisioner::finished, &app, &QCoreApplication::quit);
-    DeltaRevisioner.setShowLog(true).start();
+    DeltaRevisioner.setShowLog(true);
+    DeltaRevisioner.start();
     return app.exec();
 }
 ```
