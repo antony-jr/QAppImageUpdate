@@ -34,6 +34,7 @@
  * from AppImages is implemented.
 */
 #include <AppImageUpdateInformation_p.hpp>
+#include <QBuffer>
 
 using namespace AppImageUpdaterBridge;
 
@@ -167,6 +168,47 @@ static QByteArray read(QSharedPointer<QFile> IO, qint64 offset, qint64 max)
     IO->seek(before);
     return ret;
 }
+
+static QByteArray getExecPathFromDesktopFile(QSharedPointer<QFile> _pAppImage)
+{
+    QByteArray line;
+    QByteArray execPath;
+    QByteArray exec("Exec");
+    while(!_pAppImage->atEnd()) {
+        line.append(_pAppImage->read(1024));
+        auto offset = line.indexOf(exec);
+        if(offset != -1) {
+            line = line.mid(offset);
+            break;
+        }
+    }
+
+    QBuffer buffer(&line);
+    buffer.open(QIODevice::ReadOnly);
+    while(!buffer.atEnd()) {
+        auto c = buffer.read(1);
+        if(c == "\n") {
+            break;
+        } else if(c == "\"" || c == " ") {
+            continue;
+        } else {
+            execPath.append(c);
+        }
+    }
+
+    /*
+     * The first 5 characters will and must be
+     * 'Exec=' and so we can remove it to get the
+     * actual path.
+     *
+     * Note: Whitespaces and double quotes are omitted when
+     * read , Therefore we don't need to worry about it.
+    */
+    execPath = execPath.mid(5);
+    return execPath;
+}
+
+
 
 /*
  * A Dummy destructor for QFile* , used with smart
@@ -425,14 +467,6 @@ void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
 }
 
 
-/*
- * This returns the copy to the data held inside
- * a QJsonObject privately. If this is empty then
- * that means the user never started anything.
- *
- * Example:
- * 	QJsonObject info = AppImageInfo.getInfo();
-*/
 void AppImageUpdateInformationPrivate::getInfo(void)
 {
     /*
@@ -471,6 +505,46 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     QStringList data;
 
     /*
+     * Read the magic byte , i.e the AI stamp
+     * on the given binary. The characters 'AI'
+     * are hardcoded at the offset 8 with a
+     * maximum of 3 characters.
+     * The 3rd character decides the type of the
+     * AppImage.
+    */
+    emit statusChanged(READING_APPIMAGE_MAGIC_BYTES);
+    auto magicBytes = read(_pAppImage, /*offset=*/8,/*maxchars=*/ 3);
+    if (magicBytes[0] != 'A' && magicBytes[1] != 'I') {
+
+        magicBytes = read(_pAppImage, 0, 15);
+        /*
+         * If its not an AppImage then lets check if its
+         * a linux desktop file , If so then parse the 'Exec'
+         * to find the actual AppImage.
+        */
+        if(magicBytes == "[Desktop Entry]") {
+            auto path = QString(getExecPathFromDesktopFile(_pAppImage));
+            if(!path.isEmpty()) {
+                if(QFileInfo(path).isRelative()) {
+                    path = QFileInfo(_pAppImage->fileName()).path() + QString::fromUtf8("/") + QString(path);
+                }
+                setAppImage(path);
+                getInfo(); /* Recursive call. */
+                return;
+            }
+        }
+
+        emit statusChanged(IDLE);
+        FATAL_START  " getInfo : invalid magic bytes("
+        LOGR (unsigned)magicBytes[0] LOGR ","
+        LOGR (unsigned)magicBytes[1] LOGR ")." FATAL_END;
+        MAGIC_BYTES_ERROR();
+        return;
+    }
+
+
+
+    /*
      * Calculate the AppImages SHA1 Hash which will be
      * used later to find if we need to update the
      * AppImage.
@@ -496,25 +570,6 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         _pAppImage->seek(0); // rewind file to the top for later use.
         AppImageSHA1 = QString(SHA1Hasher->result().toHex().toUpper());
         delete SHA1Hasher;
-    }
-
-    /*
-     * Read the magic byte , i.e the AI stamp
-     * on the given binary. The characters 'AI'
-     * are hardcoded at the offset 8 with a
-     * maximum of 3 characters.
-     * The 3rd character decides the type of the
-     * AppImage.
-    */
-    emit statusChanged(READING_APPIMAGE_MAGIC_BYTES);
-    auto magicBytes = read(_pAppImage, /*offset=*/8,/*maxchars=*/ 3);
-    if (magicBytes[0] != 'A' && magicBytes[1] != 'I') {
-        emit statusChanged(IDLE);
-        FATAL_START  " getInfo : invalid magic bytes("
-        LOGR (unsigned)magicBytes[0] LOGR ","
-        LOGR (unsigned)magicBytes[1] LOGR ")." FATAL_END;
-        MAGIC_BYTES_ERROR();
-        return;
     }
 
     /*
