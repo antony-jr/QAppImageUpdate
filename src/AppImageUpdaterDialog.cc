@@ -291,11 +291,112 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
 void AppImageUpdaterDialog::handleError(short errorCode)
 {
     bool show = false;
-    QString path;
+    QString path,
+            errorString;
     THREAD_SAFE_AREA(
         show = _bShowErrorDialog;
         path = _sCurrentAppImagePath;
         , _pMutex);
+
+    /* Convert the error code to human readable code. */
+    if(errorCode == AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR) {
+        /* Expand network error even more. */
+        switch(errorCode) {
+        default:
+            errorString = QString::fromUtf8("there was an unknown network error.");
+            break;
+        }
+    } else {
+        switch(errorCode) {
+        case AppImageUpdaterBridge::APPIMAGE_NOT_READABLE:
+            errorString = QString::fromUtf8("it is not readable.");
+            break;
+        case AppImageUpdaterBridge::NO_READ_PERMISSION:
+            errorString = QString::fromUtf8("you don't have the permission to read it.");
+            break;
+        case AppImageUpdaterBridge::APPIMAGE_NOT_FOUND:
+            errorString = QString::fromUtf8("it does not exists.");
+            break;
+        case AppImageUpdaterBridge::CANNOT_OPEN_APPIMAGE:
+            errorString = QString::fromUtf8("it cannot be opened.");
+            break;
+        case AppImageUpdaterBridge::EMPTY_UPDATE_INFORMATION:
+            errorString = QString::fromUtf8("the author of this AppImage did not include any update information.");
+            break;
+        case AppImageUpdaterBridge::INVALID_APPIMAGE_TYPE:
+            errorString = QString::fromUtf8("it is an unknown AppImage type.");
+            break;
+        case AppImageUpdaterBridge::INVALID_MAGIC_BYTES:
+            errorString = QString::fromUtf8("it is not a AppImage , Make sure to give valid AppImage.");
+            break;
+        case AppImageUpdaterBridge::INVALID_UPDATE_INFORMATION:
+            errorString = QString::fromUtf8("the author of this AppImage included invalid update information.");
+            break;
+        case AppImageUpdaterBridge::NOT_ENOUGH_MEMORY:
+            errorString = QString::fromUtf8("there is no enough memory left in your ram.");
+            break;
+        case AppImageUpdaterBridge::SECTION_HEADER_NOT_FOUND:
+            errorString = QString::fromUtf8("the author of this AppImage did not embed the update information ");
+            errorString += QString::fromUtf8("at a valid section header.");
+            break;
+        case AppImageUpdaterBridge::UNSUPPORTED_ELF_FORMAT:
+            errorString = QString::fromUtf8("the given AppImage is not in supported elf format.");
+            break;
+        case AppImageUpdaterBridge::UNSUPPORTED_TRANSPORT:
+            errorString = QString::fromUtf8("the author of this included an unsupported transport in update information.");
+            break;
+        case AppImageUpdaterBridge::IO_READ_ERROR:
+            errorString = QString::fromUtf8("there was a unknown IO read error.");
+            break;
+        case AppImageUpdaterBridge::GITHUB_API_RATE_LIMIT_REACHED:
+            errorString = QString::fromUtf8("github api rate limit was reached , Please try again after an hour.");
+            break;
+        case AppImageUpdaterBridge::ERROR_RESPONSE_CODE:
+            errorString = QString::fromUtf8("some request returned a bad server response code , Please try again.");
+            break;
+        case AppImageUpdaterBridge::NO_MARKER_FOUND_IN_CONTROL_FILE:
+        case AppImageUpdaterBridge::INVALID_ZSYNC_HEADERS_NUMBER:
+        case AppImageUpdaterBridge::INVALID_ZSYNC_MAKE_VERSION:
+        case AppImageUpdaterBridge::INVALID_ZSYNC_TARGET_FILENAME:
+        case AppImageUpdaterBridge::INVALID_ZSYNC_MTIME:
+        case AppImageUpdaterBridge::INVALID_ZSYNC_BLOCKSIZE:
+        case AppImageUpdaterBridge::INVALID_TARGET_FILE_LENGTH:
+        case AppImageUpdaterBridge::INVALID_HASH_LENGTH_LINE:
+        case AppImageUpdaterBridge::INVALID_HASH_LENGTHS:
+        case AppImageUpdaterBridge::INVALID_TARGET_FILE_URL:
+        case AppImageUpdaterBridge::INVALID_TARGET_FILE_SHA1:
+        case AppImageUpdaterBridge::HASH_TABLE_NOT_ALLOCATED:
+        case AppImageUpdaterBridge::INVALID_TARGET_FILE_CHECKSUM_BLOCKS:
+        case AppImageUpdaterBridge::CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS:
+        case AppImageUpdaterBridge::CANNOT_CONSTRUCT_HASH_TABLE:
+        case AppImageUpdaterBridge::QBUFFER_IO_READ_ERROR:
+            errorString = QString::fromUtf8("the author did not produce the zsync meta file properly , ");
+            errorString += QString::fromUtf8("Please notify the author or else try again because it can be a ");
+            errorString += QString::fromUtf8("false positive.");
+            break;
+        case AppImageUpdaterBridge::SOURCE_FILE_NOT_FOUND:
+            errorString = QString::fromUtf8("the current AppImage is not found , maybe deleted while updating ?");
+            break;
+        case AppImageUpdaterBridge::NO_PERMISSION_TO_READ_SOURCE_FILE:
+            errorString = QString::fromUtf8("you have no permissions to read the current AppImage.");
+            break;
+        case AppImageUpdaterBridge::CANNOT_OPEN_SOURCE_FILE:
+            errorString = QString::fromUtf8("the current AppImage cannot be opened.");
+            break;
+        case AppImageUpdaterBridge::NO_PERMISSION_TO_READ_WRITE_TARGET_FILE:
+            errorString = QString::fromUtf8("you have no write or read permissions to read and write the new version.");
+            break;
+        case AppImageUpdaterBridge::CANNOT_OPEN_TARGET_FILE:
+            errorString = QString::fromUtf8("the new version cannot be opened to write or read.");
+            break;
+        case AppImageUpdaterBridge::TARGET_FILE_SHA1_HASH_MISMATCH:
+            errorString = QString::fromUtf8("the newly construct AppImage failed to prove integrity , Try again.");
+            break;
+        default:
+            errorString = QString::fromUtf8("there occured an uncaught error.");
+            break;
+        }
+    }
 
     if(show) {
         QMessageBox box(this);
@@ -303,14 +404,14 @@ void AppImageUpdaterDialog::handleError(short errorCode)
         box.setIcon(QMessageBox::Critical);
         box.setText(QString::fromUtf8("Update failed for '") +
                     path +
-                    QString::fromUtf8("' ,") +
-                    QString());
+                    QString::fromUtf8("' , Because ") +
+                    errorString);
         if(!_pMovePoint.isNull()) {
             box.move(_pMovePoint);
         }
         box.exec();
     }
-    emit error(QString(), errorCode);
+    emit error(errorString, errorCode);
     return;
 }
 
