@@ -301,9 +301,94 @@ void AppImageUpdaterDialog::handleError(short errorCode)
     /* Convert the error code to human readable code. */
     if(errorCode == AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR) {
         /* Expand network error even more. */
-        switch(errorCode) {
+	auto networkErrorCode = ((AppImageDeltaRevisioner*)QObject::sender())->getNetworkError();
+        switch(networkErrorCode) {
+	case QNetworkReply::ConnectionRefusedError:
+		errorString = QString::fromUtf8("the update server is not accepting requests.");
+		break;
+	case QNetworkReply::RemoteHostClosedError: 
+		errorString = QString::fromUtf8("the remote server closed the connection prematurely, ");
+		errorString += QString::fromUtf8("before the entire reply was received and processed.");
+		break;
+	case QNetworkReply::HostNotFoundError:
+		errorString = QString::fromUtf8("the remote host name was not found (invalid hostname).");
+		break;
+	case QNetworkReply::TimeoutError:
+		errorString = QString::fromUtf8("the connection to the remote server timed out.");
+		break;
+	case QNetworkReply::SslHandshakeFailedError: 
+		errorString = QString::fromUtf8("the SSL/TLS handshake failed and the encrypted channel ");
+		errorString += QString::fromUtf8("could not be established.");
+		break;
+	case QNetworkReply::TemporaryNetworkFailureError: 
+		errorString = QString::fromUtf8("the connection was broken due to disconnection from the network,");
+		break;
+	case QNetworkReply::NetworkSessionFailedError:
+		errorString = QString::fromUtf8("the connection was broken due to disconnection from the network ");
+		errorString += QString::fromUtf8("or failure to start the network.");
+		break;
+	case QNetworkReply::BackgroundRequestNotAllowedError: 
+		errorString = QString::fromUtf8("the background request is not currently allowed due to platform policy.");
+		break;
+	case QNetworkReply::TooManyRedirectsError:
+		errorString = QString::fromUtf8("while following redirects, the maximum limit was reached. ");
+		break;
+	case QNetworkReply::InsecureRedirectError:
+		errorString = QString::fromUtf8("while following redirects, the network access API detected a redirect ");
+		errorString += QString::fromUtf8("from a encrypted protocol (https) to an unencrypted one (http).");
+		break;
+	case QNetworkReply::ContentAccessDenied:
+		errorString = QString::fromUtf8("the access to the remote content was denied (HTTP error 403).");
+		break;
+	case QNetworkReply::ContentOperationNotPermittedError:
+		errorString = QString::fromUtf8("the operation requested on the remote content is not permitted.");
+		break;
+	case QNetworkReply::ContentNotFoundError:
+		errorString = QString::fromUtf8("the remote content was not found at the server (HTTP error 404)");
+		break;
+	case QNetworkReply::AuthenticationRequiredError:
+		errorString = QString::fromUtf8("the remote server requires authentication to serve the content ");
+		errorString += QString::fromUtf8("but the credentials provided were not accepted or given. ");
+		break;
+	case QNetworkReply::ContentConflictError:
+		errorString = QString::fromUtf8("the request could not be completed due to a conflict with the ");
+		errorString += QString::fromUtf8("current state of the resource.");
+		break;
+	case QNetworkReply::ContentGoneError:
+		errorString = QString::fromUtf8("the requested resource is no longer available at the server.");
+		break;
+	case QNetworkReply::InternalServerError:
+		errorString = QString::fromUtf8("the server encountered an unexpected condition which prevented ");
+		errorString += QString::fromUtf8("it from fulfilling the request.");
+		break;
+	case QNetworkReply::OperationNotImplementedError:
+		errorString = QString::fromUtf8("the server does not support the functionality required to fulfill the request.");
+		break;
+	case QNetworkReply::ServiceUnavailableError:
+		errorString = QString::fromUtf8("the server is unable to handle the request at this time.");
+		break;
+	case QNetworkReply::ProtocolUnknownError:
+		errorString = QString::fromUtf8("the Network Access API cannot honor the request because the protocol");
+	        errorString += QString::fromUtf8(" is not known.");
+		break;
+	case QNetworkReply::ProtocolInvalidOperationError:
+		errorString = QString::fromUtf8("the requested operation is invalid for this protocol.");
+		break;
+	case QNetworkReply::UnknownNetworkError:
+		errorString = QString::fromUtf8("an unknown network-related error was detected.");
+		break;
+	case QNetworkReply::UnknownContentError:
+		errorString = QString::fromUtf8("an unknown error related to the remote content was detected.");
+		break;
+	case QNetworkReply::ProtocolFailure:
+		errorString = QString::fromUtf8("a breakdown in protocol was detected ");
+		errorString += QString::fromUtf8("(parsing error, invalid or unexpected responses, etc.)");
+		break;
+	case QNetworkReply::UnknownServerError:
+		errorString = QString::fromUtf8("an unknown error related to the server response was detected.");
+		break;
         default:
-            errorString = QString::fromUtf8("there was an unknown network error.");
+            errorString = QString::fromUtf8("there was an uncaught network error.");
             break;
         }
     } else {
