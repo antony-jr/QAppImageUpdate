@@ -588,7 +588,6 @@ void ZsyncWriterPrivate::doStart(void)
                 QFile *targetFile = nullptr;
                 if((errorCode = tryOpenSourceFile(alreadyDownloadedTargetFile, &targetFile)) > 0) {
                     emit error(errorCode);
-                    qDebug() << errorCode;
                     return;
                 }
 
@@ -598,14 +597,13 @@ void ZsyncWriterPrivate::doStart(void)
                             this, &ZsyncWriterPrivate::doStart, Qt::QueuedConnection);
                     disconnect(this, &ZsyncWriterPrivate::initCancel,
                                this,  &ZsyncWriterPrivate::doCancel);
-                    qDebug() << "Submit source file returned non zero.";
                     return;
                 }
 
             }
         }
 
-        if(_nBytesWritten < _nTargetFileLength && _bAcceptRange == true) {
+        if(_nBytesWritten < _nTargetFileLength) {
             QFile *sourceFile = nullptr;
             if((errorCode = tryOpenSourceFile(_sSourceFilePath, &sourceFile)) > 0) {
                 emit error(errorCode);
@@ -616,7 +614,6 @@ void ZsyncWriterPrivate::doStart(void)
                 _bCancelRequested = false;
                 connect(this, &ZsyncWriterPrivate::initStart, this, &ZsyncWriterPrivate::doStart, (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
                 disconnect(this, &ZsyncWriterPrivate::initCancel, this,  &ZsyncWriterPrivate::doCancel);
-                qDebug() << "Submit source file returned 2 non zero";
                 return;
             }
             delete sourceFile;
