@@ -1,20 +1,17 @@
 ---
 id: AppImageUpdaterBridgeErrorCodes
-title: Handling Errors from AppImageDeltaRevisioner
+title: Handling Errors from AppImageUpdaterBridge
 sidebar_label: Error Codes
 ---
 
 Using ```AppImageUpdaterBridge::AppImageDeltaRevisioner::errorCodeToString(code)``` you can get the error code name as 
 a QString , The below table tabulates all error codes with respect to their error name.
 
-Error codes are usually emitted from ```AppImageDeltaRevisioner::error``` signal.
 
 Error code such as ```AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR``` can be further investigated to get the actual 
-error , In this case you can call ```AppImageDeltaRevisioner::getNetworkError();``` to get the recent network error code 
+error , In this case you can call ```AppImageUpdaterBridge::AppImageDeltaRevisioner::getNetworkError();``` to get the recent network error code 
 which is of type [QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum).
 
-
-> **Note**: AppImageDeltaRevisioner is under AppImageUpdaterBridge namespace , So make sure to include it.
 
 
 | Error Code | Value |

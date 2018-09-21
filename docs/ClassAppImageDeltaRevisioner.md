@@ -48,15 +48,15 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 
 | Return Type  | Name |
 |------------------------------|-------------------------------------------|
-| **void** | [start(void)](#appimagedeltarevisioner-startvoid) |
-| **void** | [cancel(void)](#appimagedeltarevisioner-cancelvoid) |
-| **void** | [setAppImage(const QString&)](#appimagedeltarevisioner-setappimageconst-qstring) |
-| **void** | [setAppImage(QFile *)](#appimagedeltarevisioner-setappimageqfile) |
-| **void** | [setShowLog(bool)](#appimagedeltarevisioner-setshowlogbool) |
-| **void** | [setOutputDirectory(const QString&)](#appimagedeltarevisioner-setoutputdirectoryconst-qstring) |
-| **void** | [getAppImageEmbededInformation(void)](#appimagedeltarevisioner-getappimageembededinformationvoid) |
-| **void** | [checkForUpdate(void)](#appimagedeltarevisioner-checkforupdatevoid) |
-| **void** | [clear(void)](#appimagedeltarevisioner-clearvoid) |
+| **void** | [start(void)](#void-startvoid) |
+| **void** | [cancel(void)](#void-cancelvoid) |
+| **void** | [setAppImage(const QString&)](#void-setappimageconst-qstring) |
+| **void** | [setAppImage(QFile *)](#void-setappimageqfile) |
+| **void** | [setShowLog(bool)](#void-setshowlogbool) |
+| **void** | [setOutputDirectory(const QString&)](#void-setoutputdirectoryconst-qstring) |
+| **void** | [getAppImageEmbededInformation(void)](#void-getappimageembededinformationvoid) |
+| **void** | [checkForUpdate(void)](#void-checkforupdatevoid) |
+| **void** | [clear(void)](#void-clearvoid) |
 | **[QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum)** | [getNetworkError(void)](#qnetworkreply-networkerror-https-docqtio-qt-5-qnetworkreplyhtml-networkerror-enum-getnetworkerrorvoid) |
 
 ## Signals
@@ -81,11 +81,11 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 Converts the given short integer to a error code string.
 
 ```
-using namespace AppImageUpdaterBridge;
+using AppImageUpdaterBridge::AppImageDeltaRevisioner;
 
 QString errorCodeAsString = AppImageDeltaRevisioner::errorCodeToString(
-                                    AppImageDeltaRevisioner::UNKNOWN_NETWORK_ERROR);
-// errorCodeAsString will be "AppImageDeltaRevisioner::errorCode(UNKNOWN_NETWORK_ERROR)".
+                                    AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR);
+// errorCodeAsString will be "AppImageUpdaterBridge::errorCode(UNKNOWN_NETWORK_ERROR)".
 ```
 
 ### QString statusCodeToString(short)
@@ -143,7 +143,7 @@ resource of the updater in a seperate thread excluding **this class**.
 
 You can set a **QObject parent** to make use of **Qt's Parent to Children deallocation.**
 
-### AppImageDeltaRevisioner &start(void)
+### void start(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Starts the updater.
@@ -157,25 +157,25 @@ respective slots.
 slots before start , Don't worry about overheads too , Since when you call checkForUpdate slot , The information
 is cached and when start slot is called again , it will be faster than normal. 
 
-### AppImageDeltaRevisioner &cancel(void)
+### void cancel(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Cancels the update.
 Emits **canceled()** signal when cancel was successfull.
 
 
-### AppImageDeltaRevisioner &setAppImage(const QString&)
+### void setAppImage(const QString&)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Sets the AppImage Path as the given **QString**.
 
 
-### AppImageDeltaRevisioner &setAppImage(QFile *)
+### void setAppImage(QFile *)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Sets the given **QFile\*** as the AppImage itself.
 
-### AppImageDeltaRevisioner &setShowLog(bool)
+### void setShowLog(bool)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Turns on and off the log printer.
@@ -184,7 +184,7 @@ Turns on and off the log printer.
 setShowLog will not affect this activity at all , But setShowLog will print these log messages
 if set to true.
 
-### AppImageDeltaRevisioner &setOutputDirectory(const QString&)
+### void setOutputDirectory(const QString&)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Writes the new version of the AppImage to the given Output directory , Assuming
@@ -192,7 +192,7 @@ the given QString a directory path.
 The default is the old version AppImage's directory.
 
 
-### AppImageDeltaRevisioner &getAppImageEmbededInformation(void)
+### void getAppImageEmbededInformation(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Requests the updater for the embeded information of the current operating AppImage.
@@ -241,7 +241,7 @@ of the AppImage in the below format with respect to Json.
 Path and so if the returned AppImage is not a valid , Then it emits an error signal.
 
 
-### AppImageDeltaRevisioner &checkForUpdate(void)
+### void checkForUpdate(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Checks update for the current operating AppImage.
@@ -250,7 +250,7 @@ needs update. The QJsonObject in the signal will have the details of the current
 AppImage.
 
 
-### AppImageDeltaRevisioner &clear(void)
+### void clear(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Clears all internal **cache**.
@@ -260,7 +260,7 @@ Clears all internal **cache**.
 <p align="right"> <b>[SLOT]</b> </p>
 
 Returns the most recent network error as [QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum) value.
-You most probabily will use this when you receive *AppImageDeltaRevisioner::UNKNOWN_NETWORK_ERROR* error. 
+You most probabily will use this when you receive *AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR* error. 
 See [error codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerErrorCodes.html) for more information.
 
 
@@ -296,12 +296,12 @@ if updates were really available.
 ### void embededInformation(QJsonObject)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
-Emitted when *[getAppImageEmbededInformation(void)](#appimagedeltarevisioner-getappimageembededinformationvoid)* is called.
+Emitted when *[getAppImageEmbededInformation(void)](#void-getappimageembededinformationvoid)* is called.
 
 ### void updateAvailable(bool , QJsonObject)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
-Emitted when *[checkForUpdate(void)](#appimagedeltarevisioner-checkforupdatevoid)* is called.
+Emitted when *[checkForUpdate(void)](#void-checkforupdatevoid)* is called.
 The given *bool* states if the operating AppImage needs update and the *QJsonObject* gives the details of 
 the current operating AppImage.
 
@@ -316,14 +316,14 @@ The *QJsonObject* will follow the following format with respect to json ,
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when the updater status is changed , The given short integer is the status code.
-See [status codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerStatusCodes.html).
+See [status codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeStatusCodes.html).
 
 
 ### void error(short)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when the updater is errored. The given short integer is the error code.
-See [error codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerErrorCodes.html).
+See [error codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html).
 
 
 ### void progress(int percentage , qint64 bytesReceived , qint64 bytesTotal , double speed , QString speedUnits)

@@ -1,15 +1,12 @@
 ---
 id: AppImageUpdaterBridgeStatusCodes
-title: Handling Status from AppImageDeltaRevisioner
+title: Handling Status from AppImageUpdaterBridge
 sidebar_label: Status Codes
 ---
 
 Using ```AppImageUpdaterBridge::AppImageDeltaRevisioner::statusCodeToString(code)``` you can get the status code as 
 a QString , The below table tabulates all status codes with respect to their status name.
 Status codes are usually emitted from ```AppImageDeltaRevisioner::statusChanged``` signal.
-
-
-> **Note**: AppImageDeltaRevisioner is under AppImageUpdaterBridge namespace , So make sure to include it.
 
 
 
