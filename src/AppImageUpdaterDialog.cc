@@ -124,6 +124,14 @@ void AppImageUpdaterDialog::setMovePoint(const QPoint &pt)
     return;
 }
 
+void AppImageUpdaterDialog::setShowProgressDialog(bool doShow)
+{
+	THREAD_SAFE_AREA(
+	   _bShowProgressDialog = doShow;
+	, _pMutex);
+	return;
+}
+
 void AppImageUpdaterDialog::setShowUpdateConfirmationDialog(bool doShow)
 {
     THREAD_SAFE_AREA(
@@ -199,7 +207,9 @@ void AppImageUpdaterDialog::resetIdleTimer(void)
 
 void AppImageUpdaterDialog::showWidget(void)
 {
-    if(_pIconLbl->pixmap() == 0) { /* check if we have any pixmap given by the user. */
+    if(!_bShowProgressDialog){
+	    return;
+    } else if(_pIconLbl->pixmap() == 0) { /* check if we have any pixmap given by the user. */
         /* If not then don't show the icon label itself.*/
         _pIconLbl->setVisible(false);
     } else {

@@ -37,6 +37,7 @@ public Q_SLOTS:
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setMovePoint(const QPoint&);
+    void setShowProgressDialog(bool);
     void setShowUpdateConfirmationDialog(bool);
     void setShowNoUpdateDialog(bool);
     void setShowFinishDialog(bool);
@@ -69,7 +70,8 @@ private:
     QPixmap _pAppImageIcon; /* in 100x100 pixels. */
     double _nMegaBytesTotal = 0;
     const QString progressTemplate = QString::fromUtf8("Updating %1 MiB of %2 MiB at %3 %4...");
-    bool _bShowBeforeStarted = false,
+    bool _bShowProgressDialog = true ,
+	 _bShowBeforeStarted = false,
          _bShowUpdateConfirmationDialog = false,
          _bShowFinishDialog = false,
          _bShowErrorDialog = false,
