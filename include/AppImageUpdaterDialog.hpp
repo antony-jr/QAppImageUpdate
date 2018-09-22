@@ -37,6 +37,7 @@ public Q_SLOTS:
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setMovePoint(const QPoint&);
+    void setAlertAuthorizations(bool);
     void setShowProgressDialog(bool);
     void setShowUpdateConfirmationDialog(bool);
     void setShowNoUpdateDialog(bool);
@@ -61,6 +62,7 @@ Q_SIGNALS:
     void canceled(void);
     void error(QString, short);
     void finished(QJsonObject);
+    void requiresAuthorization(QString , short , QString);
 
 private:
     QMutex _pMutex;
@@ -75,7 +77,8 @@ private:
          _bShowUpdateConfirmationDialog = false,
          _bShowFinishDialog = false,
          _bShowErrorDialog = false,
-         _bShowNoUpdateDialog = false;
+         _bAlertAuthorizations = false,
+	 _bShowNoUpdateDialog = false;
     AppImageDeltaRevisioner *_pDRevisioner = nullptr;
     QGridLayout *_pGridLayout = nullptr;
     QLabel *_pStatusLbl = nullptr;

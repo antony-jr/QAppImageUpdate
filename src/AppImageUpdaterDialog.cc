@@ -124,6 +124,14 @@ void AppImageUpdaterDialog::setMovePoint(const QPoint &pt)
     return;
 }
 
+void AppImageUpdaterDialog::setAlertAuthorizations(bool doAlert)
+{
+    THREAD_SAFE_AREA(
+	_bAlertAuthorizations = doAlert;
+    , _pMutex);
+    return;
+}
+
 void AppImageUpdaterDialog::setShowProgressDialog(bool doShow)
 {
 	THREAD_SAFE_AREA(
@@ -300,11 +308,14 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
 
 void AppImageUpdaterDialog::handleError(short errorCode)
 {
-    bool show = false;
+    bool show = false,
+	 alert = false,
+	 doAlert = false;
     QString path,
             errorString;
     THREAD_SAFE_AREA(
         show = _bShowErrorDialog;
+	alert = _bAlertAuthorizations;
         path = _sCurrentAppImagePath;
         , _pMutex);
 
@@ -408,7 +419,9 @@ void AppImageUpdaterDialog::handleError(short errorCode)
             break;
         case AppImageUpdaterBridge::NO_READ_PERMISSION:
             errorString = QString::fromUtf8("you don't have the permission to read it.");
-            break;
+            show = (alert) ? false : show;
+	    doAlert = alert; 
+	    break;
         case AppImageUpdaterBridge::APPIMAGE_NOT_FOUND:
             errorString = QString::fromUtf8("it does not exists.");
             break;
@@ -474,13 +487,17 @@ void AppImageUpdaterDialog::handleError(short errorCode)
             break;
         case AppImageUpdaterBridge::NO_PERMISSION_TO_READ_SOURCE_FILE:
             errorString = QString::fromUtf8("you have no permissions to read the current AppImage.");
-            break;
+            show = (alert) ? false : show;
+	    doAlert = alert;
+	    break;
         case AppImageUpdaterBridge::CANNOT_OPEN_SOURCE_FILE:
             errorString = QString::fromUtf8("the current AppImage cannot be opened.");
             break;
         case AppImageUpdaterBridge::NO_PERMISSION_TO_READ_WRITE_TARGET_FILE:
             errorString = QString::fromUtf8("you have no write or read permissions to read and write the new version.");
-            break;
+            show = (alert) ? false : show;
+	    doAlert = alert;
+	    break;
         case AppImageUpdaterBridge::CANNOT_OPEN_TARGET_FILE:
             errorString = QString::fromUtf8("the new version cannot be opened to write or read.");
             break;
@@ -506,7 +523,12 @@ void AppImageUpdaterDialog::handleError(short errorCode)
         }
         box.exec();
     }
-    emit error(errorString, errorCode);
+
+    if(doAlert){
+	    emit requiresAuthorization(errorString , errorCode , path);
+    }else{
+	    emit error(errorString, errorCode);
+    }
     return;
 }
 
