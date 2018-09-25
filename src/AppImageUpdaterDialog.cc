@@ -101,7 +101,7 @@ void AppImageUpdaterDialog::setAppImage(const QString &path)
     THREAD_SAFE_AREA(
         if(!path.isEmpty())
         _pDRevisioner->setAppImage(path);
-        _sCurrentAppImagePath = QFileInfo(path).absolutePath();
+        _sCurrentAppImagePath = path;
         , _pMutex);
     return;
 }
@@ -111,7 +111,7 @@ void AppImageUpdaterDialog::setAppImage(QFile *AppImage)
     THREAD_SAFE_AREA(
         if(AppImage)
         _pDRevisioner->setAppImage(AppImage);
-        _sCurrentAppImagePath = QFileInfo(AppImage->fileName()).absolutePath();
+	_sCurrentAppImagePath = AppImage->fileName();
         , _pMutex);
     return;
 }
@@ -253,7 +253,8 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     THREAD_SAFE_AREA(
         showUpdateDialog = _bShowUpdateConfirmationDialog;
         showNoUpdateDialog = _bShowNoUpdateDialog;
-        , _pMutex);
+        _sCurrentAppImagePath = CurrentAppImageInfo["AppImageFilePath"].toString();
+	, _pMutex);
 
     if(isUpdateAvailable) {
         if(showUpdateDialog) {
