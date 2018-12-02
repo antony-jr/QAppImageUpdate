@@ -1,26 +1,26 @@
-INCLUDEPATH += $$system(pwd) $$system(pwd)/include
+INCLUDEPATH += $$PWD $$PWD/include
 QT += core widgets network
-HEADERS += $$system(pwd)/include/AppImageUpdateInformation_p.hpp \ 
-	   $$system(pwd)/include/ZsyncRemoteControlFileParser_p.hpp \
-	   $$system(pwd)/include/ZsyncInternalStructures_p.hpp \
-	   $$system(pwd)/include/ZsyncWriter_p.hpp \
-	   $$system(pwd)/include/ZsyncBlockRangeReply_p.hpp \
-           $$system(pwd)/include/ZsyncBlockRangeDownloader_p.hpp \
-	   $$system(pwd)/include/AppImageDeltaRevisioner_p.hpp \
-	   $$system(pwd)/include/AppImageDeltaRevisioner.hpp \
-           $$system(pwd)/include/AppImageUpdaterDialog.hpp \
-	   $$system(pwd)/include/AppImageUpdaterBridgeErrorCodes.hpp \
-	   $$system(pwd)/include/AppImageUpdaterBridgeStatusCodes.hpp \
-           $$system(pwd)/include/AppImageUpdaterBridge.hpp
+HEADERS += $$PWD/include/AppImageUpdateInformation_p.hpp \
+       $$PWD/include/ZsyncRemoteControlFileParser_p.hpp \
+       $$PWD/include/ZsyncInternalStructures_p.hpp \
+       $$PWD/include/ZsyncWriter_p.hpp \
+       $$PWD/include/ZsyncBlockRangeReply_p.hpp \
+           $$PWD/include/ZsyncBlockRangeDownloader_p.hpp \
+       $$PWD/include/AppImageDeltaRevisioner_p.hpp \
+       $$PWD/include/AppImageDeltaRevisioner.hpp \
+           $$PWD/include/AppImageUpdaterDialog.hpp \
+       $$PWD/include/AppImageUpdaterBridgeErrorCodes.hpp \
+       $$PWD/include/AppImageUpdaterBridgeStatusCodes.hpp \
+           $$PWD/include/AppImageUpdaterBridge.hpp
 
-SOURCES += $$system(pwd)/src/AppImageUpdateInformation_p.cc \
-	   $$system(pwd)/src/ZsyncRemoteControlFileParser_p.cc \
-	   $$system(pwd)/src/ZsyncWriter_p.cc \
-           $$system(pwd)/src/ZsyncBlockRangeReply_p.cc \
-           $$system(pwd)/src/ZsyncBlockRangeDownloader_p.cc \
-	   $$system(pwd)/src/AppImageDeltaRevisioner_p.cc \
-           $$system(pwd)/src/AppImageDeltaRevisioner.cc \
-           $$system(pwd)/src/AppImageUpdaterDialog.cc
+SOURCES += $$PWD/src/AppImageUpdateInformation_p.cc \
+       $$PWD/src/ZsyncRemoteControlFileParser_p.cc \
+       $$PWD/src/ZsyncWriter_p.cc \
+           $$PWD/src/ZsyncBlockRangeReply_p.cc \
+           $$PWD/src/ZsyncBlockRangeDownloader_p.cc \
+       $$PWD/src/AppImageDeltaRevisioner_p.cc \
+           $$PWD/src/AppImageDeltaRevisioner.cc \
+           $$PWD/src/AppImageUpdaterDialog.cc
 
 logging_disabled {
 	message(Logging will be disabled for this build.)
