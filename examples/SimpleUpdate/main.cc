@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QCommandLineParser>
 #include <AppImageUpdaterBridge>
 #include <TextProgressBar.hpp>
 
@@ -9,14 +10,18 @@ int main(int ac, char **av)
     qInfo().noquote() << "SimpleUpdate , A Simple Updater using AppImageUpdaterBridge.";
     qInfo().noquote() << "Copyright (C) 2018 , Antony Jr.";
 
-    if(ac == 1) {
-        qInfo().noquote() << "\nUsage: " << av[0] << " [APPIMAGE PATH].";
-        return -1;
-    }
-    int it = 1;
     QCoreApplication app(ac, av);
     AppImageDeltaRevisioner DRevisioner;
     TextProgressBar progressBar;
+
+    QCommandLineParser parser;
+    parser.process(app);
+    auto args = parser.positionalArguments();
+    if(args.count() == 0) {
+        qInfo().noquote() << "\nUsage: " << app.arguments().at(0) << " [APPIMAGE PATH].";
+        return -1;
+    }
+    int it = 0;
 
     QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::progress,
     [&](int percent, qint64 br, qint64 bt, double speed, QString unit) {
@@ -41,19 +46,17 @@ int main(int ac, char **av)
         qInfo() << "\nCompleted Delta Update!";
 
         ++it;
-        if(it >= ac) {
+        if(it >= parser.positionalArguments().count()) {
             app.quit();
         } else {
-            ++av;
-            QString path(*av);
+            QString path(args[it]);
             DRevisioner.setAppImage(path);
             DRevisioner.start();
         }
         return;
     });
 
-    ++av;
-    QString path(*av);
+    QString path(args[it]);
     DRevisioner.setAppImage(path);
     DRevisioner.start();
     return app.exec();
