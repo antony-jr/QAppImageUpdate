@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QCommandLineParser>
 #include <AppImageUpdaterBridge>
 
 using namespace AppImageUpdaterBridge;
@@ -8,13 +9,17 @@ int main(int ac, char **av)
     qInfo().noquote() << "SimpleUpdate , A Simple Updater using AppImageUpdaterBridge.";
     qInfo().noquote() << "Copyright (C) 2018 , Antony Jr.";
 
-    if(ac == 1) {
-        qInfo().noquote() << "\nUsage: " << av[0] << " [APPIMAGE PATH].";
-        return -1;
-    }
-    int it = 1;
     QApplication app(ac, av);
     AppImageUpdaterDialog UWidget;
+
+    QCommandLineParser parser;
+    parser.process(app);
+    auto args = parser.positionalArguments();
+    if(args.count() == 0) {
+        qInfo().noquote() << "\nUsage: " << app.arguments().at(0) << " [APPIMAGE PATH].";
+        return -1;
+    }
+    int it = 0;
     
     QObject::connect(&UWidget, &AppImageUpdaterDialog::error , [&](QString eStr, short errorCode){
         qInfo() << "ERROR CODE:: " << errorCode;
@@ -27,19 +32,17 @@ int main(int ac, char **av)
     QObject::connect(&UWidget, &AppImageUpdaterDialog::finished, [&](QJsonObject newVersion) {
         (void)newVersion;
         ++it;
-        if(it >= ac) {
+        if(it >= args.count()) {
             app.quit();
         } else {
-            ++av;
-            QString path(*av);
+            QString path(args[it]);
             UWidget.setAppImage(path);
             UWidget.init();
         }
         return;
     });
 
-    ++av;
-    QString path(*av);
+    QString path(args[it]);
     UWidget.setAppImage(path);
     UWidget.setShowErrorDialog(true);
     UWidget.setShowUpdateConfirmationDialog(true);
