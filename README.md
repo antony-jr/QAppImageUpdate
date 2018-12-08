@@ -60,6 +60,25 @@ See this library in **action** at this [repo](https://github.com/antony-jr/AppIm
 
 Please refer the official [documentation](https://antony-jr.github.io/AppImageUpdaterBridge).
 
+# Contributors [![AIUB Contributors](https://img.shields.io/github/contributors/antony-jr/AppImageUpdaterBridge.svg)](https://github.com/antony-jr/AppImageUpdaterBridge/graphs/contributors)
+
+These are the people who helped to make the bridge stronger! :heart:
+
+<table>
+    <tr align="center">
+        <td>
+            <img src="https://avatars2.githubusercontent.com/u/1092613?v=4" width="100px"><br>
+            <sub>
+                <strong>
+                    <a href="https://github.com/technic">technic93</a>
+                </strong>
+            </sub><br>
+            <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=technic">💻</a>
+      </td>
+    </tr>
+</table>
+
+
 # Acknowledgements ![Thank You](https://img.shields.io/badge/Always-Say%20Thank%20You!-blue.svg?style=flat-square)
 
 * [AppImages](https://github.com/AppImage) - Motivation to start this project.
