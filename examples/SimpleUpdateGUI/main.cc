@@ -17,16 +17,16 @@ int main(int ac, char **av)
     AppImageUpdaterDialog UWidget;
     
     QObject::connect(&UWidget, &AppImageUpdaterDialog::error , [&](QString eStr, short errorCode){
-	qInfo() << "ERROR CODE:: " << errorCode;
-	return;
+        qInfo() << "ERROR CODE:: " << errorCode;
+        return;
     });
 
     QObject::connect(&UWidget , &AppImageUpdaterDialog::quit , &app , &QApplication::quit , Qt::QueuedConnection);
     QObject::connect(&UWidget , &AppImageUpdaterDialog::canceled , &app , &QApplication::quit , Qt::QueuedConnection);
 
     QObject::connect(&UWidget, &AppImageUpdaterDialog::finished, [&](QJsonObject newVersion) {
-	(void)newVersion;
-	++it;
+        (void)newVersion;
+        ++it;
         if(it >= ac) {
             app.quit();
         } else {
