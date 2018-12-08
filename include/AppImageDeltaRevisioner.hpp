@@ -85,6 +85,7 @@ Q_SIGNALS:
     void logger(QString, QString);
 
 private:
+    void connectSignals();
     AppImageDeltaRevisionerPrivate *_pDeltaRevisioner = nullptr;
 };
 }

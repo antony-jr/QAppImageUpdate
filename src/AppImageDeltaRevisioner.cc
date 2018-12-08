@@ -43,26 +43,6 @@
 
 using namespace AppImageUpdaterBridge;
 
-#define CONSTRUCT(uniqueCode)  uniqueCode   \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::started , \
-                                        this , &AppImageDeltaRevisioner::started , Qt::DirectConnection); \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::canceled , \
-                                        this , &AppImageDeltaRevisioner::canceled , Qt::DirectConnection); \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::finished , \
-                                        this , &AppImageDeltaRevisioner::finished , Qt::DirectConnection); \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::embededInformation , \
-                                        this , &AppImageDeltaRevisioner::embededInformation , Qt::DirectConnection); \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::updateAvailable , \
-                                        this , &AppImageDeltaRevisioner::updateAvailable , Qt::DirectConnection); \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::statusChanged , \
-                                        this , &AppImageDeltaRevisioner::statusChanged , Qt::DirectConnection); \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::error , \
-                                        this , &AppImageDeltaRevisioner::error , Qt::DirectConnection); \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::progress , \
-                                        this , &AppImageDeltaRevisioner::progress , Qt::DirectConnection); \
-                               connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::logger , \
-                                        this , &AppImageDeltaRevisioner::logger , Qt::DirectConnection);
-
 #define TO_STRING(x) #x
 
 #define QUEUED_CALL_FUNC(o , f)  {  \
@@ -92,27 +72,24 @@ using namespace AppImageUpdaterBridge;
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(bool singleThreaded, QObject *parent)
     : QObject(parent)
 {
-    CONSTRUCT(
-        _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(singleThreaded, this);
-    )
+    _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(singleThreaded, this);
+    connectSignals();
     return;
 }
 
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(const QString &AppImagePath, bool singleThreaded, QObject *parent)
     : QObject(parent)
 {
-    CONSTRUCT(
-        _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImagePath, singleThreaded, this);
-    )
+    _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImagePath, singleThreaded, this);
+    connectSignals();
     return;
 }
 
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(QFile *AppImage, bool singleThreaded, QObject *parent)
     : QObject(parent)
 {
-    CONSTRUCT(
-        _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImage, singleThreaded, this);
-    )
+    _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImage, singleThreaded, this);
+    connectSignals();
     return;
 }
 
@@ -179,6 +156,28 @@ void AppImageDeltaRevisioner::checkForUpdate(void)
 QNetworkReply::NetworkError AppImageDeltaRevisioner::getNetworkError(void)
 {
     return _pDeltaRevisioner->getNetworkError();
+}
+
+void AppImageDeltaRevisioner::connectSignals()
+{
+    connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::started,
+            this, &AppImageDeltaRevisioner::started , Qt::DirectConnection);
+    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::canceled,
+            this, &AppImageDeltaRevisioner::canceled, Qt::DirectConnection);
+    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::finished,
+            this, &AppImageDeltaRevisioner::finished, Qt::DirectConnection);
+    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::embededInformation,
+            this, &AppImageDeltaRevisioner::embededInformation, Qt::DirectConnection);
+    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::updateAvailable,
+            this, &AppImageDeltaRevisioner::updateAvailable, Qt::DirectConnection);
+    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::statusChanged,
+            this, &AppImageDeltaRevisioner::statusChanged, Qt::DirectConnection);
+    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::error,
+            this, &AppImageDeltaRevisioner::error, Qt::DirectConnection);
+    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::progress,
+            this, &AppImageDeltaRevisioner::progress , Qt::DirectConnection);
+    connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::logger,
+            this, &AppImageDeltaRevisioner::logger, Qt::DirectConnection);
 }
 
 QString AppImageDeltaRevisioner::errorCodeToString(short code)
