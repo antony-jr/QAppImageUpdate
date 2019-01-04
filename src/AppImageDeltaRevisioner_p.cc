@@ -47,7 +47,7 @@ AppImageDeltaRevisionerPrivate::AppImageDeltaRevisionerPrivate(bool singleThread
 {
     setObjectName("AppImageDeltaRevisionerPrivate");
     if(!singleThreaded) {
-        _pSharedThread.reset(new QThread);\
+        _pSharedThread.reset(new QThread);
         _pSharedThread->start();
     }
     _pSharedNetworkAccessManager.reset(new QNetworkAccessManager);
@@ -83,7 +83,7 @@ AppImageDeltaRevisionerPrivate::AppImageDeltaRevisionerPrivate(bool singleThread
             this, &AppImageDeltaRevisionerPrivate::error, Qt::DirectConnection);
     connect(_pUpdateInformation.data(), &AppImageUpdateInformationPrivate::logger,
             this, &AppImageDeltaRevisionerPrivate::logger, Qt::DirectConnection);
-    connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::statusChanged,\
+    connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::statusChanged,
             this, &AppImageDeltaRevisionerPrivate::statusChanged, Qt::DirectConnection);
     connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::progress,
             this, &AppImageDeltaRevisionerPrivate::handleIndeterminateProgress);
