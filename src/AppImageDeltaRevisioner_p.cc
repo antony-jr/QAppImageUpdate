@@ -42,100 +42,94 @@
 
 using namespace AppImageUpdaterBridge;
 
-#define CONSTRUCT(x) setObjectName("AppImageDeltaRevisionerPrivate"); \
-		     if(!singleThreaded){ \
-		     _pSharedThread.reset(new QThread);\
-		     _pSharedThread->start(); \
-		     } \
-		     _pSharedNetworkAccessManager.reset(new QNetworkAccessManager); \
-		     _pUpdateInformation.reset(new AppImageUpdateInformationPrivate); \
-		     _pDeltaWriter.reset(new ZsyncWriterPrivate); \
-		     if(!singleThreaded){ \
-		     _pSharedNetworkAccessManager->moveToThread(_pSharedThread.data()); \
-		     _pUpdateInformation->moveToThread(_pSharedThread.data()); \
-		     _pDeltaWriter->moveToThread(_pSharedThread.data()); \
-		      } \
-		     _pControlFileParser.reset(new ZsyncRemoteControlFileParserPrivate(_pSharedNetworkAccessManager.data())); \
-		     _pBlockDownloader.reset(new ZsyncBlockRangeDownloaderPrivate(_pControlFileParser.data() ,  \
-					                                         _pDeltaWriter.data() , \
-					                                         _pSharedNetworkAccessManager.data())); \
-		     if(!singleThreaded){ \
-		     _pControlFileParser->moveToThread(_pSharedThread.data()); \
-		     _pBlockDownloader->moveToThread(_pSharedThread.data()); \
-		     } \
-		     _pControlFileParser->setObjectName("ZsyncRemoteControlFileParserPrivate"); \
-		     _pUpdateInformation->setObjectName("AppImageUpdateInformationPrivate"); \
-		     _pDeltaWriter->setObjectName("ZsyncWriterPrivate"); \
-                     _pBlockDownloader->setObjectName("ZsyncBlockRangeDownloaderPrivate"); \
-		     _pUpdateInformation->setLoggerName("UpdateInformation"); \
-		     _pControlFileParser->setLoggerName("ControlFileParser"); \
-		     _pDeltaWriter->setLoggerName("AppImageDeltaRevisioner"); \
-		     connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::statusChanged , \
-			      this , &AppImageDeltaRevisionerPrivate::statusChanged , Qt::DirectConnection); \
-		     connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::progress , \
-			      this , &AppImageDeltaRevisionerPrivate::handleIndeterminateProgress); \
-		     connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::info , \
-			      this , &AppImageDeltaRevisionerPrivate::embededInformation , Qt::DirectConnection); \
-	             connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::error , \
-			      this , &AppImageDeltaRevisionerPrivate::error , Qt::DirectConnection); \
-	             connect(_pUpdateInformation.data() , &AppImageUpdateInformationPrivate::logger , \
-			      this , &AppImageDeltaRevisionerPrivate::logger , Qt::DirectConnection); \
-		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::statusChanged ,\
-			      this , &AppImageDeltaRevisionerPrivate::statusChanged , Qt::DirectConnection); \
-                     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::progress , \
-			      this , &AppImageDeltaRevisionerPrivate::handleIndeterminateProgress); \
-		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::error, \
-			      this , &AppImageDeltaRevisionerPrivate::handleZsyncRemoteControlFileParserError); \
-		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::networkError, \
-			      this , &AppImageDeltaRevisionerPrivate::handleNetworkError); \
-		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::logger , \
-			      this , &AppImageDeltaRevisionerPrivate::logger , Qt::DirectConnection); \
-		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::statusChanged , \
-			      this , &AppImageDeltaRevisionerPrivate::statusChanged , Qt::DirectConnection); \
-                     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::error , \
-			      this , &AppImageDeltaRevisionerPrivate::error , Qt::DirectConnection); \
-		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::logger , \
-			      this , &AppImageDeltaRevisionerPrivate::logger , Qt::DirectConnection); \
-		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::started, \
-			      this , &AppImageDeltaRevisionerPrivate::started , Qt::DirectConnection); \
-		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::canceled , \
-			      this , &AppImageDeltaRevisionerPrivate::canceled , Qt::DirectConnection); \
-                     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::finished , \
-			      this , &AppImageDeltaRevisionerPrivate::finished , Qt::DirectConnection); \
-                     connect(_pBlockDownloader.data() , &ZsyncBlockRangeDownloaderPrivate::error , \
-			      this,  &AppImageDeltaRevisionerPrivate::handleNetworkError); \
-		     connect(_pBlockDownloader.data() , &ZsyncBlockRangeDownloaderPrivate::canceled , \
-			      this , &AppImageDeltaRevisionerPrivate::canceled , Qt::DirectConnection); \
-                     connect(_pBlockDownloader.data() , &ZsyncBlockRangeDownloaderPrivate::progress , \
-			      this , &AppImageDeltaRevisionerPrivate::progress , Qt::DirectConnection); \
-                     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::progress , \
-			      this , &AppImageDeltaRevisionerPrivate::progress , Qt::DirectConnection); \
-		     connect(_pControlFileParser.data() , &ZsyncRemoteControlFileParserPrivate::zsyncInformation, \
-			     _pDeltaWriter.data() , &ZsyncWriterPrivate::setConfiguration , Qt::QueuedConnection); \
-		     connect(_pDeltaWriter.data() , &ZsyncWriterPrivate::finishedConfiguring , \
-			     _pDeltaWriter.data() , &ZsyncWriterPrivate::start , Qt::QueuedConnection); \
-		     setAppImage(x);
-
-
-
 AppImageDeltaRevisionerPrivate::AppImageDeltaRevisionerPrivate(bool singleThreaded, QObject *parent)
     : QObject(parent)
 {
-    CONSTRUCT(nullptr);
-    return;
+    setObjectName("AppImageDeltaRevisionerPrivate");
+    if(!singleThreaded) {
+        _pSharedThread.reset(new QThread);
+        _pSharedThread->start();
+    }
+    _pSharedNetworkAccessManager.reset(new QNetworkAccessManager);
+    _pUpdateInformation.reset(new AppImageUpdateInformationPrivate);
+    _pDeltaWriter.reset(new ZsyncWriterPrivate);
+    if(!singleThreaded) {
+        _pSharedNetworkAccessManager->moveToThread(_pSharedThread.data());
+        _pUpdateInformation->moveToThread(_pSharedThread.data());
+        _pDeltaWriter->moveToThread(_pSharedThread.data());
+    }
+    _pControlFileParser.reset(new ZsyncRemoteControlFileParserPrivate(_pSharedNetworkAccessManager.data()));
+    _pBlockDownloader.reset(new ZsyncBlockRangeDownloaderPrivate(_pControlFileParser.data(),
+                                                                 _pDeltaWriter.data(),
+                                                                 _pSharedNetworkAccessManager.data()));
+    if(!singleThreaded) {
+        _pControlFileParser->moveToThread(_pSharedThread.data());
+        _pBlockDownloader->moveToThread(_pSharedThread.data());
+    }
+    _pControlFileParser->setObjectName("ZsyncRemoteControlFileParserPrivate");
+    _pUpdateInformation->setObjectName("AppImageUpdateInformationPrivate");
+    _pDeltaWriter->setObjectName("ZsyncWriterPrivate");
+    _pBlockDownloader->setObjectName("ZsyncBlockRangeDownloaderPrivate");
+    _pUpdateInformation->setLoggerName("UpdateInformation");
+    _pControlFileParser->setLoggerName("ControlFileParser");
+    _pDeltaWriter->setLoggerName("AppImageDeltaRevisioner");
+    connect(_pUpdateInformation.data(), &AppImageUpdateInformationPrivate::statusChanged,
+            this, &AppImageDeltaRevisionerPrivate::statusChanged, Qt::DirectConnection);
+    connect(_pUpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
+            this, &AppImageDeltaRevisionerPrivate::handleIndeterminateProgress);
+    connect(_pUpdateInformation.data(), &AppImageUpdateInformationPrivate::info,
+            this, &AppImageDeltaRevisionerPrivate::embededInformation, Qt::DirectConnection);
+    connect(_pUpdateInformation.data(), &AppImageUpdateInformationPrivate::error,
+            this, &AppImageDeltaRevisionerPrivate::error, Qt::DirectConnection);
+    connect(_pUpdateInformation.data(), &AppImageUpdateInformationPrivate::logger,
+            this, &AppImageDeltaRevisionerPrivate::logger, Qt::DirectConnection);
+    connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::statusChanged,
+            this, &AppImageDeltaRevisionerPrivate::statusChanged, Qt::DirectConnection);
+    connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::progress,
+            this, &AppImageDeltaRevisionerPrivate::handleIndeterminateProgress);
+    connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::error,
+            this, &AppImageDeltaRevisionerPrivate::handleZsyncRemoteControlFileParserError);
+    connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::networkError,
+            this, &AppImageDeltaRevisionerPrivate::handleNetworkError);
+    connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::logger,
+            this, &AppImageDeltaRevisionerPrivate::logger, Qt::DirectConnection);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::statusChanged,
+            this, &AppImageDeltaRevisionerPrivate::statusChanged, Qt::DirectConnection);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::error,
+            this, &AppImageDeltaRevisionerPrivate::error, Qt::DirectConnection);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::logger,
+            this, &AppImageDeltaRevisionerPrivate::logger, Qt::DirectConnection);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::started,
+            this, &AppImageDeltaRevisionerPrivate::started, Qt::DirectConnection);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::canceled,
+            this, &AppImageDeltaRevisionerPrivate::canceled, Qt::DirectConnection);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::finished,
+            this, &AppImageDeltaRevisionerPrivate::finished, Qt::DirectConnection);
+    connect(_pBlockDownloader.data(), &ZsyncBlockRangeDownloaderPrivate::error,
+            this,  &AppImageDeltaRevisionerPrivate::handleNetworkError);
+    connect(_pBlockDownloader.data(), &ZsyncBlockRangeDownloaderPrivate::canceled,
+            this, &AppImageDeltaRevisionerPrivate::canceled, Qt::DirectConnection);
+    connect(_pBlockDownloader.data(), &ZsyncBlockRangeDownloaderPrivate::progress,
+            this, &AppImageDeltaRevisionerPrivate::progress, Qt::DirectConnection);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::progress,
+            this, &AppImageDeltaRevisionerPrivate::progress, Qt::DirectConnection);
+    connect(_pControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::zsyncInformation,
+            _pDeltaWriter.data(), &ZsyncWriterPrivate::setConfiguration, Qt::QueuedConnection);
+    connect(_pDeltaWriter.data(), &ZsyncWriterPrivate::finishedConfiguring,
+            _pDeltaWriter.data(), &ZsyncWriterPrivate::start, Qt::QueuedConnection);
 }
 
 AppImageDeltaRevisionerPrivate::AppImageDeltaRevisionerPrivate(const QString &AppImagePath, bool singleThreaded, QObject *parent)
-    : QObject(parent)
+    : AppImageDeltaRevisionerPrivate(singleThreaded, parent)
 {
-    CONSTRUCT(AppImagePath);
+    setAppImage(AppImagePath);
     return;
 }
 
 AppImageDeltaRevisionerPrivate::AppImageDeltaRevisionerPrivate(QFile *AppImage, bool singleThreaded, QObject *parent)
-    : QObject(parent)
+    : AppImageDeltaRevisionerPrivate(singleThreaded, parent)
 {
-    CONSTRUCT(AppImage);
+    setAppImage(AppImage);
     return;
 }
 
