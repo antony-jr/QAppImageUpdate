@@ -46,14 +46,14 @@
 #include <QMetaMethod>
 #include <QObject>
 #include <QString>
-#include <QSharedPointer>
+#include <QScopedPointer>
 #include <QTime>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <AppImageUpdaterBridgeErrorCodes.hpp>
-#include <AppImageUpdaterBridgeStatusCodes.hpp>
-#include <ZsyncInternalStructures_p.hpp>
+
+#include <appimageupdaterbridge_enums.hpp>
+#include <zsyncinternalstructures_p.hpp>
 
 namespace AppImageUpdaterBridge
 {
@@ -109,35 +109,35 @@ Q_SIGNALS:
     void statusChanged(short);
     void logger(QString, QString);
 private:
-    bool _bAcceptRange = false;
-    QJsonObject _jUpdateInformation;
-    QString _sZsyncMakeVersion,
-            _sZsyncFileName, //Only used for github and bintray API responses.
-            _sTargetFileName,
-            _sAppImagePath,
-            _sTargetFileSHA1
+    bool b_AcceptRange = false;
+    QJsonObject j_UpdateInformation;
+    QString s_ZsyncMakeVersion,
+            s_ZsyncFileName, //Only used for github and bintray API responses.
+            s_TargetFileName,
+            s_AppImagePath,
+            s_TargetFileSHA1
 #ifndef LOGGING_DISABLED
-            ,_sLoggerName,
-            _sLogBuffer;
+            ,s_LoggerName,
+            s_LogBuffer;
 #else
             ;
 #endif // LOGGING_DISABLED
-    QDateTime _pMTime;
-    qint32 _nTargetFileBlockSize = 0,
-           _nTargetFileLength = 0,
-           _nTargetFileBlocks = 0;
-    qint32 _nWeakCheckSumBytes = 0,
-           _nStrongCheckSumBytes = 0,
-           _nConsecutiveMatchNeeded = 0;
-    qint64 _nCheckSumBlocksOffset = 0;
-    QUrl _uTargetFileUrl,
-         _uControlFileUrl;
+    QDateTime m_MTime;
+    qint32 n_TargetFileBlockSize = 0,
+           n_TargetFileLength = 0,
+           n_TargetFileBlocks = 0;
+    qint32 n_WeakCheckSumBytes = 0,
+           n_StrongCheckSumBytes = 0,
+           n_ConsecutiveMatchNeeded = 0;
+    qint64 n_CheckSumBlocksOffset = 0;
+    QUrl u_TargetFileUrl,
+         u_ControlFileUrl;
 
 #ifndef LOGGING_DISABLED
-    QSharedPointer<QDebug> _pLogger = nullptr;
+    QScopedPointer<QDebug> p_Logger;
 #endif // LOGGING_DISABLED
-    QSharedPointer<QBuffer> _pControlFile = nullptr;
-    QNetworkAccessManager *_pNManager = nullptr;
+    QScopedPointer<QBuffer> p_ControlFile;
+    QNetworkAccessManager *p_NManager = nullptr;
 };
 }
 

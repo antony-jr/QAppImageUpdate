@@ -40,23 +40,16 @@
 using namespace AppImageUpdaterBridge;
 
 /*
- * Prints to the log.
- * LOGS,LOGE  -> Prints normal log messages.
- * INFO_START,INFO_END -> Prints info messages to log.
- * WARNING_START,WARNING_END -> Prints warning messages to log.
- * FATAL_START,FATAL_END -> Prints fatal messages to log.
- *
- * Example:
- *      LOGS "This is a log message." LOGE
- *
- *
+ * An efficient logging system.
+ * Warning:
+ * 	Hard coded to work only in this source file.
 */
 #ifndef LOGGING_DISABLED
-#define LOGS *(_pLogger.data()) LOGR
+#define LOGS *(p_Logger.data()) LOGR
 #define LOGR <<
 #define LOGE ; \
-             emit(logger(_sLogBuffer , _sAppImagePath)); \
-             _sLogBuffer.clear();
+             emit(logger(s_LogBuffer , s_AppImagePath)); \
+             s_LogBuffer.clear();
 #else
 #define LOGS (void)
 #define LOGR ;(void)
@@ -72,6 +65,16 @@ using namespace AppImageUpdaterBridge;
 #define FATAL_END LOGE
 
 
+/*
+ * Splits a source QString(src) at the given delimiter(key) and sets the second
+ * part of the split to the given destination QString(dest)
+ *
+ * If something unexpected happens , the given error(e) is emitted where an
+ * error signal is assumed.
+ *
+ * Warning:
+ * 	Hard coded to only work with this source file.
+*/
 #define STORE_SPLIT(dest , src , key , e) { \
 					  auto s = src.split(key); \
 					  if(s.size() < 2){ \
@@ -106,23 +109,18 @@ using namespace AppImageUpdaterBridge;
 ZsyncRemoteControlFileParserPrivate::ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager *networkManager)
     : QObject()
 {
-    emit statusChanged(INITIALIZING);
+    emit statusChanged(Initializing);
 #ifndef LOGGING_DISABLED
-    _pLogger = QSharedPointer<QDebug>(new QDebug(&_sLogBuffer));
+    p_Logger.reset(new QDebug(&s_LogBuffer));
 #endif // LOGGING_DISABLED
-    _pNManager = networkManager;
+    p_NManager = networkManager;
     connect(this, SIGNAL(error(short)), this, SLOT(handleErrorSignal(short)));
-    emit statusChanged(IDLE);
+    emit statusChanged(Idle);
     return;
 }
 
 ZsyncRemoteControlFileParserPrivate::~ZsyncRemoteControlFileParserPrivate()
 {
-    emit statusChanged(IDLE);
-#ifndef LOGGING_DISABLED
-    _pLogger.clear();
-#endif // LOGGING_DISABLED
-    _pControlFile.clear();
     return;
 }
 
@@ -130,7 +128,7 @@ ZsyncRemoteControlFileParserPrivate::~ZsyncRemoteControlFileParserPrivate()
 void ZsyncRemoteControlFileParserPrivate::setLoggerName(const QString &name)
 {
 #ifndef LOGGING_DISABLED
-    _sLoggerName = QString(name);
+    s_LoggerName = QString(name);
 #else
     (void)name;
 #endif
@@ -144,10 +142,10 @@ void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose)
     if(choose) {
         connect(this, SIGNAL(logger(QString, QString)),
                 this, SLOT(handleLogMessage(QString, QString)), Qt::UniqueConnection);
-    } else {
-        disconnect(this, SIGNAL(logger(QString, QString)),
-                   this, SLOT(handleLogMessage(QString, QString)));
+	return;
     }
+    disconnect(this, SIGNAL(logger(QString, QString)),
+               this, SLOT(handleLogMessage(QString, QString)));
 #else
     (void)choose;
 #endif
@@ -158,7 +156,7 @@ void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose)
 void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(const QUrl &controlFileUrl)
 {
     INFO_START LOGR " setControlFileUrl : using " LOGR controlFileUrl LOGR " as zsync control file." INFO_END;
-    _uControlFileUrl = controlFileUrl;
+    u_ControlFileUrl = controlFileUrl;
     return;
 }
 
@@ -172,23 +170,22 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
     if(information["IsEmpty"].toBool()) {
         return;
     }
-    emit statusChanged(PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION);
+    emit statusChanged(ParsingAppimageEmbededUpdateInformation);
     /*
-     * Check if we are given the same information
-     * consecutively , If so then return what we know.
-    */
-    if(!_jUpdateInformation.isEmpty()) {
-        if(_jUpdateInformation == information) {
-            emit statusChanged(IDLE);
+     * Check if we are given the same information consecutively , If so then return 
+     * what we know. */
+    if(!j_UpdateInformation.isEmpty()) {
+        if(j_UpdateInformation == information) {
+            emit statusChanged(Idle);
             emit receiveControlFile();
             return;
         }
-        _jUpdateInformation = information;
+        j_UpdateInformation = information;
     } else {
         {
-            _jUpdateInformation = information;
+            j_UpdateInformation = information;
             auto fileInfo = information["FileInformation"].toObject();
-            _sAppImagePath = fileInfo["AppImageFilePath"].toString();
+            s_AppImagePath = fileInfo["AppImageFilePath"].toString();
         }
     }
 
@@ -215,18 +212,18 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 
         INFO_START " setControlFileUrl : github api request(" LOGR apiLink LOGR ")." INFO_END;
 
-        emit statusChanged(REQUESTING_GITHUB_API);
-        auto reply = _pNManager->get(request);
+        emit statusChanged(RequestingGithubApi);
+        auto reply = p_NManager->get(request);
 
         connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
                 this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
         connect(reply, SIGNAL(finished(void)), this, SLOT(handleGithubAPIResponse(void)));
     } else {
         /*
-        * if its not github releases zsync or generic zsync
-         * then it must be bintray-zsync.
-         * Note: Since AppImageUpdateInformation can handle errors , Thus
-         * we don't really have to check for integrity now.
+	 * if its not github releases zsync or generic zsync then it must be bintray-zsync.
+         * Note:
+	 * 	Since AppImageUpdateInformation can handle errors , Thus we don't really 
+	 * 	have to check for integrity now.
         */
         INFO_START " setControlFileUrl : using bintray zsync transport." INFO_END;
         QUrl latestLink;
@@ -239,12 +236,13 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
         request.setUrl(latestLink);
         request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
-        emit statusChanged(REQUESTING_BINTRAY);
-        QNetworkReply *reply = _pNManager->head(request);
+        emit statusChanged(RequestingBintray);
+        QNetworkReply *reply = p_NManager->head(request);
 
         connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
                 this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
-        connect(reply, &QNetworkReply::redirected, this, &ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection);
+        connect(reply, &QNetworkReply::redirected, 
+		this, &ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection);
     }
     return;
 }
