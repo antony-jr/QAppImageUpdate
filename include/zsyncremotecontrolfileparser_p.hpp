@@ -75,18 +75,6 @@ public Q_SLOTS:
     void getControlFile(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
-    qint32 getTargetFileBlocksCount(void);
-    QUrl getTargetFileUrl(void);
-    QUrl getControlFileUrl(void);
-    QString getZsyncMakeVersion(void);
-    QString getTargetFileName(void);
-    QString getTargetFileSHA1(void);
-    QDateTime getMTime(void);
-    qint32 getTargetFileBlockSize(void);
-    qint32 getTargetFileLength(void);
-    qint32 getWeakCheckSumBytes(void);
-    qint32 getStrongCheckSumBytes(void);
-    qint32 getConsecutiveMatchNeeded(void);
 private Q_SLOTS:
     void checkHeadTargetFileUrl(qint64, qint64);
     void handleBintrayRedirection(const QUrl&);
@@ -109,7 +97,8 @@ Q_SIGNALS:
     void statusChanged(short);
     void logger(QString, QString);
 private:
-    bool b_AcceptRange = false;
+    bool b_AcceptRange = false,
+	 b_Busy = false;
     QJsonObject j_UpdateInformation;
     QString s_ZsyncMakeVersion,
             s_ZsyncFileName, //Only used for github and bintray API responses.
