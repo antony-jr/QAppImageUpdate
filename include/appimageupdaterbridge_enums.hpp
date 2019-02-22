@@ -46,7 +46,8 @@ enum : short {
     NoError = 0,
 
     /* AppImage Update Information parser errors. */
-    AppimageNotReadable = 1,
+    NoAppimagePathGiven = 1,
+    AppimageNotReadable,
     NoReadPermission,
     AppimageNotFound,
     CannotOpenAppimage,

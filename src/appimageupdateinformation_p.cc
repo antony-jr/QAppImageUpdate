@@ -456,16 +456,25 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     if(!p_AppImage && s_AppImagePath.isEmpty()) {
         /*
          * Check if QCoreApplication got something on argv[0]. The main payload is not the one we want to
-        * operate this on but the AppImage itself , So we cannot use the actual application executable
-               * path processed by qt , Instead we must use argv[0].
-               *
-              */
+         * operate this on but the AppImage itself , So we cannot use the actual application executable
+         * path processed by qt , Instead we must use argv[0].
+         *
+        */
         auto arguments = QCoreApplication::arguments();
         if(!arguments.isEmpty()) {
             setAppImage(QFileInfo(arguments.at(0)).absolutePath() + QString::fromUtf8("/") + QFileInfo(arguments.at(0)).fileName());
         }
-    } else if(!p_AppImage) {
-        /* Open appimage if the user only given the path. */
+	
+	
+	if(s_AppImagePath.isEmpty()){
+		emit(error(NoAppimagePathGiven , QString()));
+		return;
+	}
+    }
+    
+    
+    if(!p_AppImage) {
+	/* Open appimage if the user only given the path. */
         try {
             p_AppImage = new QFile(this);
         } catch (...) {
