@@ -38,36 +38,16 @@
  * via Qt's signals and slots.
  *
 */
-#include <AppImageDeltaRevisioner_p.hpp>
-#include <AppImageDeltaRevisioner.hpp>
+#include "../include/appimagedeltarevisioner_p.hpp"
+#include "../include/appimagedeltarevisioner.hpp"
 
 using namespace AppImageUpdaterBridge;
 
-#define TO_STRING(x) #x
-
-#define QUEUED_CALL_FUNC(o , f)  {  \
-                                    auto metaObject = o->metaObject(); \
-                                    metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature(TO_STRING(f)))) \
-                                                .invoke(o , Qt::QueuedConnection); \
-                                 }
-
-#define QUEUED_CALL_FUNC_QSTRING_ARG(o , f , s)   {  \
-                                                    auto metaObject = o->metaObject(); \
-                                                    metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature(TO_STRING(f)))) \
-                                                                .invoke(o , Qt::QueuedConnection , Q_ARG(QString , s)); \
-                                                  }
-
-#define QUEUED_CALL_FUNC_QFILE_ARG(o , f , qf)  {  \
-                                                    auto metaObject = o->metaObject(); \
-                                                    metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature(TO_STRING(f)))) \
-                                                                .invoke(o , Qt::QueuedConnection , Q_ARG(QFile* , qf)); \
-                                                 }
-
-#define QUEUED_CALL_FUNC_BOOL_ARG(o , f , b)   {  \
-                                                    auto metaObject = o->metaObject(); \
-                                                    metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature(TO_STRING(f)))) \
-                                                                .invoke(o , Qt::QueuedConnection , Q_ARG(bool , b)); \
-                                               }
+static QMetaMethod getMethod(AppImageDeltaRevisionerPrivate *object, const char *function)
+{
+    auto metaObject = object->metaObject();
+    return metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature(function)));
+}
 
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(bool singleThreaded, QObject *parent)
     : QObject(parent)
@@ -101,55 +81,59 @@ AppImageDeltaRevisioner::~AppImageDeltaRevisioner()
 
 void AppImageDeltaRevisioner::start(void)
 {
-    QUEUED_CALL_FUNC(_pDeltaRevisioner, start(void));
+    getMethod(_pDeltaRevisioner , "start(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 
 void AppImageDeltaRevisioner::cancel(void)
 {
-    QUEUED_CALL_FUNC(_pDeltaRevisioner, cancel(void));
+    getMethod(_pDeltaRevisioner , "cancel(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 
 void AppImageDeltaRevisioner::setAppImage(const QString &AppImagePath)
 {
-    QUEUED_CALL_FUNC_QSTRING_ARG(_pDeltaRevisioner, setAppImage(const QString&), AppImagePath);
+    getMethod(_pDeltaRevisioner , "setAppImage(const QString&)")
+	    .invoke(_pDeltaRevisioner , Qt::QueuedConnection , Q_ARG(QString , AppImagePath)); 
     return;
 }
 
 void AppImageDeltaRevisioner::setAppImage(QFile *AppImage)
 {
-    QUEUED_CALL_FUNC_QFILE_ARG(_pDeltaRevisioner, setAppImage(QFile*), AppImage);
+    getMethod(_pDeltaRevisioner , "setAppImage(QFile*)")
+	    .invoke(_pDeltaRevisioner , Qt::QueuedConnection , Q_ARG(QFile* , AppImage)); 
     return;
 }
 
 void AppImageDeltaRevisioner::setShowLog(bool choice)
 {
-    QUEUED_CALL_FUNC_BOOL_ARG(_pDeltaRevisioner, setShowLog(bool), choice);
+    getMethod(_pDeltaRevisioner , "setShowLog(bool)")
+	    .invoke(_pDeltaRevisioner , Qt::QueuedConnection , Q_ARG(bool , choice)); 
     return;
 }
 
 void AppImageDeltaRevisioner::setOutputDirectory(const QString &dir)
 {
-    QUEUED_CALL_FUNC_QSTRING_ARG(_pDeltaRevisioner, setOutputDirectory(const QString&), dir);
+    getMethod(_pDeltaRevisioner , "setOutputDirectory(const QString&)")
+	    .invoke(_pDeltaRevisioner , Qt::QueuedConnection , Q_ARG(QString, dir)); 
     return;
 }
 
 void AppImageDeltaRevisioner::getAppImageEmbededInformation(void)
 {
-    QUEUED_CALL_FUNC(_pDeltaRevisioner, getAppImageEmbededInformation(void));
+    getMethod(_pDeltaRevisioner , "getAppImageEmbededInformation(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 
 void AppImageDeltaRevisioner::clear(void)
 {
-    QUEUED_CALL_FUNC(_pDeltaRevisioner, clear(void));
+    getMethod(_pDeltaRevisioner , "clear(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 
 void AppImageDeltaRevisioner::checkForUpdate(void)
 {
-    QUEUED_CALL_FUNC(_pDeltaRevisioner, checkForUpdate(void));
+    getMethod(_pDeltaRevisioner , "checkForUpdate(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 

@@ -52,8 +52,8 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 
-#include <appimageupdaterbridge_enums.hpp>
-#include <zsyncinternalstructures_p.hpp>
+#include "appimageupdaterbridge_enums.hpp"
+#include "zsyncinternalstructures_p.hpp"
 
 namespace AppImageUpdaterBridge
 {
@@ -87,8 +87,10 @@ private Q_SLOTS:
     void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
 Q_SIGNALS:
-    void targetFileUrl(QUrl);
-    void zsyncInformation(qint32,qint32,qint32,qint32,qint32,qint32,QString,QString,QString,QBuffer*,bool);
+    void zsyncInformation(qint32,qint32,qint32,
+		          qint32,qint32,qint32,
+			  QString,QString,QString,
+			  QUrl,QBuffer*,bool);
     void updateCheckInformation(QJsonObject);
     void receiveControlFile(void);
     void progress(int);
@@ -101,7 +103,7 @@ private:
 	 b_Busy = false;
     QJsonObject j_UpdateInformation;
     QString s_ZsyncMakeVersion,
-            s_ZsyncFileName, //Only used for github and bintray API responses.
+            s_ZsyncFileName, /* only used for github transport. */
             s_TargetFileName,
             s_AppImagePath,
             s_TargetFileSHA1

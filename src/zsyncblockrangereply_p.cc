@@ -36,8 +36,8 @@
  * a simple way to control a single QNetworkReply via signals and slots and
  * also submits the download data on the fly to ZsyncWriterPrivate.
 */
-#include <ZsyncBlockRangeReply_p.hpp>
-#include <ZsyncWriter_p.hpp>
+#include "../include/zsyncblockrangereply_p.hpp"
+#include "../include/zsyncwriter_p.hpp"
 
 using namespace AppImageUpdaterBridge;
 
@@ -46,22 +46,22 @@ ZsyncBlockRangeReplyPrivate::ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate *del
         qint32 rangeFrom,
         qint32 rangeTo)
     : QObject(reply),
-      _nRangeFrom(rangeFrom),
-      _nRangeTo(rangeTo)
+      n_RangeFrom(rangeFrom),
+      n_RangeTo(rangeTo)
 {
     downloadSpeed.start();
-    _pRawData.reset(new QByteArray);
+    p_RawData.reset(new QByteArray);
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleError(QNetworkReply::NetworkError)));
     /*
      * Check if this is an invalid range , if so then prepare for
      * a simple sequential download.
     */
-    if(!(_nRangeFrom || _nRangeTo)) {
+    if(!(n_RangeFrom || n_RangeTo)) {
         connect(reply, &QNetworkReply::downloadProgress,
                 this, &ZsyncBlockRangeReplyPrivate::handleSeqProgress);
         connect(this, &ZsyncBlockRangeReplyPrivate::sendData,
-                deltaWriter, &ZsyncWriterPrivate::rawSeqWrite, Qt::QueuedConnection);
+                deltaWriter, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
     } else {
         connect(reply, &QNetworkReply::downloadProgress,
                 this, &ZsyncBlockRangeReplyPrivate::handleProgress);
@@ -69,9 +69,9 @@ ZsyncBlockRangeReplyPrivate::ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate *del
                 deltaWriter, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
     }
     connect(reply, &QNetworkReply::finished,
-            this, &ZsyncBlockRangeReplyPrivate::handleFinished);
+            this, &ZsyncBlockRangeReplyPrivate::handleFinished , Qt::QueuedConnection);
     connect(this,  &ZsyncBlockRangeReplyPrivate::cancelReply,
-            reply, &QNetworkReply::abort);
+            reply, &QNetworkReply::abort , Qt::QueuedConnection);
     return;
 }
 
@@ -93,11 +93,11 @@ void ZsyncBlockRangeReplyPrivate::handleFinished(void)
     disconnect(reply, &QNetworkReply::downloadProgress, this, &ZsyncBlockRangeReplyPrivate::handleSeqProgress);
     disconnect(reply, &QNetworkReply::downloadProgress, this, &ZsyncBlockRangeReplyPrivate::handleProgress);
 
-    if(!_pRawData->isEmpty()) {
-        _pRawData->append(reply->readAll());
+    if(!p_RawData->isEmpty()) {
+        p_RawData->append(reply->readAll());
 
         /* Send all the data to ZsyncWriterPrivate. */
-        emit sendBlockDataToWriter(_nRangeFrom, _nRangeTo, _pRawData.take());
+        emit sendBlockDataToWriter(n_RangeFrom, n_RangeTo, p_RawData.take());
     }
     emit finished();
     return;
@@ -161,10 +161,10 @@ void ZsyncBlockRangeReplyPrivate::handleProgress(qint64 bytesReceived, qint64 by
         return;
     }
 
-    qint64 nowReceived = bytesReceived - _nPreviousBytesReceived;
-    _nPreviousBytesReceived = bytesReceived;
+    qint64 nowReceived = bytesReceived - n_PreviousBytesReceived;
+    n_PreviousBytesReceived = bytesReceived;
 
-    _pRawData->append(reply->readAll());
+    p_RawData->append(reply->readAll());
 
     QString sUnit;
     double nSpeed =  bytesReceived * 1000.0 / downloadSpeed.elapsed();

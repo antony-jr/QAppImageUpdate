@@ -53,14 +53,12 @@
 #include <QString>
 #include <QScopedPointer>
 #include <QThread>
-#include <AppImageUpdaterBridgeErrorCodes.hpp>
-#include <AppImageUpdaterBridgeStatusCodes.hpp>
 
-/* Private Libraries needed. */
-#include <AppImageUpdateInformation_p.hpp>
-#include <ZsyncRemoteControlFileParser_p.hpp>
-#include <ZsyncWriter_p.hpp>
-#include <ZsyncBlockRangeDownloader_p.hpp>
+#include "appimageupdaterbridge_enums.hpp"
+#include "appimageupdateinformation_p.hpp"
+#include "zsyncremotecontrolfileparser_p.hpp"
+#include "zsyncwriter_p.hpp"
+#include "zsyncblockrangedownloader_p.hpp"
 
 namespace AppImageUpdaterBridge
 {

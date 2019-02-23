@@ -38,7 +38,8 @@
  * via Qt's signals and slots.
  *
 */
-#include <AppImageDeltaRevisioner_p.hpp>
+
+#include "../include/appimagedeltarevisioner_p.hpp"
 
 using namespace AppImageUpdaterBridge;
 
@@ -59,8 +60,7 @@ AppImageDeltaRevisionerPrivate::AppImageDeltaRevisionerPrivate(bool singleThread
         _pDeltaWriter->moveToThread(_pSharedThread.data());
     }
     _pControlFileParser.reset(new ZsyncRemoteControlFileParserPrivate(_pSharedNetworkAccessManager.data()));
-    _pBlockDownloader.reset(new ZsyncBlockRangeDownloaderPrivate(_pControlFileParser.data(),
-                                                                 _pDeltaWriter.data(),
+    _pBlockDownloader.reset(new ZsyncBlockRangeDownloaderPrivate(_pDeltaWriter.data(),
                                                                  _pSharedNetworkAccessManager.data()));
     if(!singleThreaded) {
         _pControlFileParser->moveToThread(_pSharedThread.data());
@@ -310,7 +310,7 @@ QNetworkReply::NetworkError AppImageDeltaRevisionerPrivate::getNetworkError(void
 
 void AppImageDeltaRevisionerPrivate::handleZsyncRemoteControlFileParserError(short ecode)
 {
-    if(ecode == UNKNOWN_NETWORK_ERROR) {
+    if(ecode == UnknownNetworkError) {
         return;
     }
     emit error(ecode);
@@ -320,7 +320,7 @@ void AppImageDeltaRevisionerPrivate::handleZsyncRemoteControlFileParserError(sho
 void AppImageDeltaRevisionerPrivate::handleNetworkError(QNetworkReply::NetworkError ecode)
 {
     _pRecentNetworkErrorCode = ecode;
-    emit error(UNKNOWN_NETWORK_ERROR);
+    emit error(UnknownNetworkError);
     return;
 }
 

@@ -41,7 +41,8 @@
 #include <QtGlobal>
 #include <QObject>
 #include <QNetworkReply>
-#include <ZsyncWriter_p.hpp>
+
+#include "zsyncwriter_p.hpp"
 
 namespace AppImageUpdaterBridge
 {
@@ -73,10 +74,10 @@ Q_SIGNALS:
 
 private:
     QTime downloadSpeed;
-    QScopedPointer<QByteArray> _pRawData;
-    qint64 _nPreviousBytesReceived = 0;
-    qint32 _nRangeFrom = 0,
-           _nRangeTo = 0;
+    QScopedPointer<QByteArray> p_RawData;
+    qint64 n_PreviousBytesReceived = 0;
+    qint32 n_RangeFrom = 0,
+           n_RangeTo = 0;
 };
 }
 #endif // ZSYNC_BLOCK_RANGE_REPLY_PRIVATE_HPP_INCLUDED

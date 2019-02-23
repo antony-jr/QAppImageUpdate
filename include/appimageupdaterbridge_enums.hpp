@@ -13,6 +13,8 @@ enum : short {
     OpeningAppimage,
     CalculatingAppimageSha1Hash,
     ReadingAppimageMagicBytes,
+    ReadingAppimageUpdateInformation,
+    FindingAppimageType,
     FindingAppimageArchitecture,
     MappingAppimageToMemory,
     SearchingForUpdateInformationSectionHeader,

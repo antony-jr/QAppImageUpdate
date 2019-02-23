@@ -33,8 +33,9 @@
  * @description : This is where the extraction of embeded update information
  * from AppImages is implemented.
 */
-#include <AppImageUpdateInformation_p.hpp>
 #include <QBuffer>
+
+#include "../include/appimageupdateinformation_p.hpp"
 
 /*
  * An efficient logging system.
@@ -82,7 +83,7 @@
 #define MAGIC_BYTES_ERROR() emit(error(InvalidMagicBytes));
 #define ELF_FORMAT_ERROR() emit(error(UnsupportedElfFormat));
 #define SECTION_HEADER_NOT_FOUND_ERROR() emit(error(SectionHeaderNotFound));
-#define APPIMAGE_TYPE_ERROR() emit(error(InvalidAppImageType));
+#define APPIMAGE_TYPE_ERROR() emit(error(InvalidAppimageType));
 #define UNSUPPORTED_TRANSPORT_ERROR() emit(error(UnsupportedTransport));
 
 
@@ -123,10 +124,10 @@ using namespace AppImageUpdaterBridge;
  * AppImage update information positions and magic values.
  * See https://github.com/AppImage/AppImageSpec/blob/master/draft.md
 */
-static constexpr auto AppImageType1UpdateInfoPos = 0x8373;
+static constexpr auto AppimageType1UpdateInfoPos = 0x8373;
 static constexpr auto AppimageType1UpdateInfoLen = 0x200;
 static constexpr auto AppimageType2UpdateInfoShdr = (char*)".upd_info";
-static constexpr char AppiamgeUpdateInfoDelimiter = 0x7c;
+static constexpr char AppimageUpdateInfoDelimiter = 0x7c;
 static constexpr auto ElfMagicPos = 0x1;
 static constexpr auto IsoMagicPos = 0x8001;
 static constexpr auto ElfMagicValueSize= 0x4;
@@ -230,12 +231,12 @@ typedef struct {
 } Elf64_Shdr;
 
 struct AutoBoolCounter {
-    AutoBoolInverter(bool *p)
+    AutoBoolCounter(bool *p)
         : p_Bool(p)
     {
         *p_Bool = true;
     }
-    ~AutoBoolInverter()
+    ~AutoBoolCounter()
     {
         *p_Bool = false;
     }
@@ -278,13 +279,13 @@ static QByteArray readLine(QFile *IO)
     return ret;
 }
 
-static QByteArray getExecPathFromDesktopFile(QFile *AppImage)
+static QByteArray getExecPathFromDesktopFile(QFile *file)
 {
     QByteArray line;
-    qint64 prevPos = IO->pos();
-    IO->seek(0);
-    while(!(line = readLine(AppImage)).isEmpty()) {
-        if(line.contains("Exec", Qt::CaseInsensitive)) {
+    qint64 prevPos = file->pos();
+    file->seek(0);
+    while(!(line = readLine(file)).isEmpty()) {
+        if(line.contains("Exec")) {
             for(auto i = 0; i < line.size() ; ++i) {
                 if(line[i] == '=') {
                     line = line.mid(i+1);
@@ -294,7 +295,7 @@ static QByteArray getExecPathFromDesktopFile(QFile *AppImage)
             break;
         }
     }
-    IO->seek(prevPos);
+    file->seek(prevPos);
     return line;
 }
 
@@ -312,16 +313,16 @@ static QByteArray getExecPathFromDesktopFile(QFile *AppImage)
 AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *parent)
     : QObject(parent)
 {
-    emit statusChanged(INITIALIZING);
+    emit statusChanged(Initializing);
 #ifndef LOGGING_DISABLED
     try {
-        p_Logger.reset(new QDebug(&_sLogBuffer));
+        p_Logger.reset(new QDebug(&s_LogBuffer));
     } catch ( ... ) {
         MEMORY_ERROR();
         throw;
     }
 #endif // LOGGING_DISABLED
-    emit statusChanged(IDLE);
+    emit statusChanged(Idle);
     return;
 }
 
@@ -370,7 +371,7 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
     INFO_START  " setAppImage : " LOGR AppImagePath LOGR "." INFO_END;
     s_AppImagePath = AppImagePath;
     s_AppImageName = QFileInfo(AppImagePath).fileName();
-    emit statusChanged(IDLE);
+    emit statusChanged(Idle);
     return;
 }
 
@@ -400,9 +401,8 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
     INFO_START  " setAppImage : " LOGR AppImage LOGR "." INFO_END;
     p_AppImage = AppImage;
     s_AppImagePath = QFileInfo(AppImage->fileName()).canonicalFilePath();
-    s_AppImageName = QFileInfo(AppImagePath).fileName();
-
-    emit statusChanged(IDLE);
+    s_AppImageName = QFileInfo(s_AppImagePath).fileName();
+    emit statusChanged(Idle);
     return;
 }
 
@@ -467,7 +467,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 	
 	
 	if(s_AppImagePath.isEmpty()){
-		emit(error(NoAppimagePathGiven , QString()));
+		emit(error(NoAppimagePathGiven));
 		return;
 	}
     }
@@ -478,7 +478,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         try {
             p_AppImage = new QFile(this);
         } catch (...) {
-            NOT_ENOUGH_MEMORY();
+            MEMORY_ERROR();
             return;
         }
 
@@ -496,14 +496,14 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 
         p_AppImage->setFileName(s_AppImagePath);
 
-        emit statusChanged(OpeningAppImage);
+        emit statusChanged(OpeningAppimage);
         QCoreApplication::processEvents();
 
         /* Check if the file actually exists. */
         if(!p_AppImage->exists()) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;
-            emit statusChanged(IDLE);
+            emit statusChanged(Idle);
             FATAL_START  " setAppImage : cannot find the AppImage in the given path , file not found." FATAL_END;
             APPIMAGE_NOT_FOUND_ERROR();
             return;
@@ -518,7 +518,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         ) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;
-            emit statusChanged(IDLE);
+            emit statusChanged(Idle);
             FATAL_START  " setAppImage : no permission(" LOGR perm LOGR ") for reading the given AppImage." FATAL_END;
             APPIMAGE_PERMISSION_ERROR();
             return;
@@ -530,7 +530,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         if(!p_AppImage->open(QIODevice::ReadOnly)) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;
-            emit statusChanged(IDLE);
+            emit statusChanged(Idle);
             FATAL_START  " setAppImage : cannot open AppImage for reading." FATAL_END;
             APPIMAGE_OPEN_ERROR();
             return;
@@ -539,12 +539,12 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         QCoreApplication::processEvents();
 
     } else {
-        emit statusChanged(OpeningAppImage);
+        emit statusChanged(OpeningAppimage);
         QCoreApplication::processEvents();
 
         /* Check if exists */
         if(!p_AppImage->exists()) {
-            emit statusChanged(IDLE);
+            emit statusChanged(Idle);
             FATAL_START  " setAppImage : cannot find the AppImage from given QFile , file does not exists." FATAL_END;
             APPIMAGE_NOT_FOUND_ERROR();
             return;
@@ -552,7 +552,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 
         /* Check if readable. */
         if(!p_AppImage->isReadable()) {
-            emit statusChanged(IDLE);
+            emit statusChanged(Idle);
             FATAL_START  " setAppImage : invalid QFile given, not readable." FATAL_END;
             APPIMAGE_READ_ERROR();
             return;
@@ -560,13 +560,13 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 
         /* Check if opened. */
         if(!p_AppImage->isOpen()) {
-            emit statusChanged(IDLE);
+            emit statusChanged(Idle);
             FATAL_START  " setAppImage : invalid QFile given, not opened." FATAL_END;
             APPIMAGE_OPEN_ERROR();
             return;
         }
 
-        emit statusChanged(IDLE);
+        emit statusChanged(Idle);
         QCoreApplication::processEvents();
     }
 
@@ -669,7 +669,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
             unsigned long offset = 0, length = 0;
 
             emit statusChanged(MappingAppimageToMemory);
-            mapped = p_AppImage->map(/*offset=*/0, /*max=*/_pAppImage->size());
+            mapped = p_AppImage->map(/*offset=*/0, /*max=*/p_AppImage->size());
 
             if(mapped == NULL) {
                 emit statusChanged(Idle);
@@ -726,7 +726,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
                 updateString = QString::fromUtf8(read(p_AppImage, offset, length));
             }
 
-            emit statusChanged(IDLE);
+            emit statusChanged(Idle);
         }
     } else {
         WARNING_START  " getInfo : unable to confirm AppImage type." WARNING_END;
@@ -746,7 +746,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         }
     }
 
-    emit statusChanged(Idle)
+    emit statusChanged(Idle);
     QCoreApplication::processEvents();
 
     if(updateString.isEmpty()) {
@@ -771,7 +771,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 
     QJsonObject updateInformation; // will be filled up later on.
 
-    emit statusChanged(FinalizingAppimageEmbededUpdateInformation)
+    emit statusChanged(FinalizingAppimageEmbededUpdateInformation);
 
     if(data.size() < 2) {
         emit statusChanged(Idle);
@@ -944,8 +944,8 @@ QString AppImageUpdateInformationPrivate::statusCodeToString(short code)
     case OpeningAppimage:
         ret += "OpeningAppimage";
         break;
-    case CalculateAppimageSha1Hash:
-        ret += "CalculateAppimageSha1Hash";
+    case CalculatingAppimageSha1Hash:
+        ret += "CalculatingAppimageSha1Hash";
         break;
     case ReadingAppimageMagicBytes:
         ret += "ReadingAppimageMagicBytes";

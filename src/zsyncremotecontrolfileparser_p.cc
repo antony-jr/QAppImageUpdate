@@ -35,7 +35,7 @@
  * zsync control file and produce us with a more sensible data to work with.
  * This also produces information for ZsyncWriterPrivate.
 */
-#include <ZsyncRemoteControlFileParser_p.hpp>
+#include "../include/zsyncremotecontrolfileparser_p.hpp"
 
 using namespace AppImageUpdaterBridge;
 
@@ -142,7 +142,7 @@ void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose)
     if(choose) {
         connect(this, SIGNAL(logger(QString, QString)),
                 this, SLOT(handleLogMessage(QString, QString)), Qt::UniqueConnection);
-	return;
+        return;
     }
     disconnect(this, SIGNAL(logger(QString, QString)),
                this, SLOT(handleLogMessage(QString, QString)));
@@ -172,7 +172,7 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
     }
     emit statusChanged(ParsingAppimageEmbededUpdateInformation);
     /*
-     * Check if we are given the same information consecutively , If so then return 
+     * Check if we are given the same information consecutively , If so then return
      * what we know. */
     if(!j_UpdateInformation.isEmpty()) {
         if(j_UpdateInformation == information) {
@@ -216,16 +216,16 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
         auto reply = p_NManager->get(request);
 
         connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
-                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)) , Qt::UniqueConnection);
+                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)), Qt::UniqueConnection);
         connect(reply, SIGNAL(finished(void)),
-		this, SLOT(handleGithubAPIResponse(void)) , Qt::UniqueConnection);
+                this, SLOT(handleGithubAPIResponse(void)), Qt::UniqueConnection);
     } else {
         /*
-	 * if its not github releases zsync or generic zsync then it must be bintray-zsync.
-         * Note:
-	 * 	Since AppImageUpdateInformation can handle errors , Thus we don't really 
-	 * 	have to check for integrity now.
-        */
+        * if its not github releases zsync or generic zsync then it must be bintray-zsync.
+               * Note:
+         * 	Since AppImageUpdateInformation can handle errors , Thus we don't really
+         * 	have to check for integrity now.
+              */
         INFO_START " setControlFileUrl : using bintray zsync transport." INFO_END;
         QUrl latestLink;
         latestLink = QUrl("https://bintray.com/" + information["username"].toString() +
@@ -241,9 +241,9 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
         QNetworkReply *reply = p_NManager->head(request);
 
         connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
-                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)) , Qt::UniqueConnection);
-        connect(reply, SIGNAL(redirected()), 
-		this, SLOT(handleBintrayRedirection()) , Qt::UniqueConnection);
+                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)), Qt::UniqueConnection);
+        connect(reply, SIGNAL(redirected()),
+                this, SLOT(handleBintrayRedirection()), Qt::UniqueConnection);
     }
     return;
 }
@@ -251,7 +251,7 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 /* clears all internal cache in the class. */
 void ZsyncRemoteControlFileParserPrivate::clear(void)
 {
-    b_AcceptRange = true;
+    b_AcceptRange = false;
     j_UpdateInformation = QJsonObject();
     s_ZsyncMakeVersion.clear();
     s_TargetFileName.clear();
@@ -265,8 +265,7 @@ void ZsyncRemoteControlFileParserPrivate::clear(void)
     n_StrongCheckSumBytes = n_ConsecutiveMatchNeeded = n_CheckSumBlocksOffset = 0;
     u_TargetFileUrl.clear();
     u_ControlFileUrl.clear();
-    p_ControlFile.clear();
-    p_ControlFile = nullptr;
+    p_ControlFile.reset(nullptr);
     return;
 }
 
@@ -285,7 +284,7 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void)
     request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
-    emit statusChanged(REQUESTING_ZSYNC_CONTROL_FILE);
+    emit statusChanged(RequestingZsyncControlFile);
     auto reply = p_NManager->get(request);
 
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
@@ -320,9 +319,10 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
 {
     if(!p_ControlFile ||
        !p_ControlFile->isOpen() ||
+       /* Atleast one block is needed to do anything. */
        p_ControlFile->size() - n_CheckSumBlocksOffset < (n_WeakCheckSumBytes + n_StrongCheckSumBytes) ||
        !n_CheckSumBlocksOffset) {
-        emit error(IO_READ_ERROR);
+        emit error(IoReadError);
         return;
     }
 
@@ -336,9 +336,10 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
         QCoreApplication::processEvents();
     }
     buffer->close();
+    /* leave the buffer ownership to the one who called it. */
     emit zsyncInformation(n_TargetFileBlockSize, n_TargetFileBlocks, n_WeakCheckSumBytes, n_StrongCheckSumBytes,
                           n_ConsecutiveMatchNeeded, n_TargetFileLength, SeedFilePath, s_TargetFileName,
-                          s_TargetFileSHA1, buffer, b_AcceptRange);
+                          s_TargetFileSHA1, u_TargetFileUrl , buffer, b_AcceptRange);
     return;
 }
 
@@ -367,14 +368,14 @@ void ZsyncRemoteControlFileParserPrivate::handleDownloadProgress(qint64 bytesRec
 void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &url)
 {
     INFO_START LOGR " handleBintrayRedirection : start to parse latest package url." INFO_END;
-    emit statusChanged(PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL);
+    emit statusChanged(ParsingBintrayRedirectedUrlForLatestPackageUrl);
     QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleBintrayRedirection : http response code(" LOGR responseCode LOGR ")." INFO_END;
     if(responseCode > 400) { // Check if we have a bad response code.
         senderReply->abort();
         senderReply->deleteLater();
-        emit error(ERROR_RESPONSE_CODE);
+        emit error(ErrorResponseCode);
         return;
     }
     /* cut all ties. */
@@ -398,16 +399,20 @@ void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &u
 void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
 {
     INFO_START LOGR " handleGithubAPIResponse : starting to parse github api response." INFO_END;
-    emit statusChanged(PARSING_GITHUB_API_RESPONSE);
+    emit statusChanged(ParsingGithubApiResponse);
     QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleGithubAPIResponse : http response code(" LOGR responseCode LOGR ")." INFO_END;
-    if(responseCode > 400) { // Check if we have a bad response code.
+    if(responseCode > 400) {
         senderReply->deleteLater();
-        if(responseCode == 403) { // Check if we hit rate limit.
-            emit error(GITHUB_API_RATE_LIMIT_REACHED);
+        /*
+        * if status code is HTTP 403 then it means that we hit the
+         * github rate limit for the API usage.
+        */
+        if(responseCode == 403) {
+            emit error(GithubApiRateLimitReached);
         } else {
-            emit error(ERROR_RESPONSE_CODE);
+            emit error(ErrorResponseCode);
         }
         return;
     }
@@ -424,7 +429,9 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
     QJsonArray assetsArray = jsonObject["assets"].toArray();
     QString version = jsonObject["tagn_ame"].toString();
     QVector<QJsonObject> assets;
-    QRegExp rx(s_ZsyncFileName); // Patern Matching with wildcards!
+
+    /* Patern matching with wildcards. */
+    QRegExp rx(s_ZsyncFileName);
     rx.setPatternSyntax(QRegExp::Wildcard);
 
     INFO_START " handleGithubAPIResponse : latest version is " LOGR version INFO_END;
@@ -447,19 +454,22 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
 void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
 {
     INFO_START LOGR " handleControlFile : starting to parse zsync control file." INFO_END;
-    emit statusChanged(PARSING_ZSYNC_CONTROL_FILE);
+    emit statusChanged(ParsingZsyncControlFile);
     QNetworkReply *senderReply = (QNetworkReply*)QObject::sender();
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleControlFile : http response code(" LOGR responseCode LOGR ")." INFO_END;
     if(responseCode > 400) {
         senderReply->deleteLater();
-        emit error(ERROR_RESPONSE_CODE);
+        emit error(ErrorResponseCode);
         return;
     }
 
-    /* Check if the server supports Range requests. */
+    /* Check if the server supports Range requests.
+     * Note:
+     * 	Just this check cannot imply that the server does not support range requests.
+     * 	So later we will do a dry run on a http range request to find out the truth.
+    */
     b_AcceptRange = senderReply->hasRawHeader("Accept-Ranges");
-
     if(b_AcceptRange == false) {
         WARNING_START " handleControlFile : it seems that the remote server does not support range requests." WARNING_END;
     }
@@ -473,7 +483,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
     disconnect(senderReply, SIGNAL(downloadProgress(qint64, qint64)),
                this, SLOT(handleDownloadProgress(qint64, qint64)));
 
-    p_ControlFile = QSharedPointer<QBuffer>(new QBuffer);
+    p_ControlFile.reset(new QBuffer);
     p_ControlFile->open(QIODevice::ReadWrite);
 
     /*
@@ -487,8 +497,8 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         INFO_START LOGR " handleControlFile : searching for checksum blocks offset in the zsync control file." INFO_END;
         qint64 pos = 0;
         char previousMark = 0;
-        int bufferSize = 1; // 1 Byte for now.
-        emit statusChanged(SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE);
+        int bufferSize = 1;
+        emit statusChanged(SearchingTargetFileChecksumBlockOffsetInZsyncControlFile);
         while(!senderReply->atEnd()) {
             /*
              * Read one byte at a time , Since the marker for the
@@ -520,55 +530,56 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
     p_ControlFile->seek(0); /* seek to the top again. */
     if(!n_CheckSumBlocksOffset) {
         /* error , we don't know the marker and therefore it must be an invalid control file.*/
-        emit error(NO_MARKER_FOUND_IN_CONTROL_FILE );
+        emit error(NoMarkerFoundInControlFile);
         return;
     }
 
-    emit statusChanged(STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY);
+    emit statusChanged(StoringZsyncControlFileDataToMemory);
 
     QString ZsyncHeader(p_ControlFile->read(n_CheckSumBlocksOffset - 2)); /* avoid reading the marker. */
     QStringList ZsyncHeaderList = QString(ZsyncHeader).split("\n");
     if(ZsyncHeaderList.size() < 8) {
-        emit error(INVALID_ZSYNC_HEADERS_NUMBER);
+        emit error(InvalidZsyncHeadersNumber);
         return;
     }
 
-    STORE_SPLIT(s_ZsyncMakeVersion, ZsyncHeaderList.at(0), "zsync: ", INVALID_ZSYNC_MAKE_VERSION);
+    STORE_SPLIT(s_ZsyncMakeVersion, ZsyncHeaderList.at(0), "zsync: ", InvalidZsyncMakeVersion);
     INFO_START LOGR " handleControlFile : zsync make version confirmed to be " LOGR s_ZsyncMakeVersion LOGR "." INFO_END;
 
-    STORE_SPLIT(s_TargetFileName, ZsyncHeaderList.at(1), "Filename: ", INVALID_ZSYNC_TARGET_FILENAME);
+    STORE_SPLIT(s_TargetFileName, ZsyncHeaderList.at(1), "Filename: ", InvalidZsyncTargetFilename);
     INFO_START LOGR " handleControlFile : zsync target file name confirmed to be " LOGR s_TargetFileName LOGR "." INFO_END;
 
     {
         QString timeStr;
-        STORE_SPLIT(timeStr, ZsyncHeaderList.at(2), "MTime: ", INVALID_ZSYNC_MTIME);
-        m_MTime = QDateTime::fromString(timeStr, "ddd, dd MMM yyyy HH:mm:ss +zzz0");
+        STORE_SPLIT(timeStr, ZsyncHeaderList.at(2), "MTime: ", InvalidZsyncMtime);
+        QLocale locale(QLocale::English, QLocale::UnitedStates);
+	m_MTime = locale.toDateTime(timeStr, "ddd, dd MMM yyyy HH:mm:ss +zzz0");
     }
 
     if(!m_MTime.isValid()) {
-        emit error(INVALID_ZSYNC_MTIME);
+        emit error(InvalidZsyncMtime);
         return;
     }
     INFO_START LOGR " handleControlFile : zsync target file MTime confirmed to be " LOGR m_MTime LOGR "." INFO_END;
 
     {
         QString nStr;
-        STORE_SPLIT(nStr, ZsyncHeaderList.at(3), "Blocksize: ", INVALID_ZSYNC_BLOCKSIZE);
+        STORE_SPLIT(nStr, ZsyncHeaderList.at(3), "Blocksize: ", InvalidZsyncBlocksize);
         n_TargetFileBlockSize = nStr.toInt();
     }
     if(n_TargetFileBlockSize < 1024) {
-        emit error(INVALID_ZSYNC_BLOCKSIZE);
+        emit error(InvalidZsyncBlocksize);
         return;
     }
     INFO_START LOGR " handleControlFile : zsync target file blocksize confirmed to be " LOGR n_TargetFileBlockSize LOGR " bytes." INFO_END;
 
     {
         QString nStr;
-        STORE_SPLIT(nStr, ZsyncHeaderList.at(4), "Length: ", INVALID_TARGET_FILE_LENGTH);
+        STORE_SPLIT(nStr, ZsyncHeaderList.at(4), "Length: ", InvalidTargetFileLength);
         n_TargetFileLength =  nStr.toInt();
     }
     if(n_TargetFileLength == 0) {
-        emit error(INVALID_TARGET_FILE_LENGTH);
+        emit error(InvalidTargetFileLength);
         return;
     }
     INFO_START LOGR " handleControlFile : zysnc target file length confirmed to be " LOGR n_TargetFileLength LOGR " bytes." INFO_END;
@@ -576,10 +587,10 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
 
     {
         QString HashLength;
-        STORE_SPLIT(HashLength, ZsyncHeaderList.at(5), "Hash-Lengths: ", INVALID_HASH_LENGTH_LINE);
+        STORE_SPLIT(HashLength, ZsyncHeaderList.at(5), "Hash-Lengths: ", InvalidHashLengthLine);
         QStringList HashLengths = HashLength.split(',');
         if(HashLengths.size() != 3) {
-            emit error(INVALID_HASH_LENGTH_LINE);
+            emit error(InvalidHashLengthLine);
             return;
         }
 
@@ -589,7 +600,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         if(n_WeakCheckSumBytes < 1 || n_WeakCheckSumBytes > 4
            || n_StrongCheckSumBytes < 3 || n_StrongCheckSumBytes > 16
            || n_ConsecutiveMatchNeeded > 2 || n_ConsecutiveMatchNeeded < 1) {
-            emit error(INVALID_HASH_LENGTHS);
+            emit error(InvalidHashLengths);
             return;
         }
     }
@@ -600,16 +611,16 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
 
     {
         QString uStr;
-        STORE_SPLIT(uStr, ZsyncHeaderList.at(6), "URL: ", INVALID_TARGET_FILE_URL);
+        STORE_SPLIT(uStr, ZsyncHeaderList.at(6), "URL: ", InvalidTargetFileUrl);
         u_TargetFileUrl = QUrl(uStr);
     }
     if(!u_TargetFileUrl.isValid()) {
-        emit error(INVALID_TARGET_FILE_URL);
+        emit error(InvalidTargetFileUrl);
         return;
     }
     INFO_START LOGR " handleControlFile : zsync target file url is confirmed to be " LOGR u_TargetFileUrl LOGR "." INFO_END;
 
-    STORE_SPLIT(s_TargetFileSHA1, ZsyncHeaderList.at(7), "SHA-1: ", INVALID_TARGET_FILE_SHA1);
+    STORE_SPLIT(s_TargetFileSHA1, ZsyncHeaderList.at(7), "SHA-1: ", InvalidTargetFileSha1);
     s_TargetFileSHA1 = s_TargetFileSHA1.toUpper();
     INFO_START LOGR " handleControlFile : zsync target file sha1 hash is confirmed to be " LOGR s_TargetFileSHA1 LOGR "." INFO_END;
 
@@ -667,21 +678,21 @@ void ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl(qint64 bytesRec
                this, &ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl);
     auto replyCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if(replyCode >= 400) {
-        emit error(UNKNOWN_NETWORK_ERROR);
+        emit error(UnknownNetworkError);
         return;
     }
 
     /* Check if the server supports Range requests. */
-    b_AcceptRange = reply->hasRawHeader("Accept-Ranges") && replyCode == 206/*HTTP Status code 206 => partial retrival*/;
+    b_AcceptRange = reply->hasRawHeader("Accept-Ranges") || replyCode == 206/*HTTP Status code 206 => partial retrival*/;
     if(b_AcceptRange == false) {
         WARNING_START
         " handleControlFile : its confirmed that the remote server does not support range requests." WARNING_END;
     }
     reply->abort();
     u_TargetFileUrl = reply->url();
-    emit statusChanged(FINALIZING_PARSING_ZSYNC_CONTROL_FILE);
+    emit statusChanged(FinalizingParsingZsyncControlFile);
     emit receiveControlFile();
-    emit statusChanged(IDLE);
+    emit statusChanged(Idle);
     return;
 }
 
@@ -703,14 +714,14 @@ void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::Netw
 
     senderReply->deleteLater();
     emit networkError(errorCode);
-    emit error(UNKNOWN_NETWORK_ERROR);
+    emit error(UnknownNetworkError);
     return;
 }
 
 /* This slot will be called anytime error signal is emitted. */
 void ZsyncRemoteControlFileParserPrivate::handleErrorSignal(short errorCode)
 {
-    emit statusChanged(IDLE);
+    emit statusChanged(Idle);
     FATAL_START LOGR " error : " LOGR errorCodeToString(errorCode) LOGR " occured.";
     clear(); // clear all data to prevent later corrupted data collisions.
     return;
@@ -735,50 +746,53 @@ QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
 {
     QString errorCodeString = "AppImageUpdaterBridge::errorCode(";
     switch(errorCode) {
-    case UNKNOWN_NETWORK_ERROR:
-        errorCodeString.append("UNKNOWN_NETWORK_ERROR");
+    case UnknownNetworkError:
+        errorCodeString.append("UnknownNetworkError");
         break;
-    case IO_READ_ERROR:
-        errorCodeString.append("IO_READ_ERROR");
+    case IoReadError:
+        errorCodeString.append("IoReadError");
         break;
-    case ERROR_RESPONSE_CODE:
-        errorCodeString.append("ERROR_RESPONSE_CODE");
+    case ErrorResponseCode:
+        errorCodeString.append("ErrorResponseCode");
         break;
-    case NO_MARKER_FOUND_IN_CONTROL_FILE:
-        errorCodeString.append("NO_MARKER_FOUND_IN_CONTROL_FILE");
+    case GithubApiRateLimitReached:
+        errorCodeString.append("GithubApiRateLimitReached");
         break;
-    case INVALID_ZSYNC_HEADERS_NUMBER:
-        errorCodeString.append("INVALID_ZSYNC_HEADERS_NUMBER");
+    case NoMarkerFoundInControlFile:
+        errorCodeString.append("NoMarkerFoundInControlFile");
         break;
-    case INVALID_ZSYNC_MAKE_VERSION:
-        errorCodeString.append("INVALID_ZSYNC_MAKE_VERSION");
+    case InvalidZsyncHeadersNumber:
+        errorCodeString.append("InvalidZsyncHeadersNumber");
         break;
-    case INVALID_ZSYNC_TARGET_FILENAME:
-        errorCodeString.append("INVALID_ZSYNC_TARGET_FILENAME");
+    case InvalidZsyncMakeVersion:
+        errorCodeString.append("InvalidZsyncMakeVersion");
         break;
-    case INVALID_ZSYNC_MTIME:
-        errorCodeString.append("INVALID_ZSYNC_MTIME");
+    case InvalidZsyncTargetFilename:
+        errorCodeString.append("InvalidZsyncTargetFilename");
         break;
-    case INVALID_ZSYNC_BLOCKSIZE:
-        errorCodeString.append("INVALID_ZSYNC_BLOCKSIZE");
+    case InvalidZsyncMtime:
+        errorCodeString.append("InvalidZsyncMtime");
         break;
-    case INVALID_TARGET_FILE_LENGTH:
-        errorCodeString.append("INVALID_TARGET_FILE_LENGTH");
+    case InvalidZsyncBlocksize:
+        errorCodeString.append("InvalidZsyncBlocksize");
         break;
-    case INVALID_HASH_LENGTH_LINE:
-        errorCodeString.append("INVALID_HASH_LENGTH_LINE");
+    case InvalidTargetFileLength:
+        errorCodeString.append("InvalidTargetFileLength");
         break;
-    case INVALID_HASH_LENGTHS:
-        errorCodeString.append("INVALID_HASH_LENGTHS");
+    case InvalidHashLengthLine:
+        errorCodeString.append("InvalidHashLengthLine");
         break;
-    case INVALID_TARGET_FILE_URL:
-        errorCodeString.append("INVALID_TARGET_FILE_URL");
+    case InvalidHashLengths:
+        errorCodeString.append("InvalidHashLengths");
         break;
-    case INVALID_TARGET_FILE_SHA1:
-        errorCodeString.append("INVALID_TARGET_FILE_SHA1");
+    case InvalidTargetFileUrl:
+        errorCodeString.append("InvalidTargetFileUrl");
+        break;
+    case InvalidTargetFileSha1:
+        errorCodeString.append("InvalidTargetFileSha1");
         break;
     default:
-        errorCodeString.append("UNKNOWN_ERROR_CODE");
+        errorCodeString.append("UnknownErrorCode");
         break;
     }
 
@@ -790,41 +804,41 @@ QString ZsyncRemoteControlFileParserPrivate::statusCodeToString(short code)
 {
     QString statusCodeString = "AppImageUpdaterBridge::statusCode(";
     switch(code) {
-    case INITIALIZING:
-        statusCodeString.append("INITIALIZING");
+    case Initializing:
+        statusCodeString.append("Initializing");
         break;
-    case IDLE:
-        statusCodeString.append("IDLE");
+    case Idle:
+        statusCodeString.append("Idle");
         break;
-    case PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION:
-        statusCodeString.append("PARSING_APPIMAGE_EMBEDED_UPDATE_INFORMATION");
+    case ParsingAppimageEmbededUpdateInformation:
+        statusCodeString.append("ParsingAppimageEmbededUpdateInformation");
         break;
-    case REQUESTING_GITHUB_API:
-        statusCodeString.append("REQUESTING_GITHUB_API");
+    case RequestingGithubApi:
+        statusCodeString.append("RequestingGithubApi");
         break;
-    case PARSING_GITHUB_API_RESPONSE:
-        statusCodeString.append("PARSING_GITHUB_API_RESPONSE");
+    case ParsingGithubApiResponse:
+        statusCodeString.append("ParsingGithubApiResponse");
         break;
-    case REQUESTING_ZSYNC_CONTROL_FILE:
-        statusCodeString.append("REQUESTING_ZSYNC_CONTROL_FILE");
+    case RequestingZsyncControlFile:
+        statusCodeString.append("RequestingZsyncControlFile");
         break;
-    case REQUESTING_BINTRAY:
-        statusCodeString.append("REQUESTING_BINTRAY");
+    case RequestingBintray:
+        statusCodeString.append("RequestingBintray");
         break;
-    case PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL:
-        statusCodeString.append("PARSING_BINTRAY_REDIRECTED_URL_FOR_LATEST_PACKAGE_URL");
+    case ParsingBintrayRedirectedUrlForLatestPackageUrl:
+        statusCodeString.append("ParsingBintrayRedirectedUrlForLatestPackageUrl");
         break;
-    case PARSING_ZSYNC_CONTROL_FILE:
-        statusCodeString.append("PARSING_ZSYNC_CONTROL_FILE");
+    case ParsingZsyncControlFile:
+        statusCodeString.append("ParsingZsyncControlFile");
         break;
-    case SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE:
-        statusCodeString.append("SEARCHING_TARGET_FILE_CHECKSUM_BLOCK_OFFSET_IN_ZSYNC_CONTROL_FILE");
+    case SearchingTargetFileChecksumBlockOffsetInZsyncControlFile:
+        statusCodeString.append("SearchingTargetFileChecksumBlockOffsetInZsyncControlFile");
         break;
-    case STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY:
-        statusCodeString.append("STORING_ZSYNC_CONTROL_FILE_DATA_TO_MEMORY");
+    case StoringZsyncControlFileDataToMemory:
+        statusCodeString.append("StoringZsyncControlFileDataToMemory");
         break;
-    case FINALIZING_PARSING_ZSYNC_CONTROL_FILE:
-        statusCodeString.append("FINALIZING_PARSING_ZSYNC_CONTROL_FILE");
+    case FinalizingParsingZsyncControlFile:
+        statusCodeString.append("FinalizingParsingZsyncControlFile");
         break;
     default:
         statusCodeString.append("Unknown");

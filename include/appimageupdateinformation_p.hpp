@@ -46,6 +46,8 @@
 #include <QScopedPointer>
 #include <QString>
 
+#include "appimageupdaterbridge_enums.hpp"
+
 namespace AppImageUpdaterBridge
 {
 class AppImageUpdateInformationPrivate : public QObject
