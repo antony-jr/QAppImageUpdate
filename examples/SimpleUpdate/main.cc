@@ -33,7 +33,7 @@ int main(int ac, char **av)
 
     QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::error, [&](short ecode) {
         qCritical().noquote() << "error:: " << AppImageDeltaRevisioner::errorCodeToString(ecode);
-        if(ecode == AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR) {
+        if(ecode == AppImageUpdaterBridge::UnknownNetworkError) {
             qCritical().noquote() << "Network error:: " << DRevisioner.getNetworkError();
         }
         app.quit();

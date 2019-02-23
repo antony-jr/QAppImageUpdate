@@ -32,4 +32,4 @@
  * @filename           : AppImageUpdaterBridge
  * The traditional proxy header file.
 */
-#include "include/AppImageUpdaterBridge.hpp"
+#include "include/appimageupdaterbridge.hpp"

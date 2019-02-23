@@ -79,7 +79,6 @@ public Q_SLOTS:
 
 
     /* Used by the block range downloader. */
-    void download(qint32 , qint32 , QUrl);
     void getBlockRanges();
     void writeSeqRaw(QByteArray*);
     void writeBlockRanges(qint32, qint32, QByteArray*);
@@ -113,7 +112,7 @@ Q_SIGNALS:
     void blockRange(qint32, qint32);
     void endOfBlockRanges();
     void blockRangesWritten(qint32, qint32, bool);
-    void download();
+    void download(qint64 , qint64 , QUrl);
     void started();
     void canceled();
     void finished(QJsonObject, QString);

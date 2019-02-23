@@ -112,11 +112,6 @@ ZsyncWriterPrivate::ZsyncWriterPrivate()
 #ifndef LOGGING_DISABLED
     p_Logger.reset(new QDebug(&s_LogBuffer));
 #endif // LOGGING_DISABLED	
-
-    connect(this, SIGNAL(initStart()), this, SLOT(doStart()) , Qt::QueuedConnection);
-    connect(this, SIGNAL(error(short)), this, SLOT(resetConnections()));
-    connect(this, SIGNAL(canceled()) , this, SLOT(resetConnections()));
-    connect(this, SIGNAL(finished(QJsonObject, QString)), this, SLOT(resetConnections()));
     emit statusChanged(Idle);
     return;
 }
