@@ -10,8 +10,6 @@ int main(int ac, char **av)
     qInfo().noquote() << "Copyright (C) 2018 , Antony Jr.";
 
     QApplication app(ac, av);
-    AppImageUpdaterDialog UWidget;
-
     QCommandLineParser parser;
     parser.process(app);
     auto args = parser.positionalArguments();
@@ -19,10 +17,9 @@ int main(int ac, char **av)
         qInfo().noquote() << "\nUsage: " << app.arguments().at(0) << " [APPIMAGE PATH].";
         return -1;
     }
-    int it = 0;
-    
+    AppImageUpdaterDialog UWidget(args[0]); 
     QObject::connect(&UWidget, &AppImageUpdaterDialog::error , [&](QString eStr, short errorCode){
-        qInfo() << "ERROR CODE:: " << errorCode;
+        qInfo() << "error code:: " << errorCode;
         return;
     });
 
@@ -31,22 +28,9 @@ int main(int ac, char **av)
 
     QObject::connect(&UWidget, &AppImageUpdaterDialog::finished, [&](QJsonObject newVersion) {
         (void)newVersion;
-        ++it;
-        if(it >= args.count()) {
-            app.quit();
-        } else {
-            QString path(args[it]);
-            UWidget.setAppImage(path);
-            UWidget.init();
-        }
-        return;
+        app.quit();
+	return;
     });
-
-    QString path(args[it]);
-    UWidget.setAppImage(path);
-    UWidget.setShowErrorDialog(true);
-    UWidget.setShowUpdateConfirmationDialog(true);
-    UWidget.setShowFinishDialog(true);
     UWidget.init();
     return app.exec();
 }

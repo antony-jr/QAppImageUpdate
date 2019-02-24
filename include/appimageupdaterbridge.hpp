@@ -35,4 +35,5 @@
 #define APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
 #include "appimageupdaterbridge_enums.hpp"
 #include "appimagedeltarevisioner.hpp"
+#include "appimageupdaterdialog.hpp"
 #endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED

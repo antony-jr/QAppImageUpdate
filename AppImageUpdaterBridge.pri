@@ -1,5 +1,5 @@
 INCLUDEPATH += $$PWD
-QT += core network
+QT += core widgets network
 HEADERS += \
     $$PWD/include/appimageupdateinformation_p.hpp \
     $$PWD/include/zsyncremotecontrolfileparser_p.hpp \
@@ -10,7 +10,8 @@ HEADERS += \
     $$PWD/include/appimagedeltarevisioner_p.hpp \
     $$PWD/include/appimagedeltarevisioner.hpp \
     $$PWD/include/appimageupdaterbridge_enums.hpp \
-    $$PWD/include/appimageupdaterbridge.hpp
+    $$PWD/include/appimageupdaterbridge.hpp \
+    $$PWD/include/appimageupdaterdialog.hpp
 
 SOURCES += \
     $$PWD/src/appimageupdateinformation_p.cc \
@@ -20,6 +21,7 @@ SOURCES += \
     $$PWD/src/zsyncblockrangedownloader_p.cc \
     $$PWD/src/appimagedeltarevisioner_p.cc \
     $$PWD/src/appImagedeltarevisioner.cc \
+    $$PWD/src/appimageupdaterdialog.cc
 
 logging_disabled {
 	message(Logging will be disabled for this build.)
