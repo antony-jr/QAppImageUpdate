@@ -21,7 +21,8 @@ SOURCES += \
     $$PWD/src/zsyncblockrangedownloader_p.cc \
     $$PWD/src/appimagedeltarevisioner_p.cc \
     $$PWD/src/appimagedeltarevisioner.cc \
-    $$PWD/src/appimageupdaterdialog.cc
+    $$PWD/src/appimageupdaterdialog.cc \
+    $$PWD/src/appimageupdaterbridge_enums.cc
 
 no_gui {
 	QT -= widgets

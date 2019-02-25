@@ -35,9 +35,7 @@
 #include <QString>
 #include "../include/appimageupdaterbridge_enums.hpp"
 
-using namespace AppImageUpdaterBridge;
-
-QString errorCodeToString(short errorCode)
+QString AppImageUpdaterBridge::errorCodeToString(short errorCode)
 {
     QString ret = "AppImageUpdaterBridge::errorCode(";
     switch(errorCode) {
@@ -206,9 +204,6 @@ QString errorCodeToString(short errorCode)
     case ProtocolInvalidOperationError:
         ret += "ProtocolInvalidOperationError";
         break;
-    case UnknownNetworkError:
-        ret += "UnknownNetworkError";
-        break;
     case UnknownProxyError:
         ret += "UnknownProxyError";
         break;
@@ -263,7 +258,7 @@ QString errorCodeToString(short errorCode)
     return ret;
 }
 
-QString statusCodeToString(short code)
+QString AppImageUpdaterBridge::statusCodeToString(short code)
 {
     QString ret = "AppImageUpdaterBridge::statusCode(";
     switch(code) {

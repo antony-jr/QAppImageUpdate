@@ -78,6 +78,7 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img,QWidget *parent, int fl
         p_GridLayout->addWidget(p_IconLbl, 0, 0, 3, 1);
         p_IconLbl->setPixmap(img);
         p_AppImageIcon = img.scaled(100, 100, Qt::KeepAspectRatio);
+        this->setWindowIcon(img);
     }
 
     /* Delta Revisioner. */
@@ -152,7 +153,7 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
             QMessageBox box(this);
             box.setWindowTitle(QString::fromUtf8("Update Available!"));
-            box.setIconPixmap(p_AppImageIcon);
+            //box.setIconPixmap(QMessageBox::Info);
             box.setText(QString::fromUtf8("A new version of ") +
                         currentAppImageName +
                         QString::fromUtf8(" is available , Do you want to update ?"));
@@ -165,7 +166,7 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
             QMessageBox box(this);
             box.setWindowTitle(QString::fromUtf8("No Updates Available!"));
-            box.setIconPixmap(p_AppImageIcon);
+            //box.setIconPixmap(QMessageBox::Info);
             box.setText(QString::fromUtf8("You are currently using the lastest version of ") +
                         currentAppImageName +
                         QString::fromUtf8("."));
@@ -285,97 +286,97 @@ void AppImageUpdaterDialog::handleError(short errorCode)
     case UnknownServerError:
         errorString = QString::fromUtf8("an unknown error related to the server response was detected.");
         break;
-    case AppImageUpdaterBridge::NoAppimagePathGiven:
+    case NoAppimagePathGiven:
         errorString = QString::fromUtf8("no appimage was given.");
         break;
-    case AppImageUpdaterBridge::AppimageNotReadable:
+    case AppimageNotReadable:
         errorString = QString::fromUtf8("it is not readable.");
         break;
-    case AppImageUpdaterBridge::NoReadPermission:
+    case NoReadPermission:
         errorString = QString::fromUtf8("you don't have the permission to read it.");
         show = (alert) ? false : show;
         doAlert = alert;
         break;
-    case AppImageUpdaterBridge::AppimageNotFound:
+    case AppimageNotFound:
         errorString = QString::fromUtf8("it does not exists.");
         break;
-    case AppImageUpdaterBridge::CannotOpenAppimage:
+    case CannotOpenAppimage:
         errorString = QString::fromUtf8("it cannot be opened.");
         break;
-    case AppImageUpdaterBridge::EmptyUpdateInformation:
+    case EmptyUpdateInformation:
         errorString = QString::fromUtf8("the author of this AppImage did not include any update information.");
         break;
-    case AppImageUpdaterBridge::InvalidAppimageType:
+    case InvalidAppimageType:
         errorString = QString::fromUtf8("it is an unknown AppImage type.");
         break;
-    case AppImageUpdaterBridge::InvalidMagicBytes:
+    case InvalidMagicBytes:
         errorString = QString::fromUtf8("it is not a AppImage , Make sure to give valid AppImage.");
         break;
-    case AppImageUpdaterBridge::InvalidUpdateInformation:
+    case InvalidUpdateInformation:
         errorString = QString::fromUtf8("the author of this AppImage included invalid update information.");
         break;
-    case AppImageUpdaterBridge::NotEnoughMemory:
+    case NotEnoughMemory:
         errorString = QString::fromUtf8("there is no enough memory left in your ram.");
         break;
-    case AppImageUpdaterBridge::SectionHeaderNotFound:
+    case SectionHeaderNotFound:
         errorString = QString::fromUtf8("the author of this AppImage did not embed the update information ");
         errorString += QString::fromUtf8("at a valid section header.");
         break;
-    case AppImageUpdaterBridge::UnsupportedElfFormat:
+    case UnsupportedElfFormat:
         errorString = QString::fromUtf8("the given AppImage is not in supported elf format.");
         break;
-    case AppImageUpdaterBridge::UnsupportedTransport:
+    case UnsupportedTransport:
         errorString = QString::fromUtf8("the author of this included an unsupported transport in update information.");
         break;
-    case AppImageUpdaterBridge::IoReadError:
+    case IoReadError:
         errorString = QString::fromUtf8("there was a unknown IO read error.");
         break;
-    case AppImageUpdaterBridge::GithubApiRateLimitReached:
+    case GithubApiRateLimitReached:
         errorString = QString::fromUtf8("github api rate limit was reached , Please try again after an hour.");
         break;
-    case AppImageUpdaterBridge::ErrorResponseCode:
+    case ErrorResponseCode:
         errorString = QString::fromUtf8("some request returned a bad server response code , Please try again.");
         break;
-    case AppImageUpdaterBridge::NoMarkerFoundInControlFile:
-    case AppImageUpdaterBridge::InvalidZsyncHeadersNumber:
-    case AppImageUpdaterBridge::InvalidZsyncMakeVersion:
-    case AppImageUpdaterBridge::InvalidZsyncTargetFilename:
-    case AppImageUpdaterBridge::InvalidZsyncMtime:
-    case AppImageUpdaterBridge::InvalidZsyncBlocksize:
-    case AppImageUpdaterBridge::InvalidTargetFileLength:
-    case AppImageUpdaterBridge::InvalidHashLengthLine:
-    case AppImageUpdaterBridge::InvalidHashLengths:
-    case AppImageUpdaterBridge::InvalidTargetFileUrl:
-    case AppImageUpdaterBridge::InvalidTargetFileSha1:
-    case AppImageUpdaterBridge::HashTableNotAllocated:
-    case AppImageUpdaterBridge::InvalidTargetFileChecksumBlocks:
-    case AppImageUpdaterBridge::CannotOpenTargetFileChecksumBlocks:
-    case AppImageUpdaterBridge::CannotConstructHashTable:
-    case AppImageUpdaterBridge::QbufferIoReadError:
+    case NoMarkerFoundInControlFile:
+    case InvalidZsyncHeadersNumber:
+    case InvalidZsyncMakeVersion:
+    case InvalidZsyncTargetFilename:
+    case InvalidZsyncMtime:
+    case InvalidZsyncBlocksize:
+    case InvalidTargetFileLength:
+    case InvalidHashLengthLine:
+    case InvalidHashLengths:
+    case InvalidTargetFileUrl:
+    case InvalidTargetFileSha1:
+    case HashTableNotAllocated:
+    case InvalidTargetFileChecksumBlocks:
+    case CannotOpenTargetFileChecksumBlocks:
+    case CannotConstructHashTable:
+    case QbufferIoReadError:
         errorString = QString::fromUtf8("the author did not produce the zsync meta file properly , ");
         errorString += QString::fromUtf8("Please notify the author or else try again because it can be a ");
         errorString += QString::fromUtf8("false positive.");
         break;
-    case AppImageUpdaterBridge::SourceFileNotFound:
+    case SourceFileNotFound:
         errorString = QString::fromUtf8("the current AppImage is not found , maybe deleted while updating ?");
         break;
-    case AppImageUpdaterBridge::NoPermissionToReadSourceFile:
+    case NoPermissionToReadSourceFile:
         errorString = QString::fromUtf8("you have no permissions to read the current AppImage.");
         show = (alert) ? false : show;
         doAlert = alert;
         break;
-    case AppImageUpdaterBridge::CannotOpenSourceFile:
+    case CannotOpenSourceFile:
         errorString = QString::fromUtf8("the current AppImage cannot be opened.");
         break;
-    case AppImageUpdaterBridge::NoPermissionToReadWriteTargetFile:
+    case NoPermissionToReadWriteTargetFile:
         errorString = QString::fromUtf8("you have no write or read permissions to read and write the new version.");
         show = (alert) ? false : show;
         doAlert = alert;
         break;
-    case AppImageUpdaterBridge::CannotOpenTargetFile:
+    case CannotOpenTargetFile:
         errorString = QString::fromUtf8("the new version cannot be opened to write or read.");
         break;
-    case AppImageUpdaterBridge::TargetFileSha1HashMismatch:
+    case TargetFileSha1HashMismatch:
         errorString = QString::fromUtf8("the newly construct AppImage failed to prove integrity , Try again.");
         break;
     default:

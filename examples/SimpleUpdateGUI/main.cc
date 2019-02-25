@@ -1,8 +1,7 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <AppImageUpdaterBridge>
-
-using namespace AppImageUpdaterBridge;
+#include <AppImageUpdaterDialog>
 
 int main(int ac, char **av)
 {
@@ -17,9 +16,12 @@ int main(int ac, char **av)
         qInfo().noquote() << "\nUsage: " << app.arguments().at(0) << " [APPIMAGE PATH].";
         return -1;
     }
+    
+    using AppImageUpdaterBridge::AppImageUpdaterDialog;
     AppImageUpdaterDialog UWidget(args[0]); 
     QObject::connect(&UWidget, &AppImageUpdaterDialog::error , [&](QString eStr, short errorCode){
-        qInfo() << "error code:: " << errorCode;
+        Q_UNUSED(errorCode);
+	qInfo() << "error:: "<<eStr;
         return;
     });
 
