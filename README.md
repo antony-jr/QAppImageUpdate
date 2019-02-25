@@ -95,5 +95,5 @@ If you think that this project is **cool** then you can give it a :star: or :for
 
 The BSD 3-clause "New" or "Revised" License.
 
-Copyright (C) 2017 , antony jr.   
+Copyright (C) 2017-2019 , antony jr.   
 All Rights Reserved.

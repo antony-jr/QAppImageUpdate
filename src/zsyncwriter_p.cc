@@ -35,7 +35,7 @@
 #include "../include/zsyncwriter_p.hpp"
 
 /*
- * An efficient logging system specially tailored 
+ * An efficient logging system specially tailored
  * for this source file.
  *
  * Example:
@@ -64,7 +64,7 @@
 #define FATAL_START LOGS "  FATAL: " LOGR
 #define FATAL_END LOGE
 
-/* Update a already calculated block , 
+/* Update a already calculated block ,
  * This is why a rolling checksum is needed. */
 #define UPDATE_RSUM(a, b, oldc, newc, bshift) do { \
 						(a) += ((unsigned char)(newc)) - ((unsigned char)(oldc));\
@@ -134,7 +134,7 @@ ZsyncWriterPrivate::~ZsyncWriterPrivate()
 void ZsyncWriterPrivate::setOutputDirectory(const QString &dir)
 {
     if(b_Started)
-	    return;
+        return;
     s_OutputDirectory = QString(dir);
     return;
 }
@@ -143,7 +143,7 @@ void ZsyncWriterPrivate::setOutputDirectory(const QString &dir)
 void ZsyncWriterPrivate::setLoggerName(const QString &name)
 {
     if(b_Started)
-	    return;
+        return;
 #ifndef LOGGING_DISABLED
     s_LoggerName = QString(name);
 #else
@@ -157,13 +157,13 @@ void ZsyncWriterPrivate::setShowLog(bool logNeeded)
 {
 #ifndef LOGGING_DISABLED
     if(logNeeded) {
-        connect(this, SIGNAL(logger(QString , QString)), 
-		this, SLOT(handleLogMessage(QString , QString)),
-		Qt::UniqueConnection);
-	return;
+        connect(this, SIGNAL(logger(QString, QString)),
+                this, SLOT(handleLogMessage(QString, QString)),
+                Qt::UniqueConnection);
+        return;
     }
-    disconnect(this, SIGNAL(logger(QString , QString)), 
-	       this, SLOT(handleLogMessage(QString , QString)));
+    disconnect(this, SIGNAL(logger(QString, QString)),
+               this, SLOT(handleLogMessage(QString, QString)));
 #else
     (void)logNeeded;
 #endif
@@ -417,7 +417,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
         const QString &targetFileName,
         const QString &targetFileSHA1,
         QUrl targetFileUrl,
-	QBuffer *targetFileCheckSumBlocks,
+        QBuffer *targetFileCheckSumBlocks,
         bool rangeSupported)
 {
     p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
@@ -498,8 +498,8 @@ void ZsyncWriterPrivate::cancel(void)
 void ZsyncWriterPrivate::start(void)
 {
     if(b_Started)
-	    return;
-    b_CancelRequested = false; 
+        return;
+    b_CancelRequested = false;
     b_Started = true;
     emit started();
 
@@ -533,7 +533,7 @@ void ZsyncWriterPrivate::start(void)
         foundGarbageFiles.removeAll(QFileInfo(p_TargetFile->fileName()).absoluteFilePath());
         foundGarbageFiles.removeDuplicates();
     }
-    
+
     if(b_AcceptRange == true) {
         /*
          * Check if we have the target file already downloaded
@@ -558,10 +558,10 @@ void ZsyncWriterPrivate::start(void)
         }
 
         for(auto iter = foundGarbageFiles.constBegin(),
-		     end  = foundGarbageFiles.constEnd();
-		     iter != end && n_BytesWritten < n_TargetFileLength;
-		     ++iter) {
-        QFile *sourceFile = nullptr;
+            end  = foundGarbageFiles.constEnd();
+            iter != end && n_BytesWritten < n_TargetFileLength;
+            ++iter) {
+            QFile *sourceFile = nullptr;
             if((errorCode = tryOpenSourceFile(*iter, &sourceFile)) > 0) {
                 emit error(errorCode);
                 return;
@@ -573,8 +573,8 @@ void ZsyncWriterPrivate::start(void)
             }
             delete sourceFile;
 
-		
-	QFile::remove((*iter));
+
+            QFile::remove((*iter));
         }
 
 
@@ -596,7 +596,7 @@ void ZsyncWriterPrivate::start(void)
     if(n_BytesWritten >= n_TargetFileLength) {
         verifyAndConstructTargetFile();
     } else {
-        emit download(n_BytesWritten , n_TargetFileLength , u_TargetFileUrl);
+        emit download(n_BytesWritten, n_TargetFileLength, u_TargetFileUrl);
     }
     return;
 }
@@ -792,9 +792,9 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
         }
         p_TargetFile->rename(QFileInfo(p_TargetFile->fileName()).path() + "/" + newTargetFileName);
 
-	/*Set the same permission as the old version and close. */
+        /*Set the same permission as the old version and close. */
         p_TargetFile->setPermissions(QFileInfo(s_SourceFilePath).permissions());
-	p_TargetFile->close();
+        p_TargetFile->close();
     } else {
         FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
         emit statusChanged(Idle);

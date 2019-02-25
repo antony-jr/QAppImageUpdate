@@ -56,7 +56,7 @@ public Q_SLOTS:
     void cancel(void);
 
 private Q_SLOTS:
-    void initDownloader(qint64 , qint64 , QUrl);
+    void initDownloader(qint64, qint64, QUrl);
     void handleBlockRange(qint32,qint32);
     void handleBlockReplyFinished(void);
     void handleBlockReplyCancel(void);
@@ -68,17 +68,17 @@ Q_SIGNALS:
     void progress(int, qint64, qint64, double, QString);
     void cancelAllReply(void);
     void canceled(void);
-    void error(QNetworkReply::NetworkError);
+    void error(short);
     void started(void);
     void finished(void);
 
 private:
     QUrl u_TargetFileUrl;
     qint64 n_BytesTotal = 0,
-	   n_BytesReceived = 0,
-	   n_BlockReply = 0; 
+           n_BytesReceived = 0,
+           n_BlockReply = 0;
     bool b_Errored = false,
-	 b_CancelRequested = false;
+         b_CancelRequested = false;
     QNetworkAccessManager *p_Manager = nullptr;
     ZsyncWriterPrivate *p_Writer = nullptr;
 };

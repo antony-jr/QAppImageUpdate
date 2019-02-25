@@ -45,20 +45,20 @@ using namespace AppImageUpdaterBridge;
  * This class provides progress overall and also gives the control to cancel the download
  * anytime without any kind of data races.
 */
-ZsyncBlockRangeDownloaderPrivate::ZsyncBlockRangeDownloaderPrivate(ZsyncWriterPrivate *w , QNetworkAccessManager *nm)
+ZsyncBlockRangeDownloaderPrivate::ZsyncBlockRangeDownloaderPrivate(ZsyncWriterPrivate *w, QNetworkAccessManager *nm)
     : QObject(),
       p_Manager(nm),
       p_Writer(w)
 {
-    
-    connect(p_Writer, SIGNAL(download(qint64 , qint64 , QUrl)),
-            this, SLOT(initDownloader(qint64 , qint64 , QUrl)) , Qt::QueuedConnection);
+
+    connect(p_Writer, SIGNAL(download(qint64, qint64, QUrl)),
+            this, SLOT(initDownloader(qint64, qint64, QUrl)), Qt::QueuedConnection);
     connect(this, SIGNAL(finished()),
-            p_Writer , SLOT(verifyDownloadAndFinish()) , Qt::QueuedConnection);
-    connect(p_Writer, SIGNAL(blockRange(qint32 , qint32)),
-            this, SLOT(handleBlockRange(qint32 , qint32)),Qt::QueuedConnection);
-    connect(this, SIGNAL(blockRangesRequested()) ,
-	    p_Writer, SLOT(getBlockRanges()) , Qt::QueuedConnection);
+            p_Writer, SLOT(verifyDownloadAndFinish()), Qt::QueuedConnection);
+    connect(p_Writer, SIGNAL(blockRange(qint32, qint32)),
+            this, SLOT(handleBlockRange(qint32, qint32)),Qt::QueuedConnection);
+    connect(this, SIGNAL(blockRangesRequested()),
+            p_Writer, SLOT(getBlockRanges()), Qt::QueuedConnection);
     return;
 }
 
@@ -76,10 +76,10 @@ void ZsyncBlockRangeDownloaderPrivate::cancel(void)
 }
 
 /* Starts the download of all the required blocks. */
-void ZsyncBlockRangeDownloaderPrivate::initDownloader(qint64 bytesReceived , qint64 bytesTotal , QUrl targetFileUrl)
+void ZsyncBlockRangeDownloaderPrivate::initDownloader(qint64 bytesReceived, qint64 bytesTotal, QUrl targetFileUrl)
 {
-    disconnect(p_Writer, SIGNAL(download(qint64 , qint64 , QUrl)),
-            this, SLOT(initDownloader(qint64 , qint64 , QUrl)));
+    disconnect(p_Writer, SIGNAL(download(qint64, qint64, QUrl)),
+               this, SLOT(initDownloader(qint64, qint64, QUrl)));
 
     u_TargetFileUrl = targetFileUrl;
     n_BytesTotal = bytesTotal;
@@ -147,7 +147,7 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyProgress(qint64 bytesRece
                           ) / static_cast<float>
                           (n_BytesTotal)
                       );
-    emit progress(nPercentage, n_BytesReceived , n_BytesTotal, speed, units);
+    emit progress(nPercentage, n_BytesReceived, n_BytesTotal, speed, units);
     return;
 }
 
@@ -159,25 +159,49 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyFinished(void)
     if(n_BlockReply <= 0) {
         if(b_CancelRequested == true) {
             b_CancelRequested = false;
- 	     connect(p_Writer, SIGNAL(download(qint64 , qint64 , QUrl)),
-                     this, SLOT(initDownloader(qint64 , qint64 , QUrl)) , (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
-	     emit canceled();
+            connect(p_Writer, SIGNAL(download(qint64, qint64, QUrl)),
+                    this, SLOT(initDownloader(qint64, qint64, QUrl)), (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+            emit canceled();
         } else {
- 	    connect(p_Writer, SIGNAL(download(qint64 , qint64 , QUrl)),
-                    this, SLOT(initDownloader(qint64 , qint64 , QUrl)) , (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+            connect(p_Writer, SIGNAL(download(qint64, qint64, QUrl)),
+                    this, SLOT(initDownloader(qint64, qint64, QUrl)), (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
             emit finished();
         }
     }
     return;
 }
 
-void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyError(QNetworkReply::NetworkError ecode)
+void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyError(QNetworkReply::NetworkError errorCode)
 {
     if(b_Errored == true) {
         return;
     }
     b_Errored = true;
-    emit error(ecode);
+    short e = 0;
+    if(errorCode > 0 && errorCode < 101) {
+        e = ConnectionRefusedError + ((short)errorCode - 1);
+    } else if(errorCode == QNetworkReply::UnknownNetworkError) {
+        e = UnknownNetworkError;
+    } else if(errorCode == QNetworkReply::UnknownProxyError) {
+        e = UnknownProxyError;
+    } else if(errorCode >= 101 && errorCode < 201) {
+        e = ProxyConnectionRefusedError + ((short)errorCode - 101);
+    } else if(errorCode == QNetworkReply::ProtocolUnknownError) {
+        e = ProtocolUnknownError;
+    } else if(errorCode == QNetworkReply::ProtocolInvalidOperationError) {
+        e = ProtocolInvalidOperationError;
+    } else if(errorCode == QNetworkReply::UnknownContentError) {
+        e = UnknownContentError;
+    } else if(errorCode == QNetworkReply::ProtocolFailure) {
+        e = ProtocolFailure;
+    } else if(errorCode >= 201 && errorCode < 401) {
+        e = ContentAccessDenied + ((short)errorCode - 201);
+    } else if(errorCode >= 401 && errorCode <= 403) {
+        e = InternalServerError + ((short)errorCode - 401);
+    } else {
+        e = UnknownServerError;
+    }
+    emit error(e);
     return;
 }
 
@@ -193,8 +217,8 @@ void ZsyncBlockRangeDownloaderPrivate::handleBlockReplyCancel(void)
 
     if(n_BlockReply <= 0) {
         b_CancelRequested = false;
- 	connect(p_Writer, SIGNAL(download(qint64 , qint64 , QUrl)),
-                this, SLOT(initDownloader(qint64 , qint64 , QUrl)) , (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+        connect(p_Writer, SIGNAL(download(qint64, qint64, QUrl)),
+                this, SLOT(initDownloader(qint64, qint64, QUrl)), (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
         emit canceled();
     }
     return;

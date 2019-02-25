@@ -339,7 +339,7 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
     /* leave the buffer ownership to the one who called it. */
     emit zsyncInformation(n_TargetFileBlockSize, n_TargetFileBlocks, n_WeakCheckSumBytes, n_StrongCheckSumBytes,
                           n_ConsecutiveMatchNeeded, n_TargetFileLength, SeedFilePath, s_TargetFileName,
-                          s_TargetFileSHA1, u_TargetFileUrl , buffer, b_AcceptRange);
+                          s_TargetFileSHA1, u_TargetFileUrl, buffer, b_AcceptRange);
     return;
 }
 
@@ -553,7 +553,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         QString timeStr;
         STORE_SPLIT(timeStr, ZsyncHeaderList.at(2), "MTime: ", InvalidZsyncMtime);
         QLocale locale(QLocale::English, QLocale::UnitedStates);
-	m_MTime = locale.toDateTime(timeStr, "ddd, dd MMM yyyy HH:mm:ss +zzz0");
+        m_MTime = locale.toDateTime(timeStr, "ddd, dd MMM yyyy HH:mm:ss +zzz0");
     }
 
     if(!m_MTime.isValid()) {
@@ -713,31 +713,31 @@ void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::Netw
     FATAL_START LOGR " handleNetworkError : " LOGR errorCode LOGR "." FATAL_END;
 
     senderReply->deleteLater();
-    
+
     /* Translate QNetworkReply::NetworkError to Zsync Remote control file error. */
     short e = 0;
-    if(errorCode > 0 && errorCode < 101){
+    if(errorCode > 0 && errorCode < 101) {
         e = ConnectionRefusedError + ((short)errorCode - 1);
-    }else if(errorCode == QNetworkReply::UnknownNetworkError){
-        e = UnknownNetworkError;   
-    }else if(errorCode == QNetworkReply::UnknownProxyError){
+    } else if(errorCode == QNetworkReply::UnknownNetworkError) {
+        e = UnknownNetworkError;
+    } else if(errorCode == QNetworkReply::UnknownProxyError) {
         e = UnknownProxyError;
-    }else if(errorCode >= 101 && errorCode < 201){
+    } else if(errorCode >= 101 && errorCode < 201) {
         e = ProxyConnectionRefusedError + ((short)errorCode - 101);
-    }else if(errorCode == QNetworkReply::ProtocolUnknownError){
+    } else if(errorCode == QNetworkReply::ProtocolUnknownError) {
         e = ProtocolUnknownError;
-    }else if(errorCode == QNetworkReply::ProtocolInvalidOperationError){
+    } else if(errorCode == QNetworkReply::ProtocolInvalidOperationError) {
         e = ProtocolInvalidOperationError;
-    }else if(errorCode == QNetworkReply::UnknownContentError){
+    } else if(errorCode == QNetworkReply::UnknownContentError) {
         e = UnknownContentError;
-    }else if(errorCode == QNetworkReply::ProtocolFailure){
+    } else if(errorCode == QNetworkReply::ProtocolFailure) {
         e = ProtocolFailure;
-    }else if(errorCode >= 201 && errorCode < 401){
+    } else if(errorCode >= 201 && errorCode < 401) {
         e = ContentAccessDenied + ((short)errorCode - 201);
-    }else if(errorCode >= 401 && errorCode <= 403){
+    } else if(errorCode >= 401 && errorCode <= 403) {
         e = InternalServerError + ((short)errorCode - 401);
-    }else{
-        e = UnknownServerError
+    } else {
+        e = UnknownServerError;
     }
     emit error(e);
     return;

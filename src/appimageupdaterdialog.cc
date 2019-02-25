@@ -68,16 +68,16 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img,QWidget *parent, int fl
     p_GridLayout->addWidget(p_ProgressBar, 0, 1, 1, 1);
 
     /* Set AppImage icon if given. */
-    if(!img.isNull()){
-    p_IconLbl = new QLabel(this);
-    p_IconLbl->setObjectName(QStringLiteral("IconLabel"));
-    p_IconLbl->setMinimumSize(QSize(100, 100));
-    p_IconLbl->setMaximumSize(QSize(100, 100));
-    p_IconLbl->setScaledContents(true);
-    p_IconLbl->setAlignment(Qt::AlignCenter);
-    p_GridLayout->addWidget(p_IconLbl, 0, 0, 3, 1);
-    p_IconLbl->setPixmap(img); 
-    p_AppImageIcon = img.scaled(100, 100, Qt::KeepAspectRatio);
+    if(!img.isNull()) {
+        p_IconLbl = new QLabel(this);
+        p_IconLbl->setObjectName(QStringLiteral("IconLabel"));
+        p_IconLbl->setMinimumSize(QSize(100, 100));
+        p_IconLbl->setMaximumSize(QSize(100, 100));
+        p_IconLbl->setScaledContents(true);
+        p_IconLbl->setAlignment(Qt::AlignCenter);
+        p_GridLayout->addWidget(p_IconLbl, 0, 0, 3, 1);
+        p_IconLbl->setPixmap(img);
+        p_AppImageIcon = img.scaled(100, 100, Qt::KeepAspectRatio);
     }
 
     /* Delta Revisioner. */
@@ -99,16 +99,16 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img,QWidget *parent, int fl
     return;
 }
 
-AppImageUpdaterDialog::AppImageUpdaterDialog(const QString &AppImagePath , QPixmap img , QWidget *parent, int p_Flags)
-	: AppImageUpdaterDialog(img , parent , p_Flags)
+AppImageUpdaterDialog::AppImageUpdaterDialog(const QString &AppImagePath, QPixmap img, QWidget *parent, int p_Flags)
+    : AppImageUpdaterDialog(img, parent, p_Flags)
 {
-	p_DRevisioner->setAppImage(AppImagePath);
+    p_DRevisioner->setAppImage(AppImagePath);
 }
 
 AppImageUpdaterDialog::AppImageUpdaterDialog(QFile *AppImage,QPixmap img,QWidget *parent, int p_Flags)
-	: AppImageUpdaterDialog(img , parent , p_Flags)
+    : AppImageUpdaterDialog(img, parent, p_Flags)
 {
-	p_DRevisioner->setAppImage(AppImage);
+    p_DRevisioner->setAppImage(AppImage);
 }
 
 AppImageUpdaterDialog::~AppImageUpdaterDialog()
@@ -120,16 +120,16 @@ void AppImageUpdaterDialog::init(void)
 {
     p_StatusLbl->setText(QString::fromUtf8("Checking for Update... "));
     p_DRevisioner->checkForUpdate();
-    if(p_Flags & ShowBeforeProgress){
-	    showWidget();
+    if(p_Flags & ShowBeforeProgress) {
+        showWidget();
     }
     return;
 }
 
 void AppImageUpdaterDialog::showWidget(void)
 {
-    if(!(p_Flags & ShowProgressDialog)){
-	    return;
+    if(!(p_Flags & ShowProgressDialog)) {
+        return;
     }
     this->show();
     return;
@@ -165,7 +165,7 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
             QMessageBox box(this);
             box.setWindowTitle(QString::fromUtf8("No Updates Available!"));
-	    box.setIconPixmap(p_AppImageIcon);
+            box.setIconPixmap(p_AppImageIcon);
             box.setText(QString::fromUtf8("You are currently using the lastest version of ") +
                         currentAppImageName +
                         QString::fromUtf8("."));
@@ -195,203 +195,192 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
 void AppImageUpdaterDialog::handleError(short errorCode)
 {
     bool show = p_Flags & ShowErrorDialog,
-	 alert = p_Flags &  AlertWhenAuthorizationIsRequired,
-	 doAlert = false;
+         alert = p_Flags &  AlertWhenAuthorizationIsRequired,
+         doAlert = false;
     QString path = s_CurrentAppImagePath,
             errorString;
 
-    /* Convert the error code to human readable code. */
-    if(errorCode == AppImageUpdaterBridge::UnknownNetworkError) {
-        /* Expand network error even more. */
-        auto networkErrorCode = ((AppImageDeltaRevisioner*)QObject::sender())->getNetworkError();
-        switch(networkErrorCode) {
-        case QNetworkReply::ConnectionRefusedError:
-            errorString = QString::fromUtf8("the update server is not accepting requests.");
-            break;
-        case QNetworkReply::RemoteHostClosedError:
-            errorString = QString::fromUtf8("the remote server closed the connection prematurely, ");
-            errorString += QString::fromUtf8("before the entire reply was received and processed.");
-            break;
-        case QNetworkReply::HostNotFoundError:
-            errorString = QString::fromUtf8("the remote host name was not found (invalid hostname).");
-            break;
-        case QNetworkReply::TimeoutError:
-            errorString = QString::fromUtf8("the connection to the remote server timed out.");
-            break;
-        case QNetworkReply::SslHandshakeFailedError:
-            errorString = QString::fromUtf8("the SSL/TLS handshake failed and the encrypted channel ");
-            errorString += QString::fromUtf8("could not be established.");
-            break;
-        case QNetworkReply::TemporaryNetworkFailureError:
-            errorString = QString::fromUtf8("the connection was broken due to disconnection from the network,");
-            break;
-        case QNetworkReply::NetworkSessionFailedError:
-            errorString = QString::fromUtf8("the connection was broken due to disconnection from the network ");
-            errorString += QString::fromUtf8("or failure to start the network.");
-            break;
-        case QNetworkReply::BackgroundRequestNotAllowedError:
-            errorString = QString::fromUtf8("the background request is not currently allowed due to platform policy.");
-            break;
-        case QNetworkReply::TooManyRedirectsError:
-            errorString = QString::fromUtf8("while following redirects, the maximum limit was reached. ");
-            break;
-        case QNetworkReply::InsecureRedirectError:
-            errorString = QString::fromUtf8("while following redirects, the network access API detected a redirect ");
-            errorString += QString::fromUtf8("from a encrypted protocol (https) to an unencrypted one (http).");
-            break;
-        case QNetworkReply::ContentAccessDenied:
-            errorString = QString::fromUtf8("the access to the remote content was denied (HTTP error 403).");
-            break;
-        case QNetworkReply::ContentOperationNotPermittedError:
-            errorString = QString::fromUtf8("the operation requested on the remote content is not permitted.");
-            break;
-        case QNetworkReply::ContentNotFoundError:
-            errorString = QString::fromUtf8("the remote content was not found at the server (HTTP error 404)");
-            break;
-        case QNetworkReply::AuthenticationRequiredError:
-            errorString = QString::fromUtf8("the remote server requires authentication to serve the content ");
-            errorString += QString::fromUtf8("but the credentials provided were not accepted or given. ");
-            break;
-        case QNetworkReply::ContentConflictError:
-            errorString = QString::fromUtf8("the request could not be completed due to a conflict with the ");
-            errorString += QString::fromUtf8("current state of the resource.");
-            break;
-        case QNetworkReply::ContentGoneError:
-            errorString = QString::fromUtf8("the requested resource is no longer available at the server.");
-            break;
-        case QNetworkReply::InternalServerError:
-            errorString = QString::fromUtf8("the server encountered an unexpected condition which prevented ");
-            errorString += QString::fromUtf8("it from fulfilling the request.");
-            break;
-        case QNetworkReply::OperationNotImplementedError:
-            errorString = QString::fromUtf8("the server does not support the functionality required to fulfill the request.");
-            break;
-        case QNetworkReply::ServiceUnavailableError:
-            errorString = QString::fromUtf8("the server is unable to handle the request at this time.");
-            break;
-        case QNetworkReply::ProtocolUnknownError:
-            errorString = QString::fromUtf8("the Network Access API cannot honor the request because the protocol");
-            errorString += QString::fromUtf8(" is not known.");
-            break;
-        case QNetworkReply::ProtocolInvalidOperationError:
-            errorString = QString::fromUtf8("the requested operation is invalid for this protocol.");
-            break;
-        case QNetworkReply::UnknownNetworkError:
-            errorString = QString::fromUtf8("an unknown network-related error was detected.");
-            break;
-        case QNetworkReply::UnknownContentError:
-            errorString = QString::fromUtf8("an unknown error related to the remote content was detected.");
-            break;
-        case QNetworkReply::ProtocolFailure:
-            errorString = QString::fromUtf8("a breakdown in protocol was detected ");
-            errorString += QString::fromUtf8("(parsing error, invalid or unexpected responses, etc.)");
-            break;
-        case QNetworkReply::UnknownServerError:
-            errorString = QString::fromUtf8("an unknown error related to the server response was detected.");
-            break;
-        default:
-            errorString = QString::fromUtf8("there was an uncaught network error.");
-            break;
-        }
-    } else {
-        switch(errorCode) {
-            case AppImageUpdaterBridge::NoAppimagePathGiven:
-                errorString = QString::fromUtf8("no appimage was given.");
-                break;
-        case AppImageUpdaterBridge::AppimageNotReadable:
-            errorString = QString::fromUtf8("it is not readable.");
-            break;
-        case AppImageUpdaterBridge::NoReadPermission:
-            errorString = QString::fromUtf8("you don't have the permission to read it.");
-            show = (alert) ? false : show;
-	    doAlert = alert; 
-	    break;
-        case AppImageUpdaterBridge::AppimageNotFound:
-            errorString = QString::fromUtf8("it does not exists.");
-            break;
-        case AppImageUpdaterBridge::CannotOpenAppimage:
-            errorString = QString::fromUtf8("it cannot be opened.");
-            break;
-        case AppImageUpdaterBridge::EmptyUpdateInformation:
-            errorString = QString::fromUtf8("the author of this AppImage did not include any update information.");
-            break;
-        case AppImageUpdaterBridge::InvalidAppimageType:
-            errorString = QString::fromUtf8("it is an unknown AppImage type.");
-            break;
-        case AppImageUpdaterBridge::InvalidMagicBytes:
-            errorString = QString::fromUtf8("it is not a AppImage , Make sure to give valid AppImage.");
-            break;
-        case AppImageUpdaterBridge::InvalidUpdateInformation:
-            errorString = QString::fromUtf8("the author of this AppImage included invalid update information.");
-            break;
-        case AppImageUpdaterBridge::NotEnoughMemory:
-            errorString = QString::fromUtf8("there is no enough memory left in your ram.");
-            break;
-        case AppImageUpdaterBridge::SectionHeaderNotFound:
-            errorString = QString::fromUtf8("the author of this AppImage did not embed the update information ");
-            errorString += QString::fromUtf8("at a valid section header.");
-            break;
-        case AppImageUpdaterBridge::UnsupportedElfFormat:
-            errorString = QString::fromUtf8("the given AppImage is not in supported elf format.");
-            break;
-        case AppImageUpdaterBridge::UnsupportedTransport:
-            errorString = QString::fromUtf8("the author of this included an unsupported transport in update information.");
-            break;
-        case AppImageUpdaterBridge::IoReadError:
-            errorString = QString::fromUtf8("there was a unknown IO read error.");
-            break;
-        case AppImageUpdaterBridge::GithubApiRateLimitReached:
-            errorString = QString::fromUtf8("github api rate limit was reached , Please try again after an hour.");
-            break;
-        case AppImageUpdaterBridge::ErrorResponseCode:
-            errorString = QString::fromUtf8("some request returned a bad server response code , Please try again.");
-            break;
-        case AppImageUpdaterBridge::NoMarkerFoundInControlFile:
-        case AppImageUpdaterBridge::InvalidZsyncHeadersNumber:
-        case AppImageUpdaterBridge::InvalidZsyncMakeVersion:
-        case AppImageUpdaterBridge::InvalidZsyncTargetFilename:
-        case AppImageUpdaterBridge::InvalidZsyncMtime:
-        case AppImageUpdaterBridge::InvalidZsyncBlocksize:
-        case AppImageUpdaterBridge::InvalidTargetFileLength:
-        case AppImageUpdaterBridge::InvalidHashLengthLine:
-        case AppImageUpdaterBridge::InvalidHashLengths:
-        case AppImageUpdaterBridge::InvalidTargetFileUrl:
-        case AppImageUpdaterBridge::InvalidTargetFileSha1:
-        case AppImageUpdaterBridge::HashTableNotAllocated:
-        case AppImageUpdaterBridge::InvalidTargetFileChecksumBlocks:
-        case AppImageUpdaterBridge::CannotOpenTargetFileChecksumBlocks:
-        case AppImageUpdaterBridge::CannotConstructHashTable:
-        case AppImageUpdaterBridge::QbufferIoReadError:
-            errorString = QString::fromUtf8("the author did not produce the zsync meta file properly , ");
-            errorString += QString::fromUtf8("Please notify the author or else try again because it can be a ");
-            errorString += QString::fromUtf8("false positive.");
-            break;
-        case AppImageUpdaterBridge::SourceFileNotFound:
-            errorString = QString::fromUtf8("the current AppImage is not found , maybe deleted while updating ?");
-            break;
-        case AppImageUpdaterBridge::NoPermissionToReadSourceFile:
-            errorString = QString::fromUtf8("you have no permissions to read the current AppImage.");
-            show = (alert) ? false : show;
-	    doAlert = alert;
-	    break;
-        case AppImageUpdaterBridge::CannotOpenSourceFile:
-            errorString = QString::fromUtf8("the current AppImage cannot be opened.");
-            break;
-        case AppImageUpdaterBridge::NoPermissionToReadWriteTargetFile:
-            errorString = QString::fromUtf8("you have no write or read permissions to read and write the new version.");
-            show = (alert) ? false : show;
-	    doAlert = alert;
-	    break;
-        case AppImageUpdaterBridge::CannotOpenTargetFile:
-            errorString = QString::fromUtf8("the new version cannot be opened to write or read.");
-            break;
-        case AppImageUpdaterBridge::TargetFileSha1HashMismatch:
-            errorString = QString::fromUtf8("the newly construct AppImage failed to prove integrity , Try again.");
-            break;
-        default:
-            errorString = QString::fromUtf8("there occured an uncaught error.");
-            break;
-        }
+    switch(errorCode) {
+    case ConnectionRefusedError:
+        errorString = QString::fromUtf8("the update server is not accepting requests.");
+        break;
+    case RemoteHostClosedError:
+        errorString = QString::fromUtf8("the remote server closed the connection prematurely, ");
+        errorString += QString::fromUtf8("before the entire reply was received and processed.");
+        break;
+    case HostNotFoundError:
+        errorString = QString::fromUtf8("the remote host name was not found (invalid hostname).");
+        break;
+    case TimeoutError:
+        errorString = QString::fromUtf8("the connection to the remote server timed out.");
+        break;
+    case SslHandshakeFailedError:
+        errorString = QString::fromUtf8("the SSL/TLS handshake failed and the encrypted channel ");
+        errorString += QString::fromUtf8("could not be established.");
+        break;
+    case TemporaryNetworkFailureError:
+        errorString = QString::fromUtf8("the connection was broken due to disconnection from the network,");
+        break;
+    case NetworkSessionFailedError:
+        errorString = QString::fromUtf8("the connection was broken due to disconnection from the network ");
+        errorString += QString::fromUtf8("or failure to start the network.");
+        break;
+    case BackgroundRequestNotAllowedError:
+        errorString = QString::fromUtf8("the background request is not currently allowed due to platform policy.");
+        break;
+    case TooManyRedirectsError:
+        errorString = QString::fromUtf8("while following redirects, the maximum limit was reached. ");
+        break;
+    case InsecureRedirectError:
+        errorString = QString::fromUtf8("while following redirects, the network access API detected a redirect ");
+        errorString += QString::fromUtf8("from a encrypted protocol (https) to an unencrypted one (http).");
+        break;
+    case ContentAccessDenied:
+        errorString = QString::fromUtf8("the access to the remote content was denied (HTTP error 403).");
+        break;
+    case ContentOperationNotPermittedError:
+        errorString = QString::fromUtf8("the operation requested on the remote content is not permitted.");
+        break;
+    case ContentNotFoundError:
+        errorString = QString::fromUtf8("the remote content was not found at the server (HTTP error 404)");
+        break;
+    case AuthenticationRequiredError:
+        errorString = QString::fromUtf8("the remote server requires authentication to serve the content ");
+        errorString += QString::fromUtf8("but the credentials provided were not accepted or given. ");
+        break;
+    case ContentConflictError:
+        errorString = QString::fromUtf8("the request could not be completed due to a conflict with the ");
+        errorString += QString::fromUtf8("current state of the resource.");
+        break;
+    case ContentGoneError:
+        errorString = QString::fromUtf8("the requested resource is no longer available at the server.");
+        break;
+    case InternalServerError:
+        errorString = QString::fromUtf8("the server encountered an unexpected condition which prevented ");
+        errorString += QString::fromUtf8("it from fulfilling the request.");
+        break;
+    case OperationNotImplementedError:
+        errorString = QString::fromUtf8("the server does not support the functionality required to fulfill the request.");
+        break;
+    case ServiceUnavailableError:
+        errorString = QString::fromUtf8("the server is unable to handle the request at this time.");
+        break;
+    case ProtocolUnknownError:
+        errorString = QString::fromUtf8("the Network Access API cannot honor the request because the protocol");
+        errorString += QString::fromUtf8(" is not known.");
+        break;
+    case ProtocolInvalidOperationError:
+        errorString = QString::fromUtf8("the requested operation is invalid for this protocol.");
+        break;
+    case UnknownNetworkError:
+        errorString = QString::fromUtf8("an unknown network-related error was detected.");
+        break;
+    case UnknownContentError:
+        errorString = QString::fromUtf8("an unknown error related to the remote content was detected.");
+        break;
+    case ProtocolFailure:
+        errorString = QString::fromUtf8("a breakdown in protocol was detected ");
+        errorString += QString::fromUtf8("(parsing error, invalid or unexpected responses, etc.)");
+        break;
+    case UnknownServerError:
+        errorString = QString::fromUtf8("an unknown error related to the server response was detected.");
+        break;
+    case AppImageUpdaterBridge::NoAppimagePathGiven:
+        errorString = QString::fromUtf8("no appimage was given.");
+        break;
+    case AppImageUpdaterBridge::AppimageNotReadable:
+        errorString = QString::fromUtf8("it is not readable.");
+        break;
+    case AppImageUpdaterBridge::NoReadPermission:
+        errorString = QString::fromUtf8("you don't have the permission to read it.");
+        show = (alert) ? false : show;
+        doAlert = alert;
+        break;
+    case AppImageUpdaterBridge::AppimageNotFound:
+        errorString = QString::fromUtf8("it does not exists.");
+        break;
+    case AppImageUpdaterBridge::CannotOpenAppimage:
+        errorString = QString::fromUtf8("it cannot be opened.");
+        break;
+    case AppImageUpdaterBridge::EmptyUpdateInformation:
+        errorString = QString::fromUtf8("the author of this AppImage did not include any update information.");
+        break;
+    case AppImageUpdaterBridge::InvalidAppimageType:
+        errorString = QString::fromUtf8("it is an unknown AppImage type.");
+        break;
+    case AppImageUpdaterBridge::InvalidMagicBytes:
+        errorString = QString::fromUtf8("it is not a AppImage , Make sure to give valid AppImage.");
+        break;
+    case AppImageUpdaterBridge::InvalidUpdateInformation:
+        errorString = QString::fromUtf8("the author of this AppImage included invalid update information.");
+        break;
+    case AppImageUpdaterBridge::NotEnoughMemory:
+        errorString = QString::fromUtf8("there is no enough memory left in your ram.");
+        break;
+    case AppImageUpdaterBridge::SectionHeaderNotFound:
+        errorString = QString::fromUtf8("the author of this AppImage did not embed the update information ");
+        errorString += QString::fromUtf8("at a valid section header.");
+        break;
+    case AppImageUpdaterBridge::UnsupportedElfFormat:
+        errorString = QString::fromUtf8("the given AppImage is not in supported elf format.");
+        break;
+    case AppImageUpdaterBridge::UnsupportedTransport:
+        errorString = QString::fromUtf8("the author of this included an unsupported transport in update information.");
+        break;
+    case AppImageUpdaterBridge::IoReadError:
+        errorString = QString::fromUtf8("there was a unknown IO read error.");
+        break;
+    case AppImageUpdaterBridge::GithubApiRateLimitReached:
+        errorString = QString::fromUtf8("github api rate limit was reached , Please try again after an hour.");
+        break;
+    case AppImageUpdaterBridge::ErrorResponseCode:
+        errorString = QString::fromUtf8("some request returned a bad server response code , Please try again.");
+        break;
+    case AppImageUpdaterBridge::NoMarkerFoundInControlFile:
+    case AppImageUpdaterBridge::InvalidZsyncHeadersNumber:
+    case AppImageUpdaterBridge::InvalidZsyncMakeVersion:
+    case AppImageUpdaterBridge::InvalidZsyncTargetFilename:
+    case AppImageUpdaterBridge::InvalidZsyncMtime:
+    case AppImageUpdaterBridge::InvalidZsyncBlocksize:
+    case AppImageUpdaterBridge::InvalidTargetFileLength:
+    case AppImageUpdaterBridge::InvalidHashLengthLine:
+    case AppImageUpdaterBridge::InvalidHashLengths:
+    case AppImageUpdaterBridge::InvalidTargetFileUrl:
+    case AppImageUpdaterBridge::InvalidTargetFileSha1:
+    case AppImageUpdaterBridge::HashTableNotAllocated:
+    case AppImageUpdaterBridge::InvalidTargetFileChecksumBlocks:
+    case AppImageUpdaterBridge::CannotOpenTargetFileChecksumBlocks:
+    case AppImageUpdaterBridge::CannotConstructHashTable:
+    case AppImageUpdaterBridge::QbufferIoReadError:
+        errorString = QString::fromUtf8("the author did not produce the zsync meta file properly , ");
+        errorString += QString::fromUtf8("Please notify the author or else try again because it can be a ");
+        errorString += QString::fromUtf8("false positive.");
+        break;
+    case AppImageUpdaterBridge::SourceFileNotFound:
+        errorString = QString::fromUtf8("the current AppImage is not found , maybe deleted while updating ?");
+        break;
+    case AppImageUpdaterBridge::NoPermissionToReadSourceFile:
+        errorString = QString::fromUtf8("you have no permissions to read the current AppImage.");
+        show = (alert) ? false : show;
+        doAlert = alert;
+        break;
+    case AppImageUpdaterBridge::CannotOpenSourceFile:
+        errorString = QString::fromUtf8("the current AppImage cannot be opened.");
+        break;
+    case AppImageUpdaterBridge::NoPermissionToReadWriteTargetFile:
+        errorString = QString::fromUtf8("you have no write or read permissions to read and write the new version.");
+        show = (alert) ? false : show;
+        doAlert = alert;
+        break;
+    case AppImageUpdaterBridge::CannotOpenTargetFile:
+        errorString = QString::fromUtf8("the new version cannot be opened to write or read.");
+        break;
+    case AppImageUpdaterBridge::TargetFileSha1HashMismatch:
+        errorString = QString::fromUtf8("the newly construct AppImage failed to prove integrity , Try again.");
+        break;
+    default:
+        errorString = QString::fromUtf8("there occured an uncaught error.");
+        break;
     }
 
     if(show) {
@@ -405,10 +394,10 @@ void AppImageUpdaterDialog::handleError(short errorCode)
         box.exec();
     }
 
-    if(doAlert){
-	    emit requiresAuthorization(errorString , errorCode , path);
-    }else{
-	    emit error(errorString, errorCode);
+    if(doAlert) {
+        emit requiresAuthorization(errorString, errorCode, path);
+    } else {
+        emit error(errorString, errorCode);
     }
     return;
 }
@@ -439,16 +428,16 @@ void AppImageUpdaterDialog::handleFinished(QJsonObject newVersion, QString oldVe
     if(execute) {
         QFileInfo info(newVersion["AbsolutePath"].toString());
         if(!info.isExecutable()) {
-		{
-		QFile file(newVersion["AbsolutePath"].toString());
+            {
+                QFile file(newVersion["AbsolutePath"].toString());
                 file.setPermissions(QFileDevice::ExeUser |
                                     QFileDevice::ExeOther|
                                     QFileDevice::ExeGroup|
                                     info.permissions());
-		}
-	}
-	QProcess::startDetached(newVersion["AbsolutePath"].toString());
-        emit quit();	 
+            }
+        }
+        QProcess::startDetached(newVersion["AbsolutePath"].toString());
+        emit quit();
     }
     emit finished(newVersion);
     return;

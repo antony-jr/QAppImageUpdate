@@ -69,9 +69,9 @@ ZsyncBlockRangeReplyPrivate::ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate *del
                 deltaWriter, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
     }
     connect(reply, &QNetworkReply::finished,
-            this, &ZsyncBlockRangeReplyPrivate::handleFinished , Qt::QueuedConnection);
+            this, &ZsyncBlockRangeReplyPrivate::handleFinished, Qt::QueuedConnection);
     connect(this,  &ZsyncBlockRangeReplyPrivate::cancelReply,
-            reply, &QNetworkReply::abort , Qt::QueuedConnection);
+            reply, &QNetworkReply::abort, Qt::QueuedConnection);
     return;
 }
 

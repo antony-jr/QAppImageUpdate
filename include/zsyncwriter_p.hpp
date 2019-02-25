@@ -68,9 +68,9 @@ public Q_SLOTS:
     void setLoggerName(const QString&);
     void setOutputDirectory(const QString&);
     void setConfiguration(qint32,qint32,qint32,
-		          qint32,qint32,qint32,
+                          qint32,qint32,qint32,
                           const QString&,const QString&,const QString&,
-			  QUrl , QBuffer*,bool);
+                          QUrl, QBuffer*,bool);
     void start(void);
     void cancel(void);
 
@@ -79,7 +79,7 @@ public Q_SLOTS:
     void getBlockRanges();
     void writeSeqRaw(QByteArray*);
     void writeBlockRanges(qint32, qint32, QByteArray*);
-    void verifyDownloadAndFinish(); 
+    void verifyDownloadAndFinish();
 
 private Q_SLOTS:
 #ifndef LOGGING_DISABLED
@@ -109,7 +109,7 @@ Q_SIGNALS:
     void blockRange(qint32, qint32);
     void endOfBlockRanges();
     void blockRangesWritten(qint32, qint32, bool);
-    void download(qint64 , qint64 , QUrl);
+    void download(qint64, qint64, QUrl);
     void started();
     void canceled();
     void finished(QJsonObject, QString);
@@ -119,7 +119,7 @@ Q_SIGNALS:
     void logger(QString, QString);
 private:
     bool b_Started = false,
-	 b_CancelRequested = false,
+         b_CancelRequested = false,
          b_AcceptRange = true;
     QUrl u_TargetFileUrl;
     QPair<rsum, rsum> p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));

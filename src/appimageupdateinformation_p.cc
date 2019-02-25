@@ -464,17 +464,17 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         if(!arguments.isEmpty()) {
             setAppImage(QFileInfo(arguments.at(0)).absolutePath() + QString::fromUtf8("/") + QFileInfo(arguments.at(0)).fileName());
         }
-	
-	
-	if(s_AppImagePath.isEmpty()){
-		emit(error(NoAppimagePathGiven));
-		return;
-	}
+
+
+        if(s_AppImagePath.isEmpty()) {
+            emit(error(NoAppimagePathGiven));
+            return;
+        }
     }
-    
-    
+
+
     if(!p_AppImage) {
-	/* Open appimage if the user only given the path. */
+        /* Open appimage if the user only given the path. */
         try {
             p_AppImage = new QFile(this);
         } catch (...) {

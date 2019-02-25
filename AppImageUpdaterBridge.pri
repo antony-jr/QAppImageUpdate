@@ -20,8 +20,14 @@ SOURCES += \
     $$PWD/src/zsyncblockrangereply_p.cc \
     $$PWD/src/zsyncblockrangedownloader_p.cc \
     $$PWD/src/appimagedeltarevisioner_p.cc \
-    $$PWD/src/appImagedeltarevisioner.cc \
+    $$PWD/src/appimagedeltarevisioner.cc \
     $$PWD/src/appimageupdaterdialog.cc
+
+no_gui {
+	QT -= widgets
+	HEADERS -= $$PWD/include/appimageupdaterdialog.hpp
+	SOURCES -= $$PWD/src/appimageupdaterdialog.cc
+}
 
 logging_disabled {
 	message(Logging will be disabled for this build.)

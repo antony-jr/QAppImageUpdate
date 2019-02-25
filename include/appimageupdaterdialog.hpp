@@ -60,28 +60,28 @@ class AppImageUpdaterDialog : public QDialog
     Q_OBJECT
 public:
     enum {
-	    ShowProgressDialog = 0x1,
-	    ShowBeforeProgress = 0x2,
-	    ShowUpdateConfirmationDialog = 0x4,
-	    ShowFinishedDialog = 0x8,
-	    ShowErrorDialog = 0x10,
-	    AlertWhenAuthorizationIsRequired = 0x20,
-	    NotifyWhenNoUpdateIsAvailable = 0x40,
-	    Default = ShowProgressDialog |
-		      ShowUpdateConfirmationDialog |
-	              ShowFinishedDialog   |
-		      ShowErrorDialog |
-		      NotifyWhenNoUpdateIsAvailable	
+        ShowProgressDialog = 0x1,
+        ShowBeforeProgress = 0x2,
+        ShowUpdateConfirmationDialog = 0x4,
+        ShowFinishedDialog = 0x8,
+        ShowErrorDialog = 0x10,
+        AlertWhenAuthorizationIsRequired = 0x20,
+        NotifyWhenNoUpdateIsAvailable = 0x40,
+        Default = ShowProgressDialog |
+                  ShowUpdateConfirmationDialog |
+                  ShowFinishedDialog   |
+                  ShowErrorDialog |
+                  NotifyWhenNoUpdateIsAvailable
     };
 
-    AppImageUpdaterDialog(QPixmap img = QPixmap(), 
-		 	  QWidget *parent = nullptr , int flags = Default);
+    AppImageUpdaterDialog(QPixmap img = QPixmap(),
+                          QWidget *parent = nullptr, int flags = Default);
     AppImageUpdaterDialog(const QString&,
-		          QPixmap img = QPixmap(), 
-			  QWidget *parent = nullptr , int flags = Default);
+                          QPixmap img = QPixmap(),
+                          QWidget *parent = nullptr, int flags = Default);
     AppImageUpdaterDialog(QFile*,
-		          QPixmap img = QPixmap(), 
-			  QWidget *parent = nullptr , int flags = Default);
+                          QPixmap img = QPixmap(),
+                          QWidget *parent = nullptr, int flags = Default);
     ~AppImageUpdaterDialog();
 
 public Q_SLOTS:
@@ -100,7 +100,7 @@ Q_SIGNALS:
     void canceled(void);
     void error(QString, short);
     void finished(QJsonObject);
-    void requiresAuthorization(QString , short , QString);
+    void requiresAuthorization(QString, short, QString);
 
 private:
     int p_Flags = 0;
@@ -111,7 +111,7 @@ private:
     QLabel *p_IconLbl = nullptr;
     QProgressBar *p_ProgressBar = nullptr;
     QPushButton *p_CancelBtn = nullptr;
- 
+
     AppImageDeltaRevisioner *p_DRevisioner = nullptr;
     double n_MegaBytesTotal = 0;
     const QString progressTemplate = QString::fromUtf8("Updating %1 MiB of %2 MiB at %3 %4...");

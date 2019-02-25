@@ -31,7 +31,7 @@
  *
  * @filename    : zsyncremotecontrolfileparser_p.hpp
  * @description : This is where the ZsyncRemoteControlFileParserPrivate in described.
- * This class is responsible to parse the remote zsync control file from the given 
+ * This class is responsible to parse the remote zsync control file from the given
  * embeded appimage information.
 */
 #ifndef ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
@@ -87,9 +87,9 @@ private Q_SLOTS:
 #endif // LOGGING_DISABLED
 Q_SIGNALS:
     void zsyncInformation(qint32,qint32,qint32,
-		          qint32,qint32,qint32,
-			  QString,QString,QString,
-			  QUrl,QBuffer*,bool);
+                          qint32,qint32,qint32,
+                          QString,QString,QString,
+                          QUrl,QBuffer*,bool);
     void updateCheckInformation(QJsonObject);
     void receiveControlFile(void);
     void progress(int);
@@ -98,7 +98,7 @@ Q_SIGNALS:
     void logger(QString, QString);
 private:
     bool b_AcceptRange = false,
-	 b_Busy = false;
+         b_Busy = false;
     QJsonObject j_UpdateInformation;
     QString s_ZsyncMakeVersion,
             s_ZsyncFileName, /* only used for github transport. */
