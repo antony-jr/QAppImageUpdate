@@ -11,28 +11,37 @@ int main(int ac, char **av)
     QApplication app(ac, av);
     QCommandLineParser parser;
     parser.process(app);
+    int it = 0;
     auto args = parser.positionalArguments();
     if(args.count() == 0) {
         qInfo().noquote() << "\nUsage: " << app.arguments().at(0) << " [APPIMAGE PATH].";
         return -1;
     }
-    
+
     using AppImageUpdaterBridge::AppImageUpdaterDialog;
-    AppImageUpdaterDialog UWidget(args[0]); 
-    QObject::connect(&UWidget, &AppImageUpdaterDialog::error , [&](QString eStr, short errorCode){
+    AppImageUpdaterDialog UWidget;
+    QObject::connect(&UWidget, &AppImageUpdaterDialog::error, [&](QString eStr, short errorCode) {
         Q_UNUSED(errorCode);
-	qInfo() << "error:: "<<eStr;
+        qInfo() << "error:: "<<eStr;
         return;
     });
 
-    QObject::connect(&UWidget , &AppImageUpdaterDialog::quit , &app , &QApplication::quit , Qt::QueuedConnection);
-    QObject::connect(&UWidget , &AppImageUpdaterDialog::canceled , &app , &QApplication::quit , Qt::QueuedConnection);
+    QObject::connect(&UWidget, &AppImageUpdaterDialog::quit, &app, &QApplication::quit, Qt::QueuedConnection);
+    QObject::connect(&UWidget, &AppImageUpdaterDialog::canceled, &app, &QApplication::quit, Qt::QueuedConnection);
 
     QObject::connect(&UWidget, &AppImageUpdaterDialog::finished, [&](QJsonObject newVersion) {
         (void)newVersion;
-        app.quit();
-	return;
+        if(it < args.count()) {
+            UWidget.setAppImage(args.at(it));
+            UWidget.init();
+            ++it;
+        } else {
+            app.quit();
+        }
+        return;
     });
+    UWidget.setAppImage(args.at(it));
     UWidget.init();
+    ++it;
     return app.exec();
 }

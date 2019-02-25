@@ -32,10 +32,7 @@ int main(int ac, char **av)
     });
 
     QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::error, [&](short ecode) {
-        qCritical().noquote() << "error:: " << AppImageDeltaRevisioner::errorCodeToString(ecode);
-        if(ecode == AppImageUpdaterBridge::UnknownNetworkError) {
-            qCritical().noquote() << "Network error:: " << DRevisioner.getNetworkError();
-        }
+        qCritical().noquote() << "error:: " << AppImageUpdaterBridge::errorCodeToString(ecode);
         app.quit();
         return;
     });

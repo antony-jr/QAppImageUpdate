@@ -46,7 +46,6 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QDialog>
 #include <QtWidgets/QWidget>
 #include <QMessageBox>
 
@@ -55,7 +54,7 @@
 
 namespace AppImageUpdaterBridge
 {
-class AppImageUpdaterDialog : public QDialog
+class AppImageUpdaterDialog : public QWidget
 {
     Q_OBJECT
 public:
@@ -86,6 +85,8 @@ public:
 
 public Q_SLOTS:
     void init();
+    void setAppImage(const QString&);
+    void setAppImage(QFile *);
 
 private Q_SLOTS:
     void showWidget(void);

@@ -796,9 +796,10 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
         p_TargetFile->setPermissions(QFileInfo(s_SourceFilePath).permissions());
         p_TargetFile->close();
     } else {
-        FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
+        b_Started = b_CancelRequested = false;
+	FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
         emit statusChanged(Idle);
-        emit error(TargetFileSha1HashMismatch);
+	emit error(TargetFileSha1HashMismatch);
         return constructed;
     }
 
@@ -809,6 +810,7 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
         {"AbsolutePath", QFileInfo(p_TargetFile->fileName()).absoluteFilePath() },
         {"Sha1Hash", UnderConstructionFileSHA1}
     };
+    b_Started = b_CancelRequested = false;
     emit finished(newVersionDetails, s_SourceFilePath);
     emit statusChanged(Idle);
     return constructed;

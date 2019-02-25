@@ -226,6 +226,7 @@ void AppImageDeltaRevisionerPrivate::cancel(void)
 
 void AppImageDeltaRevisionerPrivate::setAppImage(const QString &AppImagePath)
 {
+    clear();
     getMethod(p_UpdateInformation, "setAppImage(const QString&)").invoke(p_UpdateInformation.data(),
             Qt::QueuedConnection,
             Q_ARG(QString,AppImagePath));
