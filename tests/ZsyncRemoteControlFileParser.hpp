@@ -3,8 +3,7 @@
 #include <QTest>
 #include <QSignalSpy>
 #include <QNetworkAccessManager>
-#include <ZsyncRemoteControlFileParser_p.hpp>
-
+#include "../include/zsyncremotecontrolfileparser_p.hpp"
 /*
  * Get the official appimage tool to test it with
  * our library.
@@ -41,18 +40,14 @@ private slots:
         ZsyncRemoteControlFileParserPrivate CFParser(&_pManager);
         CFParser.setControlFileUrl(APPIMAGE_TOOL_CONTROL_FILE_URL);
         QSignalSpy spyReceiveControlFile(&CFParser, SIGNAL(receiveControlFile(void)));
-        CFParser.getControlFile();
+	QSignalSpy spyInfo(&CFParser , SIGNAL(zsyncInformation(qint32,qint32,qint32,
+                          		      qint32,qint32,qint32,
+                          		      QString,QString,QString,
+                          		      QUrl,QBuffer*,bool)));
+	CFParser.getControlFile();
 
         /* Check if we received the control file */
         QVERIFY(spyReceiveControlFile.wait(10000) == true);
-
-        /* Verify data. */
-        QVERIFY(CFParser.getTargetFileLength() > 0); // Target file length must be > 0.
-        QVERIFY(CFParser.getTargetFileBlockSize() > 1024); // BlockSize must atleast be 1024 bytes.
-        QVERIFY(CFParser.getTargetFileUrl().isValid()); // Target file url must be valid.
-        QVERIFY(CFParser.getWeakCheckSumBytes() > 0); // Weak Checksum Bytes must be > 0.
-        QVERIFY(CFParser.getStrongCheckSumBytes() > 0); // Strong Checksum Bytes must be > 0.
-        QVERIFY(CFParser.getTargetFileBlocksCount() > 0); // Must be > 0.
         return;
     }
 

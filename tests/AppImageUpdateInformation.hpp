@@ -2,7 +2,7 @@
 #define APPIMAGE_UPDATE_INFORMATION_TESTS_HPP_INCLUDED
 #include <QTest>
 #include <QSignalSpy>
-#include <AppImageUpdateInformation_p.hpp>
+#include "../include/appimageupdateinformation_p.hpp"
 
 /*
  * Get the official appimage tool to test it with
