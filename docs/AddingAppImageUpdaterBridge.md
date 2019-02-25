@@ -129,7 +129,7 @@ set(CMAKE_AUTOMOC ON)
 # Find the QtCore library
 find_package(Qt5Core)
 find_package(Qt5Network)
-#Add your gui libraries if needed
+find_package(Qt5Widgets)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}) # just in case!
 # Add include directory
@@ -141,7 +141,8 @@ add_subdirectory(AppImageUpdaterBridge)
 add_executable(MyCoolApplication MyMain.cpp)
 target_link_libraries(MyCoolApplication AppImageUpdaterBridge 
 					Qt5::Core 
-					Qt5::Network)
+					Qt5::Network
+					Qt5::Widgets)
 ```
 
 Where **MyCoolApplication** is the application that you are currently working with.
@@ -167,3 +168,23 @@ In CMake like this ,
 
 Compiling without logger support can reduce your binary by approx. 100 KiB and 
 also saves some runtime overhead and memory usage.
+
+# Disable building AppImageUpdaterDialog
+
+AppImageUpdaterDialog is a class provided by the library for an easy use of the updater 
+through a nice graphical modal dialog which can be handy at times.
+But if you want to disable this for some reason then you can do so by doing like this ,
+
+In QMake ,
+
+```
+ $ qmake "CONFIG+=NO_GUI" [ProjectFolder]
+```
+
+and 
+
+In CMake ,
+
+```
+ $ cmake -DNO_GUI=ON [ProjectFolder]
+```

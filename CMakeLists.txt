@@ -46,11 +46,11 @@ list(APPEND source src/appimagedeltarevisioner.cc
 				  include/zsyncwriter_p.hpp
 				  include/appimageupdaterbridge_enums.hpp)
 if(LOGGING_DISABLED)
-	message("Logging will be disabled for this build.")
+	message("-- [*] IMPORTANT: Logging will be disabled for this build.")
 endif()
 
 if(NO_GUI)
-	message("No gui classes will be included in this build.")
+	message("-- [*] IMPORTANT: No gui classes will be included in this build.")
 else()
 	list(APPEND source src/appimageupdaterdialog.cc include/appimageupdaterdialog.hpp)
 endif()

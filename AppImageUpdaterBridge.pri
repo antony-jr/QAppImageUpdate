@@ -24,13 +24,14 @@ SOURCES += \
     $$PWD/src/appimageupdaterdialog.cc \
     $$PWD/src/appimageupdaterbridge_enums.cc
 
-no_gui {
+NO_GUI {
+	message(AppImage Updater Bridge widgets will be disabled for this build.)
 	QT -= widgets
 	HEADERS -= $$PWD/include/appimageupdaterdialog.hpp
 	SOURCES -= $$PWD/src/appimageupdaterdialog.cc
 }
 
-logging_disabled {
+LOGGING_DISABLED {
 	message(Logging will be disabled for this build.)
 	DEFINES += LOGGING_DISABLED
 }

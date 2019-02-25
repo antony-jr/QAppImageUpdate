@@ -6,7 +6,7 @@ sidebar_label: Class AppImageDeltaRevisioner
 
 |	    |	        	                                       |		
 |-----------|----------------------------------------------------------|
-|  Header:  | #include <AppImageUpdaterBridge>                         |
+|  Header:  | #include < AppImageUpdaterBridge >                         |
 |   qmake:  | include(AppImageUpdaterBridge/AppImageUpdaterBridge.pri) |
 |Inherits:  | [QObject](http://doc.qt.io/qt-5/qobject.html)            |
 |Namespace: | **AppImageUpdaterBridge**
@@ -24,7 +24,7 @@ Thus all you need is this class to do the entire update.
 Internally this class purely uses **signals and slots** to communicate to private classes which are single thread and non-blocking(Optionally runs in a seperate thread). This class only holds a pointer to the private implementation (*PIMPL*).
 For most of the time , This class does not leak memory but if it does please report it on github.
 
-All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentrancy.html).
+All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentrancy.html) and thread safe.
 
 Eventhough all methods are reentrant , This class does not use **mutex** thanks to **Qt's signals and slots everything is cyclic and thus no mutex is needed.**
 
@@ -35,13 +35,6 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 |  | [AppImageDeltaRevisioner(bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerbool-singlethreaded-true-qobject-parent-nullptr) |
 |  | [AppImageDeltaRevisioner(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerconst-qstring-bool-singlethreaded-true-qobject-parent-nullptr) |
 |  | [AppImageDeltaRevisioner(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerqfile-bool-singlethreaded-true-qobject-parent-nullptr) |
-
-## Static Functions
-
-| Return Type  | Name |
-|--------------|---------------------------|
-| **QString** | [errorCodeToString(short)](#qstring-errorcodetostringshort) |
-| **QString** | [statusCodeToString(short)](#qstring-statuscodetostringshort) |
 
 
 ## Slots
@@ -57,7 +50,6 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 | **void** | [getAppImageEmbededInformation(void)](#void-getappimageembededinformationvoid) |
 | **void** | [checkForUpdate(void)](#void-checkforupdatevoid) |
 | **void** | [clear(void)](#void-clearvoid) |
-| **[QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum)** | [getNetworkError(void)](#qnetworkreply-networkerror-https-docqtio-qt-5-qnetworkreplyhtml-networkerror-enum-getnetworkerrorvoid) |
 
 ## Signals
 
@@ -73,32 +65,6 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 | void | [progress(int, qint64, qint64, double, QString)](#void-progressint-percentage-qint64-bytesreceived-qint64-bytestotal-double-speed-qstring-speedunits) |
 | void | [logger(QString, QString)](#void-loggerqstring-qstring) |
 
-
-## Static Functions Documentation
-
-### QString errorCodeToString(short)
-
-Converts the given short integer to a error code string.
-
-```
-using AppImageUpdaterBridge::AppImageDeltaRevisioner;
-
-QString errorCodeAsString = AppImageDeltaRevisioner::errorCodeToString(
-                                    AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR);
-// errorCodeAsString will be "AppImageUpdaterBridge::errorCode(UNKNOWN_NETWORK_ERROR)".
-```
-
-### QString statusCodeToString(short)
-
-Converts the given short integer to a status code string.
-
-```
-using namespace AppImageUpdaterBridge;
-
-QString statusCodeAsString = AppImageDeltaRevisioner::statusCodeToString(
-                                                    AppImageDeltaRevisioner::IDLE);
-// statusCodeAsString will be "AppImageDeltaRevisioner::statusCode(IDLE)".
-```
 
 ## Member Functions Documentation
 
@@ -149,9 +115,6 @@ You can set a **QObject parent** to make use of **Qt's Parent to Children deallo
 Starts the updater.
 Emits **started()** signal when starts.
 
-> Note: When the updater starts , it will emit all signals embededInformation and updateAvailable , 
-which is quite natural , So before calling start , if you do not desire this behaviour , Disconnect your
-respective slots.
 
 > Minor Note: You don't have to worry about anything if you called checkForUpdate or getAppImageEmbededInformation 
 slots before start , Don't worry about overheads too , Since when you call checkForUpdate slot , The information
@@ -187,8 +150,7 @@ if set to true.
 ### void setOutputDirectory(const QString&)
 <p align="right"> <b>[SLOT]</b> </p>
 
-Writes the new version of the AppImage to the given Output directory , Assuming
-the given QString a directory path.
+Writes the new version of the AppImage to the given Output directory , Assuming the given QString a directory path.
 The default is the old version AppImage's directory.
 
 
@@ -254,14 +216,6 @@ AppImage.
 <p align="right"> <b>[SLOT]</b> </p>
 
 Clears all internal **cache**.
-
-
-### [QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum) getNetworkError(void)
-<p align="right"> <b>[SLOT]</b> </p>
-
-Returns the most recent network error as [QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum) value.
-You most probabily will use this when you receive *AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR* error. 
-See [error codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerErrorCodes.html) for more information.
 
 
 ### void started(void)
