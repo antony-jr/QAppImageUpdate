@@ -71,9 +71,6 @@ public:
     explicit AppImageDeltaRevisionerPrivate(QFile *, bool singleThreaded = true, QObject *parent = nullptr);
     ~AppImageDeltaRevisionerPrivate();
 
-    static QString errorCodeToString(short);
-    static QString statusCodeToString(short);
-
 public Q_SLOTS:
     void start(void);
     void cancel(void);
@@ -85,11 +82,8 @@ public Q_SLOTS:
     void checkForUpdate(void);
     void clear(void);
 
-    QNetworkReply::NetworkError getNetworkError(void);
 private Q_SLOTS:
     void doStart(QJsonObject);
-    void handleZsyncRemoteControlFileParserError(short);
-    void handleNetworkError(QNetworkReply::NetworkError);
     void handleIndeterminateProgress(int);
     void handleUpdateCheckInformation(QJsonObject);
 
@@ -104,13 +98,12 @@ Q_SIGNALS:
     void progress(int, qint64, qint64, double, QString);
     void logger(QString, QString);
 private:
-    QAtomicInteger<int> _pRecentNetworkErrorCode = QNetworkReply::NoError;
-    QScopedPointer<AppImageUpdateInformationPrivate> _pUpdateInformation;
-    QScopedPointer<ZsyncRemoteControlFileParserPrivate> _pControlFileParser;
-    QScopedPointer<ZsyncWriterPrivate> _pDeltaWriter;
-    QScopedPointer<ZsyncBlockRangeDownloaderPrivate> _pBlockDownloader;
-    QScopedPointer<QThread> _pSharedThread;
-    QScopedPointer<QNetworkAccessManager> _pSharedNetworkAccessManager;
+    QScopedPointer<AppImageUpdateInformationPrivate> p_UpdateInformation;
+    QScopedPointer<ZsyncRemoteControlFileParserPrivate> p_ControlFileParser;
+    QScopedPointer<ZsyncWriterPrivate> p_DeltaWriter;
+    QScopedPointer<ZsyncBlockRangeDownloaderPrivate> p_BlockDownloader;
+    QScopedPointer<QThread> p_SharedThread;
+    QScopedPointer<QNetworkAccessManager> p_SharedNetworkAccessManager;
 };
 }
 

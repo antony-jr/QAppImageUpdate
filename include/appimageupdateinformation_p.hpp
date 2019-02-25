@@ -56,9 +56,6 @@ class AppImageUpdateInformationPrivate : public QObject
 public:
     AppImageUpdateInformationPrivate(QObject *parent = nullptr);
     ~AppImageUpdateInformationPrivate();
-
-    static QString errorCodeToString(short);
-    static QString statusCodeToString(short);
 public Q_SLOTS:
     void setAppImage(const QString&);
     void setAppImage(QFile *);

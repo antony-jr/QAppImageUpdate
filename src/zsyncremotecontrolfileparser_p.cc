@@ -713,8 +713,33 @@ void ZsyncRemoteControlFileParserPrivate::handleNetworkError(QNetworkReply::Netw
     FATAL_START LOGR " handleNetworkError : " LOGR errorCode LOGR "." FATAL_END;
 
     senderReply->deleteLater();
-    emit networkError(errorCode);
-    emit error(UnknownNetworkError);
+    
+    /* Translate QNetworkReply::NetworkError to Zsync Remote control file error. */
+    short e = 0;
+    if(errorCode > 0 && errorCode < 101){
+        e = ConnectionRefusedError + ((short)errorCode - 1);
+    }else if(errorCode == QNetworkReply::UnknownNetworkError){
+        e = UnknownNetworkError;   
+    }else if(errorCode == QNetworkReply::UnknownProxyError){
+        e = UnknownProxyError;
+    }else if(errorCode >= 101 && errorCode < 201){
+        e = ProxyConnectionRefusedError + ((short)errorCode - 101);
+    }else if(errorCode == QNetworkReply::ProtocolUnknownError){
+        e = ProtocolUnknownError;
+    }else if(errorCode == QNetworkReply::ProtocolInvalidOperationError){
+        e = ProtocolInvalidOperationError;
+    }else if(errorCode == QNetworkReply::UnknownContentError){
+        e = UnknownContentError;
+    }else if(errorCode == QNetworkReply::ProtocolFailure){
+        e = ProtocolFailure;
+    }else if(errorCode >= 201 && errorCode < 401){
+        e = ContentAccessDenied + ((short)errorCode - 201);
+    }else if(errorCode >= 401 && errorCode <= 403){
+        e = InternalServerError + ((short)errorCode - 401);
+    }else{
+        e = UnknownServerError
+    }
+    emit error(e);
     return;
 }
 

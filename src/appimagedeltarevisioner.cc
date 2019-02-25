@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : AppImageDeltaRevisioner.cc
+ * @filename    : appimagedeltarevisioner.cc
  * @description : This where the delta revisioner is implemented.
  * Delta Revisioner is the public API to manage the entire revision
  * of a AppImage. From retrival of the embeded information from the
@@ -52,7 +52,7 @@ static QMetaMethod getMethod(AppImageDeltaRevisionerPrivate *object, const char 
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(bool singleThreaded, QObject *parent)
     : QObject(parent)
 {
-    _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(singleThreaded, this);
+    p_DeltaRevisioner = new AppImageDeltaRevisionerPrivate(singleThreaded, this);
     connectSignals();
     return;
 }
@@ -60,7 +60,7 @@ AppImageDeltaRevisioner::AppImageDeltaRevisioner(bool singleThreaded, QObject *p
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(const QString &AppImagePath, bool singleThreaded, QObject *parent)
     : QObject(parent)
 {
-    _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImagePath, singleThreaded, this);
+    p_DeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImagePath, singleThreaded, this);
     connectSignals();
     return;
 }
@@ -68,108 +68,93 @@ AppImageDeltaRevisioner::AppImageDeltaRevisioner(const QString &AppImagePath, bo
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(QFile *AppImage, bool singleThreaded, QObject *parent)
     : QObject(parent)
 {
-    _pDeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImage, singleThreaded, this);
+    p_DeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImage, singleThreaded, this);
     connectSignals();
     return;
 }
 
 AppImageDeltaRevisioner::~AppImageDeltaRevisioner()
 {
-    _pDeltaRevisioner->deleteLater();
+    p_DeltaRevisioner->deleteLater();
     return;
 }
 
 void AppImageDeltaRevisioner::start(void)
 {
-    getMethod(_pDeltaRevisioner , "start(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
+    getMethod(p_DeltaRevisioner , "start(void)").invoke(p_DeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 
 void AppImageDeltaRevisioner::cancel(void)
 {
-    getMethod(_pDeltaRevisioner , "cancel(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
+    getMethod(p_DeltaRevisioner , "cancel(void)").invoke(p_DeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 
 void AppImageDeltaRevisioner::setAppImage(const QString &AppImagePath)
 {
-    getMethod(_pDeltaRevisioner , "setAppImage(const QString&)")
-	    .invoke(_pDeltaRevisioner , Qt::QueuedConnection , Q_ARG(QString , AppImagePath)); 
+    getMethod(p_DeltaRevisioner , "setAppImage(const QString&)")
+	    .invoke(p_DeltaRevisioner , Qt::QueuedConnection , Q_ARG(QString , AppImagePath)); 
     return;
 }
 
 void AppImageDeltaRevisioner::setAppImage(QFile *AppImage)
 {
-    getMethod(_pDeltaRevisioner , "setAppImage(QFile*)")
-	    .invoke(_pDeltaRevisioner , Qt::QueuedConnection , Q_ARG(QFile* , AppImage)); 
+    getMethod(p_DeltaRevisioner , "setAppImage(QFile*)")
+	    .invoke(p_DeltaRevisioner , Qt::QueuedConnection , Q_ARG(QFile* , AppImage)); 
     return;
 }
 
 void AppImageDeltaRevisioner::setShowLog(bool choice)
 {
-    getMethod(_pDeltaRevisioner , "setShowLog(bool)")
-	    .invoke(_pDeltaRevisioner , Qt::QueuedConnection , Q_ARG(bool , choice)); 
+    getMethod(p_DeltaRevisioner , "setShowLog(bool)")
+	    .invoke(p_DeltaRevisioner , Qt::QueuedConnection , Q_ARG(bool , choice)); 
     return;
 }
 
 void AppImageDeltaRevisioner::setOutputDirectory(const QString &dir)
 {
-    getMethod(_pDeltaRevisioner , "setOutputDirectory(const QString&)")
-	    .invoke(_pDeltaRevisioner , Qt::QueuedConnection , Q_ARG(QString, dir)); 
+    getMethod(p_DeltaRevisioner , "setOutputDirectory(const QString&)")
+	    .invoke(p_DeltaRevisioner , Qt::QueuedConnection , Q_ARG(QString, dir)); 
     return;
 }
 
 void AppImageDeltaRevisioner::getAppImageEmbededInformation(void)
 {
-    getMethod(_pDeltaRevisioner , "getAppImageEmbededInformation(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
+    getMethod(p_DeltaRevisioner , "getAppImageEmbededInformation(void)").invoke(p_DeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 
 void AppImageDeltaRevisioner::clear(void)
 {
-    getMethod(_pDeltaRevisioner , "clear(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
+    getMethod(p_DeltaRevisioner , "clear(void)").invoke(p_DeltaRevisioner , Qt::QueuedConnection); 
     return;
 }
 
 void AppImageDeltaRevisioner::checkForUpdate(void)
 {
-    getMethod(_pDeltaRevisioner , "checkForUpdate(void)").invoke(_pDeltaRevisioner , Qt::QueuedConnection); 
+    getMethod(p_DeltaRevisioner , "checkForUpdate(void)").invoke(p_DeltaRevisioner , Qt::QueuedConnection); 
     return;
-}
-
-QNetworkReply::NetworkError AppImageDeltaRevisioner::getNetworkError(void)
-{
-    return _pDeltaRevisioner->getNetworkError();
 }
 
 void AppImageDeltaRevisioner::connectSignals()
 {
-    connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::started,
+    connect(p_DeltaRevisioner , &AppImageDeltaRevisionerPrivate::started,
             this, &AppImageDeltaRevisioner::started , Qt::DirectConnection);
-    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::canceled,
+    connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::canceled,
             this, &AppImageDeltaRevisioner::canceled, Qt::DirectConnection);
-    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::finished,
+    connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::finished,
             this, &AppImageDeltaRevisioner::finished, Qt::DirectConnection);
-    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::embededInformation,
+    connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::embededInformation,
             this, &AppImageDeltaRevisioner::embededInformation, Qt::DirectConnection);
-    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::updateAvailable,
+    connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::updateAvailable,
             this, &AppImageDeltaRevisioner::updateAvailable, Qt::DirectConnection);
-    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::statusChanged,
+    connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::statusChanged,
             this, &AppImageDeltaRevisioner::statusChanged, Qt::DirectConnection);
-    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::error,
+    connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::error,
             this, &AppImageDeltaRevisioner::error, Qt::DirectConnection);
-    connect(_pDeltaRevisioner, &AppImageDeltaRevisionerPrivate::progress,
+    connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::progress,
             this, &AppImageDeltaRevisioner::progress , Qt::DirectConnection);
-    connect(_pDeltaRevisioner , &AppImageDeltaRevisionerPrivate::logger,
+    connect(p_DeltaRevisioner , &AppImageDeltaRevisionerPrivate::logger,
             this, &AppImageDeltaRevisioner::logger, Qt::DirectConnection);
-}
-
-QString AppImageDeltaRevisioner::errorCodeToString(short code)
-{
-    return AppImageDeltaRevisionerPrivate::errorCodeToString(code);
-}
-
-QString AppImageDeltaRevisioner::statusCodeToString(short code)
-{
-    return AppImageDeltaRevisionerPrivate::statusCodeToString(code);
 }

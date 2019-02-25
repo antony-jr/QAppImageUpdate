@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,9 +58,6 @@ public:
     explicit AppImageDeltaRevisioner(QFile *, bool singleThreaded = true, QObject *parent = nullptr);
     ~AppImageDeltaRevisioner();
 
-    static QString errorCodeToString(short);
-    static QString statusCodeToString(short);
-
 public Q_SLOTS:
     void start(void);
     void cancel(void);
@@ -71,8 +68,6 @@ public Q_SLOTS:
     void getAppImageEmbededInformation(void);
     void checkForUpdate(void);
     void clear(void);
-
-    QNetworkReply::NetworkError getNetworkError(void);
 Q_SIGNALS:
     void started(void);
     void canceled(void);
@@ -86,7 +81,7 @@ Q_SIGNALS:
 
 private:
     void connectSignals();
-    AppImageDeltaRevisionerPrivate *_pDeltaRevisioner = nullptr;
+    AppImageDeltaRevisionerPrivate *p_DeltaRevisioner = nullptr;
 };
 }
 

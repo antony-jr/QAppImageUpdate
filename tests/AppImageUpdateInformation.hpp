@@ -35,8 +35,7 @@ private slots:
             AIUpdateInformation.getInfo();
 
             /*  Must emit exactly one signal. */
-            QCOMPARE(spyInfo.count(), 1);
-
+            QVERIFY(spyInfo.count() || spyInfo.wait());
         }
         return;
     }
@@ -50,7 +49,7 @@ private slots:
         QSignalSpy spyInfo(&AIUpdateInformation, SIGNAL(info(QJsonObject)));
         AIUpdateInformation.getInfo();
 
-        QCOMPARE(spyInfo.count(), 1);
+	QVERIFY(spyInfo.count() || spyInfo.wait());
 
         /* Get resultant QJsonObject and Compare. */
         auto result = spyInfo.takeFirst().at(0).toJsonObject();
@@ -79,7 +78,8 @@ private slots:
         AppImageUpdateInformationPrivate AIUpdateInformation;
         QSignalSpy spyInfo(&AIUpdateInformation, SIGNAL(error(short)));
         AIUpdateInformation.getInfo();
-        QCOMPARE(spyInfo.count(), 1);
+        
+	QVERIFY(spyInfo.count() || spyInfo.wait());
         return;
     }
 

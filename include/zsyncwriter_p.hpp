@@ -63,9 +63,6 @@ class ZsyncWriterPrivate : public QObject
 public:
     ZsyncWriterPrivate();
     ~ZsyncWriterPrivate();
-
-    static QString errorCodeToString(short);
-    static QString statusCodeToString(short);
 public Q_SLOTS:
     void setShowLog(bool);
     void setLoggerName(const QString&);

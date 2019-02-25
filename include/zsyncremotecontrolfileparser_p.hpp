@@ -61,11 +61,8 @@ class ZsyncRemoteControlFileParserPrivate : public QObject
 {
     Q_OBJECT
 public:
-    explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
+    ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
     ~ZsyncRemoteControlFileParserPrivate();
-
-    static QString errorCodeToString(short);
-    static QString statusCodeToString(short);
 public Q_SLOTS:
     void clear(void);
     void setControlFileUrl(const QUrl&);
@@ -95,7 +92,6 @@ Q_SIGNALS:
     void receiveControlFile(void);
     void progress(int);
     void error(short);
-    void networkError(QNetworkReply::NetworkError);
     void statusChanged(short);
     void logger(QString, QString);
 private:
