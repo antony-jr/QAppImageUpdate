@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : ZsyncRemoteControlFileParser_p.hpp
- * @description : This is where the zsync control file parser in described.
+ * @filename    : zsyncremotecontrolfileparser_p.hpp
+ * @description : This is where the ZsyncRemoteControlFileParserPrivate in described.
+ * This class is responsible to parse the remote zsync control file from the given 
+ * embeded appimage information.
 */
 #ifndef ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
 #define ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED

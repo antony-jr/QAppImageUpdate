@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : AppImageUpdateInformation_p.hpp
+ * @filename    : appimageupdateinformation_p.cc
  * @description : This is where the extraction of embeded update information
  * from AppImages is implemented.
 */
@@ -875,105 +875,3 @@ void AppImageUpdateInformationPrivate::handleLogMessage(QString msg, QString pat
     return;
 }
 #endif // LOGGING_DISABLED
-
-/*
- * This static method returns a QString with respect to error codes ,Useful when logging and debuging.
- *
- * Example:
- * 	qDebug()
- * 	<< AppImageUpdateInformationPrivate::errorCodeToString(AppImageUpdateInformationPrivate::AppImageNotFound);
-*/
-QString AppImageUpdateInformationPrivate::errorCodeToString(short errorCode)
-{
-    QString ret = "AppImageUpdaterBridge::errorCode(";
-    switch(errorCode) {
-    case AppimageNotReadable:
-        ret += "AppImageNotReadable";
-        break;
-    case NoReadPermission:
-        ret += "NoReadPermission";
-        break;
-    case AppimageNotFound:
-        ret += "AppimageNotFound";
-        break;
-    case CannotOpenAppimage:
-        ret += "CannnotOpenAppimage";
-        break;
-    case EmptyUpdateInformation:
-        ret += "EmptyUpdateInformation";
-        break;
-    case InvalidAppimageType:
-        ret += "InvalidAppimageType";
-        break;
-    case InvalidMagicBytes:
-        ret += "InvalidMagicBytes";
-        break;
-    case InvalidUpdateInformation:
-        ret += "InvalidUpdateInformation";
-        break;
-    case NotEnoughMemory:
-        ret += "NotEnoughMemory";
-        break;
-    case SectionHeaderNotFound:
-        ret += "SectionHeaderNotFound";
-        break;
-    case UnsupportedElfFormat:
-        ret += "UnsupportedElfFormat";
-        break;
-    case UnsupportedTransport:
-        ret += "UnsupportedTransport";
-        break;
-    default:
-        ret += "Unknown";
-        break;
-    }
-    ret += ")";
-    return ret;
-}
-
-QString AppImageUpdateInformationPrivate::statusCodeToString(short code)
-{
-    QString ret = "AppImageUpdaterBridge::statusCode(";
-    switch(code) {
-    case Initializing:
-        ret += "Initializing";
-        break;
-    case Idle:
-        ret += "Idle";
-        break;
-    case OpeningAppimage:
-        ret += "OpeningAppimage";
-        break;
-    case CalculatingAppimageSha1Hash:
-        ret += "CalculatingAppimageSha1Hash";
-        break;
-    case ReadingAppimageMagicBytes:
-        ret += "ReadingAppimageMagicBytes";
-        break;
-    case FindingAppimageType:
-        ret += "FindingAppimageType";
-        break;
-    case FindingAppimageArchitecture:
-        ret += "FindingAppimageArchitecture";
-        break;
-    case MappingAppimageToMemory:
-        ret += "MappingAppimageToMemory";
-        break;
-    case ReadingAppimageUpdateInformation:
-        ret += "ReadingAppimageUpdateInformation";
-        break;
-    case SearchingForUpdateInformationSectionHeader:
-        ret += "SearchingForUpdateInformationSectionHeader";
-        break;
-    case UnmappingAppimageFromMemory:
-        ret += "UnmappingAppimageFromMemory";
-        break;
-    case FinalizingAppimageEmbededUpdateInformation:
-        ret += "FinalizingAppimageEmbededUpdateInformation";
-        break;
-    default:
-        ret += "Unknown";
-    }
-    ret += ")";
-    return ret;
-}

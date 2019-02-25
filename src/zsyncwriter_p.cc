@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1381,77 +1381,4 @@ void ZsyncWriterPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *
     auto result = p_Md4Ctx->result();
     memmove(c, result.constData(), sizeof(const char) * result.size());
     return;
-}
-
-QString ZsyncWriterPrivate::errorCodeToString(short errorCode)
-{
-    QString ret = "AppImageUpdaterBridge::errorCode(";
-    switch (errorCode) {
-    case HashTableNotAllocated:
-        ret += "HashTableNotAllocated)";
-        break;
-    case InvalidTargetFileChecksumBlocks:
-        ret += "InvalidTargetFileChecksumBlocks)";
-        break;
-    case CannotConstructHashTable:
-        ret += "CannotConstructHashTable)";
-        break;
-    case CannotOpenTargetFileChecksumBlocks:
-        ret += "CannotOpenTargetFileChecksumBlocks)";
-        break;
-    case QbufferIoReadError:
-        ret += "QbufferIoReadError)";
-        break;
-    case SourceFileNotFound:
-        ret += "SourceFileNotFound)";
-        break;
-    case NoPermissionToReadSourceFile:
-        ret += "NoPermissionToReadSourceFile)";
-        break;
-    case CannotOpenSourceFile:
-        ret += "CannotOpenSourceFile)";
-        break;
-    case NoPermissionToReadWriteTargetFile:
-        ret += "NoPermissionToReadWriteTargetFile)";
-        break;
-    case CannotOpenTargetFile:
-        ret += "CannotOpenTargetFile)";
-        break;
-    case TargetFileSha1HashMismatch:
-        ret += "TargetFileSha1HashMismatch)";
-        break;
-    default:
-        ret += "Unknown)";
-        break;
-    }
-    return ret;
-}
-
-QString ZsyncWriterPrivate::statusCodeToString(short statusCode)
-{
-    QString ret = "AppImageUpdaterBridge::statusCode(";
-    switch (statusCode) {
-    case WrittingDownloadedBlockRanges:
-        ret += "WrittingDownloadedBlockRanges)";
-        break;
-    case EmittingRequiredBlockRanges:
-        ret += "EmittingRequiredBlockRanges)";
-        break;
-    case CheckingChecksumsForDownloadedBlockRanges:
-        ret += "CheckingChecksumsForDownloadedBlockRanges)";
-        break;
-    case WrittingDownloadedBlockRangesToTargetFile:
-        ret += "WrittingDownloadedBlockRangesToTargetFile)";
-        break;
-    case CalculatingTargetFileSha1Hash:
-        ret += "CalculatingTargetFileSha1Hash)";
-        break;
-    case ConstructingTargetFile:
-        ret += "ConstructingTargetFile)";
-        break;
-    default:
-        ret += "Unknown)";
-        break;
-    }
-    return ret;
 }

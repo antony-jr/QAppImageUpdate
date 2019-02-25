@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : ZsyncWriter_p.hpp
+ * @filename    : zsyncwriter_p.hpp
  * @description : This is where the core of the delta writer is described.
 */
 #ifndef ZSYNC_WRITER_PRIVATE_HPP_INCLUDED

@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : ZsyncRemoteControlFileParser_p.cc
+ * @filename    : zsyncremotecontrolfileparser_p.cc
  * @description : This is where the zsync control file parser in written.
  * The Zsync Control File Parser is responsible to parse the remote
  * zsync control file and produce us with a more sensible data to work with.
@@ -766,109 +766,3 @@ void ZsyncRemoteControlFileParserPrivate::handleLogMessage(QString message, QStr
     return;
 }
 #endif // LOGGING_DISABLED
-
-QString ZsyncRemoteControlFileParserPrivate::errorCodeToString(short errorCode)
-{
-    QString errorCodeString = "AppImageUpdaterBridge::errorCode(";
-    switch(errorCode) {
-    case UnknownNetworkError:
-        errorCodeString.append("UnknownNetworkError");
-        break;
-    case IoReadError:
-        errorCodeString.append("IoReadError");
-        break;
-    case ErrorResponseCode:
-        errorCodeString.append("ErrorResponseCode");
-        break;
-    case GithubApiRateLimitReached:
-        errorCodeString.append("GithubApiRateLimitReached");
-        break;
-    case NoMarkerFoundInControlFile:
-        errorCodeString.append("NoMarkerFoundInControlFile");
-        break;
-    case InvalidZsyncHeadersNumber:
-        errorCodeString.append("InvalidZsyncHeadersNumber");
-        break;
-    case InvalidZsyncMakeVersion:
-        errorCodeString.append("InvalidZsyncMakeVersion");
-        break;
-    case InvalidZsyncTargetFilename:
-        errorCodeString.append("InvalidZsyncTargetFilename");
-        break;
-    case InvalidZsyncMtime:
-        errorCodeString.append("InvalidZsyncMtime");
-        break;
-    case InvalidZsyncBlocksize:
-        errorCodeString.append("InvalidZsyncBlocksize");
-        break;
-    case InvalidTargetFileLength:
-        errorCodeString.append("InvalidTargetFileLength");
-        break;
-    case InvalidHashLengthLine:
-        errorCodeString.append("InvalidHashLengthLine");
-        break;
-    case InvalidHashLengths:
-        errorCodeString.append("InvalidHashLengths");
-        break;
-    case InvalidTargetFileUrl:
-        errorCodeString.append("InvalidTargetFileUrl");
-        break;
-    case InvalidTargetFileSha1:
-        errorCodeString.append("InvalidTargetFileSha1");
-        break;
-    default:
-        errorCodeString.append("UnknownErrorCode");
-        break;
-    }
-
-    errorCodeString.append(")");
-    return errorCodeString;
-}
-
-QString ZsyncRemoteControlFileParserPrivate::statusCodeToString(short code)
-{
-    QString statusCodeString = "AppImageUpdaterBridge::statusCode(";
-    switch(code) {
-    case Initializing:
-        statusCodeString.append("Initializing");
-        break;
-    case Idle:
-        statusCodeString.append("Idle");
-        break;
-    case ParsingAppimageEmbededUpdateInformation:
-        statusCodeString.append("ParsingAppimageEmbededUpdateInformation");
-        break;
-    case RequestingGithubApi:
-        statusCodeString.append("RequestingGithubApi");
-        break;
-    case ParsingGithubApiResponse:
-        statusCodeString.append("ParsingGithubApiResponse");
-        break;
-    case RequestingZsyncControlFile:
-        statusCodeString.append("RequestingZsyncControlFile");
-        break;
-    case RequestingBintray:
-        statusCodeString.append("RequestingBintray");
-        break;
-    case ParsingBintrayRedirectedUrlForLatestPackageUrl:
-        statusCodeString.append("ParsingBintrayRedirectedUrlForLatestPackageUrl");
-        break;
-    case ParsingZsyncControlFile:
-        statusCodeString.append("ParsingZsyncControlFile");
-        break;
-    case SearchingTargetFileChecksumBlockOffsetInZsyncControlFile:
-        statusCodeString.append("SearchingTargetFileChecksumBlockOffsetInZsyncControlFile");
-        break;
-    case StoringZsyncControlFileDataToMemory:
-        statusCodeString.append("StoringZsyncControlFileDataToMemory");
-        break;
-    case FinalizingParsingZsyncControlFile:
-        statusCodeString.append("FinalizingParsingZsyncControlFile");
-        break;
-    default:
-        statusCodeString.append("Unknown");
-        break;
-    }
-    statusCodeString.append(")");
-    return statusCodeString;
-}

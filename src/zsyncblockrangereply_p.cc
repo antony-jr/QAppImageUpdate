@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : ZsyncBlockRangeReply_p.cc
+ * @filename    : zsyncblockrangereply_p.cc
  * @description : The is where ZsyncBlockRangeReplyPrivate is implemented.
  * This private class is responsible to handle a single QNetworkReply.
  * Since each QNetworkReply works parallel , This private class provides a
