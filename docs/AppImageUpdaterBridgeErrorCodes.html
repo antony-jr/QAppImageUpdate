@@ -1,58 +1,137 @@
-<html><head><meta charset="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1"/><title>Handling Errors from AppImageUpdaterBridge · AppImage Updater Bridge</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta property="og:title" content="Handling Errors from AppImageUpdaterBridge · AppImage Updater Bridge"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/AppImageUpdaterBridge/index.html"/><meta property="og:description" content="Using ```AppImageUpdaterBridge::AppImageDeltaRevisioner::errorCodeToString(code)``` you can get the error code name as "/><link rel="shortcut icon" href="/AppImageUpdaterBridge/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><link rel="stylesheet" href="/AppImageUpdaterBridge/css/main.css"/></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/AppImageUpdaterBridge/"><img class="logo" src="/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png"/><h2 class="headerTitle">AppImage Updater Bridge</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li><a href="/AppImageUpdaterBridge/docs/Installation.html" target="_self">Docs</a></li><li><a href="/AppImageUpdaterBridge/en/help.html" target="_self">Help</a></li><li><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><i></i></div><h2><i>›</i><span>API</span></h2></div><div class="navGroups"><div class="navGroup navGroupActive"><h3>Getting Started</h3><ul><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/Installation.html">Installation</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AddingAppImageUpdaterBridge.html">Add AppImage Updater Bridge to your Project.</a></li></ul></div><div class="navGroup navGroupActive"><h3>Guides</h3><ul><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerExample.html">AppImageDeltaRevisioner Simple Update Example</a></li></ul></div><div class="navGroup navGroupActive"><h3>API</h3><ul><li class="navListItem navListItemActive"><a class="navItem navItemActive" href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html">Error Codes</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeStatusCodes.html">Status Codes</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/ClassAppImageDeltaRevisioner.html">Class AppImageDeltaRevisioner</a></li></ul></div></div></section></div><script>
-          var toggler = document.getElementById('navToggler');
-          var nav = document.getElementById('docsNav');
-          toggler.onclick = function() {
-            nav.classList.toggle('docsSliderActive');
-          };
-        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1>Handling Errors from AppImageUpdaterBridge</h1></header><article><div><span><p>Using <code>AppImageUpdaterBridge::AppImageDeltaRevisioner::errorCodeToString(code)</code> you can get the error code name as
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Handling Errors from AppImageUpdaterBridge · AppImage Updater Bridge</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;p&gt;Using static function &lt;code&gt;AppImageUpdaterBridge::errorCodeToString(short)&lt;/code&gt; you can get the error code name as&lt;/p&gt;
+"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Handling Errors from AppImageUpdaterBridge · AppImage Updater Bridge"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/AppImageUpdaterBridge/index.html"/><meta property="og:description" content="&lt;p&gt;Using static function &lt;code&gt;AppImageUpdaterBridge::errorCodeToString(short)&lt;/code&gt; you can get the error code name as&lt;/p&gt;
+"/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/AppImageUpdaterBridge/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><link rel="stylesheet" href="/AppImageUpdaterBridge/css/main.css"/><script src="/AppImageUpdaterBridge/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/AppImageUpdaterBridge/"><img class="logo" src="/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png" alt="AppImage Updater Bridge"/><h2 class="headerTitleWithLogo">AppImage Updater Bridge</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/AppImageUpdaterBridge/docs/Installation.html" target="_self">Docs</a></li><li class=""><a href="/AppImageUpdaterBridge/help.html" target="_self">Help</a></li><li class=""><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><i></i></div><h2><i>›</i><span>API</span></h2></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/Installation.html">Installation</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AddingAppImageUpdaterBridge.html">Add AppImage Updater Bridge to your Project.</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Guides</h3><ul class=""><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerExample.html">Updating an AppImage</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AppImageUpdaterDialogExample.html">Updating an AppImage with GUI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">API</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html">Error Codes</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeStatusCodes.html">Status Codes</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/ClassAppImageDeltaRevisioner.html">Class AppImageDeltaRevisioner</a></li><li class="navListItem"><a class="navItem" href="/AppImageUpdaterBridge/docs/ClassAppImageUpdaterDialog.html">Class AppImageUpdaterDialog</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              const headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                  document.body.classList.remove('tocActive');
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 class="postHeaderTitle">Handling Errors from AppImageUpdaterBridge</h1></header><article><div><span><p>Using static function <code>AppImageUpdaterBridge::errorCodeToString(short)</code> you can get the error code name as
 a QString , The below table tabulates all error codes with respect to their error name.</p>
-<p>Error code such as <code>AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR</code> can be further investigated to get the actual
-error , In this case you can call <code>AppImageUpdaterBridge::AppImageDeltaRevisioner::getNetworkError();</code> to get the recent network error code
-which is of type <a href="https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum">QNetworkReply::NetworkError</a>.</p>
+<blockquote>
+<p>Note: All are under the AppImageUpdaterBridge namespace so make sure to include it.</p>
+</blockquote>
 <table>
 <thead>
 <tr><th>Error Code</th><th>Value</th></tr>
 </thead>
 <tbody>
-<tr><td>AppImageUpdaterBridge::NO_ERROR</td><td>0</td></tr>
-<tr><td>AppImageUpdaterBridge::APPIMAGE_NOT_READABLE</td><td>1</td></tr>
-<tr><td>AppImageUpdaterBridge::NO_READ_PERMISSION</td><td>2</td></tr>
-<tr><td>AppImageUpdaterBridge::APPIMAGE_NOT_FOUND</td><td>3</td></tr>
-<tr><td>AppImageUpdaterBridge::CANNOT_OPEN_APPIMAGE</td><td>4</td></tr>
-<tr><td>AppImageUpdaterBridge::EMPTY_UPDATE_INFORMATION</td><td>5</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_APPIMAGE_TYPE</td><td>6</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_MAGIC_BYTES</td><td>7</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_UPDATE_INFORMATION</td><td>8</td></tr>
-<tr><td>AppImageUpdaterBridge::NOT_ENOUGH_MEMORY</td><td>9</td></tr>
-<tr><td>AppImageUpdaterBridge::SECTION_HEADER_NOT_FOUND</td><td>10</td></tr>
-<tr><td>AppImageUpdaterBridge::UNSUPPORTED_ELF_FORMAT</td><td>11</td></tr>
-<tr><td>AppImageUpdaterBridge::UNSUPPORTED_TRANSPORT</td><td>12</td></tr>
-<tr><td>AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR</td><td>50</td></tr>
-<tr><td>AppImageUpdaterBridge::IO_READ_ERROR</td><td>51</td></tr>
-<tr><td>AppImageUpdaterBridge::ERROR_RESPONSE_CODE</td><td>52</td></tr>
-<tr><td>AppImageUpdaterBridge::GITHUB_API_RATE_LIMIT_REACHED</td><td>53</td></tr>
-<tr><td>AppImageUpdaterBridge::NO_MARKER_FOUND_IN_CONTROL_FILE</td><td>54</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_ZSYNC_HEADERS_NUMBER</td><td>55</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_ZSYNC_MAKE_VERSION</td><td>56</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_ZSYNC_TARGET_FILENAME</td><td>57</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_ZSYNC_MTIME</td><td>58</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_ZSYNC_BLOCKSIZE</td><td>59</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_TARGET_FILE_LENGTH</td><td>60</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_HASH_LENGTH_LINE</td><td>61</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_HASH_LENGTHS</td><td>62</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_TARGET_FILE_URL</td><td>63</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_TARGET_FILE_SHA1</td><td>64</td></tr>
-<tr><td>AppImageUpdaterBridge::HASH_TABLE_NOT_ALLOCATED</td><td>100</td></tr>
-<tr><td>AppImageUpdaterBridge::INVALID_TARGET_FILE_CHECKSUM_BLOCKS</td><td>101</td></tr>
-<tr><td>AppImageUpdaterBridge::CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS</td><td>102</td></tr>
-<tr><td>AppImageUpdaterBridge::CANNOT_CONSTRUCT_HASH_TABLE</td><td>103</td></tr>
-<tr><td>AppImageUpdaterBridge::QBUFFER_IO_READ_ERROR</td><td>104</td></tr>
-<tr><td>AppImageUpdaterBridge::SOURCE_FILE_NOT_FOUND</td><td>105</td></tr>
-<tr><td>AppImageUpdaterBridge::NO_PERMISSION_TO_READ_SOURCE_FILE</td><td>106</td></tr>
-<tr><td>AppImageUpdaterBridge::CANNOT_OPEN_SOURCE_FILE</td><td>107</td></tr>
-<tr><td>AppImageUpdaterBridge::NO_PERMISSION_TO_READ_WRITE_TARGET_FILE</td><td>108</td></tr>
-<tr><td>AppImageUpdaterBridge::CANNOT_OPEN_TARGET_FILE</td><td>109</td></tr>
-<tr><td>AppImageUpdaterBridge::TARGET_FILE_SHA1_HASH_MISMATCH</td><td>110</td></tr>
+<tr><td>NoError</td><td>0</td></tr>
+<tr><td>NoAppimagePathGiven</td><td>1</td></tr>
+<tr><td>AppimageNotReadable</td><td>2</td></tr>
+<tr><td>NoReadPermission</td><td>3</td></tr>
+<tr><td>AppimageNotFound</td><td>4</td></tr>
+<tr><td>CannotOpenAppimage</td><td>5</td></tr>
+<tr><td>EmptyUpdateInformation</td><td>6</td></tr>
+<tr><td>InvalidAppimageType</td><td>7</td></tr>
+<tr><td>InvalidMagicBytes</td><td>8</td></tr>
+<tr><td>InvalidUpdateInformation</td><td>9</td></tr>
+<tr><td>NotEnoughMemory</td><td>10</td></tr>
+<tr><td>SectionHeaderNotFound</td><td>11</td></tr>
+<tr><td>UnsupportedElfFormat</td><td>12</td></tr>
+<tr><td>UnsupportedTransport</td><td>13</td></tr>
+<tr><td>IoReadError</td><td>50</td></tr>
+<tr><td>ErrorResponseCode</td><td>51</td></tr>
+<tr><td>GithubApiRateLimitReached</td><td>52</td></tr>
+<tr><td>NoMarkerFoundInControlFile</td><td>53</td></tr>
+<tr><td>InvalidZsyncHeadersNumber</td><td>54</td></tr>
+<tr><td>InvalidZsyncMakeVersion</td><td>55</td></tr>
+<tr><td>InvalidZsyncTargetFilename</td><td>56</td></tr>
+<tr><td>InvalidZsyncMtime</td><td>57</td></tr>
+<tr><td>InvalidZsyncBlocksize</td><td>58</td></tr>
+<tr><td>InvalidTargetFileLength</td><td>59</td></tr>
+<tr><td>InvalidHashLengthLine</td><td>60</td></tr>
+<tr><td>InvalidHashLengths</td><td>61</td></tr>
+<tr><td>InvalidTargetFileUrl</td><td>62</td></tr>
+<tr><td>InvalidTargetFileSha1</td><td>63</td></tr>
+<tr><td>ConnectionRefusedError</td><td>64</td></tr>
+<tr><td>RemoteHostClosedError</td><td>65</td></tr>
+<tr><td>HostNotFoundError</td><td>66</td></tr>
+<tr><td>TimeoutError</td><td>67</td></tr>
+<tr><td>OperationCanceledError</td><td>68</td></tr>
+<tr><td>SslHandshakeFailedError</td><td>69</td></tr>
+<tr><td>TemporaryNetworkFailureError</td><td>70</td></tr>
+<tr><td>NetworkSessionFailedError</td><td>71</td></tr>
+<tr><td>BackgroundRequestNotAllowedError</td><td>72</td></tr>
+<tr><td>TooManyRedirectsError</td><td>73</td></tr>
+<tr><td>InsecureRedirectError</td><td>74</td></tr>
+<tr><td>ProxyConnectionRefusedError</td><td>75</td></tr>
+<tr><td>ProxyConnectionClosedError</td><td>76</td></tr>
+<tr><td>ProxyNotFoundError</td><td>77</td></tr>
+<tr><td>ProxyTimeoutError</td><td>78</td></tr>
+<tr><td>ProxyAuthenticationRequiredError</td><td>79</td></tr>
+<tr><td>ContentAccessDenied</td><td>80</td></tr>
+<tr><td>ContentOperationNotPermittedError</td><td>81</td></tr>
+<tr><td>ContentNotFoundError</td><td>82</td></tr>
+<tr><td>AuthenticationRequiredError</td><td>83</td></tr>
+<tr><td>ContentReSendError</td><td>84</td></tr>
+<tr><td>ContentConflictError</td><td>85</td></tr>
+<tr><td>ContentGoneError</td><td>86</td></tr>
+<tr><td>InternalServerError</td><td>87</td></tr>
+<tr><td>OperationNotImplementedError</td><td>88</td></tr>
+<tr><td>ServiceUnavailableError</td><td>89</td></tr>
+<tr><td>ProtocolUnknownError</td><td>90</td></tr>
+<tr><td>ProtocolInvalidOperationError</td><td>91</td></tr>
+<tr><td>UnknownNetworkError</td><td>92</td></tr>
+<tr><td>UnknownProxyError</td><td>93</td></tr>
+<tr><td>UnknownContentError</td><td>94</td></tr>
+<tr><td>ProtocolFailure</td><td>95</td></tr>
+<tr><td>UnknownServerError</td><td>96</td></tr>
+<tr><td>HashTableNotAllocated</td><td>100</td></tr>
+<tr><td>InvalidTargetFileChecksumBlocks</td><td>101</td></tr>
+<tr><td>CannotOpenTargetFileChecksumBlocks</td><td>102</td></tr>
+<tr><td>CannotConstructHashTable</td><td>103</td></tr>
+<tr><td>QbufferIoReadError</td><td>104</td></tr>
+<tr><td>SourceFileNotFound</td><td>105</td></tr>
+<tr><td>NoPermissionToReadSourceFile</td><td>106</td></tr>
+<tr><td>CannotOpenSourceFile</td><td>107</td></tr>
+<tr><td>NoPermissionToReadWriteTargetFile</td><td>108</td></tr>
+<tr><td>CannotOpenTargetFile</td><td>109</td></tr>
+<tr><td>TargetFileSha1HashMismatch</td><td>110</td></tr>
 </tbody>
 </table>
-</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="AppImageDeltaRevisionerExample.html">← AppImageDeltaRevisioner Simple Update Example.</a><a class="docs-next button" href="AppImageUpdaterBridgeStatusCodes.html">Handling Status from AppImageUpdaterBridge →</a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/AppImageUpdaterBridge/" class="nav-home"><img src="/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png" alt="AppImage Updater Bridge" width="66" height="58"/></a><div><h5>Docs</h5><a href="/AppImageUpdaterBridge/docs/Installation.html">Getting Started</a><a href="/AppImageUpdaterBridge/docs/UpdatingFromAppImageInformation.html">Guides</a><a href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html">API Reference</a></div><div><h5>Community</h5><a href="/AppImageUpdaterBridge/en/users.html">User Showcase</a><a href="http://stackoverflow.com/questions/tagged/AppImage/" target="_blank">Stack Overflow</a><a href="https://discordapp.com/">Project Chat</a><a href="https://twitter.com/antonyjr0" target="_blank">Twitter</a></div><div><h5>More</h5><a href="/AppImageUpdaterBridge/blog">Blog</a><a href="https://github.com/antony-jr/AppImageUpdaterBridge">GitHub</a><a class="github-button" href="https://github.com/antony-jr/AppImageUpdaterBridge" data-icon="octicon-star" data-count-href="/antony-jr/AppImageUpdaterBridge/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2018 Antony Jr.</section></footer></div></body></html>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/AppImageUpdaterBridge/docs/AppImageUpdaterDialogExample.html"><span class="arrow-prev">← </span><span class="function-name-prevnext">Updating an AppImage with GUI</span></a><a class="docs-next button" href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeStatusCodes.html"><span>Status Codes</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/AppImageUpdaterBridge/" class="nav-home"><img src="/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png" alt="AppImage Updater Bridge" width="66" height="58"/></a><div><h5>Docs</h5><a href="/AppImageUpdaterBridge/docs/Installation.html">Getting Started</a><a href="/AppImageUpdaterBridge/docs/UpdatingFromAppImageInformation.html">Guides</a><a href="/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html">API Reference</a></div><div><h5>Community</h5><a href="/AppImageUpdaterBridge/en/users.html">User Showcase</a><a href="http://stackoverflow.com/questions/tagged/AppImage/" target="_blank">Stack Overflow</a><a href="https://discordapp.com/">Project Chat</a><a href="https://twitter.com/antonyjr0" target="_blank">Twitter</a></div><div><h5>More</h5><a href="/AppImageUpdaterBridge/blog">Blog</a><a href="https://github.com/antony-jr/AppImageUpdaterBridge">GitHub</a><a class="github-button" href="https://github.com/antony-jr/AppImageUpdaterBridge" data-icon="octicon-star" data-count-href="/antony-jr/AppImageUpdaterBridge/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Antony Jr.</section></footer></div></body></html>
