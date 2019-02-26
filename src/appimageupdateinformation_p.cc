@@ -241,6 +241,11 @@ struct AutoBoolCounter {
         *p_Bool = false;
     }
 
+    void lock()
+    {
+        *p_Bool = true;
+    }
+
     void unlock()
     {
         *p_Bool = false;
@@ -462,8 +467,10 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         */
         auto arguments = QCoreApplication::arguments();
         if(!arguments.isEmpty()) {
-            setAppImage(QFileInfo(arguments.at(0)).absolutePath() + QString::fromUtf8("/") + QFileInfo(arguments.at(0)).fileName());
-        }
+            	bc.unlock();
+		setAppImage(QFileInfo(arguments.at(0)).absolutePath() + QString::fromUtf8("/") + QFileInfo(arguments.at(0)).fileName());
+		bc.lock();
+	}
 
 
         if(s_AppImagePath.isEmpty()) {
