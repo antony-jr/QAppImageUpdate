@@ -167,7 +167,6 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     if(isUpdateAvailable) {
         if(showUpdateDialog) {
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
-            QMessageBox box(this);
             box.setWindowTitle(QString::fromUtf8("Update Available!"));
             box.setText(QString::fromUtf8("A new version of ") +
                         currentAppImageName +
@@ -179,7 +178,6 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     } else {
         if(showNoUpdateDialog) {
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
-            QMessageBox box(this);
             box.setWindowTitle(QString::fromUtf8("No Updates Available!"));
             box.setText(QString::fromUtf8("You are currently using the lastest version of ") +
                         currentAppImageName +
