@@ -4,54 +4,83 @@ title: Handling Errors from AppImageUpdaterBridge
 sidebar_label: Error Codes
 ---
 
-Using ```AppImageUpdaterBridge::AppImageDeltaRevisioner::errorCodeToString(code)``` you can get the error code name as 
+Using static function ```AppImageUpdaterBridge::errorCodeToString(short)``` you can get the error code name as 
 a QString , The below table tabulates all error codes with respect to their error name.
 
-
-Error code such as ```AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR``` can be further investigated to get the actual 
-error , In this case you can call ```AppImageUpdaterBridge::AppImageDeltaRevisioner::getNetworkError();``` to get the recent network error code 
-which is of type [QNetworkReply::NetworkError](https://doc.qt.io/qt-5/qnetworkreply.html#NetworkError-enum).
+> Note: All are under the AppImageUpdaterBridge namespace so make sure to include it.
 
 
-
-| Error Code | Value |
-|-----------------------------------------------------|-------|
-| AppImageUpdaterBridge::NO_ERROR | 0 |
-| AppImageUpdaterBridge::APPIMAGE_NOT_READABLE | 1 |
-| AppImageUpdaterBridge::NO_READ_PERMISSION | 2 |
-| AppImageUpdaterBridge::APPIMAGE_NOT_FOUND | 3 |
-| AppImageUpdaterBridge::CANNOT_OPEN_APPIMAGE | 4 |
-| AppImageUpdaterBridge::EMPTY_UPDATE_INFORMATION | 5 |
-| AppImageUpdaterBridge::INVALID_APPIMAGE_TYPE | 6 |
-| AppImageUpdaterBridge::INVALID_MAGIC_BYTES | 7 |
-| AppImageUpdaterBridge::INVALID_UPDATE_INFORMATION | 8 |
-| AppImageUpdaterBridge::NOT_ENOUGH_MEMORY | 9 |
-| AppImageUpdaterBridge::SECTION_HEADER_NOT_FOUND | 10 |
-| AppImageUpdaterBridge::UNSUPPORTED_ELF_FORMAT | 11 |
-| AppImageUpdaterBridge::UNSUPPORTED_TRANSPORT | 12 |
-| AppImageUpdaterBridge::UNKNOWN_NETWORK_ERROR | 50 |
-|  AppImageUpdaterBridge::IO_READ_ERROR | 51 |
-| AppImageUpdaterBridge::ERROR_RESPONSE_CODE | 52 |
-| AppImageUpdaterBridge::GITHUB_API_RATE_LIMIT_REACHED | 53 |
-| AppImageUpdaterBridge::NO_MARKER_FOUND_IN_CONTROL_FILE | 54 |
-| AppImageUpdaterBridge::INVALID_ZSYNC_HEADERS_NUMBER | 55 |
-| AppImageUpdaterBridge::INVALID_ZSYNC_MAKE_VERSION | 56 |
-| AppImageUpdaterBridge::INVALID_ZSYNC_TARGET_FILENAME | 57 |
-| AppImageUpdaterBridge::INVALID_ZSYNC_MTIME | 58 |
-| AppImageUpdaterBridge::INVALID_ZSYNC_BLOCKSIZE | 59 |
-| AppImageUpdaterBridge::INVALID_TARGET_FILE_LENGTH | 60 |
-| AppImageUpdaterBridge::INVALID_HASH_LENGTH_LINE | 61 |
-| AppImageUpdaterBridge::INVALID_HASH_LENGTHS | 62 |
-| AppImageUpdaterBridge::INVALID_TARGET_FILE_URL | 63 |
-| AppImageUpdaterBridge::INVALID_TARGET_FILE_SHA1 | 64 |
-|  AppImageUpdaterBridge::HASH_TABLE_NOT_ALLOCATED | 100 |
-| AppImageUpdaterBridge::INVALID_TARGET_FILE_CHECKSUM_BLOCKS | 101 |
-| AppImageUpdaterBridge::CANNOT_OPEN_TARGET_FILE_CHECKSUM_BLOCKS | 102 |
-| AppImageUpdaterBridge::CANNOT_CONSTRUCT_HASH_TABLE | 103 |
-| AppImageUpdaterBridge::QBUFFER_IO_READ_ERROR | 104 |
-| AppImageUpdaterBridge::SOURCE_FILE_NOT_FOUND | 105 |
-| AppImageUpdaterBridge::NO_PERMISSION_TO_READ_SOURCE_FILE | 106 |
-| AppImageUpdaterBridge::CANNOT_OPEN_SOURCE_FILE | 107 |
-| AppImageUpdaterBridge::NO_PERMISSION_TO_READ_WRITE_TARGET_FILE | 108 |
-| AppImageUpdaterBridge::CANNOT_OPEN_TARGET_FILE | 109 |
-| AppImageUpdaterBridge::TARGET_FILE_SHA1_HASH_MISMATCH | 110 |
+| Error Code                       | Value |
+|----------------------------------|------ |
+| NoError                          | 0 |
+| NoAppimagePathGiven              | 1 |
+| AppimageNotReadable              | 2 |
+| NoReadPermission                 | 3 |
+| AppimageNotFound                 | 4 |
+| CannotOpenAppimage               | 5 |
+| EmptyUpdateInformation           | 6 |
+| InvalidAppimageType              | 7 |
+| InvalidMagicBytes                | 8 |
+| InvalidUpdateInformation         | 9 |
+| NotEnoughMemory                  | 10 |
+| SectionHeaderNotFound            | 11 |
+| UnsupportedElfFormat             | 12 |
+| UnsupportedTransport             | 13 |
+| IoReadError                      | 50 |
+| ErrorResponseCode                | 51 |
+| GithubApiRateLimitReached        | 52 |
+| NoMarkerFoundInControlFile       | 53 |
+| InvalidZsyncHeadersNumber        | 54 |
+| InvalidZsyncMakeVersion          | 55 |
+| InvalidZsyncTargetFilename       | 56 |
+| InvalidZsyncMtime                | 57 |
+| InvalidZsyncBlocksize            | 58 |
+| InvalidTargetFileLength          | 59 |
+| InvalidHashLengthLine            | 60 |
+| InvalidHashLengths               | 61 |
+| InvalidTargetFileUrl             | 62 |
+| InvalidTargetFileSha1            | 63 |
+| ConnectionRefusedError           | 64 |
+| RemoteHostClosedError            | 65 |
+| HostNotFoundError                | 66 |
+| TimeoutError                     | 67 |
+| OperationCanceledError           | 68 |
+| SslHandshakeFailedError          | 69 |
+| TemporaryNetworkFailureError     | 70 |
+| NetworkSessionFailedError        | 71 |
+| BackgroundRequestNotAllowedError | 72 |
+| TooManyRedirectsError            | 73 |
+| InsecureRedirectError            | 74 |
+| ProxyConnectionRefusedError      | 75 |
+| ProxyConnectionClosedError       | 76 |
+| ProxyNotFoundError               | 77 |
+| ProxyTimeoutError                | 78 |
+| ProxyAuthenticationRequiredError | 79 |
+| ContentAccessDenied              | 80 |
+| ContentOperationNotPermittedError| 81 |
+| ContentNotFoundError             | 82 |
+| AuthenticationRequiredError      | 83 |
+| ContentReSendError               | 84 |
+| ContentConflictError             | 85 |
+| ContentGoneError                 | 86 |
+| InternalServerError              | 87 |
+| OperationNotImplementedError     | 88 |
+| ServiceUnavailableError          | 89 |
+| ProtocolUnknownError             | 90 |
+| ProtocolInvalidOperationError    | 91 |
+| UnknownNetworkError              | 92 |
+| UnknownProxyError                | 93 |
+| UnknownContentError              | 94 |
+| ProtocolFailure                  | 95 |
+| UnknownServerError               | 96 |
+| HashTableNotAllocated            | 100 |
+| InvalidTargetFileChecksumBlocks  | 101 |
+| CannotOpenTargetFileChecksumBlocks| 102 |
+| CannotConstructHashTable         | 103 |
+| QbufferIoReadError               | 104 |
+| SourceFileNotFound               | 105 |
+| NoPermissionToReadSourceFile     | 106 |
+| CannotOpenSourceFile             | 107 |
+| NoPermissionToReadWriteTargetFile| 108 |
+| CannotOpenTargetFile             | 109 |
+| TargetFileSha1HashMismatch       | 110 |

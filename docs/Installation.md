@@ -10,11 +10,6 @@ and only that, Nothing more and nothing less.
 ## Dependencies
 
 * [Qt5 Framework](https://qt.io)
-	
-	Qt is an amazing **GUI Framework** which is made for the future , it got   
-	**stability , performance and the looks!**. I really recommend you all to   
-	use Qt for your **GUI** Projects. And the best part is , its **Open Source**.   
-	Make sure to install it too.
 
 
 ## Installing the latest release from github
@@ -35,5 +30,4 @@ or **to install it in your git project folder**
  $ git submodule update
 ```
 
-Since **AppImages** are only available to linux , this library is also specific to **Linux**.
-But Qt is cross platform and therefore , This may even run on all platforms where Qt is supported.
+Even though AppImage is specific to linux , this library is cross platform.

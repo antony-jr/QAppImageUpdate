@@ -1,30 +1,37 @@
-INCLUDEPATH += $$PWD $$PWD/include
+INCLUDEPATH += $$PWD
 QT += core widgets network
 HEADERS += \
-    $$PWD/include/AppImageUpdateInformation_p.hpp \
-    $$PWD/include/ZsyncRemoteControlFileParser_p.hpp \
-    $$PWD/include/ZsyncInternalStructures_p.hpp \
-    $$PWD/include/ZsyncWriter_p.hpp \
-    $$PWD/include/ZsyncBlockRangeReply_p.hpp \
-    $$PWD/include/ZsyncBlockRangeDownloader_p.hpp \
-    $$PWD/include/AppImageDeltaRevisioner_p.hpp \
-    $$PWD/include/AppImageDeltaRevisioner.hpp \
-    $$PWD/include/AppImageUpdaterDialog.hpp \
-    $$PWD/include/AppImageUpdaterBridgeErrorCodes.hpp \
-    $$PWD/include/AppImageUpdaterBridgeStatusCodes.hpp \
-    $$PWD/include/AppImageUpdaterBridge.hpp
+    $$PWD/include/appimageupdateinformation_p.hpp \
+    $$PWD/include/zsyncremotecontrolfileparser_p.hpp \
+    $$PWD/include/zsyncinternalstructures_p.hpp \
+    $$PWD/include/zsyncwriter_p.hpp \
+    $$PWD/include/zsyncblockrangereply_p.hpp \
+    $$PWD/include/zsyncblockrangedownloader_p.hpp \
+    $$PWD/include/appimagedeltarevisioner_p.hpp \
+    $$PWD/include/appimagedeltarevisioner.hpp \
+    $$PWD/include/appimageupdaterbridge_enums.hpp \
+    $$PWD/include/appimageupdaterbridge.hpp \
+    $$PWD/include/appimageupdaterdialog.hpp
 
 SOURCES += \
-    $$PWD/src/AppImageUpdateInformation_p.cc \
-    $$PWD/src/ZsyncRemoteControlFileParser_p.cc \
-    $$PWD/src/ZsyncWriter_p.cc \
-    $$PWD/src/ZsyncBlockRangeReply_p.cc \
-    $$PWD/src/ZsyncBlockRangeDownloader_p.cc \
-    $$PWD/src/AppImageDeltaRevisioner_p.cc \
-    $$PWD/src/AppImageDeltaRevisioner.cc \
-    $$PWD/src/AppImageUpdaterDialog.cc
+    $$PWD/src/appimageupdateinformation_p.cc \
+    $$PWD/src/zsyncremotecontrolfileparser_p.cc \
+    $$PWD/src/zsyncwriter_p.cc \
+    $$PWD/src/zsyncblockrangereply_p.cc \
+    $$PWD/src/zsyncblockrangedownloader_p.cc \
+    $$PWD/src/appimagedeltarevisioner_p.cc \
+    $$PWD/src/appimagedeltarevisioner.cc \
+    $$PWD/src/appimageupdaterdialog.cc \
+    $$PWD/src/appimageupdaterbridge_enums.cc
 
-logging_disabled {
+NO_GUI {
+	message(AppImage Updater Bridge widgets will be disabled for this build.)
+	QT -= widgets
+	HEADERS -= $$PWD/include/appimageupdaterdialog.hpp
+	SOURCES -= $$PWD/src/appimageupdaterdialog.cc
+}
+
+LOGGING_DISABLED {
 	message(Logging will be disabled for this build.)
 	DEFINES += LOGGING_DISABLED
 }

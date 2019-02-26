@@ -5,12 +5,14 @@
 	   "AddingAppImageUpdaterBridge"
     ],
     "Guides" : [
-	   "AppImageDeltaRevisionerExample"
+	   "AppImageDeltaRevisionerExample",
+	   "AppImageUpdaterDialogExample"
     ],
     "API" : [
 	   "AppImageUpdaterBridgeErrorCodes",
 	   "AppImageUpdaterBridgeStatusCodes",
-	   "ClassAppImageDeltaRevisioner"
+	   "ClassAppImageDeltaRevisioner",
+	   "ClassAppImageUpdaterDialog"
     ]
   }
 }

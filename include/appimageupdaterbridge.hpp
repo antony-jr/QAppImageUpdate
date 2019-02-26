@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,28 +29,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : ZsyncInternalStructures_p.hpp
- * @description : some data types from the legacy source code.
+ * @filename    : appimageupdaterbridge.hpp
 */
-#ifndef ZSYNC_INTERNAL_STRUCTURES_HPP_INCLUDED
-#define ZSYNC_INTERNAL_STRUCTURES_HPP_INCLUDED
-#include <QtGlobal>
-
-namespace AppImageUpdaterBridge
-{
-static constexpr unsigned short CHECKSUM_SIZE = 16;
-static constexpr unsigned short BITHASHBITS = 3;
-typedef qint32 zs_blockid;
-
-struct rsum {
-    unsigned short	a;
-    unsigned short	b;
-} __attribute__((packed));
-
-struct hash_entry {
-    struct hash_entry *next;    /* next entry with the same rsum */
-    struct rsum r;
-    unsigned char checksum[CHECKSUM_SIZE];
-};
-}
-#endif // ZSYNC_INTERNAL_STRUCTURES_HPP_INCLUDED
+#ifndef APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
+#define APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
+#include "appimageupdaterbridge_enums.hpp"
+#include "appimagedeltarevisioner.hpp"
+#endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED

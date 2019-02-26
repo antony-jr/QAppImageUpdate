@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,54 +29,28 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : ZsyncBlockRangeReply_p.hpp
- * @description : The is where ZsyncBlockRangeReplyPrivate is described.
- * This private class is responsible to handle a single QNetworkReply.
- * Since each QNetworkReply works parallel , This private class provides a
- * a simple way to control a single QNetworkReply via signals and slots and
- * also submits the download data on the fly to ZsyncWriterPrivate.
+ * @filename    : zsyncinternalstructures_p.hpp
+ * @description : some data types from the legacy source code.
 */
-#ifndef ZSYNC_BLOCK_RANGE_REPLY_PRIVATE_HPP_INCLUDED
-#define ZSYNC_BLOCK_RANGE_REPLY_PRIVATE_HPP_INCLUDED
+#ifndef ZSYNC_INTERNAL_STRUCTURES_HPP_INCLUDED
+#define ZSYNC_INTERNAL_STRUCTURES_HPP_INCLUDED
 #include <QtGlobal>
-#include <QObject>
-#include <QNetworkReply>
-#include <ZsyncWriter_p.hpp>
 
 namespace AppImageUpdaterBridge
 {
-class ZsyncBlockRangeReplyPrivate : public QObject
-{
-    Q_OBJECT
-public:
-    ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate*,QNetworkReply*,qint32,qint32);
-    ~ZsyncBlockRangeReplyPrivate();
+static constexpr unsigned short CHECKSUM_SIZE = 16;
+static constexpr unsigned short BITHASHBITS = 3;
+typedef qint32 zs_blockid;
 
-public Q_SLOTS:
-    void cancel(void);
+struct rsum {
+    unsigned short	a;
+    unsigned short	b;
+} __attribute__((packed));
 
-private Q_SLOTS:
-    void handleError(QNetworkReply::NetworkError);
-    void handleFinished(void);
-    void handleSeqProgress(qint64, qint64);
-    void handleProgress(qint64, qint64);
-
-Q_SIGNALS:
-    void cancelReply(void);
-    void canceled(void);
-    void seqProgress(int, qint64, qint64, double, QString);
-    void progress(qint64, double, QString);
-    void error(QNetworkReply::NetworkError);
-    void finished(void);
-    void sendData(QByteArray*);
-    void sendBlockDataToWriter(qint32, qint32, QByteArray *);
-
-private:
-    QTime downloadSpeed;
-    QScopedPointer<QByteArray> _pRawData;
-    qint64 _nPreviousBytesReceived = 0;
-    qint32 _nRangeFrom = 0,
-           _nRangeTo = 0;
+struct hash_entry {
+    struct hash_entry *next;    /* next entry with the same rsum */
+    struct rsum r;
+    unsigned char checksum[CHECKSUM_SIZE];
 };
 }
-#endif // ZSYNC_BLOCK_RANGE_REPLY_PRIVATE_HPP_INCLUDED
+#endif // ZSYNC_INTERNAL_STRUCTURES_HPP_INCLUDED

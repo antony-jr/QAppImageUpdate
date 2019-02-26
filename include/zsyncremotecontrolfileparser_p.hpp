@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : ZsyncRemoteControlFileParser_p.hpp
- * @description : This is where the zsync control file parser in described.
+ * @filename    : zsyncremotecontrolfileparser_p.hpp
+ * @description : This is where the ZsyncRemoteControlFileParserPrivate in described.
+ * This class is responsible to parse the remote zsync control file from the given
+ * embeded appimage information.
 */
 #ifndef ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
 #define ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
@@ -46,14 +48,14 @@
 #include <QMetaMethod>
 #include <QObject>
 #include <QString>
-#include <QSharedPointer>
+#include <QScopedPointer>
 #include <QTime>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <AppImageUpdaterBridgeErrorCodes.hpp>
-#include <AppImageUpdaterBridgeStatusCodes.hpp>
-#include <ZsyncInternalStructures_p.hpp>
+
+#include "appimageupdaterbridge_enums.hpp"
+#include "zsyncinternalstructures_p.hpp"
 
 namespace AppImageUpdaterBridge
 {
@@ -63,9 +65,6 @@ class ZsyncRemoteControlFileParserPrivate : public QObject
 public:
     explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
     ~ZsyncRemoteControlFileParserPrivate();
-
-    static QString errorCodeToString(short);
-    static QString statusCodeToString(short);
 public Q_SLOTS:
     void clear(void);
     void setControlFileUrl(const QUrl&);
@@ -75,18 +74,6 @@ public Q_SLOTS:
     void getControlFile(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
-    qint32 getTargetFileBlocksCount(void);
-    QUrl getTargetFileUrl(void);
-    QUrl getControlFileUrl(void);
-    QString getZsyncMakeVersion(void);
-    QString getTargetFileName(void);
-    QString getTargetFileSHA1(void);
-    QDateTime getMTime(void);
-    qint32 getTargetFileBlockSize(void);
-    qint32 getTargetFileLength(void);
-    qint32 getWeakCheckSumBytes(void);
-    qint32 getStrongCheckSumBytes(void);
-    qint32 getConsecutiveMatchNeeded(void);
 private Q_SLOTS:
     void checkHeadTargetFileUrl(qint64, qint64);
     void handleBintrayRedirection(const QUrl&);
@@ -99,45 +86,47 @@ private Q_SLOTS:
     void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
 Q_SIGNALS:
-    void targetFileUrl(QUrl);
-    void zsyncInformation(qint32,qint32,qint32,qint32,qint32,qint32,QString,QString,QString,QBuffer*,bool);
+    void zsyncInformation(qint32,qint32,qint32,
+                          qint32,qint32,qint32,
+                          QString,QString,QString,
+                          QUrl,QBuffer*,bool);
     void updateCheckInformation(QJsonObject);
     void receiveControlFile(void);
     void progress(int);
     void error(short);
-    void networkError(QNetworkReply::NetworkError);
     void statusChanged(short);
     void logger(QString, QString);
 private:
-    bool _bAcceptRange = false;
-    QJsonObject _jUpdateInformation;
-    QString _sZsyncMakeVersion,
-            _sZsyncFileName, //Only used for github and bintray API responses.
-            _sTargetFileName,
-            _sAppImagePath,
-            _sTargetFileSHA1
+    bool b_AcceptRange = false,
+         b_Busy = false;
+    QJsonObject j_UpdateInformation;
+    QString s_ZsyncMakeVersion,
+            s_ZsyncFileName, /* only used for github transport. */
+            s_TargetFileName,
+            s_AppImagePath,
+            s_TargetFileSHA1
 #ifndef LOGGING_DISABLED
-            ,_sLoggerName,
-            _sLogBuffer;
+            ,s_LoggerName,
+            s_LogBuffer;
 #else
             ;
 #endif // LOGGING_DISABLED
-    QDateTime _pMTime;
-    qint32 _nTargetFileBlockSize = 0,
-           _nTargetFileLength = 0,
-           _nTargetFileBlocks = 0;
-    qint32 _nWeakCheckSumBytes = 0,
-           _nStrongCheckSumBytes = 0,
-           _nConsecutiveMatchNeeded = 0;
-    qint64 _nCheckSumBlocksOffset = 0;
-    QUrl _uTargetFileUrl,
-         _uControlFileUrl;
+    QDateTime m_MTime;
+    qint32 n_TargetFileBlockSize = 0,
+           n_TargetFileLength = 0,
+           n_TargetFileBlocks = 0;
+    qint32 n_WeakCheckSumBytes = 0,
+           n_StrongCheckSumBytes = 0,
+           n_ConsecutiveMatchNeeded = 0;
+    qint64 n_CheckSumBlocksOffset = 0;
+    QUrl u_TargetFileUrl,
+         u_ControlFileUrl;
 
 #ifndef LOGGING_DISABLED
-    QSharedPointer<QDebug> _pLogger = nullptr;
+    QScopedPointer<QDebug> p_Logger;
 #endif // LOGGING_DISABLED
-    QSharedPointer<QBuffer> _pControlFile = nullptr;
-    QNetworkAccessManager *_pNManager = nullptr;
+    QScopedPointer<QBuffer> p_ControlFile;
+    QNetworkAccessManager *p_NManager = nullptr;
 };
 }
 

@@ -1,7 +1,7 @@
 /*
  * BSD 3-Clause License
  *
- * Copyright (c) 2018, Antony jr
+ * Copyright (c) 2018-2019, Antony jr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : ZsyncBlockRangeDownloader_p.hpp
+ * @filename    : zsyncblockrangedownloader_p.hpp
  * @description : This the main class which manages all block requests and reply
  * also emits the progress overall , This is where the class is described.
 */
@@ -40,8 +40,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
-#include <ZsyncRemoteControlFileParser_p.hpp>
-#include <ZsyncWriter_p.hpp>
+
+#include "zsyncwriter_p.hpp"
 
 namespace AppImageUpdaterBridge
 {
@@ -49,14 +49,14 @@ class ZsyncBlockRangeDownloaderPrivate : public QObject
 {
     Q_OBJECT
 public:
-    ZsyncBlockRangeDownloaderPrivate(ZsyncRemoteControlFileParserPrivate*,ZsyncWriterPrivate*,QNetworkAccessManager*);
+    ZsyncBlockRangeDownloaderPrivate(ZsyncWriterPrivate*,QNetworkAccessManager*);
     ~ZsyncBlockRangeDownloaderPrivate();
 
 public Q_SLOTS:
     void cancel(void);
 
 private Q_SLOTS:
-    void initDownloader(void);
+    void initDownloader(qint64, qint64, QUrl);
     void handleBlockRange(qint32,qint32);
     void handleBlockReplyFinished(void);
     void handleBlockReplyCancel(void);
@@ -64,23 +64,23 @@ private Q_SLOTS:
     void handleBlockReplyProgress(qint64, double, QString);
 
 Q_SIGNALS:
+    void blockRangesRequested();
     void progress(int, qint64, qint64, double, QString);
     void cancelAllReply(void);
     void canceled(void);
-    void error(QNetworkReply::NetworkError);
+    void error(short);
     void started(void);
     void finished(void);
 
 private:
-    QUrl _uTargetFileUrl;
-    qint64 _nBytesTotal = 0;
-    QAtomicInteger<qint64> _nBytesReceived = 0;
-    QAtomicInteger<bool> _bErrored = false;
-    QAtomicInteger<bool> _bCancelRequested = false;
-    QAtomicInteger<qint64> _nBlockReply = 0;
-    ZsyncRemoteControlFileParserPrivate *_pParser = nullptr;
-    ZsyncWriterPrivate *_pWriter = nullptr;
-    QNetworkAccessManager *_pManager = nullptr;
+    QUrl u_TargetFileUrl;
+    qint64 n_BytesTotal = 0,
+           n_BytesReceived = 0,
+           n_BlockReply = 0;
+    bool b_Errored = false,
+         b_CancelRequested = false;
+    QNetworkAccessManager *p_Manager = nullptr;
+    ZsyncWriterPrivate *p_Writer = nullptr;
 };
 }
 #endif // ZSYNC_BLOCK_RANGE_DOWNLOADER_PRIVATE_HPP_INCLUDED

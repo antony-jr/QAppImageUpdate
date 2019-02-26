@@ -1,24 +1,72 @@
 ---
 id: AppImageDeltaRevisionerExample
-title: AppImageDeltaRevisioner Simple Update Example.
-sidebar_label: AppImageDeltaRevisioner Simple Update Example
+title: Updating an AppImage
+sidebar_label: Updating an AppImage
 ---
 
-Demonstrates how to use the *AppImageUpdaterBridge* APIs for updating a single AppImage file.
-The Simple Update Example parses the path from the program arguments , And uses the *[AppImageDeltaRevisioner]()* class to
-perform the actula delta update.
+This guide Demonstrates how to use the *AppImageUpdaterBridge* APIs for updating a single AppImage file.
+This example parses the path from the program arguments , And uses the *[AppImageDeltaRevisioner]()* class to
+perform the actual delta update.
 
-The Simple Update Example also handle errors and shows text based progress bar.
+## main.cpp
 
-> Important: Please make sure to modify the 'include([AppImage Updater Bridge Path]/AppImageUpdaterBridge.pri)' according 
-  to the AppImageUpdaterBridge source path.
+```
+#include <QCoreApplication>
+#include <QDebug>
+#include <AppImageUpdaterBridge>
 
+int main(int ac , char **av)
+{
+	if(ac == 1){
+		qInfo() << "Usage: " << av[0] << " [APPIMAGE PATH]";
+		return 0;	
+        }
+	
+	using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+	QCoreApplication app(ac , av);
+ 	QString AppImagePath = QString(av[1]);
 
-## Files: 
+	AppImageDeltaRevisioner DRevisioner(AppImagePath);
+	QObject::connect(&DRevisioner , &AppImageDeltaRevisioner::finished ,
+        [&](QJsonObject newVersionDetails , QString oldVersionPath){
+		(void)oldVersionPath;
+		qInfo() << "New Version Details:: " << newVersionDetails;
+		app.quit();
+        });
+	QObject::connect(&DRevisioner , &AppImageDeltaRevisioner::error ,
+        [&](short e){
+		qInfo() << "error:: " << AppImageUpdaterBridge::errorCodeToString(e);
+		app.quit();
+        });
+        /*
+         * Enable this if you want to print the log messages in 
+         * the standard output.
+        */
+	DRevisioner.setShowLog(true);
+	
+	DRevisioner.start(); /* Start the update. */
+	return app.exec();
+}
+ 
+```
 
-* [/examples/SimpleUpdate/main.cc](https://raw.githubusercontent.com/antony-jr/AppImageUpdaterBridge/master/examples/SimpleUpdate/main.cc)
-* [/examples/SimpleUpdate/TextProgressBar.cc](https://raw.githubusercontent.com/antony-jr/AppImageUpdaterBridge/master/examples/SimpleUpdate/TextProgressBar.cc)
-* [/examples/SimpleUpdate/TextProgressBar.hpp](https://raw.githubusercontent.com/antony-jr/AppImageUpdaterBridge/master/examples/SimpleUpdate/TextProgressBar.hpp)
-* [/examples/SimpleUpdate/SimpleUpdate.pro](https://raw.githubusercontent.com/antony-jr/AppImageUpdaterBridge/master/examples/SimpleUpdate/SimpleUpdate.pro)
+## update.pro
 
+```
+include(AppImageUpdaterBridge/AppImageUpdaterBridge.pri)
+TEMPLATE = app
+TARGET = update
+SOURCES += main.cpp
+```
 
+## Compilation and Execution
+
+```
+ $ mkdir build
+ $ cd build
+ $ qmake ..
+ $ make -j$(nproc)
+ $ ./update some.AppImage
+```
+
+A advanced verison of this program has been implemented in the examples directory.
