@@ -797,9 +797,9 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
         p_TargetFile->close();
     } else {
         b_Started = b_CancelRequested = false;
-	FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
+        FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
         emit statusChanged(Idle);
-	emit error(TargetFileSha1HashMismatch);
+        emit error(TargetFileSha1HashMismatch);
         return constructed;
     }
 

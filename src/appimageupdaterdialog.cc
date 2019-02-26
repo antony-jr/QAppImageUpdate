@@ -159,8 +159,8 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     bool showNoUpdateDialog = p_Flags & NotifyWhenNoUpdateIsAvailable;
     QMessageBox box(this);
     setWindowTitle(QString::fromUtf8("Updating ") +
-                         QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).baseName() +
-                         QString::fromUtf8("... "));
+                   QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).baseName() +
+                   QString::fromUtf8("... "));
 
     s_CurrentAppImagePath = CurrentAppImageInfo["AppImageFilePath"].toString();
 
