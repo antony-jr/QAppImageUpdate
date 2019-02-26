@@ -4,23 +4,50 @@
     "next": "Next",
     "previous": "Previous",
     "tagline": "A Powerfull Bridge to AppImage Update Mechanism.",
-    "AddingAppImageUpdaterBridge": "Add AppImage Updater Bridge to your Project",
-    "Add AppImage Updater Bridge to your Project.": "Add AppImage Updater Bridge to your Project.",
-    "AppImageDeltaRevisionerExample": "AppImageDeltaRevisioner Simple Update Example.",
-    "AppImageDeltaRevisioner Simple Update Example": "AppImageDeltaRevisioner Simple Update Example",
-    "AppImageUpdaterBridgeErrorCodes": "Handling Errors from AppImageUpdaterBridge",
-    "Error Codes": "Error Codes",
-    "AppImageUpdaterBridgeStatusCodes": "Handling Status from AppImageUpdaterBridge",
-    "Status Codes": "Status Codes",
-    "ClassAppImageDeltaRevisioner": "Class AppImageDeltaRevisioner",
-    "Class AppImageDeltaRevisioner": "Class AppImageDeltaRevisioner",
-    "Installation": "Installation",
-    "Docs": "Docs",
-    "Help": "Help",
-    "Blog": "Blog",
-    "Getting Started": "Getting Started",
-    "Guides": "Guides",
-    "API": "API"
+    "docs": {
+      "AddingAppImageUpdaterBridge": {
+        "title": "Add AppImage Updater Bridge to your Project",
+        "sidebar_label": "Add AppImage Updater Bridge to your Project."
+      },
+      "AppImageDeltaRevisionerExample": {
+        "title": "Updating an AppImage",
+        "sidebar_label": "Updating an AppImage"
+      },
+      "AppImageUpdaterBridgeErrorCodes": {
+        "title": "Handling Errors from AppImageUpdaterBridge",
+        "sidebar_label": "Error Codes"
+      },
+      "AppImageUpdaterBridgeStatusCodes": {
+        "title": "Handling Status from AppImageUpdaterBridge",
+        "sidebar_label": "Status Codes"
+      },
+      "AppImageUpdaterDialogExample": {
+        "title": "Updating an AppImage with GUI",
+        "sidebar_label": "Updating an AppImage with GUI"
+      },
+      "ClassAppImageDeltaRevisioner": {
+        "title": "Class AppImageDeltaRevisioner",
+        "sidebar_label": "Class AppImageDeltaRevisioner"
+      },
+      "ClassAppImageUpdaterDialog": {
+        "title": "Class AppImageUpdaterDialog",
+        "sidebar_label": "Class AppImageUpdaterDialog"
+      },
+      "Installation": {
+        "title": "Installing AppImage Updater Bridge to your Project.",
+        "sidebar_label": "Installation"
+      }
+    },
+    "links": {
+      "Docs": "Docs",
+      "Help": "Help",
+      "Blog": "Blog"
+    },
+    "categories": {
+      "Getting Started": "Getting Started",
+      "Guides": "Guides",
+      "API": "API"
+    }
   },
   "pages-strings": {
     "Help Translate|recruit community translators for your project": "Help Translate",

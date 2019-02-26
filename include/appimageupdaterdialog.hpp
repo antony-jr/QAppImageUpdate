@@ -87,6 +87,7 @@ public Q_SLOTS:
     void init();
     void setAppImage(const QString&);
     void setAppImage(QFile *);
+    void setShowLog(bool);
 
 private Q_SLOTS:
     void showWidget(void);

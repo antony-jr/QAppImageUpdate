@@ -138,6 +138,11 @@ void AppImageUpdaterDialog::setAppImage(QFile *AppImage)
     p_DRevisioner->setAppImage(AppImage);
 }
 
+void AppImageUpdaterDialog::setShowLog(bool c)
+{
+    p_DRevisioner->setShowLog(c);
+}
+
 void AppImageUpdaterDialog::showWidget(void)
 {
     if(!(p_Flags & ShowProgressDialog)) {
