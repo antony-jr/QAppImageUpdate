@@ -523,9 +523,9 @@ void ZsyncWriterPrivate::start(void)
 
 
         for(auto iter = foundGarbageFilesInfo.constBegin(),
-            end = foundGarbageFilesInfo.constEnd();
-            iter != end;
-            ++iter
+                end = foundGarbageFilesInfo.constEnd();
+                iter != end;
+                ++iter
            ) {
             foundGarbageFiles << (*iter).absoluteFilePath();
             QCoreApplication::processEvents();
@@ -558,9 +558,9 @@ void ZsyncWriterPrivate::start(void)
         }
 
         for(auto iter = foundGarbageFiles.constBegin(),
-            end  = foundGarbageFiles.constEnd();
-            iter != end && n_BytesWritten < n_TargetFileLength;
-            ++iter) {
+                end  = foundGarbageFiles.constEnd();
+                iter != end && n_BytesWritten < n_TargetFileLength;
+                ++iter) {
             QFile *sourceFile = nullptr;
             if((errorCode = tryOpenSourceFile(*iter, &sourceFile)) > 0) {
                 emit error(errorCode);
@@ -635,7 +635,7 @@ short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks(void)
 
         /* Read on. */
         if (p_TargetFileCheckSumBlocks->read(((char *)&r) + 4 - n_WeakCheckSumBytes, n_WeakCheckSumBytes) < 1
-            || p_TargetFileCheckSumBlocks->read((char *)&checksum, n_StrongCheckSumBytes) < 1) {
+                || p_TargetFileCheckSumBlocks->read((char *)&checksum, n_StrongCheckSumBytes) < 1) {
             return QbufferIoReadError;
         }
 
@@ -859,8 +859,8 @@ qint32 ZsyncWriterPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e,
         id = getHashEntryBlockId( e);
 
         if (!onlyone && n_SeqMatches > 1
-            && (p_BlockHashes[id + 1].r.a != (p_CurrentWeakCheckSums.second.a & p_WeakCheckSumMask)
-                || p_BlockHashes[id + 1].r.b != p_CurrentWeakCheckSums.second.b))
+                && (p_BlockHashes[id + 1].r.a != (p_CurrentWeakCheckSums.second.a & p_WeakCheckSumMask)
+                    || p_BlockHashes[id + 1].r.b != p_CurrentWeakCheckSums.second.b))
             continue;
 
         // WeakHit++
@@ -998,7 +998,7 @@ qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_
                 hash ^= ((n_SeqMatches > 1) ? p_CurrentWeakCheckSums.second.b
                          : p_CurrentWeakCheckSums.first.a & p_WeakCheckSumMask) << BITHASHBITS;
                 if ((p_BitHash[(hash & p_BitHashMask) >> 3] & (1 << (hash & 7))) != 0
-                    && (e = p_RsumHash[hash & p_HashMask]) != NULL) {
+                        && (e = p_RsumHash[hash & p_HashMask]) != NULL) {
 
                     /* Okay, we have a hash hit. Follow the hash chain and
                      * check our block against all the entries. */
@@ -1270,8 +1270,8 @@ void ZsyncWriterPrivate::addToRanges(zs_blockid x)
         /* If between two ranges and exactly filling the hole between them,
          * merge them */
         if (r > 0 && r < n_Ranges
-            && p_Ranges[2 * (r - 1) + 1] == x - 1
-            && p_Ranges[2 * r] == x + 1) {
+                && p_Ranges[2 * (r - 1) + 1] == x - 1
+                && p_Ranges[2 * r] == x + 1) {
 
             // This block fills the gap between two areas that we have got completely. Merge the adjacent ranges
             p_Ranges[2 * (r - 1) + 1] = p_Ranges[2 * r + 1];
@@ -1291,9 +1291,11 @@ void ZsyncWriterPrivate::addToRanges(zs_blockid x)
         }
 
         else { /* New range for this block alone */
-            p_Ranges = (zs_blockid*)
-                       realloc(p_Ranges,
-                               (n_Ranges + 1) * 2 * sizeof(p_Ranges[0]));
+            void *guard = realloc(p_Ranges, (n_Ranges + 1) * 2 * sizeof(p_Ranges[0]));
+            if(!guard) {
+                return;
+            }
+            p_Ranges = (zs_blockid*) guard;
             memmove(&p_Ranges[2 * r + 2], &p_Ranges[2 * r],
                     (n_Ranges - r) * 2 * sizeof(p_Ranges[0]));
             p_Ranges[2 * r] = p_Ranges[2 * r + 1] = x;

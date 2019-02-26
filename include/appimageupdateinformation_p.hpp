@@ -54,7 +54,7 @@ class AppImageUpdateInformationPrivate : public QObject
 {
     Q_OBJECT
 public:
-    AppImageUpdateInformationPrivate(QObject *parent = nullptr);
+    explicit AppImageUpdateInformationPrivate(QObject *parent = nullptr);
     ~AppImageUpdateInformationPrivate();
 public Q_SLOTS:
     void setAppImage(const QString&);

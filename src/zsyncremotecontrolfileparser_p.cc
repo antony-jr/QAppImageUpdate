@@ -318,10 +318,10 @@ void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void)
 void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void)
 {
     if(!p_ControlFile ||
-       !p_ControlFile->isOpen() ||
-       /* Atleast one block is needed to do anything. */
-       p_ControlFile->size() - n_CheckSumBlocksOffset < (n_WeakCheckSumBytes + n_StrongCheckSumBytes) ||
-       !n_CheckSumBlocksOffset) {
+            !p_ControlFile->isOpen() ||
+            /* Atleast one block is needed to do anything. */
+            p_ControlFile->size() - n_CheckSumBlocksOffset < (n_WeakCheckSumBytes + n_StrongCheckSumBytes) ||
+            !n_CheckSumBlocksOffset) {
         emit error(IoReadError);
         return;
     }
@@ -598,8 +598,8 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void)
         n_WeakCheckSumBytes = HashLengths.at(1).toInt();
         n_StrongCheckSumBytes = HashLengths.at(2).toInt();
         if(n_WeakCheckSumBytes < 1 || n_WeakCheckSumBytes > 4
-           || n_StrongCheckSumBytes < 3 || n_StrongCheckSumBytes > 16
-           || n_ConsecutiveMatchNeeded > 2 || n_ConsecutiveMatchNeeded < 1) {
+                || n_StrongCheckSumBytes < 3 || n_StrongCheckSumBytes > 16
+                || n_ConsecutiveMatchNeeded > 2 || n_ConsecutiveMatchNeeded < 1) {
             emit error(InvalidHashLengths);
             return;
         }

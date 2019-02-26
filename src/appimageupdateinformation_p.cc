@@ -231,7 +231,7 @@ typedef struct {
 } Elf64_Shdr;
 
 struct AutoBoolCounter {
-    AutoBoolCounter(bool *p)
+    explicit AutoBoolCounter(bool *p)
         : p_Bool(p)
     {
         *p_Bool = true;
@@ -665,11 +665,10 @@ void AppImageUpdateInformationPrivate::getInfo(void)
         {
             uint8_t *data = NULL;
             char *strTab = NULL;
-            uchar *mapped = NULL;
             unsigned long offset = 0, length = 0;
 
             emit statusChanged(MappingAppimageToMemory);
-            mapped = p_AppImage->map(/*offset=*/0, /*max=*/p_AppImage->size());
+            uchar *mapped = p_AppImage->map(/*offset=*/0, /*max=*/p_AppImage->size());
 
             if(mapped == NULL) {
                 emit statusChanged(Idle);

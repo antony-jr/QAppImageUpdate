@@ -61,7 +61,7 @@ class ZsyncWriterPrivate : public QObject
 {
     Q_OBJECT
 public:
-    ZsyncWriterPrivate();
+    explicit ZsyncWriterPrivate();
     ~ZsyncWriterPrivate();
 public Q_SLOTS:
     void setShowLog(bool);
