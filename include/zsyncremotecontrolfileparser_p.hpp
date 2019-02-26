@@ -63,7 +63,7 @@ class ZsyncRemoteControlFileParserPrivate : public QObject
 {
     Q_OBJECT
 public:
-    ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
+    explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
     ~ZsyncRemoteControlFileParserPrivate();
 public Q_SLOTS:
     void clear(void);
