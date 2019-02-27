@@ -11,7 +11,8 @@ HEADERS += \
     $$PWD/include/appimagedeltarevisioner.hpp \
     $$PWD/include/appimageupdaterbridge_enums.hpp \
     $$PWD/include/appimageupdaterbridge.hpp \
-    $$PWD/include/appimageupdaterdialog.hpp
+    $$PWD/include/appimageupdaterdialog.hpp \
+    $$PWD/include/helpers_p.hpp
 
 SOURCES += \
     $$PWD/src/appimageupdateinformation_p.cc \
@@ -22,7 +23,8 @@ SOURCES += \
     $$PWD/src/appimagedeltarevisioner_p.cc \
     $$PWD/src/appimagedeltarevisioner.cc \
     $$PWD/src/appimageupdaterdialog.cc \
-    $$PWD/src/appimageupdaterbridge_enums.cc
+    $$PWD/src/appimageupdaterbridge_enums.cc \
+    $$PWD/src/helpers_p.cc
 
 NO_GUI {
 	message(AppImage Updater Bridge widgets will be disabled for this build.)

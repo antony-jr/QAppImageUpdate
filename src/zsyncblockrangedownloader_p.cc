@@ -53,8 +53,6 @@ ZsyncBlockRangeDownloaderPrivate::ZsyncBlockRangeDownloaderPrivate(ZsyncWriterPr
 
     connect(p_Writer, SIGNAL(download(qint64, qint64, QUrl)),
             this, SLOT(initDownloader(qint64, qint64, QUrl)), Qt::QueuedConnection);
-    connect(this, SIGNAL(finished()),
-            p_Writer, SLOT(verifyDownloadAndFinish()), Qt::QueuedConnection);
     connect(p_Writer, SIGNAL(blockRange(qint32, qint32)),
             this, SLOT(handleBlockRange(qint32, qint32)),Qt::QueuedConnection);
     connect(this, SIGNAL(blockRangesRequested()),

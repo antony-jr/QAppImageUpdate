@@ -79,7 +79,6 @@ public Q_SLOTS:
     void getBlockRanges();
     void writeSeqRaw(QByteArray*);
     void writeBlockRanges(qint32, qint32, QByteArray*);
-    void verifyDownloadAndFinish();
 
 private Q_SLOTS:
 #ifndef LOGGING_DISABLED
@@ -108,7 +107,6 @@ Q_SIGNALS:
     void finishedConfiguring();
     void blockRange(qint32, qint32);
     void endOfBlockRanges();
-    void blockRangesWritten(qint32, qint32, bool);
     void download(qint64, qint64, QUrl);
     void started();
     void canceled();

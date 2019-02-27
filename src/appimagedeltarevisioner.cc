@@ -40,14 +40,9 @@
 */
 #include "../include/appimagedeltarevisioner_p.hpp"
 #include "../include/appimagedeltarevisioner.hpp"
+#include "../include/helpers_p.hpp"
 
 using namespace AppImageUpdaterBridge;
-
-static QMetaMethod getMethod(AppImageDeltaRevisionerPrivate *object, const char *function)
-{
-    auto metaObject = object->metaObject();
-    return metaObject->method(metaObject->indexOfMethod(QMetaObject::normalizedSignature(function)));
-}
 
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(bool singleThreaded, QObject *parent)
     : QObject(parent)

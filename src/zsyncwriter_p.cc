@@ -261,15 +261,6 @@ void ZsyncWriterPrivate::getBlockRanges(void)
     return;
 }
 
-void ZsyncWriterPrivate::verifyDownloadAndFinish(void)
-{
-    if(!p_TargetFile->isOpen() || !p_TargetFile->autoRemove())
-        return;
-
-    verifyAndConstructTargetFile();
-    return;
-}
-
 /* Simply writes whatever in downloadedData to the working target file ,
  * Used only if the downloader is downloading the entire file.
  * This automatically manages the memory of the given pointer to
@@ -288,6 +279,9 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData)
     }
 
     n_BytesWritten += p_TargetFile->write(*(data.data()));
+    if(n_BytesWritten >= n_TargetFileLength){
+	    verifyAndConstructTargetFile();
+    }
     return;
 }
 
@@ -374,7 +368,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
         if(!p_RequiredRanges.isEmpty())
             p_RequiredRanges.removeAll(qMakePair(bfrom, bto));
     }
-    emit blockRangesWritten(fromRange, toRange, /*all blocks were written with no md4 mismatch=*/Md4ChecksumsMatched);
+    INFO_START " writeBlockRanges : wrote block(" LOGR fromRange LOGR "," LOGR toRange LOGR ")." INFO_END; 
 
     /* Calculate our progress. */
     {
@@ -397,6 +391,9 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
             sUnit = "MB/s";
         }
         emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);
+    }
+    if(n_BytesWritten >= n_TargetFileLength){
+	    verifyAndConstructTargetFile();
     }
     emit statusChanged(Idle);
     return;
