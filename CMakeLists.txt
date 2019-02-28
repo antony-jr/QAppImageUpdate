@@ -34,6 +34,7 @@ list(APPEND source src/appimagedeltarevisioner.cc
 				  src/zsyncwriter_p.cc
 				  src/appimageupdaterdialog.cc
 				  src/appimageupdaterbridge_enums.cc
+				  src/helpers_p.cc
 				  include/appimagedeltarevisioner.hpp
 				  include/appimageupdaterbridge.hpp
 				  include/appimageupdaterdialog.hpp
@@ -44,7 +45,8 @@ list(APPEND source src/appimagedeltarevisioner.cc
 				  include/zsyncblockrangedownloader_p.hpp
 				  include/zsyncinternalstructures_p.hpp 
 				  include/zsyncwriter_p.hpp
-				  include/appimageupdaterbridge_enums.hpp)
+				  include/appimageupdaterbridge_enums.hpp
+				  include/helpers_p.hpp)
 if(LOGGING_DISABLED)
 	message("-- [*] IMPORTANT: Logging will be disabled for this build.")
 endif()
