@@ -392,7 +392,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
         }
         emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);
     }
-    if(n_BytesWritten >= n_TargetFileLength){
+    if(p_RequiredRanges.isEmpty()){
 	    verifyAndConstructTargetFile();
     }
     emit statusChanged(Idle);
