@@ -39,6 +39,9 @@ QString AppImageUpdaterBridge::errorCodeToString(short errorCode)
 {
     QString ret = "AppImageUpdaterBridge::errorCode(";
     switch(errorCode) {
+    case NoAppimagePathGiven:
+	ret += "NoAppImagePathGiven";
+	break;
     case AppimageNotReadable:
         ret += "AppImageNotReadable";
         break;

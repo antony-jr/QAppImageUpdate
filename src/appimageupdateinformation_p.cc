@@ -34,6 +34,7 @@
  * from AppImages is implemented.
 */
 #include <QBuffer>
+#include <QProcessEnvironment>
 
 #include "../include/appimageupdateinformation_p.hpp"
 
@@ -465,6 +466,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
          * path processed by qt , Instead we must use argv[0].
          *
         */
+	
         auto arguments = QCoreApplication::arguments();
         if(!arguments.isEmpty()) {
             	bc.unlock();
@@ -472,11 +474,19 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 		bc.lock();
 	}
 
+	/*
+	 * Lets try getting it from the $APPIMAGE environmental variable.
+	*/
+	if(s_AppImagePath.isEmpty()){
+		s_AppImagePath = QProcessEnvironment::systemEnvironment().value("APPIMAGE");
+	}
 
         if(s_AppImagePath.isEmpty()) {
             emit(error(NoAppimagePathGiven));
             return;
-        }
+        }else{
+	    s_AppImageName = QFileInfo(s_AppImagePath).fileName();
+	}
     }
 
 
