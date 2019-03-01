@@ -477,16 +477,16 @@ void AppImageUpdateInformationPrivate::getInfo(void)
 	/*
 	 * Lets try getting it from the $APPIMAGE environmental variable.
 	*/
-	if(s_AppImagePath.isEmpty()){
-		s_AppImagePath = QProcessEnvironment::systemEnvironment().value("APPIMAGE");
+	if(s_AppImagePath.isEmpty() || !QFileInfo::exists(s_AppImagePath)){
+		bc.unlock();
+		setAppImage(QProcessEnvironment::systemEnvironment().value("APPIMAGE"));
+		bc.lock();
 	}
 
         if(s_AppImagePath.isEmpty()) {
             emit(error(NoAppimagePathGiven));
             return;
-        }else{
-	    s_AppImageName = QFileInfo(s_AppImagePath).fileName();
-	}
+        }
     }
 
 
