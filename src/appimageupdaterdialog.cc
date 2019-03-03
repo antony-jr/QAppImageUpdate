@@ -37,7 +37,7 @@
 using namespace AppImageUpdaterBridge;
 
 AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img,QWidget *parent, int flags)
-    : QWidget(parent),
+    : QDialog(parent),
       p_Flags(flags)
 {
     if (objectName().isEmpty())
