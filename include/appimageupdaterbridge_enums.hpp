@@ -161,6 +161,7 @@ enum : short {
 };
 
 QString errorCodeToString(short);
+QString errorCodeToDescriptionString(short);
 QString statusCodeToString(short);
 }
 #endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED

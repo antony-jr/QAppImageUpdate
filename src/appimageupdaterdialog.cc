@@ -205,190 +205,12 @@ void AppImageUpdaterDialog::handleError(short errorCode)
     bool show = p_Flags & ShowErrorDialog,
          alert = p_Flags &  AlertWhenAuthorizationIsRequired,
          doAlert = false;
-    QString path = s_CurrentAppImagePath,
-            errorString;
+    QString path = s_CurrentAppImagePath;
+    QString errorString = errorCodeToDescriptionString(errorCode);
 
-    switch(errorCode) {
-    case ConnectionRefusedError:
-        errorString = QString::fromUtf8("the update server is not accepting requests.");
-        break;
-    case RemoteHostClosedError:
-        errorString = QString::fromUtf8("the remote server closed the connection prematurely, ");
-        errorString += QString::fromUtf8("before the entire reply was received and processed.");
-        break;
-    case HostNotFoundError:
-        errorString = QString::fromUtf8("the remote host name was not found (invalid hostname).");
-        break;
-    case TimeoutError:
-        errorString = QString::fromUtf8("the connection to the remote server timed out.");
-        break;
-    case SslHandshakeFailedError:
-        errorString = QString::fromUtf8("the SSL/TLS handshake failed and the encrypted channel ");
-        errorString += QString::fromUtf8("could not be established.");
-        break;
-    case TemporaryNetworkFailureError:
-        errorString = QString::fromUtf8("the connection was broken due to disconnection from the network,");
-        break;
-    case NetworkSessionFailedError:
-        errorString = QString::fromUtf8("the connection was broken due to disconnection from the network ");
-        errorString += QString::fromUtf8("or failure to start the network.");
-        break;
-    case BackgroundRequestNotAllowedError:
-        errorString = QString::fromUtf8("the background request is not currently allowed due to platform policy.");
-        break;
-    case TooManyRedirectsError:
-        errorString = QString::fromUtf8("while following redirects, the maximum limit was reached. ");
-        break;
-    case InsecureRedirectError:
-        errorString = QString::fromUtf8("while following redirects, the network access API detected a redirect ");
-        errorString += QString::fromUtf8("from a encrypted protocol (https) to an unencrypted one (http).");
-        break;
-    case ContentAccessDenied:
-        errorString = QString::fromUtf8("the access to the remote content was denied (HTTP error 403).");
-        break;
-    case ContentOperationNotPermittedError:
-        errorString = QString::fromUtf8("the operation requested on the remote content is not permitted.");
-        break;
-    case ContentNotFoundError:
-        errorString = QString::fromUtf8("the remote content was not found at the server (HTTP error 404)");
-        break;
-    case AuthenticationRequiredError:
-        errorString = QString::fromUtf8("the remote server requires authentication to serve the content ");
-        errorString += QString::fromUtf8("but the credentials provided were not accepted or given. ");
-        break;
-    case ContentConflictError:
-        errorString = QString::fromUtf8("the request could not be completed due to a conflict with the ");
-        errorString += QString::fromUtf8("current state of the resource.");
-        break;
-    case ContentGoneError:
-        errorString = QString::fromUtf8("the requested resource is no longer available at the server.");
-        break;
-    case InternalServerError:
-        errorString = QString::fromUtf8("the server encountered an unexpected condition which prevented ");
-        errorString += QString::fromUtf8("it from fulfilling the request.");
-        break;
-    case OperationNotImplementedError:
-        errorString = QString::fromUtf8("the server does not support the functionality required to fulfill the request.");
-        break;
-    case ServiceUnavailableError:
-        errorString = QString::fromUtf8("the server is unable to handle the request at this time.");
-        break;
-    case ProtocolUnknownError:
-        errorString = QString::fromUtf8("the Network Access API cannot honor the request because the protocol");
-        errorString += QString::fromUtf8(" is not known.");
-        break;
-    case ProtocolInvalidOperationError:
-        errorString = QString::fromUtf8("the requested operation is invalid for this protocol.");
-        break;
-    case UnknownNetworkError:
-        errorString = QString::fromUtf8("an unknown network-related error was detected.");
-        break;
-    case UnknownContentError:
-        errorString = QString::fromUtf8("an unknown error related to the remote content was detected.");
-        break;
-    case ProtocolFailure:
-        errorString = QString::fromUtf8("a breakdown in protocol was detected ");
-        errorString += QString::fromUtf8("(parsing error, invalid or unexpected responses, etc.)");
-        break;
-    case UnknownServerError:
-        errorString = QString::fromUtf8("an unknown error related to the server response was detected.");
-        break;
-    case NoAppimagePathGiven:
-        errorString = QString::fromUtf8("no appimage was given.");
-        break;
-    case AppimageNotReadable:
-        errorString = QString::fromUtf8("it is not readable.");
-        break;
-    case NoReadPermission:
-        errorString = QString::fromUtf8("you don't have the permission to read it.");
+    if(errorCode == NoReadPermission || errorCode == NoPermissionToReadSourceFile || errorCode == NoPermissionToReadWriteTargetFile) {
         show = (alert) ? false : show;
         doAlert = alert;
-        break;
-    case AppimageNotFound:
-        errorString = QString::fromUtf8("it does not exists.");
-        break;
-    case CannotOpenAppimage:
-        errorString = QString::fromUtf8("it cannot be opened.");
-        break;
-    case EmptyUpdateInformation:
-        errorString = QString::fromUtf8("the author of this AppImage did not include any update information.");
-        break;
-    case InvalidAppimageType:
-        errorString = QString::fromUtf8("it is an unknown AppImage type.");
-        break;
-    case InvalidMagicBytes:
-        errorString = QString::fromUtf8("it is not a AppImage , Make sure to give valid AppImage.");
-        break;
-    case InvalidUpdateInformation:
-        errorString = QString::fromUtf8("the author of this AppImage included invalid update information.");
-        break;
-    case NotEnoughMemory:
-        errorString = QString::fromUtf8("there is no enough memory left in your ram.");
-        break;
-    case SectionHeaderNotFound:
-        errorString = QString::fromUtf8("the author of this AppImage did not embed the update information ");
-        errorString += QString::fromUtf8("at a valid section header.");
-        break;
-    case UnsupportedElfFormat:
-        errorString = QString::fromUtf8("the given AppImage is not in supported elf format.");
-        break;
-    case UnsupportedTransport:
-        errorString = QString::fromUtf8("the author of this included an unsupported transport in update information.");
-        break;
-    case IoReadError:
-        errorString = QString::fromUtf8("there was a unknown IO read error.");
-        break;
-    case GithubApiRateLimitReached:
-        errorString = QString::fromUtf8("github api rate limit was reached , Please try again after an hour.");
-        break;
-    case ErrorResponseCode:
-        errorString = QString::fromUtf8("some request returned a bad server response code , Please try again.");
-        break;
-    case NoMarkerFoundInControlFile:
-    case InvalidZsyncHeadersNumber:
-    case InvalidZsyncMakeVersion:
-    case InvalidZsyncTargetFilename:
-    case InvalidZsyncMtime:
-    case InvalidZsyncBlocksize:
-    case InvalidTargetFileLength:
-    case InvalidHashLengthLine:
-    case InvalidHashLengths:
-    case InvalidTargetFileUrl:
-    case InvalidTargetFileSha1:
-    case HashTableNotAllocated:
-    case InvalidTargetFileChecksumBlocks:
-    case CannotOpenTargetFileChecksumBlocks:
-    case CannotConstructHashTable:
-    case QbufferIoReadError:
-        errorString = QString::fromUtf8("the author did not produce the zsync meta file properly , ");
-        errorString += QString::fromUtf8("Please notify the author or else try again because it can be a ");
-        errorString += QString::fromUtf8("false positive.");
-        break;
-    case SourceFileNotFound:
-        errorString = QString::fromUtf8("the current AppImage is not found , maybe deleted while updating ?");
-        break;
-    case NoPermissionToReadSourceFile:
-        errorString = QString::fromUtf8("you have no permissions to read the current AppImage.");
-        show = (alert) ? false : show;
-        doAlert = alert;
-        break;
-    case CannotOpenSourceFile:
-        errorString = QString::fromUtf8("the current AppImage cannot be opened.");
-        break;
-    case NoPermissionToReadWriteTargetFile:
-        errorString = QString::fromUtf8("you have no write or read permissions to read and write the new version.");
-        show = (alert) ? false : show;
-        doAlert = alert;
-        break;
-    case CannotOpenTargetFile:
-        errorString = QString::fromUtf8("the new version cannot be opened to write or read.");
-        break;
-    case TargetFileSha1HashMismatch:
-        errorString = QString::fromUtf8("the newly construct AppImage failed to prove integrity , Try again.");
-        break;
-    default:
-        errorString = QString::fromUtf8("there occured an uncaught error.");
-        break;
     }
 
     hide();
@@ -399,7 +221,7 @@ void AppImageUpdaterDialog::handleError(short errorCode)
         box.setIcon(QMessageBox::Critical);
         box.setText(QString::fromUtf8("Update failed for '") +
                     path +
-                    QString::fromUtf8("' , Because ") +
+                    QString::fromUtf8("': ") +
                     errorString);
         box.exec();
     }
