@@ -75,6 +75,15 @@ These are the people who helped to make the bridge stronger! :heart:
             </sub><br>
             <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=technic">💻</a>
       </td>
+       <td>
+            <img src="https://avatars3.githubusercontent.com/u/516527?v=4" width="100px"><br>
+            <sub>
+                <strong>
+                    <a href="https://github.com/lluchs">Lukas Werling</a>
+                </strong>
+            </sub><br>
+            <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=lluchs">💻</a>
+      </td>
     </tr>
 </table>
 
