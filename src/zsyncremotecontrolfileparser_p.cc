@@ -242,8 +242,8 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
 
         connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
                 this, SLOT(handleNetworkError(QNetworkReply::NetworkError)), Qt::UniqueConnection);
-        connect(reply, SIGNAL(redirected()),
-                this, SLOT(handleBintrayRedirection()), Qt::UniqueConnection);
+        connect(reply, SIGNAL(redirected(const QUrl&)),
+                this, SLOT(handleBintrayRedirection(const QUrl&)), Qt::UniqueConnection);
     }
     return;
 }
