@@ -48,12 +48,12 @@ int main(int ac , char **av)
 		app.quit();
         });
        /*
-        * Enable this if you want to print the log messages in 
-        * the standard output.
+       * Enable this if you want to print the log messages in 
+       * the standard output.
        */
-	DRevisioner.setShowLog(true);
-	
-	/* Using proxy. */
+       DRevisioner.setShowLog(true);
+
+        /* Using proxy. */
         DRevisioner.setProxy(proxy);
 	
 	DRevisioner.start(); /* Start the update. */
