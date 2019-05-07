@@ -13,6 +13,10 @@
         "title": "Updating an AppImage",
         "sidebar_label": "Updating an AppImage"
       },
+      "AppImageDeltaRevisionerProxyExample": {
+        "title": "Updating an AppImage using Proxy",
+        "sidebar_label": "Updating an AppImage using Proxy"
+      },
       "AppImageUpdaterBridgeErrorCodes": {
         "title": "Handling Errors from AppImageUpdaterBridge",
         "sidebar_label": "Error Codes"

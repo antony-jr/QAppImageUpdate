@@ -44,9 +44,10 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 | **void** | [start(void)](#void-startvoid) |
 | **void** | [cancel(void)](#void-cancelvoid) |
 | **void** | [setAppImage(const QString&)](#void-setappimageconst-qstring) |
-| **void** | [setAppImage(QFile *)](#void-setappimageqfile) |
+| **void** | [setAppImage(QFile \*)](#void-setappimageqfile) |
 | **void** | [setShowLog(bool)](#void-setshowlogbool) |
 | **void** | [setOutputDirectory(const QString&)](#void-setoutputdirectoryconst-qstring) |
+| **void** | [setProxy(const QNetworkProxy&)](#void-setproxyconst-qnetworkproxy-https-docqtio-qt-5-qnetworkproxyhtml) |
 | **void** | [getAppImageEmbededInformation(void)](#void-getappimageembededinformationvoid) |
 | **void** | [checkForUpdate(void)](#void-checkforupdatevoid) |
 | **void** | [clear(void)](#void-clearvoid) |
@@ -133,10 +134,10 @@ Emits **canceled()** signal when cancel was successfull.
 Sets the AppImage Path as the given **QString**.
 
 
-### void setAppImage(QFile *)
+### void setAppImage(QFile \*)
 <p align="right"> <b>[SLOT]</b> </p>
 
-Sets the given **QFile\*** as the AppImage itself.
+Sets the given ** QFile\* ** as the AppImage itself.
 
 ### void setShowLog(bool)
 <p align="right"> <b>[SLOT]</b> </p>
@@ -154,11 +155,29 @@ Writes the new version of the AppImage to the given Output directory , Assuming 
 The default is the old version AppImage's directory.
 
 
+### void setProxy(const [QNetworkProxy](https://doc.qt.io/qt-5/qnetworkproxy.html)&)
+<p align="right"> <b>[SLOT]</b> </p>
+
+Sets the given [QNetworkProxy](https://doc.qt.io/qt-5/qnetworkproxy.html) as the proxy
+to use for all network communication for the updater.
+
+```
+   QNetworkProxy proxy;
+   proxy.setType(QNetworkProxy::Socks5Proxy);
+   proxy.setHostName("127.0.0.1");
+   proxy.setPort(9050);
+
+   AppImageDeltaRevisioner Revisioner("Ein.AppImage");
+   Revisioner.setProxy(proxy);
+   Revisioner.start(); /* Start the updater */
+```
+
+
 ### void getAppImageEmbededInformation(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Requests the updater for the embeded information of the current operating AppImage.
-Emits **embededInformation(QJsonObject)** in which the *QJsonObject* will be the embeded information 
+Emits ** embededInformation(QJsonObject) ** in which the *QJsonObject* will be the embeded information 
 of the AppImage in the below format with respect to Json.
 
     { "IsEmpty" : false ,

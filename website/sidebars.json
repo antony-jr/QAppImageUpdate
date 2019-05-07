@@ -6,6 +6,7 @@
     ],
     "Guides" : [
 	   "AppImageDeltaRevisionerExample",
+	   "AppImageDeltaRevisionerProxyExample",
 	   "AppImageUpdaterDialogExample"
     ],
     "API" : [

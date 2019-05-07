@@ -33,8 +33,9 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
 |------------------------------|-------------------------------------------|
 | **void** | [init(void)](#void-initvoid) |
 | **void** | [setAppImage(const QString&)](#void-setappimageconst-qstring) |
-| **void** | [setAppImage(QFile *)](#void-setappimageqfile) |
+| **void** | [setAppImage(QFile \*)](#void-setappimageqfile) |
 | **void** | [setShowLog(bool)](#void-setshowlogbool) |
+| **void** | [setProxy(const QNetworkProxy&)](#void-setproxyconst-qnetworkproxy-https-docqtio-qt-5-qnetworkproxyhtml) |
 
 ## Signals
 
@@ -97,15 +98,21 @@ Emits **canceled()** signal when cancel was successfull.
 Sets the AppImage Path as the given **QString**.
 
 
-### void setAppImage(QFile *)
+### void setAppImage(QFile \*)
 <p align="right"> <b>[SLOT]</b> </p>
 
-Sets the given **QFile\*** as the AppImage itself.
+Sets the given ** QFile\* ** as the AppImage itself.
 
 ### void setShowLog(bool)
 <p align="right"> <b>[SLOT]</b> </p>
 
 Turns on and off the log printer.
+
+### void setProxy(const [QNetworkProxy](https://doc.qt.io/qt-5/qnetworkproxy.html)&)
+<p align="right"> <b>[SLOT]</b> </p>
+
+Set proxy for the updater which is used for all network communications.
+
 
 ### void started(void)
 <p align="right"> <b>[SIGNAL]</b> </p>
