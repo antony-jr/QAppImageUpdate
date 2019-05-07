@@ -143,6 +143,10 @@ void AppImageUpdaterDialog::setShowLog(bool c)
     p_DRevisioner->setShowLog(c);
 }
 
+void AppImageUpdaterDialog::setProxy(const QNetworkProxy &proxy){
+    p_DRevisioner->setProxy(proxy);
+}
+
 void AppImageUpdaterDialog::showWidget(void)
 {
     if(!(p_Flags & ShowProgressDialog)) {

@@ -238,6 +238,11 @@ void AppImageDeltaRevisionerPrivate::setOutputDirectory(const QString &dir)
     return;
 }
 
+void AppImageDeltaRevisionerPrivate::setProxy(const QNetworkProxy &proxy){
+    p_SharedNetworkAccessManager->setProxy(proxy);
+    return;
+}
+
 void AppImageDeltaRevisionerPrivate::getAppImageEmbededInformation(void)
 {
     getMethod(p_UpdateInformation.data(), "getInfo(void)").invoke(p_UpdateInformation.data(), Qt::QueuedConnection);

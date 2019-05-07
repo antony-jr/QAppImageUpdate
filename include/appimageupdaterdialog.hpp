@@ -40,6 +40,7 @@
 #include <QFileInfo>
 #include <QTimer>
 #include <QMutex>
+#include <QNetworkProxy>
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QGridLayout>
@@ -89,6 +90,7 @@ public Q_SLOTS:
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setShowLog(bool);
+    void setProxy(const QNetworkProxy&);
 
 private Q_SLOTS:
     void showWidget(void);

@@ -114,6 +114,12 @@ void AppImageDeltaRevisioner::setOutputDirectory(const QString &dir)
     return;
 }
 
+void AppImageDeltaRevisioner::setProxy(const QNetworkProxy &proxy){
+    getMethod(p_DeltaRevisioner , "setProxy(const QNetworkProxy&)")
+    .invoke(p_DeltaRevisioner , Qt::QueuedConnection, Q_ARG(QNetworkProxy , proxy));
+    return;
+}
+
 void AppImageDeltaRevisioner::getAppImageEmbededInformation(void)
 {
     getMethod(p_DeltaRevisioner, "getAppImageEmbededInformation(void)").invoke(p_DeltaRevisioner, Qt::QueuedConnection);

@@ -49,6 +49,7 @@
 #include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QNetworkProxy>
 #include <QObject>
 #include <QString>
 #include <QScopedPointer>
@@ -78,6 +79,7 @@ public Q_SLOTS:
     void setAppImage(QFile*);
     void setShowLog(bool);
     void setOutputDirectory(const QString&);
+    void setProxy(const QNetworkProxy&);
     void getAppImageEmbededInformation(void);
     void checkForUpdate(void);
     void clear(void);
