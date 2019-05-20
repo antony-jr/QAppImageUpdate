@@ -9,11 +9,17 @@
 
 const users = [
   {	
-    caption: 'AppImageUpdaterBridge',
+    caption: 'AppImageUpdater',
     image: '/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png',
-    infoLink: 'https://antony-jr.github.io/AppImageUpdaterBridge',
+    infoLink: 'https://github.com/antony-jr/AppImageUpdater',
     pinned: true,
   },
+  {
+    caption: 'e2designer',
+    image: 'https://assets.gitlab-static.net/uploads/-/system/project/avatar/7543447/e2designer.png?width=64',
+    infoLink: 'https://gitlab.com/technic93/e2designer',
+    pinned: true,
+  }
 ];
 
 const siteConfig = {
