@@ -10,13 +10,13 @@
 const users = [
   {	
     caption: 'AppImageUpdater',
-    image: '/AppImageUpdaterBridge/img/AppImageUpdaterBridge.png',
+    image: '/AppImageUpdaterBridge/img/AppImageUpdater.png',
     infoLink: 'https://github.com/antony-jr/AppImageUpdater',
     pinned: true,
   },
   {
     caption: 'e2designer',
-    image: 'https://assets.gitlab-static.net/uploads/-/system/project/avatar/7543447/e2designer.png?width=64',
+    image: '/AppImageUpdaterBridge/img/e2designer.png',
     infoLink: 'https://gitlab.com/technic93/e2designer',
     pinned: true,
   }
