@@ -36,9 +36,10 @@
 
 using namespace AppImageUpdaterBridge;
 
-AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img,QWidget *parent, int flags)
-    : QDialog(parent),
-      p_Flags(flags)
+AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img , QWidget *parent , int flags , 
+		                             AppImageDeltaRevisioner *revisioner)
+	: QDialog(parent),
+	  p_Flags(flags)
 {
     if (objectName().isEmpty())
         setObjectName(QStringLiteral("AppImageUpdaterDialog"));
@@ -81,7 +82,8 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img,QWidget *parent, int fl
     }
 
     /* Delta Revisioner. */
-    p_DRevisioner = new AppImageDeltaRevisioner(/*single threaded=*/false, /*parent=*/this);
+    p_DRevisioner = (!revisioner) ? new AppImageDeltaRevisioner(/*single threaded=*/false, /*parent=*/this) :
+	            revisioner;
 
     /* Translations. */
     setWindowTitle(QString::fromUtf8("Updating... "));
@@ -97,16 +99,19 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img,QWidget *parent, int fl
     connect(p_DRevisioner, &AppImageDeltaRevisioner::finished, this, &AppImageUpdaterDialog::handleFinished);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::progress, this, &AppImageUpdaterDialog::handleProgress);
     return;
+
 }
 
-AppImageUpdaterDialog::AppImageUpdaterDialog(const QString &AppImagePath, QPixmap img, QWidget *parent, int p_Flags)
-    : AppImageUpdaterDialog(img, parent, p_Flags)
+AppImageUpdaterDialog::AppImageUpdaterDialog(const QString &AppImagePath, QPixmap img, QWidget *parent, int flags,
+		                             AppImageDeltaRevisioner *revisioner)
+    : AppImageUpdaterDialog(img, parent, flags , revisioner)
 {
     p_DRevisioner->setAppImage(AppImagePath);
 }
 
-AppImageUpdaterDialog::AppImageUpdaterDialog(QFile *AppImage,QPixmap img,QWidget *parent, int p_Flags)
-    : AppImageUpdaterDialog(img, parent, p_Flags)
+AppImageUpdaterDialog::AppImageUpdaterDialog(QFile *AppImage,QPixmap img,QWidget *parent, int flags,
+					     AppImageDeltaRevisioner *revisioner)
+    : AppImageUpdaterDialog(img, parent, flags , revisioner)
 {
     p_DRevisioner->setAppImage(AppImage);
 }
@@ -121,7 +126,6 @@ void AppImageUpdaterDialog::init(void)
     n_MegaBytesTotal = 0;
     p_StatusLbl->setText(QString::fromUtf8("Checking for Update... "));
     p_DRevisioner->checkForUpdate();
-    p_DRevisioner->setShowLog(true);
     if(p_Flags & ShowBeforeProgress) {
         showWidget();
     }

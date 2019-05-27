@@ -76,13 +76,17 @@ public:
     };
 
     AppImageUpdaterDialog(QPixmap img = QPixmap(),
-                          QWidget *parent = nullptr, int flags = Default);
+                          QWidget *parent = nullptr, int flags = Default,
+			  AppImageDeltaRevisioner *revisioner = nullptr);
+
     AppImageUpdaterDialog(const QString&,
                           QPixmap img = QPixmap(),
-                          QWidget *parent = nullptr, int flags = Default);
+                          QWidget *parent = nullptr, int flags = Default,
+			  AppImageDeltaRevisioner *revisioner = nullptr);
     AppImageUpdaterDialog(QFile*,
                           QPixmap img = QPixmap(),
-                          QWidget *parent = nullptr, int flags = Default);
+                          QWidget *parent = nullptr, int flags = Default,
+			  AppImageDeltaRevisioner *revisioner = nullptr);
     ~AppImageUpdaterDialog();
 
 public Q_SLOTS:
