@@ -460,33 +460,31 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     /* If this class is constructed without an AppImage to operate on ,
      * Then lets guess it. */
     if(!p_AppImage && s_AppImagePath.isEmpty()) {
-        /*
-         * Check if QCoreApplication got something on argv[0]. The main payload is not the one we want to
-         * operate this on but the AppImage itself , So we cannot use the actual application executable
-         * path processed by qt , Instead we must use argv[0].
-         *
-        */
+        /* Do not check the QCoreApplication first. First check if the environmental variable 
+	 * $APPIMAGE has something , if not then use the arguments given by QCoreApplication. */
+       
+	bc.unlock();
+	setAppImage(QProcessEnvironment::systemEnvironment().value("APPIMAGE"));
+	bc.lock();
 	
-        auto arguments = QCoreApplication::arguments();
-        if(!arguments.isEmpty()) {
-            	bc.unlock();
-		setAppImage(QFileInfo(arguments.at(0)).absolutePath() + QString::fromUtf8("/") + QFileInfo(arguments.at(0)).fileName());
-		bc.lock();
-	}
 
 	/*
-	 * Lets try getting it from the $APPIMAGE environmental variable.
-	*/
-	if(s_AppImagePath.isEmpty() || !QFileInfo::exists(s_AppImagePath)){
-		bc.unlock();
-		setAppImage(QProcessEnvironment::systemEnvironment().value("APPIMAGE"));
+	 * Lets try getting it from QCoreApplication arguments. */
+	if(s_AppImagePath.isEmpty()){
+	    auto arguments = QCoreApplication::arguments();
+            if(!arguments.isEmpty()) {
+            	bc.unlock();
+		setAppImage(QFileInfo(arguments.at(0)).absolutePath() + 
+			    QString::fromUtf8("/") + 
+			    QFileInfo(arguments.at(0)).fileName());
 		bc.lock();
-	}
+	    }
 
-        if(s_AppImagePath.isEmpty()) {
-            emit(error(NoAppimagePathGiven));
-            return;
-        }
+	    if(s_AppImagePath.isEmpty() || !QFileInfo::exists(s_AppImagePath)){
+		emit(error(NoAppimagePathGiven));
+		return;
+	    }
+	}
     }
 
 
