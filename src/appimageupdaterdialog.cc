@@ -145,10 +145,10 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     if(isUpdateAvailable) {
         if(showUpdateDialog) {
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
-            box.setWindowTitle(QString::fromUtf8("Update Available!"));
+            box.setWindowTitle(QString::fromUtf8("Update Available"));
             box.setText(QString::fromUtf8("A new version of ") +
                         currentAppImageName +
-                        QString::fromUtf8(" is available , Do you want to update ?"));
+                        QString::fromUtf8(" is available, do you want to update?"));
             box.addButton(QMessageBox::Yes);
             box.addButton(QMessageBox::No);
             confirmed = (box.exec() == QMessageBox::Yes);
@@ -156,7 +156,7 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     } else {
         if(showNoUpdateDialog) {
             QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
-            box.setWindowTitle(QString::fromUtf8("No Updates Available!"));
+            box.setWindowTitle(QString::fromUtf8("No Updates Available"));
             box.setText(QString::fromUtf8("You are currently using the lastest version of ") +
                         currentAppImageName +
                         QString::fromUtf8("."));
@@ -196,7 +196,7 @@ void AppImageUpdaterDialog::handleError(short errorCode)
 
     if(show) {
         QMessageBox box(this);
-        box.setWindowTitle(QString::fromUtf8("Update Failed!"));
+        box.setWindowTitle(QString::fromUtf8("Update Failed"));
         box.setIcon(QMessageBox::Critical);
         box.setText(QString::fromUtf8("Update failed for '") +
                     path +
@@ -227,11 +227,11 @@ void AppImageUpdaterDialog::handleFinished(QJsonObject newVersion, QString oldVe
         QMessageBox box(this);
         box.setWindowTitle(QString::fromUtf8("Update Completed!"));
         box.setIconPixmap(p_AppImageIcon);
-        box.setText(QString::fromUtf8("Update Completed successfully for ") +
+        box.setText(QString::fromUtf8("Update completed successfully for ") +
                     currentAppImageName +
-                    QString::fromUtf8(" , the new version is saved at '") +
+                    QString::fromUtf8(", the new version is saved at '") +
                     newVersion["AbsolutePath"].toString() +
-                    QString::fromUtf8("' , Do you want to open it ?"));
+                    QString::fromUtf8("', do you want to open it?"));
         box.addButton(QMessageBox::Yes);
         box.addButton(QMessageBox::No);
         execute = (box.exec() == QMessageBox::Yes);
