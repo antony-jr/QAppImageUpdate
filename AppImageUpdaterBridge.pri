@@ -26,7 +26,7 @@ SOURCES += \
     $$PWD/src/appimageupdaterbridge_enums.cc \
     $$PWD/src/helpers_p.cc
 
-FORMS += $$PWD/ui/AppImageUpdaterDialog.ui
+FORMS += $$PWD/include/AppImageUpdaterDialog.ui
 
 NO_GUI {
 	message(AppImage Updater Bridge widgets will be disabled for this build.)

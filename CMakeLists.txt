@@ -4,6 +4,7 @@ project(AppImageUpdaterBridge)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
 option(LG "LOGGING_DISABLED" OFF)
 option(NG "NO_GUI" OFF)
 
@@ -23,6 +24,7 @@ find_package(Qt5Widgets)
 # Include Directories.
 include_directories(.)
 include_directories(include)
+include_directories(${CMAKE_BINARY_DIR})
 
 SET(source)
 list(APPEND source src/appimagedeltarevisioner.cc
