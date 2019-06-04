@@ -41,56 +41,25 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img , QWidget *parent , int
 	: QDialog(parent),
 	  p_Flags(flags)
 {
-    if (objectName().isEmpty())
-        setObjectName(QStringLiteral("AppImageUpdaterDialog"));
-    resize(420, 120);
-    /* Fixed window size. */
-    setMinimumSize(QSize(420, 120));
-    setMaximumSize(QSize(420, 120));
-
-    p_GridLayout = new QGridLayout(this);
-    p_GridLayout->setObjectName(QStringLiteral("MainGridLayout"));
-
-    /* Cancel Update. */
-    p_CancelBtn = new QPushButton(this);
-    p_CancelBtn->setObjectName(QStringLiteral("CancelButton"));
-    p_GridLayout->addWidget(p_CancelBtn, 2, 1, 1, 1);
-
-    /* Update Status. */
-    p_StatusLbl = new QLabel(this);
-    p_StatusLbl->setObjectName(QStringLiteral("StatusLabel"));
-    p_GridLayout->addWidget(p_StatusLbl, 1, 1, 1, 1);
-
-    /* Update Progress. */
-    p_ProgressBar = new QProgressBar(this);
-    p_ProgressBar->setObjectName(QStringLiteral("ProgressBar"));
-    p_ProgressBar->setValue(0);
-    p_GridLayout->addWidget(p_ProgressBar, 0, 1, 1, 1);
+    m_Ui.setupUi(this);
 
     /* Set AppImage icon if given. */
     if(!img.isNull()) {
-        p_IconLbl = new QLabel(this);
-        p_IconLbl->setObjectName(QStringLiteral("IconLabel"));
-        p_IconLbl->setMinimumSize(QSize(100, 100));
-        p_IconLbl->setMaximumSize(QSize(100, 100));
-        p_IconLbl->setScaledContents(true);
-        p_IconLbl->setAlignment(Qt::AlignCenter);
-        p_GridLayout->addWidget(p_IconLbl, 0, 0, 3, 1);
-        p_IconLbl->setPixmap(img);
-        p_AppImageIcon = img.scaled(100, 100, Qt::KeepAspectRatio);
-        setWindowIcon(img);
+	    (m_Ui.softwareIcon)->setPixmap(img);
+	    (m_Ui.softwareIconOnUpdating)->setPixmap(img);
+	    setWindowIcon(img);
+    }else{
+	    (m_Ui.softwareIcon)->setVisible(false);
+	    (m_Ui.softwareIconOnUpdating)->setVisible(false);
     }
 
     /* Delta Revisioner. */
     p_DRevisioner = (!revisioner) ? new AppImageDeltaRevisioner(/*single threaded=*/false, /*parent=*/this) :
 	            revisioner;
 
-    /* Translations. */
-    setWindowTitle(QString::fromUtf8("Updating... "));
-    p_CancelBtn->setText(QString::fromUtf8("Cancel"));
 
     /* Program Logic. */
-    connect(p_CancelBtn, &QPushButton::pressed, p_DRevisioner, &AppImageDeltaRevisioner::cancel);
+    connect((m_Ui.updateCancelBtn), &QPushButton::clicked , p_DRevisioner, &AppImageDeltaRevisioner::cancel);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &QDialog::hide);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &AppImageUpdaterDialog::canceled, Qt::DirectConnection);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable, this, &AppImageUpdaterDialog::handleUpdateAvailable);
@@ -124,9 +93,9 @@ AppImageUpdaterDialog::~AppImageUpdaterDialog()
 void AppImageUpdaterDialog::init(void)
 {
     n_MegaBytesTotal = 0;
-    p_StatusLbl->setText(QString::fromUtf8("Checking for Update... "));
     p_DRevisioner->checkForUpdate();
     if(p_Flags & ShowBeforeProgress) {
+	(m_Ui.mainStack)->setCurrentIndex(0);
         showWidget();
     }
     return;
@@ -153,7 +122,8 @@ void AppImageUpdaterDialog::setProxy(const QNetworkProxy &proxy){
 
 void AppImageUpdaterDialog::showWidget(void)
 {
-    if(!(p_Flags & ShowProgressDialog)) {
+    if(!(p_Flags & ShowProgressDialog) &&
+        (m_Ui.mainStack)->currentIndex() != 0) {
         return;
     }
     show();
@@ -201,6 +171,7 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     */
     if(confirmed) {
         p_DRevisioner->start();
+	(m_Ui.mainStack)->setCurrentIndex(1);
         showWidget();
     } else {
         emit finished(QJsonObject());
@@ -216,12 +187,12 @@ void AppImageUpdaterDialog::handleError(short errorCode)
     QString path = s_CurrentAppImagePath;
     QString errorString = errorCodeToDescriptionString(errorCode);
 
-    if(errorCode == NoReadPermission || errorCode == NoPermissionToReadSourceFile || errorCode == NoPermissionToReadWriteTargetFile) {
+    if(errorCode == NoReadPermission || 
+       errorCode == NoPermissionToReadSourceFile || 
+       errorCode == NoPermissionToReadWriteTargetFile) {
         show = (alert) ? false : show;
         doAlert = alert;
     }
-
-    hide();
 
     if(show) {
         QMessageBox box(this);
@@ -239,13 +210,14 @@ void AppImageUpdaterDialog::handleError(short errorCode)
     } else {
         emit error(errorString, errorCode);
     }
+    hide();
     return;
 }
 
 void AppImageUpdaterDialog::handleFinished(QJsonObject newVersion, QString oldVersionPath)
 {
     (void)oldVersionPath;
-    p_StatusLbl->setText(QString::fromUtf8("Finalizing Update... "));
+    (m_Ui.updateSpeedLbl)->setText(QString::fromUtf8("Finalizing Update... "));
 
     bool execute = false;
     bool show = p_Flags & ShowFinishedDialog;
@@ -279,7 +251,7 @@ void AppImageUpdaterDialog::handleFinished(QJsonObject newVersion, QString oldVe
         QProcess::startDetached(newVersion["AbsolutePath"].toString());
         emit quit();
     }
-    this->hide();
+    hide();
     emit finished(newVersion);
     return;
 }
@@ -290,14 +262,14 @@ void AppImageUpdaterDialog::handleProgress(int percent,
         double speed,
         QString units)
 {
-    p_ProgressBar->setValue(percent);
+    (m_Ui.progressBar)->setValue(percent);
     double MegaBytesReceived = bytesReceived / 1048576;
     if(!n_MegaBytesTotal) {
         n_MegaBytesTotal = bytesTotal / 1048576;
     }
     const QString progressTemplate = QString::fromUtf8("Updating %1 MiB of %2 MiB at %3 %4...");
     QString statusText = progressTemplate.arg(MegaBytesReceived).arg(n_MegaBytesTotal).arg(speed).arg(units);
-    p_StatusLbl->setText(statusText);
+    (m_Ui.updateSpeedLbl)->setText(statusText);
     return;
 }
 

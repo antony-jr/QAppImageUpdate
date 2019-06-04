@@ -41,16 +41,9 @@
 #include <QTimer>
 #include <QMutex>
 #include <QNetworkProxy>
-#include <QtCore/QVariant>
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QGridLayout>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QProgressBar>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QDialog>
-#include <QtWidgets/QWidget>
 #include <QMessageBox>
 
+#include "ui_AppImageUpdaterDialog.h"
 #include "appimageupdaterbridge_enums.hpp"
 #include "appimagedeltarevisioner.hpp"
 
@@ -68,7 +61,8 @@ public:
         ShowErrorDialog = 0x10,
         AlertWhenAuthorizationIsRequired = 0x20,
         NotifyWhenNoUpdateIsAvailable = 0x40,
-        Default = ShowProgressDialog |
+        Default = ShowBeforeProgress | 
+		  ShowProgressDialog |
                   ShowUpdateConfirmationDialog |
                   ShowFinishedDialog   |
                   ShowErrorDialog |
@@ -115,15 +109,11 @@ private:
     int p_Flags = 0;
     QPixmap p_AppImageIcon;
     QString s_CurrentAppImagePath; /* Used only for error dialog box. */
-    QGridLayout *p_GridLayout = nullptr;
-    QLabel *p_StatusLbl = nullptr;
-    QLabel *p_IconLbl = nullptr;
-    QProgressBar *p_ProgressBar = nullptr;
-    QPushButton *p_CancelBtn = nullptr;
-
     AppImageDeltaRevisioner *p_DRevisioner = nullptr;
     double n_MegaBytesTotal = 0;
     const QString progressTemplate = QString::fromUtf8("Updating %1 MiB of %2 MiB at %3 %4...");
+
+    Ui::AppImageUpdaterDialog m_Ui;
 };
 }
 
