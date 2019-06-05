@@ -315,8 +315,12 @@ void AppImageDeltaRevisionerPrivate::handleUpdateCheckInformation(QJsonObject in
     QString localAppImageSHA1Hash = embededUpdateInformation["FileInformation"].toObject()["AppImageSHA1Hash"].toString(),
             localAppImagePath = embededUpdateInformation["FileInformation"].toObject()["AppImageFilePath"].toString();
 
-    emit updateAvailable((localAppImageSHA1Hash != remoteTargetFileSHA1Hash),
-                         embededUpdateInformation["FileInformation"].toObject());
+    QJsonObject updateInfo {
+	    { "AbsolutePath" , localAppImagePath },
+	    { "Sha1Hash" , localAppImageSHA1Hash },
+	    { "RemoteSha1Hash" , remoteTargetFileSHA1Hash }
+    };
+    emit updateAvailable((localAppImageSHA1Hash != remoteTargetFileSHA1Hash), updateInfo);
     return;
 }
 

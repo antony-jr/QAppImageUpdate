@@ -62,6 +62,7 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img , QWidget *parent , int
     connect((m_Ui.updateCancelBtn), &QPushButton::clicked , p_DRevisioner, &AppImageDeltaRevisioner::cancel);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &QDialog::hide);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &AppImageUpdaterDialog::canceled, Qt::DirectConnection);
+    connect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable, this, &AppImageUpdaterDialog::updateAvailable , Qt::DirectConnection);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable, this, &AppImageUpdaterDialog::handleUpdateAvailable);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::error, this, &AppImageUpdaterDialog::handleError);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::started, this, &AppImageUpdaterDialog::started, Qt::DirectConnection);
@@ -92,6 +93,8 @@ AppImageUpdaterDialog::~AppImageUpdaterDialog()
 
 void AppImageUpdaterDialog::init(void)
 {
+    connect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable,
+	     this, &AppImageUpdaterDialog::handleUpdateAvailable , Qt::UniqueConnection);
     n_MegaBytesTotal = 0;
     p_DRevisioner->checkForUpdate();
     if(p_Flags & ShowBeforeProgress) {
@@ -99,6 +102,16 @@ void AppImageUpdaterDialog::init(void)
         showWidget();
     }
     return;
+}
+
+void AppImageUpdaterDialog::setCustomUpdateConfirmationDialog(QDialog *dialog){
+	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable, 
+		   this, &AppImageUpdaterDialog::handleUpdateAvailable);
+	connect(p_DRevisioner , &AppImageDeltaRevisioner::updateAvailable ,
+		   this , &AppImageUpdaterDialog::handleCustomUpdateAvailable , Qt::UniqueConnection);
+
+	connect(dialog , &QDialog::accepted , this , &AppImageUpdaterDialog::handleCustomConfirmUpdate , Qt::UniqueConnection);
+	connect(dialog , &QDialog::rejected , this , &AppImageUpdaterDialog::handleCustomConfirmNoUpdate , Qt::UniqueConnection);
 }
 
 void AppImageUpdaterDialog::setAppImage(const QString &AppImagePath)
@@ -130,22 +143,51 @@ void AppImageUpdaterDialog::showWidget(void)
     return;
 }
 
-void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonObject CurrentAppImageInfo)
+void AppImageUpdaterDialog::handleCustomConfirmUpdate(){
+	p_DRevisioner->start();
+	showWidget();
+ 
+}
+
+void AppImageUpdaterDialog::handleCustomConfirmNoUpdate(){
+	emit finished(QJsonObject());
+}
+
+void AppImageUpdaterDialog::handleCustomUpdateAvailable(bool isUpdateAvailable, QJsonObject UpdateInfo){
+	Q_UNUSED(isUpdateAvailable);
+	hide();
+	/* Move to the correct position. */
+	auto prevPos = pos() + rect().center();
+	(m_Ui.mainStack)->setCurrentIndex(1);
+	move(prevPos - rect().center());
+	setWindowTitle(QString::fromUtf8("Updating ") +
+                   QFileInfo(UpdateInfo["AbsolutePath"].toString()).baseName() +
+                   QString::fromUtf8("... "));
+	return;
+}
+
+void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonObject UpdateInfo)
 {
-    bool confirmed = true;
+    hide();
+    /* Move to the correct position. */
+    auto prevPos = pos() + rect().center();
+    (m_Ui.mainStack)->setCurrentIndex(1);
+    move(prevPos - rect().center());
+
     bool showUpdateDialog = p_Flags & ShowUpdateConfirmationDialog;
     bool showNoUpdateDialog = p_Flags & NotifyWhenNoUpdateIsAvailable;
+    bool confirmed = true;
     QMessageBox box(this);
     setWindowTitle(QString::fromUtf8("Updating ") +
-                   QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).baseName() +
+                   QFileInfo(UpdateInfo["AbsolutePath"].toString()).baseName() +
                    QString::fromUtf8("... "));
 
-    s_CurrentAppImagePath = CurrentAppImageInfo["AppImageFilePath"].toString();
+    s_CurrentAppImagePath = UpdateInfo["AbsolutePath"].toString();
 
     if(isUpdateAvailable) {
         if(showUpdateDialog) {
-            QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
-            box.setWindowTitle(QString::fromUtf8("Update Available"));
+            QString currentAppImageName = QFileInfo(UpdateInfo["AbsolutePath"].toString()).fileName();
+            box.setWindowTitle(QString::fromUtf8("Update Available!"));
             box.setText(QString::fromUtf8("A new version of ") +
                         currentAppImageName +
                         QString::fromUtf8(" is available, do you want to update?"));
@@ -155,8 +197,8 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
         }
     } else {
         if(showNoUpdateDialog) {
-            QString currentAppImageName = QFileInfo(CurrentAppImageInfo["AppImageFilePath"].toString()).fileName();
-            box.setWindowTitle(QString::fromUtf8("No Updates Available"));
+            QString currentAppImageName = QFileInfo(UpdateInfo["AbsolutePath"].toString()).fileName();
+            box.setWindowTitle(QString::fromUtf8("No Updates Available!"));
             box.setText(QString::fromUtf8("You are currently using the lastest version of ") +
                         currentAppImageName +
                         QString::fromUtf8("."));
@@ -171,7 +213,6 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     */
     if(confirmed) {
         p_DRevisioner->start();
-	(m_Ui.mainStack)->setCurrentIndex(1);
         showWidget();
     } else {
         emit finished(QJsonObject());

@@ -23,6 +23,7 @@ int main(int ac, char **av)
     QObject::connect(&UWidget, &AppImageUpdaterDialog::error, [&](QString eStr, short errorCode) {
         Q_UNUSED(errorCode);
         qInfo() << "error:: "<<eStr;
+	app.quit();
         return;
     });
 

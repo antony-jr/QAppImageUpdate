@@ -42,6 +42,7 @@
 #include <QMutex>
 #include <QNetworkProxy>
 #include <QMessageBox>
+#include <QJsonObject>
 
 #include "ui_AppImageUpdaterDialog.h"
 #include "appimageupdaterbridge_enums.hpp"
@@ -85,6 +86,7 @@ public:
 
 public Q_SLOTS:
     void init();
+    void setCustomUpdateConfirmationDialog(QDialog*);
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setShowLog(bool);
@@ -92,6 +94,9 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void showWidget(void);
+    void handleCustomConfirmUpdate();
+    void handleCustomConfirmNoUpdate();
+    void handleCustomUpdateAvailable(bool , QJsonObject);
     void handleUpdateAvailable(bool, QJsonObject);
     void handleError(short);
     void handleFinished(QJsonObject, QString);
@@ -104,6 +109,7 @@ Q_SIGNALS:
     void error(QString, short);
     void finished(QJsonObject);
     void requiresAuthorization(QString, short, QString);
+    void updateAvailable(bool , QJsonObject);
 
 private:
     int p_Flags = 0;
