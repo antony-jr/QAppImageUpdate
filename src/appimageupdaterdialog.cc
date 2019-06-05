@@ -154,7 +154,6 @@ void AppImageUpdaterDialog::handleCustomConfirmNoUpdate(){
 }
 
 void AppImageUpdaterDialog::handleCustomUpdateAvailable(bool isUpdateAvailable, QJsonObject UpdateInfo){
-	Q_UNUSED(isUpdateAvailable);
 	hide();
 	/* Move to the correct position. */
 	auto prevPos = pos() + rect().center();
@@ -163,6 +162,17 @@ void AppImageUpdaterDialog::handleCustomUpdateAvailable(bool isUpdateAvailable, 
 	setWindowTitle(QString::fromUtf8("Updating ") +
                    QFileInfo(UpdateInfo["AbsolutePath"].toString()).baseName() +
                    QString::fromUtf8("... "));
+	
+	if((p_Flags & NotifyWhenNoUpdateIsAvailable) && !isUpdateAvailable){
+	    QMessageBox box(this);
+            QString currentAppImageName = QFileInfo(UpdateInfo["AbsolutePath"].toString()).fileName();
+            box.setWindowTitle(QString::fromUtf8("No Updates Available!"));
+            box.setText(QString::fromUtf8("You are currently using the lastest version of ") +
+                        currentAppImageName +
+                        QString::fromUtf8("."));
+            box.exec();
+	    handleCustomConfirmNoUpdate();
+	}
 	return;
 }
 
@@ -205,7 +215,6 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
             box.exec();
         }
         confirmed = false;
-        emit finished(QJsonObject());
     }
 
     /*
