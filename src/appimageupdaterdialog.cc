@@ -93,8 +93,6 @@ AppImageUpdaterDialog::~AppImageUpdaterDialog()
 
 void AppImageUpdaterDialog::init(void)
 {
-    connect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable,
-	     this, &AppImageUpdaterDialog::handleUpdateAvailable , Qt::UniqueConnection);
     n_MegaBytesTotal = 0;
     p_DRevisioner->checkForUpdate();
     if(p_Flags & ShowBeforeProgress) {
@@ -105,6 +103,11 @@ void AppImageUpdaterDialog::init(void)
 }
 
 void AppImageUpdaterDialog::setCustomUpdateConfirmationDialog(QDialog *dialog){
+	if(!dialog){
+		connect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable, 
+				this, &AppImageUpdaterDialog::handleUpdateAvailable , Qt::UniqueConnection);
+		return;
+	}
 	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable, 
 		   this, &AppImageUpdaterDialog::handleUpdateAvailable);
 	connect(p_DRevisioner , &AppImageDeltaRevisioner::updateAvailable ,
