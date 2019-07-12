@@ -4,4 +4,5 @@ CONFIG += release
 QT += testlib
 SOURCES += main.cc
 HEADERS += AppImageUpdateInformation.hpp \
-	   ZsyncRemoteControlFileParser.hpp
+	   ZsyncRemoteControlFileParser.hpp \
+	   AppImageDeltaRevisioner.hpp

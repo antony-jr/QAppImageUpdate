@@ -86,8 +86,7 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void doStart(QJsonObject);
-    void resetCheckForUpdateConnections();
-    void resetProgressConnections();
+    void resetConnections();
     void handleBlockDownloaderStarted(void); 
     void handleBlockDownloaderFinished(void);
     void handleIndeterminateProgress(int);
@@ -104,6 +103,7 @@ Q_SIGNALS:
     void progress(int, qint64, qint64, double, QString);
     void logger(QString, QString);
 private:
+    bool b_Busy = false;
     QScopedPointer<AppImageUpdateInformationPrivate> p_UpdateInformation;
     QScopedPointer<ZsyncRemoteControlFileParserPrivate> p_ControlFileParser;
     QScopedPointer<ZsyncWriterPrivate> p_DeltaWriter;

@@ -37,6 +37,10 @@ int main(int ac, char **av)
         return;
     });
 
+    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::started, [&](){
+	DRevisioner.setShowLog(false);
+    });
+
     QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::finished, [&](QJsonObject newVersion, QString oldAppImagePath) {
         qInfo().noquote() << "New Version::  " << newVersion;
         qInfo().noquote() << "Old Version AppImage Path:: " << oldAppImagePath;
@@ -56,5 +60,6 @@ int main(int ac, char **av)
     QString path(args[it]);
     DRevisioner.setAppImage(path);
     DRevisioner.start();
+    DRevisioner.setShowLog(true);
     return app.exec();
 }

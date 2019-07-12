@@ -71,6 +71,28 @@ private slots:
         QVERIFY(!result["isEmpty"].toBool());
         return;
     }
+   
+    void reentrant(void){
+        using AppImageUpdaterBridge::AppImageUpdateInformationPrivate;
+        AppImageUpdateInformationPrivate AIUpdateInformation;
+        QSignalSpy spyInfo(&AIUpdateInformation, SIGNAL(info(QJsonObject)));
+
+        AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
+	AIUpdateInformation.getInfo();
+	
+	AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
+	AIUpdateInformation.getInfo();
+
+        AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
+	AIUpdateInformation.getInfo();
+	
+        AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
+	AIUpdateInformation.getInfo();
+
+	QVERIFY(spyInfo.count() || spyInfo.wait());
+
+
+    }
 
     void checkErrorSignal(void)
     {
