@@ -106,8 +106,6 @@ void AppImageUpdaterDialog::doInit(QObject *revisioner ,
     p_DRevisioner = (!revisioner) ? new AppImageDeltaRevisioner(/*single threaded=*/false, /*parent=*/this) :
 	            (AppImageDeltaRevisioner*)revisioner;
 
-    p_DRevisioner->disconnect();
-
     /* Program Logic. */
     connect((m_Ui.updateCancelBtn), &QPushButton::clicked , p_DRevisioner, &AppImageDeltaRevisioner::cancel);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &QDialog::hide);
@@ -133,9 +131,6 @@ void AppImageUpdaterDialog::resetConnections(){
 		return;
 	}
 	hide();
-	p_DRevisioner->cancel();
-	p_DRevisioner->clear();
-
 	disconnect((m_Ui.updateCancelBtn), &QPushButton::clicked , p_DRevisioner, &AppImageDeltaRevisioner::cancel);
     	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &QDialog::hide);
     	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &AppImageUpdaterDialog::canceled);
