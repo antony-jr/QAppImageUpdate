@@ -171,10 +171,22 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
         return;
     }
     emit statusChanged(ParsingAppimageEmbededUpdateInformation);
+    
+    /*
+     * Check if we are given the same information consecutively , If so then return
+     * what we know. */
+    if(!j_UpdateInformation.isEmpty()) {
+        if(j_UpdateInformation == information) {
+            emit statusChanged(Idle);
+            emit receiveControlFile();
+            return;
+        }
+    }
+    
     {
-        j_UpdateInformation = information;
-        auto fileInfo = information["FileInformation"].toObject();
-        s_AppImagePath = fileInfo["AppImageFilePath"].toString();
+       j_UpdateInformation = information;
+       auto fileInfo = information["FileInformation"].toObject();
+       s_AppImagePath = fileInfo["AppImageFilePath"].toString();
     }
 
     information = information["UpdateInformation"].toObject();
