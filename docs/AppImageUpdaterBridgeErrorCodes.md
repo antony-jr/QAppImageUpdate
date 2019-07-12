@@ -73,6 +73,7 @@ a QString , The below table tabulates all error codes with respect to their erro
 | UnknownContentError              | 94 |
 | ProtocolFailure                  | 95 |
 | UnknownServerError               | 96 |
+| ZsyncControlFileNotFound         | 97 |
 | HashTableNotAllocated            | 100 |
 | InvalidTargetFileChecksumBlocks  | 101 |
 | CannotOpenTargetFileChecksumBlocks| 102 |

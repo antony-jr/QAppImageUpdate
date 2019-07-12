@@ -219,6 +219,9 @@ QString AppImageUpdaterBridge::errorCodeToString(short errorCode)
     case UnknownServerError:
         ret += "UnknownServerError";
         break;
+    case ZsyncControlFileNotFound:
+	ret += "ZsyncControlFileNotFound";
+	break;
     case HashTableNotAllocated:
         ret += "HashTableNotAllocated";
         break;
@@ -416,6 +419,9 @@ QString AppImageUpdaterBridge::errorCodeToDescriptionString(short errorCode)
     case QbufferIoReadError:
         errorString = QString::fromUtf8("Invalid zsync meta file.");
         break;
+    case ZsyncControlFileNotFound:
+	errorString = QString::fromUtf8("The zsync control file was not found in the specified location.");
+	break;
     case SourceFileNotFound:
         errorString = QString::fromUtf8("The current AppImage could not be found, maybe it was deleted while updating?");
         break;
