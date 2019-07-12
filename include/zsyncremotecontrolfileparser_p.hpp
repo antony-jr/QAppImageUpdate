@@ -104,6 +104,7 @@ private:
             s_ZsyncFileName, /* only used for github transport. */
             s_TargetFileName,
             s_AppImagePath,
+	    s_ReleaseNotes,
             s_TargetFileSHA1
 #ifndef LOGGING_DISABLED
             ,s_LoggerName,

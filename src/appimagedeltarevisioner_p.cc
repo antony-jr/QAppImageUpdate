@@ -380,13 +380,15 @@ void AppImageDeltaRevisionerPrivate::handleUpdateCheckInformation(QJsonObject in
 
     auto embededUpdateInformation = information["EmbededUpdateInformation"].toObject();
     auto remoteTargetFileSHA1Hash = information["RemoteTargetFileSHA1Hash"].toString();
+    auto releaseNotes = information["ReleaseNotes"].toString();
     QString localAppImageSHA1Hash = embededUpdateInformation["FileInformation"].toObject()["AppImageSHA1Hash"].toString(),
             localAppImagePath = embededUpdateInformation["FileInformation"].toObject()["AppImageFilePath"].toString();
 
     QJsonObject updateInfo {
 	    { "AbsolutePath" , localAppImagePath },
 	    { "Sha1Hash" , localAppImageSHA1Hash },
-	    { "RemoteSha1Hash" , remoteTargetFileSHA1Hash }
+	    { "RemoteSha1Hash" , remoteTargetFileSHA1Hash },
+	    { "ReleaseNotes" , releaseNotes }
     };
     emit updateAvailable((localAppImageSHA1Hash != remoteTargetFileSHA1Hash), updateInfo);
     return;

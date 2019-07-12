@@ -45,6 +45,7 @@
 #include <QJsonObject>
 
 #include "ui_AppImageUpdaterDialog.h"
+#include "softwareupdatedialog_p.hpp"
 #include "appimageupdaterbridge_enums.hpp"
 #include "appimagedeltarevisioner.hpp"
 
@@ -62,12 +63,16 @@ public:
         ShowErrorDialog = 0x10,
         AlertWhenAuthorizationIsRequired = 0x20,
         NotifyWhenNoUpdateIsAvailable = 0x40,
-        Default = ShowBeforeProgress | 
+        NoRemindMeLaterButton = 0x80,
+        NoSkipThisVersionButton = 0x100,	
+	Default = ShowBeforeProgress | 
 		  ShowProgressDialog |
                   ShowUpdateConfirmationDialog |
                   ShowFinishedDialog   |
                   ShowErrorDialog |
-                  NotifyWhenNoUpdateIsAvailable
+                  NotifyWhenNoUpdateIsAvailable |
+		  NoRemindMeLaterButton |
+		  NoSkipThisVersionButton
     };
 
     AppImageUpdaterDialog(QPixmap img = QPixmap(),
@@ -75,14 +80,17 @@ public:
     ~AppImageUpdaterDialog();
 
 public Q_SLOTS:
-    void init(AppImageDeltaRevisioner*);
-
+    void init(AppImageDeltaRevisioner *revisioner = nullptr ,
+	      const QString &applicationName = QApplication::applicationName());
 private Q_SLOTS:
     void showWidget(void);
+    void handleRejected(void);
+    void doUpdate(void);
     void handleUpdateAvailable(bool, QJsonObject);
     void handleError(short);
     void handleFinished(QJsonObject, QString);
     void handleProgress(int, qint64, qint64, double, QString);
+    void resetConnections();
 
 Q_SIGNALS:
     void quit(void);
@@ -91,16 +99,16 @@ Q_SIGNALS:
     void error(QString, short);
     void finished(QJsonObject);
     void requiresAuthorization(QString, short, QString);
-    void updateAvailable(bool , QJsonObject);
 
 private:
+    bool b_Busy = false;
     int p_Flags = 0;
-    QPixmap p_AppImageIcon;
+    QString m_ApplicationName;
     QString s_CurrentAppImagePath; /* Used only for error dialog box. */
+    SoftwareUpdateDialog *m_ConfirmationDialog;
     AppImageDeltaRevisioner *p_DRevisioner = nullptr;
     double n_MegaBytesTotal = 0;
     const QString progressTemplate = QString::fromUtf8("Updating %1 MiB of %2 MiB at %3 %4...");
-
     Ui::AppImageUpdaterDialog m_Ui;
 };
 }

@@ -18,8 +18,10 @@ int main(int ac, char **av)
         return -1;
     }
 
+    using AppImageUpdaterBridge::AppImageDeltaRevisioner;
     using AppImageUpdaterBridge::AppImageUpdaterDialog;
     AppImageUpdaterDialog UWidget;
+    AppImageDeltaRevisioner DRevisioner;
     QObject::connect(&UWidget, &AppImageUpdaterDialog::error, [&](QString eStr, short errorCode) {
         Q_UNUSED(errorCode);
         qInfo() << "error:: "<<eStr;
@@ -33,16 +35,17 @@ int main(int ac, char **av)
     QObject::connect(&UWidget, &AppImageUpdaterDialog::finished, [&](QJsonObject newVersion) {
         (void)newVersion;
         if(it < args.count()) {
-            UWidget.setAppImage(args.at(it));
-            UWidget.init();
+	    DRevisioner.setAppImage(args.at(it));
+            UWidget.init(&DRevisioner);
             ++it;
         } else {
             app.quit();
         }
         return;
     });
-    UWidget.setAppImage(args.at(it));
-    UWidget.init();
+    DRevisioner.setAppImage(args.at(it));
+    DRevisioner.setShowLog(true);
+    UWidget.init(&DRevisioner);
     ++it;
     return app.exec();
 }

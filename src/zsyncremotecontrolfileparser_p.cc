@@ -257,6 +257,7 @@ void ZsyncRemoteControlFileParserPrivate::clear(void)
     s_TargetFileName.clear();
     s_TargetFileSHA1.clear();
     s_ZsyncFileName.clear();
+    s_ReleaseNotes.clear();
 #ifndef LOGGING_DISABLED
     s_LogBuffer.clear();
 #endif // LOGGING_DISABLED
@@ -304,7 +305,8 @@ void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void)
 {
     QJsonObject result {
         { "EmbededUpdateInformation", j_UpdateInformation},
-        { "RemoteTargetFileSHA1Hash", s_TargetFileSHA1 }
+        { "RemoteTargetFileSHA1Hash", s_TargetFileSHA1 },
+	{ "ReleaseNotes" , s_ReleaseNotes }
     };
 
     emit updateCheckInformation(result);
@@ -429,6 +431,8 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
     QJsonArray assetsArray = jsonObject["assets"].toArray();
     QString version = jsonObject["tag_name"].toString();
     QVector<QJsonObject> assets;
+
+    s_ReleaseNotes = jsonObject["body"].toString();
 
     /* Patern matching with wildcards. */
     QRegExp rx(s_ZsyncFileName);
