@@ -64,7 +64,7 @@ private slots:
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(updateAvailable(bool,QJsonObject)));
         AIDeltaRev.checkForUpdate();
 
-	QVERIFY(spyInfo.count() || spyInfo.wait(20 * 1000));
+	QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
 
     }
 
@@ -77,7 +77,7 @@ private slots:
         AIDeltaRev.checkForUpdate();
 	AIDeltaRev.start(); // should not collide, this call should be ignored.
 
-	QVERIFY(spyInfo.count() || spyInfo.wait(20 * 1000));
+	QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
     }
 
     void noCallsCollide(void){
@@ -91,7 +91,7 @@ private slots:
 	AIDeltaRev.start(); // should not collide, this call should be ignored.
 	AIDeltaRev.getAppImageEmbededInformation();
 
-	QVERIFY(spyInfo.count() || spyInfo.wait(20 * 1000));
+	QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
     }
 
     void updateShouldSucceed(void){
@@ -102,7 +102,7 @@ private slots:
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(finished(QJsonObject , QString)));
         AIDeltaRev.start();
 	
-	QVERIFY(spyInfo.count() || spyInfo.wait(20 * 1000));
+	QVERIFY(spyInfo.count() || spyInfo.wait(50 * 1000));
     }
 
     void checkErrorSignal(void)
