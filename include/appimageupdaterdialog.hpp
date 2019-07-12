@@ -83,6 +83,8 @@ public Q_SLOTS:
     void init(AppImageDeltaRevisioner *revisioner = nullptr ,
 	      const QString &applicationName = QApplication::applicationName());
 private Q_SLOTS:
+    void doInit(QObject*, const QString&);
+
     void showWidget(void);
     void handleRejected(void);
     void doUpdate(void);

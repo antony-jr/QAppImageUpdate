@@ -32,6 +32,7 @@
  * @filename    : appimageupdaterdialog.cc
  * @description : The implementation of the GUI Updater dialog.
 */
+#include "../include/helpers_p.hpp"
 #include "../include/appimageupdaterdialog.hpp"
 
 using namespace AppImageUpdaterBridge;
@@ -85,6 +86,13 @@ AppImageUpdaterDialog::~AppImageUpdaterDialog()
 }
 
 void AppImageUpdaterDialog::init(AppImageDeltaRevisioner *revisioner ,
+				 const QString &applicationName){
+
+	getMethod(this , "doInit(QObject*,const QString&)")
+		.invoke(this , Qt::QueuedConnection , Q_ARG(QObject* , revisioner),Q_ARG(QString,applicationName));
+}
+
+void AppImageUpdaterDialog::doInit(QObject *revisioner ,
 	                          const QString &applicationName)
 {
     if(b_Busy){
@@ -96,7 +104,7 @@ void AppImageUpdaterDialog::init(AppImageDeltaRevisioner *revisioner ,
 
     /* Delta Revisioner. */
     p_DRevisioner = (!revisioner) ? new AppImageDeltaRevisioner(/*single threaded=*/false, /*parent=*/this) :
-	            revisioner;
+	            (AppImageDeltaRevisioner*)revisioner;
 
     p_DRevisioner->disconnect();
 
