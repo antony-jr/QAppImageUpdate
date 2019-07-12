@@ -71,32 +71,14 @@ public:
     };
 
     AppImageUpdaterDialog(QPixmap img = QPixmap(),
-                          QWidget *parent = nullptr, int flags = Default,
-			  AppImageDeltaRevisioner *revisioner = nullptr);
-
-    AppImageUpdaterDialog(const QString&,
-                          QPixmap img = QPixmap(),
-                          QWidget *parent = nullptr, int flags = Default,
-			  AppImageDeltaRevisioner *revisioner = nullptr);
-    AppImageUpdaterDialog(QFile*,
-                          QPixmap img = QPixmap(),
-                          QWidget *parent = nullptr, int flags = Default,
-			  AppImageDeltaRevisioner *revisioner = nullptr);
+                          QWidget *parent = nullptr, int flags = Default);
     ~AppImageUpdaterDialog();
 
 public Q_SLOTS:
-    void init();
-    void setCustomUpdateConfirmationDialog(QDialog*);
-    void setAppImage(const QString&);
-    void setAppImage(QFile *);
-    void setShowLog(bool);
-    void setProxy(const QNetworkProxy&);
+    void init(AppImageDeltaRevisioner*);
 
 private Q_SLOTS:
     void showWidget(void);
-    void handleCustomConfirmUpdate();
-    void handleCustomConfirmNoUpdate();
-    void handleCustomUpdateAvailable(bool , QJsonObject);
     void handleUpdateAvailable(bool, QJsonObject);
     void handleError(short);
     void handleFinished(QJsonObject, QString);
