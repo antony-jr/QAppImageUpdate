@@ -488,6 +488,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 void ZsyncWriterPrivate::cancel(void)
 {
     b_CancelRequested = b_Started;
+    INFO_START " cancel : cancel requested " LOGR b_CancelRequested LOGR "." INFO_END;
     return;
 }
 
@@ -502,7 +503,6 @@ void ZsyncWriterPrivate::start(void)
 
     INFO_START " start : starting delta writer." INFO_END;
     short errorCode = 0;
-    b_CancelRequested = false;
 
     /*
      * Check if we have some incomplete downloads.
@@ -547,10 +547,11 @@ void ZsyncWriterPrivate::start(void)
                 }
 
                 if(submitSourceFile(targetFile) < 0) {
-                    b_CancelRequested = false;
+                    delete targetFile;
+                    b_Started = b_CancelRequested = false;
                     return;
                 }
-
+                delete targetFile;
             }
         }
 
@@ -565,12 +566,11 @@ void ZsyncWriterPrivate::start(void)
             }
 
             if(submitSourceFile(sourceFile) < 0) {
-                b_CancelRequested = false;
+                delete sourceFile;
+                b_Started = b_CancelRequested = false;
                 return;
             }
             delete sourceFile;
-
-
             QFile::remove((*iter));
         }
 
@@ -583,7 +583,8 @@ void ZsyncWriterPrivate::start(void)
             }
 
             if(submitSourceFile(sourceFile) < 0) {
-                b_CancelRequested = false;
+                delete sourceFile;
+                b_Started = b_CancelRequested = false;
                 return;
             }
             delete sourceFile;

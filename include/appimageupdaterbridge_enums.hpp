@@ -145,6 +145,7 @@ enum : short {
     UnknownContentError,
     ProtocolFailure,
     UnknownServerError,
+    ZsyncControlFileNotFound,
 
     /* Zsync writer errors. */
     HashTableNotAllocated = 100,

@@ -86,6 +86,8 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void doStart(QJsonObject);
+    void resetCheckForUpdateConnections();
+    void resetProgressConnections();
     void handleBlockDownloaderStarted(void); 
     void handleBlockDownloaderFinished(void);
     void handleIndeterminateProgress(int);

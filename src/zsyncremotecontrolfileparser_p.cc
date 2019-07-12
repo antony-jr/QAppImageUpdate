@@ -171,22 +171,10 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
         return;
     }
     emit statusChanged(ParsingAppimageEmbededUpdateInformation);
-    /*
-     * Check if we are given the same information consecutively , If so then return
-     * what we know. */
-    if(!j_UpdateInformation.isEmpty()) {
-        if(j_UpdateInformation == information) {
-            emit statusChanged(Idle);
-            emit receiveControlFile();
-            return;
-        }
+    {
         j_UpdateInformation = information;
-    } else {
-        {
-            j_UpdateInformation = information;
-            auto fileInfo = information["FileInformation"].toObject();
-            s_AppImagePath = fileInfo["AppImageFilePath"].toString();
-        }
+        auto fileInfo = information["FileInformation"].toObject();
+        s_AppImagePath = fileInfo["AppImageFilePath"].toString();
     }
 
     information = information["UpdateInformation"].toObject();
@@ -427,7 +415,7 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
 
     QJsonObject jsonObject = jsonResponse.object();
     QJsonArray assetsArray = jsonObject["assets"].toArray();
-    QString version = jsonObject["tagn_ame"].toString();
+    QString version = jsonObject["tag_name"].toString();
     QVector<QJsonObject> assets;
 
     /* Patern matching with wildcards. */
@@ -443,10 +431,11 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void)
         if(rx.exactMatch(asset["name"].toString())) {
             setControlFileUrl(QUrl(asset["browser_download_url"].toString()));
             getControlFile();
-            break;
+            return;
         }
         QCoreApplication::processEvents();
     }
+    emit error(ZsyncControlFileNotFound);
     return;
 }
 
