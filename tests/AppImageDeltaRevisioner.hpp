@@ -235,6 +235,56 @@ private slots:
 	 QVERIFY(true);
     }
 
+    void shouldBeUpdatableAfterCancel(void){
+	using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+	AppImageDeltaRevisioner AIDeltaRev(false);
+		
+	QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
+	QSignalSpy spyInfoFinished(&AIDeltaRev, SIGNAL(finished(QJsonObject, QString)));
+	QSignalSpy spyInfoCanceled(&AIDeltaRev, SIGNAL(canceled()));
+	AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
+
+	AIDeltaRev.start();
+
+	QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
+
+	AIDeltaRev.cancel();
+
+	QVERIFY(spyInfoCanceled.count() || spyInfoCanceled.wait());
+
+	AIDeltaRev.start(); // restart after cancel
+
+	QVERIFY(spyInfoFinished.count() || spyInfoFinished.wait(30*1000));
+    }
+
+
+    void objectShouldBeReusableAfterCancel(void){
+	using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+	AppImageDeltaRevisioner AIDeltaRev(false);
+		
+	QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
+	QSignalSpy spyInfoFinished(&AIDeltaRev, SIGNAL(finished(QJsonObject, QString)));
+	QSignalSpy spyInfoCanceled(&AIDeltaRev, SIGNAL(canceled()));
+	AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
+
+	AIDeltaRev.start();
+
+	QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
+
+	AIDeltaRev.cancel();
+
+	QVERIFY(spyInfoCanceled.count() || spyInfoCanceled.wait());
+
+
+	// start new.
+	AIDeltaRev.clear();
+	AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
+	AIDeltaRev.start();
+
+	QVERIFY(spyInfoFinished.count() || spyInfoFinished.wait(30*1000));
+    }
+
+
 
     void cleanupTestCase(void)
     {
