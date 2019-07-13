@@ -19,7 +19,7 @@ script:
   - qmake "CONFIG+=LOGGING_DISABLED" ..
   - make -j$(nproc) # test if build succeeds without log support
   - make clean
-  - qmake "CONFIG+=NO_GUI"
+  - qmake "CONFIG+=NO_GUI" ..
   - make -j$(nproc) # test if build succeeds without gui support
   - make clean
   - qmake "CONFIG+=LOGGING_DISABLED" "CONFIG+=NO_GUI" ..
