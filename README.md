@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".img/poster.png" height="400px" width=auto alt="AppImageUpdaterBridge Poster">  <br>
+  <img src=".img/poster.png" height="auto" width=auto alt="AppImageUpdaterBridge Poster">  <br>
 </p>
 
 
@@ -12,7 +12,7 @@ Therefore saving your time and internet.
 
 AppImage Updater Bridge is not the **official library** to do this stuff , The official library is [here](https://github.com/AppImage/AppImageUpdate) which is also written in **C++** but with no real **Qt support** , Thats why this library is built.
 
-This library gives absolute support for *Qt* , Infact , All you need is the minimal installation of *Qt*(i.e, base ).
+This library gives absolute support for *Qt* , Infact , All you need is the minimal installation of *Qt*(i.e, base).
 
 
 ## Features
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
     AppImageDeltaRevisioner DeltaRevisioner;
     QObject::connect(&DeltaRevisioner, &AppImageDeltaRevisioner::finished, &app, &QCoreApplication::quit);
-    DeltaRevisioner.setShowLog(true);
+    DeltaRevisioner.setShowLog(true); // Display logs?
     DeltaRevisioner.start();
     return app.exec();
 }
