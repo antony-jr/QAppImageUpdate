@@ -103,7 +103,7 @@ This is an overloaded constructor , Constructs the Updater with the given QFile 
 If the pointer is invalid or has other sort of read errors , The updater will emit error but when 
 forced to start , Again the updater guesses the AppImage Path in order to continue with the extraction.
 If the guessed AppImage Path is not an AppImage but a normal elf file then this result in a invalid magic
-byte error. See [error codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisionerErrorCodes.html) for more information.
+byte error. See [error codes](AppImageDeltaRevisionerErrorCodes.html) for more information.
 
 The default value for **singleThreaded** is **true** but you can set it to **false** to run all the 
 resource of the updater in a seperate thread excluding **this class**.
@@ -179,7 +179,7 @@ to use for all network communication for the updater.
 <p align="right"> <b>[SLOT]</b> </p>
 
 Requests the updater for the embeded information of the current operating AppImage.
-Emits ** embededInformation(QJsonObject) ** in which the *QJsonObject* will be the embeded information 
+Emits **embededInformation(QJsonObject)** in which the *QJsonObject* will be the embeded information 
 of the AppImage in the below format with respect to Json.
 
     { "IsEmpty" : false ,
@@ -293,14 +293,14 @@ The *QJsonObject* will follow the following format with respect to json ,
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when the updater status is changed , The given short integer is the status code.
-See [status codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeStatusCodes.html).
+See [status codes](AppImageUpdaterBridgeStatusCodes.html).
 
 
 ### void error(short)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when the updater is errored. The given short integer is the error code.
-See [error codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html).
+See [error codes](AppImageUpdaterBridgeErrorCodes.html).
 
 
 ### void progress(int percentage , qint64 bytesReceived , qint64 bytesTotal , double speed , QString speedUnits)

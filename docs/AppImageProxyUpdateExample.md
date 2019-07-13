@@ -25,7 +25,7 @@ int main(int ac , char **av)
 	
 	using AppImageUpdaterBridge::AppImageDeltaRevisioner;
 	using AppImageUpdaterBridge::errorCodeToString;
-        QCoreApplication app(ac , av);
+	QCoreApplication app(ac , av);
  	QString AppImagePath = QString(av[1]);
 
 	/* Set proxy settings */
@@ -41,20 +41,16 @@ int main(int ac , char **av)
 		(void)oldVersionPath;
 		qInfo() << "New Version Details:: " << newVersionDetails;
 		app.quit();
-        });
+	});
 	QObject::connect(&DRevisioner , &AppImageDeltaRevisioner::error ,
         [&](short e){
 		qInfo() << "error:: " << errorCodeToString(e);
 		app.quit();
-        });
-       /*
-       * Enable this if you want to print the log messages in 
-       * the standard output.
-       */
-       DRevisioner.setShowLog(true);
-
-        /* Using proxy. */
-        DRevisioner.setProxy(proxy);
+	});
+	DRevisioner.setShowLog(true); // Display log
+        
+	/* Using proxy. */
+	DRevisioner.setProxy(proxy);
 	
 	DRevisioner.start(); /* Start the update. */
 	return app.exec();

@@ -23,8 +23,8 @@ int main(int ac , char **av)
         }
 	
 	using AppImageUpdaterBridge::AppImageUpdaterDialog;
-        using AppImageUpdaterBridge::AppImageDeltaRevisioner;
-        QApplication app(ac , av);
+	using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+	QApplication app(ac , av);
  	QString AppImagePath = QString(av[1]);
 
 	AppImageDeltaRevisioner DRev(AppImagePath);
@@ -35,12 +35,12 @@ int main(int ac , char **av)
         [&](QJsonObject newVersionDetails){
 		qInfo() << "New Version Details:: " << newVersionDetails;
 		app.quit();
-        });
+	});
 	QObject::connect(&UWidget , &AppImageUpdaterDialog::error ,
         [&](QString eStr , short e){
 		qInfo() << "error(" << e "):: " << eStr;
 		app.quit();
-        });	
+	});	
 	UWidget.init(&DRev); /* Start the update using GUI */
 	return app.exec();
 }

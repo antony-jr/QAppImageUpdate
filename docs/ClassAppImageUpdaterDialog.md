@@ -23,14 +23,13 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
 
 |                                                                                                                |
 |----------------------------------------------------------------------------------------------------------------|
-| [AppImageUpdaterDialog(QPixmap img = QPixmap(), QWidget \*parent = nullptr, int flags = Default)](#)           |
+| [AppImageUpdaterDialog(QPixmap img = QPixmap(), QWidget \*parent = nullptr, int flags = Default)](#appimageupdaterdialogqpixmap-img-qpixmap-qwidget-parent-nullptr-int-flags-default)           |
 
 ## Slots
 
 | Return Type  | Name |
 |------------------------------|-------------------------------------------|
-| **void** | [init(AppImageDeltaRevisioner \*revisioner = nullptr, const QString &applicationName = QApplication::applicationName())](#) |
-
+| **void** | [init(AppImageDeltaRevisioner \*revisioner = nullptr, const QString &applicationName = QApplication::applicationName())](#void-init-appimagedeltarevisioner-classappimagedeltarevisionerhtml-revisioner-nullptr-const-qstring-applicationname-qapplication-applicationname) |
 
 ## Signals
 
@@ -74,10 +73,10 @@ update process.
 > ShowErrorDialog, NotifyWhenNoUpdateIsAvailable, NoRemindMeLaterButton, NoSkipThisVersionButton
 
 
-### void init([AppImageDeltaRevisioner](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisioner.html) \*revisioner = nullptr , const QString &applicationName = QApplication::applicationName())
+### void init([AppImageDeltaRevisioner](ClassAppImageDeltaRevisioner.html) \*revisioner = nullptr , const QString &applicationName = QApplication::applicationName())
 <p align="right"> <b>[SLOT]</b> </p>
 
-Starts the updater using the given [AppImageDeltaRevisioner](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisioner.html), You must set the needed settings for the given delta revisioner.
+Starts the updater using the given [AppImageDeltaRevisioner](ClassAppImageDeltaRevisioner.html), You must set the needed settings for the given delta revisioner.
 Emits **started()** signal when starts the actuall update,(i.e) After finishing update check and getting update confirmation.
 
 The application name is used in the update confirmation dialog.
@@ -117,7 +116,7 @@ it could mean that there were no updates needed.
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when the updater is errored. The given short integer is the error code.
-See [error codes](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageUpdaterBridgeErrorCodes.html).
+See [error codes](AppImageUpdaterBridgeErrorCodes.html).
 The **QString** is the error in layman terms.
 
 ### requiresAuthorization(QString, short, QString)

@@ -5,7 +5,7 @@ sidebar_label: Updating an AppImage
 ---
 
 This guide Demonstrates how to use the *AppImageUpdaterBridge* APIs for updating a single AppImage file.
-This example parses the path from the program arguments , And uses the *[AppImageDeltaRevisioner](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisioner.html)* class to perform the actual delta update.
+This example parses the path from the program arguments , And uses the *[AppImageDeltaRevisioner](ClassAppImageDeltaRevisioner.html)* class to perform the actual delta update.
 
 ## main.cpp
 
@@ -31,17 +31,13 @@ int main(int ac , char **av)
 		(void)oldVersionPath;
 		qInfo() << "New Version Details:: " << newVersionDetails;
 		app.quit();
-        });
+	});
 	QObject::connect(&DRevisioner , &AppImageDeltaRevisioner::error ,
         [&](short e){
 		qInfo() << "error:: " << AppImageUpdaterBridge::errorCodeToString(e);
 		app.quit();
-        });
-        /*
-         * Enable this if you want to print the log messages in 
-         * the standard output.
-        */
-	DRevisioner.setShowLog(true);
+	});
+	DRevisioner.setShowLog(true); // Display log?
 	
 	DRevisioner.start(); /* Start the update. */
 	return app.exec();
