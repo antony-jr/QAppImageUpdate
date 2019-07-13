@@ -35,11 +35,10 @@ This library gives absolute support for *Qt* , Infact , All you need is the mini
 ```
 #include <QCoreApplication>
 #include <AppImageUpdaterBridge>
-
-using namespace AppImageUpdaterBridge;
-
 int main(int argc, char **argv)
 {
+    using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+
     QCoreApplication app(argc, argv);
     AppImageDeltaRevisioner DeltaRevisioner;
     QObject::connect(&DeltaRevisioner, &AppImageDeltaRevisioner::finished, &app, &QCoreApplication::quit);
@@ -62,7 +61,7 @@ Please refer the official [documentation](https://antony-jr.github.io/AppImageUp
 
 # Contributors [![AIUB Contributors](https://img.shields.io/github/contributors/antony-jr/AppImageUpdaterBridge.svg)](https://github.com/antony-jr/AppImageUpdaterBridge/graphs/contributors)
 
-These are the people who helped to make the bridge stronger! :heart:
+
 
 <table>
     <tr align="center">
@@ -75,7 +74,7 @@ These are the people who helped to make the bridge stronger! :heart:
             </sub><br>
             <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=technic">💻</a>
       </td>
-       <td>
+      <td>
             <img src="https://avatars3.githubusercontent.com/u/516527?v=4" width="100px"><br>
             <sub>
                 <strong>
@@ -83,6 +82,24 @@ These are the people who helped to make the bridge stronger! :heart:
                 </strong>
             </sub><br>
             <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=lluchs">💻</a>
+      </td>
+      <td>
+            <img src="https://avatars1.githubusercontent.com/u/1138094?v=4" width="100px"><br>
+            <sub>
+                <strong>
+                    <a href="https://github.com/azubieta">Alexis López Zubieta</a>
+                </strong>
+            </sub><br>
+            <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=azubieta">💻</a>
+      </td>
+      <td>
+            <img src="https://avatars3.githubusercontent.com/u/2480569?v=4" width="100px"><br>
+            <sub>
+                <strong>
+                    <a href="https://github.com/probonopd">probonopd</a>
+                </strong>
+            </sub><br>
+            <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=probonopd">💻</a>
       </td>
     </tr>
 </table>
