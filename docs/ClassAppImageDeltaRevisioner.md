@@ -121,6 +121,8 @@ Emits **started()** signal when starts.
 slots before start , Don't worry about overheads too , Since when you call checkForUpdate slot , The information
 is cached and when start slot is called again , it will be faster than normal. 
 
+> Important Note: You should also call clear and set the settings again if you want to clear the cache.
+
 ### void cancel(void)
 <p align="right"> <b>[SLOT]</b> </p>
 
@@ -137,7 +139,7 @@ Sets the AppImage Path as the given **QString**.
 ### void setAppImage(QFile \*)
 <p align="right"> <b>[SLOT]</b> </p>
 
-Sets the given ** QFile\* ** as the AppImage itself.
+Sets the given **QFile** as the AppImage itself.
 
 ### void setShowLog(bool)
 <p align="right"> <b>[SLOT]</b> </p>
@@ -256,8 +258,8 @@ of the AppImage and the given *QString* has the absolute path to the old versioi
 The *QJsonObject* will follow the folloing format with respect to json ,
 	
     {
-        "AbsolutePath" : Absolute path of the new version of the AppImage ,
-        "Sha1Hash"     : Sha1 hash of the new version of the AppImage
+        "AbsolutePath" : "Absolute path of the new version of the AppImage" ,
+        "Sha1Hash"     : "Sha1 hash of the new version of the AppImage"
     }
 
 > Note: If the absolute path of the new version of the AppImage is same as the old version then
@@ -281,8 +283,10 @@ the current operating AppImage.
 The *QJsonObject* will follow the following format with respect to json , 
 	
     {
-        "AbsolutePath" : The absolute path of the current operating AppImage ,
-        "Sha1Hash"     : The Sha1 hash of the current operating AppImage
+        "AbsolutePath" : "The absolute path of the current operating AppImage" ,
+        "Sha1Hash"     : "The Sha1 hash of the current operating AppImage" ,
+        "RemoteSha1Hash" : "The Sha1 hash of the lastest AppImage" ,
+        "ReleaseNotes" : "Release notes if available"
     }
 
 ### void statusChanged(short)

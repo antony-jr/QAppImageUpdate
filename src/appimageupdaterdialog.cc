@@ -103,7 +103,7 @@ void AppImageUpdaterDialog::doInit(QObject *revisioner ,
     m_ApplicationName = applicationName;
 
     /* Delta Revisioner. */
-    p_DRevisioner = (!revisioner) ? new AppImageDeltaRevisioner(/*single threaded=*/false, /*parent=*/this) :
+    p_DRevisioner = (!revisioner) ? new AppImageDeltaRevisioner(/*single threaded=*/true, /*parent=*/this) :
 	            (AppImageDeltaRevisioner*)revisioner;
 
     /* Program Logic. */
@@ -140,6 +140,7 @@ void AppImageUpdaterDialog::resetConnections(){
 	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::finished, this, &AppImageUpdaterDialog::handleFinished);
     	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::progress, this, &AppImageUpdaterDialog::handleProgress);
 	b_Busy = false;
+	p_DRevisioner = nullptr; /* Dereference */
 }
 
 void AppImageUpdaterDialog::showWidget(void)

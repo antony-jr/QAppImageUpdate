@@ -5,8 +5,7 @@ sidebar_label: Updating an AppImage
 ---
 
 This guide Demonstrates how to use the *AppImageUpdaterBridge* APIs for updating a single AppImage file.
-This example parses the path from the program arguments , And uses the *[AppImageDeltaRevisioner]()* class to
-perform the actual delta update.
+This example parses the path from the program arguments , And uses the *[AppImageDeltaRevisioner](https://antony-jr.github.io/AppImageUpdaterBridge/docs/AppImageDeltaRevisioner.html)* class to perform the actual delta update.
 
 ## main.cpp
 
