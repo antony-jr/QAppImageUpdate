@@ -40,7 +40,6 @@ list(APPEND source
     src/zsyncwriter_p.cc
     src/appimageupdaterbridge_enums.cc
     src/helpers_p.cc
-    src/softwareupdatedialog_p.cc
     include/appimagedeltarevisioner.hpp
     include/appimageupdaterbridge.hpp
     include/appimagedeltarevisioner_p.hpp
@@ -51,8 +50,7 @@ list(APPEND source
     include/zsyncinternalstructures_p.hpp
     include/zsyncwriter_p.hpp
     include/appimageupdaterbridge_enums.hpp
-    include/helpers_p.hpp
-    include/softwareupdatedialog_p.hpp)
+    include/helpers_p.hpp)
 
 if(LOGGING_DISABLED)
     message("-- [*] IMPORTANT: Logging will be disabled for this build.")
@@ -61,7 +59,10 @@ endif()
 if(NO_GUI)
     message("-- [*] IMPORTANT: No gui classes will be included in this build.")
 else()
-    list(APPEND source src/appimageupdaterdialog.cc include/appimageupdaterdialog.hpp)
+    list(APPEND source src/appimageupdaterdialog.cc 
+	               include/appimageupdaterdialog.hpp
+		       src/softwareupdatedialog_p.cc
+		       include/softwareupdatedialog_p.hpp)
 endif()
 
 add_library(AppImageUpdaterBridge ${source})

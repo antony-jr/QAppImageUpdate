@@ -35,7 +35,12 @@ NO_GUI {
 	message(AppImage Updater Bridge widgets will be disabled for this build.)
 	QT -= widgets
 	HEADERS -= $$PWD/include/appimageupdaterdialog.hpp
+        HEADERS -= $$PWD/include/softwareupdatedialog_p.hpp
 	SOURCES -= $$PWD/src/appimageupdaterdialog.cc
+	SOURCES -= $$PWD/src/softwareupdatedialog_p.cc
+
+	FORMS -= $$PWD/include/AppImageUpdaterDialog.ui \
+                 $$PWD/include/SoftwareUpdateDialog.ui
 }
 
 LOGGING_DISABLED {
