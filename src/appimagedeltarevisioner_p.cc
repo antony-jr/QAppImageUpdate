@@ -182,6 +182,7 @@ AppImageDeltaRevisionerPrivate::AppImageDeltaRevisionerPrivate(QFile *AppImage, 
 
 AppImageDeltaRevisionerPrivate::~AppImageDeltaRevisionerPrivate()
 {
+    cancel(); /* Cancel anything before exiting. */
     if(!p_SharedThread.isNull()) {
         p_SharedThread->quit();
         p_SharedThread->wait();
@@ -233,6 +234,7 @@ void AppImageDeltaRevisionerPrivate::doStart(QJsonObject information)
         .invoke(p_ControlFileParser.data(), Qt::QueuedConnection);
     } else {
         /* Current Version is the new version. */
+	emit started(); /* Some may depend on this signal. */
         QJsonObject newVersionDetails {
             { "AbsolutePath", oldVersionInformation["AppImageFilePath"].toString() },
             { "Sha1Hash", oldVersionInformation["AppImageSHA1Hash"].toString() }

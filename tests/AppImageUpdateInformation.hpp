@@ -8,7 +8,7 @@
  * Get the official appimage tool to test it with
  * our library.
 */
-#define APPIMAGE_TOOL_RELATIVE_PATH QString("test_cases/appimagetool-x86_64.AppImage")
+#define APPIMAGE_TOOL_RELATIVE_PATH QString("test_cases/appimagetool.AppImage")
 
 class AppImageUpdateInformation : public QObject
 {
