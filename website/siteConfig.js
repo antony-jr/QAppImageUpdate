@@ -19,7 +19,13 @@ const users = [
     image: '/AppImageUpdaterBridge/img/e2designer.png',
     infoLink: 'https://gitlab.com/technic93/e2designer',
     pinned: true,
-  }
+  },
+  {
+    caption: 'Update Deploy Qt',
+    image: '/AppImageUpdaterBridge/img/updatedeployqt.png',
+    infoLink: 'https://github.com/TheFutureShell/updatedeployqt',
+    pinned: true,
+  },
 ];
 
 const siteConfig = {
