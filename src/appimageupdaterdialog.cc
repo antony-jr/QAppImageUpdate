@@ -33,6 +33,7 @@
  * @description : The implementation of the GUI Updater dialog.
 */
 #include "../include/helpers_p.hpp"
+#include "../include/softwareupdatedialog_p.hpp"
 #include "../include/appimageupdaterdialog.hpp"
 
 using namespace AppImageUpdaterBridge;

@@ -32,4 +32,4 @@
  * @filename           : AppImageUpdaterDialog
  * The traditional proxy header file.
 */
-#include "include/appimageupdaterdialog.hpp"
+#include "appimageupdaterdialog.hpp"

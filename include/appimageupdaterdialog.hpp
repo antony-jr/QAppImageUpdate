@@ -44,7 +44,7 @@
 #include <QMessageBox>
 #include <QJsonObject>
 
-#include "softwareupdatedialog_p.hpp"
+//#include "softwareupdatedialog_p.hpp"
 #include "appimageupdaterbridge_enums.hpp"
 #include "appimagedeltarevisioner.hpp"
 
@@ -184,6 +184,16 @@ QT_END_NAMESPACE
 
 #endif // UI_APPIMAGEUPDATERDIALOG_H
 
+// forward declare SoftwareUpdateDialog since 
+// we don't want to include the private header 
+// in a public one.
+class SoftwareUpdateDialog;
+/*
+namespace Ui {
+	class AppImageUpdaterDialog;
+}
+*/
+
 namespace AppImageUpdaterBridge
 {
 class AppImageUpdaterDialog : public QDialog
@@ -246,7 +256,7 @@ private:
     AppImageDeltaRevisioner *p_DRevisioner = nullptr;
     double n_MegaBytesTotal = 0;
     const QString progressTemplate = QString::fromUtf8("Updating %1 MiB of %2 MiB at %3 %4...");
-    Ui::AppImageUpdaterDialog m_Ui;
+    Ui::AppImageUpdaterDialog /***/m_Ui;
 };
 }
 

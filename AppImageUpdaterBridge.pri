@@ -1,4 +1,4 @@
-INCLUDEPATH += $$PWD
+INCLUDEPATH += $$PWD $$PWD/include
 QT += core widgets network
 HEADERS += \
     $$PWD/include/appimageupdateinformation_p.hpp \

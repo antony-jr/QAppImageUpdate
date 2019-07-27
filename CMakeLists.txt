@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
-project(AppImageUpdaterBridge)
+project(AppImageUpdaterBridge VERSION 1.1.2)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -52,6 +52,14 @@ list(APPEND source
     include/appimageupdaterbridge_enums.hpp
     include/helpers_p.hpp)
 
+SET(toinstall)
+list(APPEND toinstall
+    AppImageUpdaterBridge
+    include/appimageupdaterbridge.hpp
+    include/appimageupdaterbridge_enums.hpp
+    include/appimagedeltarevisioner.hpp
+)	
+
 if(LOGGING_DISABLED)
     message("-- [*] IMPORTANT: Logging will be disabled for this build.")
 endif()
@@ -63,6 +71,9 @@ else()
 	               include/appimageupdaterdialog.hpp
 		       src/softwareupdatedialog_p.cc
 		       include/softwareupdatedialog_p.hpp)
+    list(APPEND toinstall
+	AppImageUpdaterDialog 
+	include/appimageupdaterdialog.hpp)
 endif()
 
 add_library(AppImageUpdaterBridge ${source})
@@ -73,3 +84,24 @@ target_include_directories(AppImageUpdaterBridge PUBLIC . include)
 if(NOT NO_GUI)
     target_link_libraries(AppImageUpdaterBridge PUBLIC Qt5::Widgets)
 endif()
+
+
+# Add pkg-config and install instructions
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/AppImageUpdaterBridge.pc.in"
+  "${CMAKE_BINARY_DIR}/AppImageUpdaterBridge.pc"
+  @ONLY
+)
+
+install(FILES
+  ${CMAKE_BINARY_DIR}/AppImageUpdaterBridge.pc
+  DESTINATION "lib/pkgconfig")
+
+install(FILES
+  ${CMAKE_BINARY_DIR}/libAppImageUpdaterBridge.a
+  DESTINATION "lib/")
+
+install(FILES
+  ${toinstall}
+  DESTINATION "include/AppImageUpdaterBridge/")
+
