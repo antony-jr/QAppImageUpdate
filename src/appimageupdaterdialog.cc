@@ -35,6 +35,7 @@
 #include "../include/helpers_p.hpp"
 #include "../include/softwareupdatedialog_p.hpp"
 #include "../include/appimageupdaterdialog.hpp"
+#include <ui_AppImageUpdaterDialog.h>
 
 using namespace AppImageUpdaterBridge;
 
@@ -43,19 +44,21 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img , QWidget *parent , int
 	  p_Flags(flags)
 {
     bool found = false;
-    m_Ui.setupUi(this);
+    m_Ui.reset(new Ui::AppImageUpdaterDialog);
+
+    m_Ui->setupUi(this);
 
     /* Set AppImage icon if given. */
     if(!img.isNull()) {
-	    (m_Ui.softwareIcon)->setPixmap(img);
-	    (m_Ui.softwareIconOnUpdating)->setPixmap(img);
+	    (m_Ui->softwareIcon)->setPixmap(img);
+	    (m_Ui->softwareIconOnUpdating)->setPixmap(img);
 	    setWindowIcon(img);
     }else{
 	    foreach (QWidget *widget, QApplication::allWidgets()){
 		if(!((widget->windowIcon()).isNull())){
 			img = widget->windowIcon().pixmap(100 , 100);
-		        (m_Ui.softwareIcon)->setPixmap(img);
-			(m_Ui.softwareIconOnUpdating)->setPixmap(img);
+		        (m_Ui->softwareIcon)->setPixmap(img);
+			(m_Ui->softwareIconOnUpdating)->setPixmap(img);
 			setWindowIcon(img);
 			found = true;
 			break;
@@ -64,8 +67,8 @@ AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img , QWidget *parent , int
 	    }
 
 	    if(!found){
-		    (m_Ui.softwareIcon)->setVisible(false);
-		    (m_Ui.softwareIconOnUpdating)->setVisible(false);
+		    (m_Ui->softwareIcon)->setVisible(false);
+		    (m_Ui->softwareIconOnUpdating)->setVisible(false);
 	    }
     }
 
@@ -108,7 +111,7 @@ void AppImageUpdaterDialog::doInit(QObject *revisioner ,
 	            (AppImageDeltaRevisioner*)revisioner;
 
     /* Program Logic. */
-    connect((m_Ui.updateCancelBtn), &QPushButton::clicked , p_DRevisioner, &AppImageDeltaRevisioner::cancel);
+    connect((m_Ui->updateCancelBtn), &QPushButton::clicked , p_DRevisioner, &AppImageDeltaRevisioner::cancel);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &QDialog::hide);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &AppImageUpdaterDialog::canceled, Qt::DirectConnection);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable, this, &AppImageUpdaterDialog::handleUpdateAvailable);
@@ -120,7 +123,7 @@ void AppImageUpdaterDialog::doInit(QObject *revisioner ,
     n_MegaBytesTotal = 0;
     p_DRevisioner->checkForUpdate();
     if(p_Flags & ShowBeforeProgress) {
-	(m_Ui.mainStack)->setCurrentIndex(0);
+	(m_Ui->mainStack)->setCurrentIndex(0);
         showWidget();
     }
     b_Busy = true;
@@ -132,7 +135,7 @@ void AppImageUpdaterDialog::resetConnections(){
 		return;
 	}
 	hide();
-	disconnect((m_Ui.updateCancelBtn), &QPushButton::clicked , p_DRevisioner, &AppImageDeltaRevisioner::cancel);
+	disconnect((m_Ui->updateCancelBtn), &QPushButton::clicked , p_DRevisioner, &AppImageDeltaRevisioner::cancel);
     	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &QDialog::hide);
     	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::canceled, this, &AppImageUpdaterDialog::canceled);
     	disconnect(p_DRevisioner, &AppImageDeltaRevisioner::updateAvailable, this, &AppImageUpdaterDialog::handleUpdateAvailable);
@@ -147,7 +150,7 @@ void AppImageUpdaterDialog::resetConnections(){
 void AppImageUpdaterDialog::showWidget(void)
 {
     if(!(p_Flags & ShowProgressDialog) &&
-        (m_Ui.mainStack)->currentIndex() != 0) {
+        (m_Ui->mainStack)->currentIndex() != 0) {
         return;
     }
     show();
@@ -168,7 +171,7 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
     hide();
     /* Move to the correct position. */
     auto prevPos = pos() + rect().center();
-    (m_Ui.mainStack)->setCurrentIndex(1);
+    (m_Ui->mainStack)->setCurrentIndex(1);
     move(prevPos - rect().center());
 
     bool showUpdateDialog = p_Flags & ShowUpdateConfirmationDialog;
@@ -246,7 +249,7 @@ void AppImageUpdaterDialog::handleError(short errorCode)
 void AppImageUpdaterDialog::handleFinished(QJsonObject newVersion, QString oldVersionPath)
 {
     (void)oldVersionPath;
-    (m_Ui.updateSpeedLbl)->setText(QString::fromUtf8("Finalizing Update... "));
+    (m_Ui->updateSpeedLbl)->setText(QString::fromUtf8("Finalizing Update... "));
 
     bool execute = false;
     bool show = p_Flags & ShowFinishedDialog;
@@ -290,14 +293,14 @@ void AppImageUpdaterDialog::handleProgress(int percent,
         double speed,
         QString units)
 {
-    (m_Ui.progressBar)->setValue(percent);
+    (m_Ui->progressBar)->setValue(percent);
     double MegaBytesReceived = bytesReceived / 1048576;
     if(!n_MegaBytesTotal) {
         n_MegaBytesTotal = bytesTotal / 1048576;
     }
     const QString progressTemplate = QString::fromUtf8("Updating %1 MiB of %2 MiB at %3 %4...");
     QString statusText = progressTemplate.arg(MegaBytesReceived).arg(n_MegaBytesTotal).arg(speed).arg(units);
-    (m_Ui.updateSpeedLbl)->setText(statusText);
+    (m_Ui->updateSpeedLbl)->setText(statusText);
     return;
 }
 
