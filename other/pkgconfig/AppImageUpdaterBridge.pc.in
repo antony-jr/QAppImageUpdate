@@ -1,6 +1,6 @@
 prefix=@CMAKE_INSTALL_PREFIX@
-libdir=${prefix}/lib
-includedir=${prefix}/include/AppImageUpdaterBridge
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@/AppImageUpdaterBridge
 
 Name: AppImageUpdaterBridge
 Description: A Qt5 library for delta updating the AppImage format

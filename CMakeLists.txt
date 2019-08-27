@@ -24,6 +24,9 @@ if(NOT NO_GUI)
     find_package(Qt5Widgets)
 endif()
 
+# cmake macros used
+include(GNUInstallDirs)
+
 # Include Directories.
 include_directories(.)
 include_directories(include)
@@ -95,13 +98,13 @@ configure_file(
 
 install(FILES
   ${CMAKE_BINARY_DIR}/AppImageUpdaterBridge.pc
-  DESTINATION "lib/pkgconfig")
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
 install(FILES
   ${CMAKE_BINARY_DIR}/libAppImageUpdaterBridge.a
-  DESTINATION "lib/")
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 install(FILES
   ${toinstall}
-  DESTINATION "include/AppImageUpdaterBridge/")
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/AppImageUpdaterBridge")
 
