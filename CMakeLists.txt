@@ -17,15 +17,18 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-find_package(Qt5Core)
-find_package(Qt5Network)
+set(MIN_QT_VERSION "5.6.0")
+
+find_package(Qt5Core ${MIN_QT_VERSION})
+find_package(Qt5Network ${MIN_QT_VERSION})
 
 if(NOT NO_GUI)
-    find_package(Qt5Widgets)
+    find_package(Qt5Widgets ${MIN_QT_VERSION})
 endif()
 
 # cmake macros used
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 # Include Directories.
 include_directories(.)
@@ -82,7 +85,8 @@ endif()
 add_library(AppImageUpdaterBridge ${source})
 target_compile_definitions(AppImageUpdaterBridge PUBLIC LOGGING_DISABLED=LG)
 target_link_libraries(AppImageUpdaterBridge PUBLIC Qt5::Core Qt5::Network)
-target_include_directories(AppImageUpdaterBridge PUBLIC . include)
+target_include_directories(AppImageUpdaterBridge INTERFACE "$<BUILD_INTERFACE:. include>")
+target_include_directories(AppImageUpdaterBridge INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/AppImageUpdaterBridge>" )
 
 if(NOT NO_GUI)
     target_link_libraries(AppImageUpdaterBridge PUBLIC Qt5::Widgets)
@@ -100,11 +104,30 @@ install(FILES
   ${CMAKE_BINARY_DIR}/AppImageUpdaterBridge.pc
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
-install(FILES
-  ${CMAKE_BINARY_DIR}/libAppImageUpdaterBridge.a
+install(TARGETS
+  AppImageUpdaterBridge
+  EXPORT AppImageUpdaterBridgeTargets
   DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 install(FILES
   ${toinstall}
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/AppImageUpdaterBridge")
 
+# Add CMake config
+set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/AppImageUpdaterBridge")
+if(NOT NO_GUI)
+    set(PACKAGE_FIND_DEPENDENCY_QTWIDGETS "find_dependency(Qt5Widgets ${MIN_QT_VERSION})")
+endif()
+configure_package_config_file(
+  "${CMAKE_SOURCE_DIR}/other/cmake/AppImageUpdaterBridgeConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/AppImageUpdaterBridgeConfig.cmake"
+  INSTALL_DESTINATION  ${CMAKECONFIG_INSTALL_DIR}
+)
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/AppImageUpdaterBridgeConfig.cmake"
+  DESTINATION "${CMAKECONFIG_INSTALL_DIR}")
+
+install(EXPORT AppImageUpdaterBridgeTargets
+  FILE AppImageUpdaterBridgeTargets.cmake
+  DESTINATION "${CMAKECONFIG_INSTALL_DIR}")
