@@ -101,6 +101,15 @@ Please refer the official [documentation](https://antony-jr.github.io/AppImageUp
             </sub><br>
             <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=probonopd">💻</a>
       </td>
+      <td>
+            <img src="https://avatars0.githubusercontent.com/u/4068037?v=4" width="100px"><br>
+            <sub>
+                <strong>
+                    <a href="https://github.com/kossebau">Friedrich</a>
+                </strong>
+            </sub><br>
+            <a href="https://github.com/antony-jr/AppImageUpdaterBridge/commits?author=kossebau">💻</a>
+      </td>
     </tr>
 </table>
 
