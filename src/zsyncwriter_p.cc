@@ -78,8 +78,7 @@ using namespace AppImageUpdaterBridge;
  * Zsync uses the same modified version of the Adler32 checksum
  * as in rsync as the rolling checksum , here after denoted by rsum.
  * Calculate the rsum for a single block of data. */
-static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, size_t len)
-{
+static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, size_t len) {
     register unsigned short a = 0;
     register unsigned short b = 0;
 
@@ -105,8 +104,7 @@ static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, si
  *
 */
 ZsyncWriterPrivate::ZsyncWriterPrivate()
-    : QObject()
-{
+    : QObject() {
     emit statusChanged(Initializing);
     p_Md4Ctx.reset(new QCryptographicHash(QCryptographicHash::Md4));
 #ifndef LOGGING_DISABLED
@@ -116,8 +114,7 @@ ZsyncWriterPrivate::ZsyncWriterPrivate()
     return;
 }
 
-ZsyncWriterPrivate::~ZsyncWriterPrivate()
-{
+ZsyncWriterPrivate::~ZsyncWriterPrivate() {
     /* Free all c allocator allocated memory */
     if(p_RsumHash)
         free(p_RsumHash);
@@ -131,8 +128,7 @@ ZsyncWriterPrivate::~ZsyncWriterPrivate()
 }
 
 /* Sets the output directory for the target file. */
-void ZsyncWriterPrivate::setOutputDirectory(const QString &dir)
-{
+void ZsyncWriterPrivate::setOutputDirectory(const QString &dir) {
     if(b_Started)
         return;
     s_OutputDirectory = QString(dir);
@@ -140,8 +136,7 @@ void ZsyncWriterPrivate::setOutputDirectory(const QString &dir)
 }
 
 /* Sets the logger name. */
-void ZsyncWriterPrivate::setLoggerName(const QString &name)
-{
+void ZsyncWriterPrivate::setLoggerName(const QString &name) {
     if(b_Started)
         return;
 #ifndef LOGGING_DISABLED
@@ -153,8 +148,7 @@ void ZsyncWriterPrivate::setLoggerName(const QString &name)
 }
 
 /* Turns on or off the internal logger. */
-void ZsyncWriterPrivate::setShowLog(bool logNeeded)
-{
+void ZsyncWriterPrivate::setShowLog(bool logNeeded) {
 #ifndef LOGGING_DISABLED
     if(logNeeded) {
         connect(this, SIGNAL(logger(QString, QString)),
@@ -171,8 +165,7 @@ void ZsyncWriterPrivate::setShowLog(bool logNeeded)
 }
 
 #ifndef LOGGING_DISABLED
-void ZsyncWriterPrivate::handleLogMessage(QString msg, QString path)
-{
+void ZsyncWriterPrivate::handleLogMessage(QString msg, QString path) {
     qInfo().noquote()  << "["
                        <<  QDateTime::currentDateTime().toString(Qt::ISODate)
                        << "] "
@@ -189,8 +182,7 @@ void ZsyncWriterPrivate::handleLogMessage(QString msg, QString path)
  * a invalid block range which should be interpreted as to
  * download the entire file.
 */
-void ZsyncWriterPrivate::getBlockRanges(void)
-{
+void ZsyncWriterPrivate::getBlockRanges(void) {
     if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
         /* Emitting an empty blockRange implies the downloader to download the
          * entire file sequentially.
@@ -239,16 +231,25 @@ void ZsyncWriterPrivate::getBlockRanges(void)
             }
             QCoreApplication::processEvents();
         }
+
         if (p_RequiredRanges.at(0).first >= p_RequiredRanges.at(0).second)
             p_RequiredRanges.clear();
 
         p_RequiredRanges.removeAll(qMakePair(0, 0));
     }
 
-    for(auto iter = p_RequiredRanges.constBegin(), end  = p_RequiredRanges.constEnd(); iter != end; ++iter) {
-        auto to = ((*iter).second >= n_Blocks) ? n_TargetFileLength :
-                  ((*iter).second << n_BlockShift) + n_BlockSize;
-        auto from = (*iter).first << n_BlockShift;
+
+    /*
+     * Since p_RequiredRanges vector will be reduced on every emission of block range,
+     * this causes some wierd behaviour with the iterator. Thus we have to copy
+     * the vector first to a local vector then emit the block ranges.
+    */
+
+    auto requiredRanges = p_RequiredRanges;
+
+    for(auto iter = requiredRanges.constBegin(), end  = requiredRanges.constEnd(); iter != end; ++iter) {
+        auto to = ((*iter).second * n_BlockSize) - 1;
+        auto from = (*iter).first * n_BlockSize;
 
         INFO_START " getBlockRanges : (" LOGR from LOGR " , " LOGR to LOGR ")." INFO_END;
 
@@ -256,6 +257,9 @@ void ZsyncWriterPrivate::getBlockRanges(void)
         QCoreApplication::processEvents();
     }
     emit endOfBlockRanges();
+
+    INFO_START " getBlockRanges : requesting " LOGR requiredRanges.size() LOGR " range requests to server." INFO_END;
+
     emit statusChanged(Idle);
     INFO_START " getBlockRanges : emitted required block ranges." INFO_END;
     return;
@@ -266,8 +270,7 @@ void ZsyncWriterPrivate::getBlockRanges(void)
  * This automatically manages the memory of the given pointer to
  * QByteArray.
 */
-void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData)
-{
+void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData) {
     QScopedPointer<QByteArray> data(downloadedData);
     if(!p_TargetFile->isOpen()) {
         /*
@@ -279,8 +282,8 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData)
     }
 
     n_BytesWritten += p_TargetFile->write(*(data.data()));
-    if(n_BytesWritten >= n_TargetFileLength){
-	    verifyAndConstructTargetFile();
+    if(n_BytesWritten >= n_TargetFileLength) {
+        verifyAndConstructTargetFile();
     }
     return;
 }
@@ -291,8 +294,7 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData)
  * from the zsync control file.
  * Incase there is a mismatch , Only verified blocks are written the working target file.
 */
-void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByteArray *downloadedData)
-{
+void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByteArray *downloadedData) {
 
 
     unsigned char md4sum[CHECKSUM_SIZE];
@@ -315,19 +317,22 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
     buffer->open(QIODevice::ReadOnly);
 
     zs_blockid bfrom = fromRange >> n_BlockShift,
-               bto   = (toRange == n_TargetFileLength) ? n_Blocks : (toRange - n_BlockSize) >> n_BlockShift;
+               bto   = toRange >> n_BlockShift, /* adjust to avoid one left problem. */
+               actual_bto = (toRange + 1) >> n_BlockShift; /* retrive the actual to block id that we have in
+							      required ranges vector. */
 
     emit statusChanged(WrittingDownloadedBlockRanges);
 
     /*
-     * Only check if the to blockid is not the end blockid ,
-     * If we are writting the end blockid then simply write it to file ,
+     * Only check MD4 sum if the to blockid is not the end blockid,
+     * If we are writting the end blockid then simply write it to file,
      * Later the final checksum will verify everything anyways.
-     * This is because the end blockid not always accurate to the target file
-     * length , Therefore the md4 checks fail on the end block which makes it
-     * impossible to finish the delta update eventhough everything is authentic.
+     * This is because the end block md4 sum is not always accurate to the target file's end block md4 sum
+     * since the fetched data might not have zeros filled up, Therefore the md4 checks always
+     * fail on the end block which makes it impossible to finish the delta update
+     * eventhough everything is authentic.
     */
-    if(bto != n_Blocks) {
+    if(actual_bto != n_Blocks) {
         for (zs_blockid x = bfrom; x <= bto; ++x) {
             QByteArray blockData = buffer->read(n_BlockSize);
             calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);
@@ -351,7 +356,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
                      * , The p_RequiredRanges vector gets filled with needed blocks.
                      */
                     if(!p_RequiredRanges.isEmpty())
-                        p_RequiredRanges.removeAll(qMakePair(bfrom, bto));
+                        p_RequiredRanges.removeAll(qMakePair(bfrom, actual_bto));
 
                 }
                 break;
@@ -366,9 +371,8 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
 
         /* Remove the blocks we written successfully. */
         if(!p_RequiredRanges.isEmpty())
-            p_RequiredRanges.removeAll(qMakePair(bfrom, bto));
+            p_RequiredRanges.removeAll(qMakePair(bfrom, actual_bto));
     }
-    INFO_START " writeBlockRanges : wrote block(" LOGR fromRange LOGR "," LOGR toRange LOGR ")." INFO_END; 
 
     /* Calculate our progress. */
     {
@@ -392,8 +396,8 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
         }
         emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);
     }
-    if(p_RequiredRanges.isEmpty()){
-	    verifyAndConstructTargetFile();
+    if(p_RequiredRanges.isEmpty()) {
+        verifyAndConstructTargetFile();
     }
     emit statusChanged(Idle);
     return;
@@ -415,8 +419,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
         const QString &targetFileSHA1,
         QUrl targetFileUrl,
         QBuffer *targetFileCheckSumBlocks,
-        bool rangeSupported)
-{
+        bool rangeSupported) {
     p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     n_Blocks = nblocks,
     n_BlockSize = blocksize,
@@ -485,16 +488,14 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 }
 
 /* cancels the started process. */
-void ZsyncWriterPrivate::cancel(void)
-{
+void ZsyncWriterPrivate::cancel(void) {
     b_CancelRequested = b_Started;
     INFO_START " cancel : cancel requested " LOGR b_CancelRequested LOGR "." INFO_END;
     return;
 }
 
 /* start the zsync algorithm. */
-void ZsyncWriterPrivate::start(void)
-{
+void ZsyncWriterPrivate::start(void) {
     if(b_Started)
         return;
     b_CancelRequested = false;
@@ -613,8 +614,7 @@ void ZsyncWriterPrivate::start(void)
  * 	if(errorCode > 0)
  * 		// Handle error.
 */
-short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks(void)
-{
+short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks(void) {
     if(!p_BlockHashes) {
         return HashTableNotAllocated;
     } else if(!p_TargetFileCheckSumBlocks ||
@@ -682,8 +682,7 @@ short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks(void)
  * a error code with respect to the intrinsic error codes defined in this
  * class , else returns 0.
 */
-short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath, QFile **sourceFile)
-{
+short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath, QFile **sourceFile) {
     if(filePath.isEmpty()) {
         return 0;
     }
@@ -722,8 +721,7 @@ short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath, QFile **sou
  * server.
  * Returns true if successfully constructed the target file.
 */
-bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
-{
+bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void) {
     if(!p_TargetFile->isOpen() || !p_TargetFile->autoRemove()) {
         return true;
     }
@@ -824,8 +822,7 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void)
  *
  * Return the number of blocks successfully obtained.
  */
-qint32 ZsyncWriterPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, const unsigned char *data,int onlyone)
-{
+qint32 ZsyncWriterPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, const unsigned char *data,int onlyone) {
     unsigned char md4sum[2][CHECKSUM_SIZE];
     signed int done_md4 = -1;
     qint32 got_blocks = 0;
@@ -943,8 +940,7 @@ qint32 ZsyncWriterPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e,
  * p_CurrentWeakCheckSums.first - rolling checksum of the first blocksize bytes of the buffer
  * p_CurrentWeakCheckSums.second - rolling checksum of the next blocksize bytes of the buffer (if n_SeqMatches > 1)
  */
-qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_t offset)
-{
+qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_t offset) {
     /* The window in data[] currently being considered is
      * [x, x+bs)
      */
@@ -1052,8 +1048,7 @@ qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_
  * identify any blocks of data in common with the target file. Blocks found are
  * written to our working target output.
  */
-qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
-{
+qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {
     if(!file) {
         return 0;
     }
@@ -1151,8 +1146,7 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file)
 /* Build hash tables to quickly lookup a block based on its rsum value.
  * Returns non-zero if successful.
  */
-qint32 ZsyncWriterPrivate::buildHash(void)
-{
+qint32 ZsyncWriterPrivate::buildHash(void) {
     zs_blockid id;
     qint32 i = 16;
 
@@ -1204,8 +1198,7 @@ qint32 ZsyncWriterPrivate::buildHash(void)
 /* Remove the given data block from the rsum hash table, so it won't be
  * returned in a hash lookup again (e.g. because we now have the data)
  */
-void ZsyncWriterPrivate::removeBlockFromHash(zs_blockid id)
-{
+void ZsyncWriterPrivate::removeBlockFromHash(zs_blockid id) {
     hash_entry *t = &(p_BlockHashes[id]);
 
     hash_entry **p = &(p_RsumHash[calcRHash(t) & p_HashMask]);
@@ -1233,8 +1226,7 @@ void ZsyncWriterPrivate::removeBlockFromHash(zs_blockid id)
  * ...
  * n_Ranges if it is after the last range
  */
-qint32 ZsyncWriterPrivate::rangeBeforeBlock(zs_blockid x)
-{
+qint32 ZsyncWriterPrivate::rangeBeforeBlock(zs_blockid x) {
     /* Lowest number and highest number block that it could be inside (0 based) */
     register qint32 min = 0, max = n_Ranges-1;
 
@@ -1258,8 +1250,7 @@ qint32 ZsyncWriterPrivate::rangeBeforeBlock(zs_blockid x)
 
 /* Mark the given blockid as known, updating the stored known ranges
  * appropriately */
-void ZsyncWriterPrivate::addToRanges(zs_blockid x)
-{
+void ZsyncWriterPrivate::addToRanges(zs_blockid x) {
     qint32 r = rangeBeforeBlock(x);
 
     if (r == -1) {
@@ -1303,8 +1294,7 @@ void ZsyncWriterPrivate::addToRanges(zs_blockid x)
 }
 
 /* Return true if blockid x of the target file is already known */
-qint32 ZsyncWriterPrivate::alreadyGotBlock(zs_blockid x)
-{
+qint32 ZsyncWriterPrivate::alreadyGotBlock(zs_blockid x) {
     return (rangeBeforeBlock(x) == -1);
 }
 
@@ -1314,8 +1304,7 @@ qint32 ZsyncWriterPrivate::alreadyGotBlock(zs_blockid x)
  * If no later blocks are known, it returns numblocks (i.e. the block after
  * the end of the file).
  */
-zs_blockid ZsyncWriterPrivate::nextKnownBlock(zs_blockid x)
-{
+zs_blockid ZsyncWriterPrivate::nextKnownBlock(zs_blockid x) {
     qint32 r = rangeBeforeBlock(x);
     if (r == -1)
         return x;
@@ -1327,8 +1316,7 @@ zs_blockid ZsyncWriterPrivate::nextKnownBlock(zs_blockid x)
 }
 
 /* Calculates the rsum hash table hash for the given hash entry. */
-unsigned ZsyncWriterPrivate::calcRHash(const hash_entry *const e)
-{
+unsigned ZsyncWriterPrivate::calcRHash(const hash_entry *const e) {
     unsigned h = e[0].r.b;
 
     h ^= ((n_SeqMatches > 1) ? e[1].r.b
@@ -1338,16 +1326,14 @@ unsigned ZsyncWriterPrivate::calcRHash(const hash_entry *const e)
 }
 
 /* Returns the hash entry's blockid. */
-zs_blockid ZsyncWriterPrivate::getHashEntryBlockId(const hash_entry *e)
-{
+zs_blockid ZsyncWriterPrivate::getHashEntryBlockId(const hash_entry *e) {
     return e - p_BlockHashes;
 }
 
 
 /* Writes the block range (inclusive) from the supplied buffer to the given
  * under-construction output file */
-void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto)
-{
+void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto) {
     if(!p_TargetFile->isOpen() || !p_TargetFile->autoRemove())
         return;
 
@@ -1360,7 +1346,8 @@ void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom
     n_BytesWritten += p_TargetFile->write((char*)data, len);
     p_TargetFile->seek(pos);
 
-    {   /* Having written those blocks, discard them from the rsum hashes (as
+    {
+        /* Having written those blocks, discard them from the rsum hashes (as
          * we don't need to identify data for those blocks again, and this may
          * speed up lookups (in particular if there are lots of identical
          * blocks), and add the written blocks to the record of blocks that we
@@ -1376,8 +1363,7 @@ void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom
 }
 
 /* Calculates the Md4 Checksum of the given data with respect to the given len. */
-void ZsyncWriterPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *data, size_t len)
-{
+void ZsyncWriterPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *data, size_t len) {
     p_Md4Ctx->reset();
     p_Md4Ctx->addData((const char*)data, len);
     auto result = p_Md4Ctx->result();
