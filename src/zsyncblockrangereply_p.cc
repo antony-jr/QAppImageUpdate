@@ -45,16 +45,15 @@ ZsyncBlockRangeReplyPrivate::ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate *del
         QNetworkReply *reply,
         qint32 rangeFrom,
         qint32 rangeTo)
-    : QObject(reply),
+    : QObject(nullptr),
       n_RangeFrom(rangeFrom),
-      n_RangeTo(rangeTo)
-{
+      n_RangeTo(rangeTo) {
     downloadSpeed.start();
     p_RawData.reset(new QByteArray);
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
             this, SLOT(handleError(QNetworkReply::NetworkError)));
     /*
-     * Check if this is an invalid range , if so then prepare for
+     * Check if this is an invalid range, if so then prepare for
      * a simple sequential download.
     */
     if(!(n_RangeFrom || n_RangeTo)) {
@@ -75,20 +74,20 @@ ZsyncBlockRangeReplyPrivate::ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate *del
     return;
 }
 
-ZsyncBlockRangeReplyPrivate::~ZsyncBlockRangeReplyPrivate()
-{
+ZsyncBlockRangeReplyPrivate::~ZsyncBlockRangeReplyPrivate() {
     return;
 }
 
-void ZsyncBlockRangeReplyPrivate::cancel(void)
-{
+void ZsyncBlockRangeReplyPrivate::cancel(void) {
     emit cancelReply();
     return;
 }
 
-void ZsyncBlockRangeReplyPrivate::handleFinished(void)
-{
-    auto reply = (QNetworkReply*)QObject::sender();
+void ZsyncBlockRangeReplyPrivate::handleFinished(void) {
+    auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
+    if(!reply)
+        return;
+
     disconnect(this, &ZsyncBlockRangeReplyPrivate::cancelReply, reply, &QNetworkReply::abort);
     disconnect(reply, &QNetworkReply::downloadProgress, this, &ZsyncBlockRangeReplyPrivate::handleSeqProgress);
     disconnect(reply, &QNetworkReply::downloadProgress, this, &ZsyncBlockRangeReplyPrivate::handleProgress);
@@ -99,14 +98,18 @@ void ZsyncBlockRangeReplyPrivate::handleFinished(void)
         /* Send all the data to ZsyncWriterPrivate. */
         emit sendBlockDataToWriter(n_RangeFrom, n_RangeTo, p_RawData.take());
     }
+    reply->deleteLater();
     emit finished();
     return;
 }
 
-void ZsyncBlockRangeReplyPrivate::handleError(QNetworkReply::NetworkError ecode)
-{
-    auto reply = (QNetworkReply*)QObject::sender();
+void ZsyncBlockRangeReplyPrivate::handleError(QNetworkReply::NetworkError ecode) {
+    auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
+    if(!reply)
+        return;
+
     disconnect(reply, &QNetworkReply::finished, this, &ZsyncBlockRangeReplyPrivate::handleFinished);
+    reply->deleteLater();
 
     if(ecode == QNetworkReply::OperationCanceledError) {
         emit canceled();
@@ -116,13 +119,10 @@ void ZsyncBlockRangeReplyPrivate::handleError(QNetworkReply::NetworkError ecode)
     return;
 }
 
-void ZsyncBlockRangeReplyPrivate::handleSeqProgress(qint64 bytesReceived, qint64 bytesTotal)
-{
-    auto reply = (QNetworkReply*)QObject::sender();
-
-    if(!reply->isReadable()) {
+void ZsyncBlockRangeReplyPrivate::handleSeqProgress(qint64 bytesReceived, qint64 bytesTotal) {
+    auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
+    if(!reply || !reply->isReadable())
         return;
-    }
 
     auto data = new QByteArray(reply->readAll());
 
@@ -153,11 +153,10 @@ void ZsyncBlockRangeReplyPrivate::handleSeqProgress(qint64 bytesReceived, qint64
     return;
 }
 
-void ZsyncBlockRangeReplyPrivate::handleProgress(qint64 bytesReceived, qint64 bytesTotal)
-{
+void ZsyncBlockRangeReplyPrivate::handleProgress(qint64 bytesReceived, qint64 bytesTotal) {
     Q_UNUSED(bytesTotal);
-    auto reply = (QNetworkReply*)QObject::sender();
-    if(!reply->isReadable()) {
+    auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
+    if(!reply || !reply->isReadable()) {
         return;
     }
 

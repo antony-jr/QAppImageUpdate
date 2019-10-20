@@ -48,15 +48,13 @@
 
 #include "appimageupdaterbridge_enums.hpp"
 
-namespace AppImageUpdaterBridge
-{
-class AppImageUpdateInformationPrivate : public QObject
-{
+namespace AppImageUpdaterBridge {
+class AppImageUpdateInformationPrivate : public QObject {
     Q_OBJECT
-public:
+  public:
     explicit AppImageUpdateInformationPrivate(QObject *parent = nullptr);
     ~AppImageUpdateInformationPrivate();
-public Q_SLOTS:
+  public Q_SLOTS:
     void setAppImage(const QString&);
     void setAppImage(QFile *);
     void setShowLog(bool);
@@ -65,18 +63,18 @@ public Q_SLOTS:
     void clear(void);
 
 #ifndef LOGGING_DISABLED
-private Q_SLOTS:
+  private Q_SLOTS:
     void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void info(QJsonObject);
     void progress(int);
     void error(short);
     void statusChanged(short);
     void logger(QString, QString);
 
-private:
+  private:
     bool b_Busy = false;
     QJsonObject m_Info;
     QString s_AppImageName, /* cache to avoid the overhead for QFileInfo. */

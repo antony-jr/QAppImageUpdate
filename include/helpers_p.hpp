@@ -3,7 +3,9 @@
 #include <QObject>
 #include <QMetaMethod>
 #include <QMetaObject>
+#include <QNetworkReply>
 
-QMetaMethod getMethod(QObject*,const char*); 
+QMetaMethod getMethod(QObject*,const char*);
+short translateQNetworkReplyError(QNetworkReply::NetworkError);
 
 #endif

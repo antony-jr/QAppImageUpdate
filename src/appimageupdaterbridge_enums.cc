@@ -35,13 +35,12 @@
 #include <QString>
 #include "../include/appimageupdaterbridge_enums.hpp"
 
-QString AppImageUpdaterBridge::errorCodeToString(short errorCode)
-{
+QString AppImageUpdaterBridge::errorCodeToString(short errorCode) {
     QString ret = "AppImageUpdaterBridge::errorCode(";
     switch(errorCode) {
     case NoAppimagePathGiven:
-	ret += "NoAppImagePathGiven";
-	break;
+        ret += "NoAppImagePathGiven";
+        break;
     case AppimageNotReadable:
         ret += "AppImageNotReadable";
         break;
@@ -220,8 +219,8 @@ QString AppImageUpdaterBridge::errorCodeToString(short errorCode)
         ret += "UnknownServerError";
         break;
     case ZsyncControlFileNotFound:
-	ret += "ZsyncControlFileNotFound";
-	break;
+        ret += "ZsyncControlFileNotFound";
+        break;
     case HashTableNotAllocated:
         ret += "HashTableNotAllocated";
         break;
@@ -264,8 +263,7 @@ QString AppImageUpdaterBridge::errorCodeToString(short errorCode)
     return ret;
 }
 
-QString AppImageUpdaterBridge::errorCodeToDescriptionString(short errorCode)
-{
+QString AppImageUpdaterBridge::errorCodeToDescriptionString(short errorCode) {
     QString errorString;
     switch(errorCode) {
     case ConnectionRefusedError:
@@ -420,8 +418,8 @@ QString AppImageUpdaterBridge::errorCodeToDescriptionString(short errorCode)
         errorString = QString::fromUtf8("Invalid zsync meta file.");
         break;
     case ZsyncControlFileNotFound:
-	errorString = QString::fromUtf8("The zsync control file was not found in the specified location.");
-	break;
+        errorString = QString::fromUtf8("The zsync control file was not found in the specified location.");
+        break;
     case SourceFileNotFound:
         errorString = QString::fromUtf8("The current AppImage could not be found, maybe it was deleted while updating?");
         break;
@@ -447,8 +445,7 @@ QString AppImageUpdaterBridge::errorCodeToDescriptionString(short errorCode)
     return errorString;
 }
 
-QString AppImageUpdaterBridge::statusCodeToString(short code)
-{
+QString AppImageUpdaterBridge::statusCodeToString(short code) {
     QString ret = "AppImageUpdaterBridge::statusCode(";
     switch(code) {
     case Initializing:

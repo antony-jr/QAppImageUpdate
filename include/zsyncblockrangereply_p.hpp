@@ -44,25 +44,23 @@
 
 #include "zsyncwriter_p.hpp"
 
-namespace AppImageUpdaterBridge
-{
-class ZsyncBlockRangeReplyPrivate : public QObject
-{
+namespace AppImageUpdaterBridge {
+class ZsyncBlockRangeReplyPrivate : public QObject {
     Q_OBJECT
-public:
+  public:
     ZsyncBlockRangeReplyPrivate(ZsyncWriterPrivate*,QNetworkReply*,qint32,qint32);
     ~ZsyncBlockRangeReplyPrivate();
 
-public Q_SLOTS:
+  public Q_SLOTS:
     void cancel(void);
 
-private Q_SLOTS:
+  private Q_SLOTS:
     void handleError(QNetworkReply::NetworkError);
     void handleFinished(void);
     void handleSeqProgress(qint64, qint64);
     void handleProgress(qint64, qint64);
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void cancelReply(void);
     void canceled(void);
     void seqProgress(int, qint64, qint64, double, QString);
@@ -72,7 +70,7 @@ Q_SIGNALS:
     void sendData(QByteArray*);
     void sendBlockDataToWriter(qint32, qint32, QByteArray *);
 
-private:
+  private:
     QTime downloadSpeed;
     QScopedPointer<QByteArray> p_RawData;
     qint64 n_PreviousBytesReceived = 0;

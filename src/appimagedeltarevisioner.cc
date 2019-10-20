@@ -45,101 +45,87 @@
 using namespace AppImageUpdaterBridge;
 
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(bool singleThreaded, QObject *parent)
-    : QObject(parent)
-{
+    : QObject(parent) {
     p_DeltaRevisioner = new AppImageDeltaRevisionerPrivate(singleThreaded, this);
     connectSignals();
     return;
 }
 
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(const QString &AppImagePath, bool singleThreaded, QObject *parent)
-    : QObject(parent)
-{
+    : QObject(parent) {
     p_DeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImagePath, singleThreaded, this);
     connectSignals();
     return;
 }
 
 AppImageDeltaRevisioner::AppImageDeltaRevisioner(QFile *AppImage, bool singleThreaded, QObject *parent)
-    : QObject(parent)
-{
+    : QObject(parent) {
     p_DeltaRevisioner = new AppImageDeltaRevisionerPrivate(AppImage, singleThreaded, this);
     connectSignals();
     return;
 }
 
-AppImageDeltaRevisioner::~AppImageDeltaRevisioner()
-{
+AppImageDeltaRevisioner::~AppImageDeltaRevisioner() {
     p_DeltaRevisioner->deleteLater();
     return;
 }
 
-void AppImageDeltaRevisioner::start(void)
-{
+void AppImageDeltaRevisioner::start(void) {
     getMethod(p_DeltaRevisioner, "start(void)").invoke(p_DeltaRevisioner, Qt::QueuedConnection);
     return;
 }
 
-void AppImageDeltaRevisioner::cancel(void)
-{
+void AppImageDeltaRevisioner::cancel(void) {
     getMethod(p_DeltaRevisioner, "cancel(void)").invoke(p_DeltaRevisioner, Qt::QueuedConnection);
     return;
 }
 
-void AppImageDeltaRevisioner::setAppImage(const QString &AppImagePath)
-{
+void AppImageDeltaRevisioner::setAppImage(const QString &AppImagePath) {
     getMethod(p_DeltaRevisioner, "setAppImage(const QString&)")
     .invoke(p_DeltaRevisioner, Qt::QueuedConnection, Q_ARG(QString, AppImagePath));
     return;
 }
 
-void AppImageDeltaRevisioner::setAppImage(QFile *AppImage)
-{
+void AppImageDeltaRevisioner::setAppImage(QFile *AppImage) {
     getMethod(p_DeltaRevisioner, "setAppImage(QFile*)")
     .invoke(p_DeltaRevisioner, Qt::QueuedConnection, Q_ARG(QFile*, AppImage));
     return;
 }
 
-void AppImageDeltaRevisioner::setShowLog(bool choice)
-{
+void AppImageDeltaRevisioner::setShowLog(bool choice) {
     getMethod(p_DeltaRevisioner, "setShowLog(bool)")
     .invoke(p_DeltaRevisioner, Qt::QueuedConnection, Q_ARG(bool, choice));
     return;
 }
 
-void AppImageDeltaRevisioner::setOutputDirectory(const QString &dir)
-{
+void AppImageDeltaRevisioner::setOutputDirectory(const QString &dir) {
     getMethod(p_DeltaRevisioner, "setOutputDirectory(const QString&)")
     .invoke(p_DeltaRevisioner, Qt::QueuedConnection, Q_ARG(QString, dir));
     return;
 }
 
-void AppImageDeltaRevisioner::setProxy(const QNetworkProxy &proxy){
-    getMethod(p_DeltaRevisioner , "setProxy(const QNetworkProxy&)")
-    .invoke(p_DeltaRevisioner , Qt::QueuedConnection, Q_ARG(QNetworkProxy , proxy));
+void AppImageDeltaRevisioner::setProxy(const QNetworkProxy &proxy) {
+    getMethod(p_DeltaRevisioner, "setProxy(const QNetworkProxy&)")
+    .invoke(p_DeltaRevisioner, Qt::QueuedConnection, Q_ARG(QNetworkProxy, proxy));
     return;
 }
 
-void AppImageDeltaRevisioner::getAppImageEmbededInformation(void)
-{
+void AppImageDeltaRevisioner::getAppImageEmbededInformation(void) {
     getMethod(p_DeltaRevisioner, "getAppImageEmbededInformation(void)").invoke(p_DeltaRevisioner, Qt::QueuedConnection);
     return;
 }
 
-void AppImageDeltaRevisioner::clear(void)
-{
+void AppImageDeltaRevisioner::clear(void) {
     getMethod(p_DeltaRevisioner, "clear(void)").invoke(p_DeltaRevisioner, Qt::QueuedConnection);
     return;
 }
 
-void AppImageDeltaRevisioner::checkForUpdate(void)
-{
+void AppImageDeltaRevisioner::checkForUpdate(void) {
     getMethod(p_DeltaRevisioner, "checkForUpdate(void)").invoke(p_DeltaRevisioner, Qt::QueuedConnection);
     return;
 }
 
-void AppImageDeltaRevisioner::connectSignals()
-{
+void AppImageDeltaRevisioner::connectSignals() {
     connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::started,
             this, &AppImageDeltaRevisioner::started, Qt::DirectConnection);
     connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::canceled,

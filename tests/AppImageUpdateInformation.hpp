@@ -10,12 +10,10 @@
 */
 #define APPIMAGE_TOOL_RELATIVE_PATH QString("test_cases/appimagetool.AppImage")
 
-class AppImageUpdateInformation : public QObject
-{
+class AppImageUpdateInformation : public QObject {
     Q_OBJECT
-private slots:
-    void initTestCase(void)
-    {
+  private slots:
+    void initTestCase(void) {
         QFileInfo file(APPIMAGE_TOOL_RELATIVE_PATH);
         if(!file.exists()) {
             QFAIL("required test cases does not exist!");
@@ -24,8 +22,7 @@ private slots:
         return;
     }
 
-    void benchmark(void)
-    {
+    void benchmark(void) {
         using AppImageUpdaterBridge::AppImageUpdateInformationPrivate;
         QBENCHMARK {
             AppImageUpdateInformationPrivate AIUpdateInformation;
@@ -40,8 +37,7 @@ private slots:
         return;
     }
 
-    void resultingJsonObjectisUniformAndValid(void)
-    {
+    void resultingJsonObjectisUniformAndValid(void) {
         using AppImageUpdaterBridge::AppImageUpdateInformationPrivate;
         AppImageUpdateInformationPrivate AIUpdateInformation;
         AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
@@ -49,7 +45,7 @@ private slots:
         QSignalSpy spyInfo(&AIUpdateInformation, SIGNAL(info(QJsonObject)));
         AIUpdateInformation.getInfo();
 
-	QVERIFY(spyInfo.count() || spyInfo.wait());
+        QVERIFY(spyInfo.count() || spyInfo.wait());
 
         /* Get resultant QJsonObject and Compare. */
         auto result = spyInfo.takeFirst().at(0).toJsonObject();
@@ -71,46 +67,44 @@ private slots:
         QVERIFY(!result["isEmpty"].toBool());
         return;
     }
-   
-    void reentrant(void){
+
+    void reentrant(void) {
         using AppImageUpdaterBridge::AppImageUpdateInformationPrivate;
         AppImageUpdateInformationPrivate AIUpdateInformation;
         QSignalSpy spyInfo(&AIUpdateInformation, SIGNAL(info(QJsonObject)));
 
         AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
-	AIUpdateInformation.getInfo();
-	
-	AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
-	AIUpdateInformation.getInfo();
+        AIUpdateInformation.getInfo();
 
         AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
-	AIUpdateInformation.getInfo();
-	
-        AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
-	AIUpdateInformation.getInfo();
+        AIUpdateInformation.getInfo();
 
-	QVERIFY(spyInfo.count() || spyInfo.wait());
+        AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
+        AIUpdateInformation.getInfo();
+
+        AIUpdateInformation.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
+        AIUpdateInformation.getInfo();
+
+        QVERIFY(spyInfo.count() || spyInfo.wait());
 
 
     }
 
-    void checkErrorSignal(void)
-    {
+    void checkErrorSignal(void) {
         using AppImageUpdaterBridge::AppImageUpdateInformationPrivate;
         AppImageUpdateInformationPrivate AIUpdateInformation;
         QSignalSpy spyInfo(&AIUpdateInformation, SIGNAL(error(short)));
         AIUpdateInformation.getInfo();
-        
-	QVERIFY(spyInfo.count() || spyInfo.wait());
+
+        QVERIFY(spyInfo.count() || spyInfo.wait());
         return;
     }
 
-    void cleanupTestCase(void)
-    {
+    void cleanupTestCase(void) {
         emit finished();
         return;
     }
-Q_SIGNALS:
+  Q_SIGNALS:
     void finished(void);
 };
 #endif

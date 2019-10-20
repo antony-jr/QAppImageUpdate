@@ -46,20 +46,18 @@
 #include <QString>
 #include <QFile>
 
-namespace AppImageUpdaterBridge
-{
+namespace AppImageUpdaterBridge {
 class AppImageDeltaRevisionerPrivate;
 
-class AppImageDeltaRevisioner : public QObject
-{
+class AppImageDeltaRevisioner : public QObject {
     Q_OBJECT
-public:
+  public:
     explicit AppImageDeltaRevisioner(bool singleThreaded = true, QObject *parent = nullptr);
     explicit AppImageDeltaRevisioner(const QString&, bool singleThreaded = true, QObject *parent = nullptr);
     explicit AppImageDeltaRevisioner(QFile *, bool singleThreaded = true, QObject *parent = nullptr);
     ~AppImageDeltaRevisioner();
 
-public Q_SLOTS:
+  public Q_SLOTS:
     void start(void);
     void cancel(void);
     void setAppImage(const QString&);
@@ -70,7 +68,7 @@ public Q_SLOTS:
     void getAppImageEmbededInformation(void);
     void checkForUpdate(void);
     void clear(void);
-Q_SIGNALS:
+  Q_SIGNALS:
     void started(void);
     void canceled(void);
     void finished(QJsonObject, QString);
@@ -81,7 +79,7 @@ Q_SIGNALS:
     void progress(int, qint64, qint64, double, QString);
     void logger(QString, QString);
 
-private:
+  private:
     void connectSignals();
     AppImageDeltaRevisionerPrivate *p_DeltaRevisioner = nullptr;
 };

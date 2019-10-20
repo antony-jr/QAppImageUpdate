@@ -3,8 +3,7 @@
 #include <ZsyncRemoteControlFileParser.hpp>
 #include <AppImageDeltaRevisioner.hpp>
 
-int main(int ac, char **av)
-{
+int main(int ac, char **av) {
     QCoreApplication app(ac, av);
     AppImageUpdateInformation AIUITest;
     ZsyncRemoteControlFileParser ZRCFParserTest;
@@ -14,7 +13,7 @@ int main(int ac, char **av)
         /* Test AppImage Update Information. */
         QTest::qExec(&AIUITest);
         QTest::qExec(&ZRCFParserTest);
-	QTest::qExec(&AIDRTest);
+        QTest::qExec(&AIDRTest);
         return;
     };
 

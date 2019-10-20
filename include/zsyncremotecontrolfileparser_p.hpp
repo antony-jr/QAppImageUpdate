@@ -57,15 +57,13 @@
 #include "appimageupdaterbridge_enums.hpp"
 #include "zsyncinternalstructures_p.hpp"
 
-namespace AppImageUpdaterBridge
-{
-class ZsyncRemoteControlFileParserPrivate : public QObject
-{
+namespace AppImageUpdaterBridge {
+class ZsyncRemoteControlFileParserPrivate : public QObject {
     Q_OBJECT
-public:
+  public:
     explicit ZsyncRemoteControlFileParserPrivate(QNetworkAccessManager*);
     ~ZsyncRemoteControlFileParserPrivate();
-public Q_SLOTS:
+  public Q_SLOTS:
     void clear(void);
     void setControlFileUrl(const QUrl&);
     void setControlFileUrl(QJsonObject);
@@ -74,7 +72,7 @@ public Q_SLOTS:
     void getControlFile(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
-private Q_SLOTS:
+  private Q_SLOTS:
     void checkHeadTargetFileUrl(qint64, qint64);
     void handleBintrayRedirection(const QUrl&);
     void handleGithubAPIResponse(void);
@@ -85,7 +83,7 @@ private Q_SLOTS:
 #ifndef LOGGING_DISABLED
     void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
-Q_SIGNALS:
+  Q_SIGNALS:
     void zsyncInformation(qint32,qint32,qint32,
                           qint32,qint32,qint32,
                           QString,QString,QString,
@@ -96,7 +94,7 @@ Q_SIGNALS:
     void error(short);
     void statusChanged(short);
     void logger(QString, QString);
-private:
+  private:
     bool b_AcceptRange = false,
          b_Busy = false;
     QJsonObject j_UpdateInformation;
@@ -104,7 +102,7 @@ private:
             s_ZsyncFileName, /* only used for github transport. */
             s_TargetFileName,
             s_AppImagePath,
-	    s_ReleaseNotes,
+            s_ReleaseNotes,
             s_TargetFileSHA1
 #ifndef LOGGING_DISABLED
             ,s_LoggerName,

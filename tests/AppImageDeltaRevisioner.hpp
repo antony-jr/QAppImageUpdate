@@ -12,46 +12,43 @@
 #define APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH QString("test_cases/appimagetool-mod.AppImage")
 #define APPIMAGE_UPDATE_RESULT QString("test_cases/appimagetool-x86_64.AppImage")
 
-class AppImageDeltaRevisioner : public QObject
-{
+class AppImageDeltaRevisioner : public QObject {
     Q_OBJECT
-private slots:
-    void initTestCase(void)
-    {
-      {
-        QFileInfo file(APPIMAGE_TOOL_RELATIVE_PATH);
-        if(!file.exists()) {
-            QFAIL("required test cases does not exist!");
-            emit finished();
+  private slots:
+    void initTestCase(void) {
+        {
+            QFileInfo file(APPIMAGE_TOOL_RELATIVE_PATH);
+            if(!file.exists()) {
+                QFAIL("required test cases does not exist!");
+                emit finished();
+            }
         }
-      }
-      {
-        QFileInfo file(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
-	if(!file.exists()){
-	    QFAIL("required test cases does not exist!");
-	    emit finished();
-	}
-      }
-      return;
+        {
+            QFileInfo file(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
+            if(!file.exists()) {
+                QFAIL("required test cases does not exist!");
+                emit finished();
+            }
+        }
+        return;
     }
 
-    void benchmark(void){
+    void benchmark(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
-	AppImageDeltaRevisioner AIDeltaRev;
-        QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(finished(QJsonObject , QString)));
-        
-	QBENCHMARK {
-        AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
-        AIDeltaRev.start();
-	
-	/* This update should take atmost 50 seconds */
-	QVERIFY(spyInfo.wait(50 * 1000));
-	QFile::remove(APPIMAGE_UPDATE_RESULT);
-	}
+        AppImageDeltaRevisioner AIDeltaRev;
+        QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(finished(QJsonObject, QString)));
+
+        QBENCHMARK {
+            AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
+            AIDeltaRev.start();
+
+            /* This update should take atmost 50 seconds */
+            QVERIFY(spyInfo.wait(50 * 1000));
+            QFile::remove(APPIMAGE_UPDATE_RESULT);
+        }
     }
 
-    void getAppImageEmbededInformation(void)
-    {
+    void getAppImageEmbededInformation(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
@@ -59,7 +56,7 @@ private slots:
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(embededInformation(QJsonObject)));
         AIDeltaRev.getAppImageEmbededInformation();
 
-	QVERIFY(spyInfo.count() || spyInfo.wait());
+        QVERIFY(spyInfo.count() || spyInfo.wait());
 
         /* Get resultant QJsonObject and Compare. */
         auto result = spyInfo.takeFirst().at(0).toJsonObject();
@@ -81,8 +78,8 @@ private slots:
         QVERIFY(!result["isEmpty"].toBool());
         return;
     }
-  
-    void checkForUpdates(void){
+
+    void checkForUpdates(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
@@ -90,208 +87,206 @@ private slots:
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(updateAvailable(bool,QJsonObject)));
         AIDeltaRev.checkForUpdate();
 
-	QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
+        QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
 
     }
 
-    void checkForUpdateAndStartDoesNotCollide(void){
+    void checkForUpdateAndStartDoesNotCollide(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(updateAvailable(bool,QJsonObject)));
         AIDeltaRev.checkForUpdate();
-	AIDeltaRev.start(); // should not collide, this call should be ignored.
+        AIDeltaRev.start(); // should not collide, this call should be ignored.
 
-	QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
+        QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
     }
 
-    void noCallsCollide(void){
+    void noCallsCollide(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(updateAvailable(bool,QJsonObject)));
         AIDeltaRev.checkForUpdate();
-	AIDeltaRev.getAppImageEmbededInformation();
-	AIDeltaRev.start(); // should not collide, this call should be ignored.
-	AIDeltaRev.getAppImageEmbededInformation();
+        AIDeltaRev.getAppImageEmbededInformation();
+        AIDeltaRev.start(); // should not collide, this call should be ignored.
+        AIDeltaRev.getAppImageEmbededInformation();
 
-	QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
+        QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
     }
 
-    void updateShouldSucceed(void){
+    void updateShouldSucceed(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
-        QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(finished(QJsonObject , QString)));
+        QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(finished(QJsonObject, QString)));
         AIDeltaRev.start();
-	
-	QVERIFY(spyInfo.count() || spyInfo.wait(50 * 1000));
+
+        QVERIFY(spyInfo.count() || spyInfo.wait(50 * 1000));
     }
 
-    void checkErrorSignal(void)
-    {
+    void checkErrorSignal(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(error(short)));
         AIDeltaRev.start();
-        
-	QVERIFY(spyInfo.count() || spyInfo.wait());
+
+        QVERIFY(spyInfo.count() || spyInfo.wait());
         return;
     }
 
-    void getAppImageEmbededInformationAndCheckForUpdateDoesNotCollide(void){
+    void getAppImageEmbededInformationAndCheckForUpdateDoesNotCollide(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(embededInformation(QJsonObject)));
-	QSignalSpy spyInfoCheck(&AIDeltaRev, SIGNAL(updateAvailable(bool , QJsonObject)));
-	
-	AIDeltaRev.getAppImageEmbededInformation();
-	AIDeltaRev.checkForUpdate(); // should not collide, this call should be ignored if busy.
+        QSignalSpy spyInfoCheck(&AIDeltaRev, SIGNAL(updateAvailable(bool, QJsonObject)));
 
-	QVERIFY(spyInfo.count() || spyInfo.wait() || 
-		spyInfoCheck.count() || spyInfoCheck.wait(30*1000));
+        AIDeltaRev.getAppImageEmbededInformation();
+        AIDeltaRev.checkForUpdate(); // should not collide, this call should be ignored if busy.
+
+        QVERIFY(spyInfo.count() || spyInfo.wait() ||
+                spyInfoCheck.count() || spyInfoCheck.wait(30*1000));
     }
 
 
-    void getAppImageEmbededInformationAndStartDoesNotCollide(void){
+    void getAppImageEmbededInformationAndStartDoesNotCollide(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(embededInformation(QJsonObject)));
-	QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
-	
-	AIDeltaRev.getAppImageEmbededInformation();
-	AIDeltaRev.start(); // should not collide, this call should be ignored if busy.
+        QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
 
-	QVERIFY(spyInfo.count() || spyInfo.wait() || 
-		spyInfoStart.count() || spyInfoStart.wait(30*1000));
+        AIDeltaRev.getAppImageEmbededInformation();
+        AIDeltaRev.start(); // should not collide, this call should be ignored if busy.
+
+        QVERIFY(spyInfo.count() || spyInfo.wait() ||
+                spyInfoStart.count() || spyInfoStart.wait(30*1000));
     }
 
-    
-    void checkForUpdateAndGetAppImageEmbededInformationDoesNotCollide(void){
+
+    void checkForUpdateAndGetAppImageEmbededInformationDoesNotCollide(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(embededInformation(QJsonObject)));
-	QSignalSpy spyInfoCheck(&AIDeltaRev, SIGNAL(updateAvailable(bool , QJsonObject)));
-	
-	AIDeltaRev.checkForUpdate();
-	AIDeltaRev.getAppImageEmbededInformation(); // should not collide, this call should be ignored if busy.
+        QSignalSpy spyInfoCheck(&AIDeltaRev, SIGNAL(updateAvailable(bool, QJsonObject)));
 
-	QVERIFY(spyInfo.count() || spyInfo.wait() || 
-		spyInfoCheck.count() || spyInfoCheck.wait(30*1000));
+        AIDeltaRev.checkForUpdate();
+        AIDeltaRev.getAppImageEmbededInformation(); // should not collide, this call should be ignored if busy.
+
+        QVERIFY(spyInfo.count() || spyInfo.wait() ||
+                spyInfoCheck.count() || spyInfoCheck.wait(30*1000));
     }
 
 
-    void startAndGetAppImageEmbededInformationDoesNotCollide(void){
+    void startAndGetAppImageEmbededInformationDoesNotCollide(void) {
         using AppImageUpdaterBridge::AppImageDeltaRevisioner;
         AppImageDeltaRevisioner AIDeltaRev;
         AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
         QSignalSpy spyInfo(&AIDeltaRev, SIGNAL(embededInformation(QJsonObject)));
-	QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
+        QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
 
-	AIDeltaRev.start();	
-	AIDeltaRev.getAppImageEmbededInformation(); // should be ignored if busy.
+        AIDeltaRev.start();
+        AIDeltaRev.getAppImageEmbededInformation(); // should be ignored if busy.
 
-	QVERIFY(spyInfo.count() || spyInfo.wait() || 
-		spyInfoStart.count() || spyInfoStart.wait(30*1000));
+        QVERIFY(spyInfo.count() || spyInfo.wait() ||
+                spyInfoStart.count() || spyInfoStart.wait(30*1000));
     }
 
-    void destructingBeforeFinishShouldNotCrash(void){
-	 {
-		using AppImageUpdaterBridge::AppImageDeltaRevisioner;
-		AppImageDeltaRevisioner AIDeltaRev;
-		
-		QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
-		AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
+    void destructingBeforeFinishShouldNotCrash(void) {
+        {
+            using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+            AppImageDeltaRevisioner AIDeltaRev;
 
-		AIDeltaRev.start();
+            QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
+            AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
-		QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
-	 }
-	 QVERIFY(true);
+            AIDeltaRev.start();
+
+            QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
+        }
+        QVERIFY(true);
     }
 
-    void destructingBeforeFinishShouldNotCrashWhenNotUsingSingleThread(void){
-	 {
-		using AppImageUpdaterBridge::AppImageDeltaRevisioner;
-		AppImageDeltaRevisioner AIDeltaRev(false);
-		
-		QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
-		AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
+    void destructingBeforeFinishShouldNotCrashWhenNotUsingSingleThread(void) {
+        {
+            using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+            AppImageDeltaRevisioner AIDeltaRev(false);
 
-		AIDeltaRev.start();
+            QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
+            AIDeltaRev.setAppImage(APPIMAGE_TOOL_RELATIVE_PATH);
 
-		QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
-	 }
-	 QVERIFY(true);
+            AIDeltaRev.start();
+
+            QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
+        }
+        QVERIFY(true);
     }
 
-    void shouldBeUpdatableAfterCancel(void){
-	using AppImageUpdaterBridge::AppImageDeltaRevisioner;
-	AppImageDeltaRevisioner AIDeltaRev(false);
-		
-	QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
-	QSignalSpy spyInfoFinished(&AIDeltaRev, SIGNAL(finished(QJsonObject, QString)));
-	QSignalSpy spyInfoCanceled(&AIDeltaRev, SIGNAL(canceled()));
-	AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
+    void shouldBeUpdatableAfterCancel(void) {
+        using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+        AppImageDeltaRevisioner AIDeltaRev(false);
 
-	AIDeltaRev.start();
+        QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
+        QSignalSpy spyInfoFinished(&AIDeltaRev, SIGNAL(finished(QJsonObject, QString)));
+        QSignalSpy spyInfoCanceled(&AIDeltaRev, SIGNAL(canceled()));
+        AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
 
-	QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
+        AIDeltaRev.start();
 
-	AIDeltaRev.cancel();
+        QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
 
-	QVERIFY(spyInfoCanceled.count() || spyInfoCanceled.wait());
+        AIDeltaRev.cancel();
 
-	AIDeltaRev.start(); // restart after cancel
+        QVERIFY(spyInfoCanceled.count() || spyInfoCanceled.wait());
 
-	QVERIFY(spyInfoFinished.count() || spyInfoFinished.wait(30*1000));
-    }
+        AIDeltaRev.start(); // restart after cancel
 
-
-    void objectShouldBeReusableAfterCancel(void){
-	using AppImageUpdaterBridge::AppImageDeltaRevisioner;
-	AppImageDeltaRevisioner AIDeltaRev(false);
-		
-	QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
-	QSignalSpy spyInfoFinished(&AIDeltaRev, SIGNAL(finished(QJsonObject, QString)));
-	QSignalSpy spyInfoCanceled(&AIDeltaRev, SIGNAL(canceled()));
-	AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
-
-	AIDeltaRev.start();
-
-	QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
-
-	AIDeltaRev.cancel();
-
-	QVERIFY(spyInfoCanceled.count() || spyInfoCanceled.wait());
-
-
-	// start new.
-	AIDeltaRev.clear();
-	AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
-	AIDeltaRev.start();
-
-	QVERIFY(spyInfoFinished.count() || spyInfoFinished.wait(30*1000));
+        QVERIFY(spyInfoFinished.count() || spyInfoFinished.wait(30*1000));
     }
 
 
+    void objectShouldBeReusableAfterCancel(void) {
+        using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+        AppImageDeltaRevisioner AIDeltaRev(false);
 
-    void cleanupTestCase(void)
-    {
+        QSignalSpy spyInfoStart(&AIDeltaRev, SIGNAL(started()));
+        QSignalSpy spyInfoFinished(&AIDeltaRev, SIGNAL(finished(QJsonObject, QString)));
+        QSignalSpy spyInfoCanceled(&AIDeltaRev, SIGNAL(canceled()));
+        AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
+
+        AIDeltaRev.start();
+
+        QVERIFY(spyInfoStart.count() || spyInfoStart.wait(30*1000));
+
+        AIDeltaRev.cancel();
+
+        QVERIFY(spyInfoCanceled.count() || spyInfoCanceled.wait());
+
+
+        // start new.
+        AIDeltaRev.clear();
+        AIDeltaRev.setAppImage(APPIMAGE_TOOL_MODIFIED_RELATIVE_PATH);
+        AIDeltaRev.start();
+
+        QVERIFY(spyInfoFinished.count() || spyInfoFinished.wait(30*1000));
+    }
+
+
+
+    void cleanupTestCase(void) {
         emit finished();
         return;
     }
-Q_SIGNALS:
+  Q_SIGNALS:
     void finished(void);
 };
 #endif

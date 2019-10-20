@@ -43,27 +43,26 @@
 
 #include "zsyncwriter_p.hpp"
 
-namespace AppImageUpdaterBridge
-{
-class ZsyncBlockRangeDownloaderPrivate : public QObject
-{
+namespace AppImageUpdaterBridge {
+class ZsyncBlockRangeDownloaderPrivate : public QObject {
     Q_OBJECT
-public:
+  public:
     ZsyncBlockRangeDownloaderPrivate(ZsyncWriterPrivate*,QNetworkAccessManager*);
     ~ZsyncBlockRangeDownloaderPrivate();
 
-public Q_SLOTS:
+  public Q_SLOTS:
     void cancel(void);
 
-private Q_SLOTS:
+  private Q_SLOTS:
     void initDownloader(qint64, qint64, QUrl);
     void handleBlockRange(qint32,qint32);
     void handleBlockReplyFinished(void);
     void handleBlockReplyCancel(void);
     void handleBlockReplyError(QNetworkReply::NetworkError);
     void handleBlockReplyProgress(qint64, double, QString);
+    void checkHeadTargetFileUrl(qint64, qint64);
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void blockRangesRequested();
     void progress(int, qint64, qint64, double, QString);
     void cancelAllReply(void);
@@ -72,13 +71,12 @@ Q_SIGNALS:
     void started(void);
     void finished(void);
 
-private:
+  private:
     QUrl u_TargetFileUrl;
     qint64 n_BytesTotal = 0,
            n_BytesReceived = 0,
            n_BlockReply = 0;
-    bool b_Errored = false,
-         b_CancelRequested = false;
+    bool b_CancelRequested = false;
     QNetworkAccessManager *p_Manager = nullptr;
     ZsyncWriterPrivate *p_Writer = nullptr;
 };

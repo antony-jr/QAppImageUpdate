@@ -61,18 +61,16 @@
 #include "zsyncwriter_p.hpp"
 #include "zsyncblockrangedownloader_p.hpp"
 
-namespace AppImageUpdaterBridge
-{
-class AppImageDeltaRevisionerPrivate : public QObject
-{
+namespace AppImageUpdaterBridge {
+class AppImageDeltaRevisionerPrivate : public QObject {
     Q_OBJECT
-public:
+  public:
     explicit AppImageDeltaRevisionerPrivate(bool singleThreaded = true, QObject *parent = nullptr);
     explicit AppImageDeltaRevisionerPrivate(const QString&, bool singleThreaded = true, QObject *parent = nullptr);
     explicit AppImageDeltaRevisionerPrivate(QFile *, bool singleThreaded = true, QObject *parent = nullptr);
     ~AppImageDeltaRevisionerPrivate();
 
-public Q_SLOTS:
+  public Q_SLOTS:
     void start(void);
     void cancel(void);
     void setAppImage(const QString&);
@@ -84,15 +82,15 @@ public Q_SLOTS:
     void checkForUpdate(void);
     void clear(void);
 
-private Q_SLOTS:
+  private Q_SLOTS:
     void doStart(QJsonObject);
     void resetConnections();
-    void handleBlockDownloaderStarted(void); 
+    void handleBlockDownloaderStarted(void);
     void handleBlockDownloaderFinished(void);
     void handleIndeterminateProgress(int);
     void handleUpdateCheckInformation(QJsonObject);
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void started(void);
     void canceled(void);
     void finished(QJsonObject, QString);
@@ -102,7 +100,7 @@ Q_SIGNALS:
     void error(short);
     void progress(int, qint64, qint64, double, QString);
     void logger(QString, QString);
-private:
+  private:
     bool b_Busy = false;
     QScopedPointer<AppImageUpdateInformationPrivate> p_UpdateInformation;
     QScopedPointer<ZsyncRemoteControlFileParserPrivate> p_ControlFileParser;

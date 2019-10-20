@@ -7,6 +7,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # find installed library
 find_package(AppImageUpdaterBridge)
 
-add_executable(SimpleUpdate main.cc TextProgressBar.cc)
+add_executable(SimpleUpdate main.cc cutelog.c)
 
 target_link_libraries(SimpleUpdate PRIVATE AppImageUpdaterBridge)

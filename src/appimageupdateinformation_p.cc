@@ -233,25 +233,21 @@ typedef struct {
 
 struct AutoBoolCounter {
     explicit AutoBoolCounter(bool *p)
-        : p_Bool(p)
-    {
+        : p_Bool(p) {
         *p_Bool = true;
     }
-    ~AutoBoolCounter()
-    {
+    ~AutoBoolCounter() {
         *p_Bool = false;
     }
 
-    void lock()
-    {
+    void lock() {
         *p_Bool = true;
     }
 
-    void unlock()
-    {
+    void unlock() {
         *p_Bool = false;
     }
-private:
+  private:
     bool *p_Bool = nullptr;
 };
 
@@ -265,8 +261,7 @@ private:
  * 	file.open(QIODevice::ReadOnly);
  * 	QByteArray data = read(&file , 512 , 1024);
 */
-static QByteArray read(QFile *IO, qint64 offset, qint64 max)
-{
+static QByteArray read(QFile *IO, qint64 offset, qint64 max) {
     QByteArray ret;
     qint64 before = IO->pos();
     IO->seek(offset);
@@ -275,8 +270,7 @@ static QByteArray read(QFile *IO, qint64 offset, qint64 max)
     return ret;
 }
 
-static QByteArray readLine(QFile *IO)
-{
+static QByteArray readLine(QFile *IO) {
     QByteArray ret;
     char c = 0;
     while(IO->getChar(&c) && c != '\n') {
@@ -285,8 +279,7 @@ static QByteArray readLine(QFile *IO)
     return ret;
 }
 
-static QByteArray getExecPathFromDesktopFile(QFile *file)
-{
+static QByteArray getExecPathFromDesktopFile(QFile *file) {
     QByteArray line;
     qint64 prevPos = file->pos();
     file->seek(0);
@@ -317,8 +310,7 @@ static QByteArray getExecPathFromDesktopFile(QFile *file)
  *	AppImageUpdateInformationPrivate AppImageInfoWithoutParent;
 */
 AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *parent)
-    : QObject(parent)
-{
+    : QObject(parent) {
     emit statusChanged(Initializing);
 #ifndef LOGGING_DISABLED
     try {
@@ -336,13 +328,11 @@ AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *pare
  * Destructs the AppImageUpdateInformationPrivate , When the user provides the AppImage as a QFile ,
  * QFile is not closed , the user is fully responsible to deallocate or close the QFile.
 */
-AppImageUpdateInformationPrivate::~AppImageUpdateInformationPrivate()
-{
+AppImageUpdateInformationPrivate::~AppImageUpdateInformationPrivate() {
     return;
 }
 
-void AppImageUpdateInformationPrivate::setLoggerName(const QString &name)
-{
+void AppImageUpdateInformationPrivate::setLoggerName(const QString &name) {
     if(b_Busy) {
         return;
     }
@@ -364,8 +354,7 @@ void AppImageUpdateInformationPrivate::setLoggerName(const QString &name)
  * 	AppImageInfo.setAppImage("PathTo.AppImage");
  *
  */
-void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
-{
+void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath) {
     if(b_Busy) {
         return;
     }
@@ -393,8 +382,7 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath)
  * 	AppImageInfo.setAppImage(&file);
  * 	file.close();
 */
-void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
-{
+void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage) {
     if(b_Busy) {
         return;
     }
@@ -420,8 +408,7 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage)
  * 	AppImageUpdateInformationPrivate AppImageInfo("PathTo.AppImage");
  * 	AppImageInfo.setShowLog(true);
 */
-void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
-{
+void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded) {
     if(b_Busy) {
         return;
     }
@@ -440,8 +427,7 @@ void AppImageUpdateInformationPrivate::setShowLog(bool logNeeded)
 }
 
 
-void AppImageUpdateInformationPrivate::getInfo(void)
-{
+void AppImageUpdateInformationPrivate::getInfo(void) {
     if(b_Busy) {
         return;
     }
@@ -460,31 +446,31 @@ void AppImageUpdateInformationPrivate::getInfo(void)
     /* If this class is constructed without an AppImage to operate on ,
      * Then lets guess it. */
     if(!p_AppImage && s_AppImagePath.isEmpty()) {
-        /* Do not check the QCoreApplication first. First check if the environmental variable 
-	 * $APPIMAGE has something , if not then use the arguments given by QCoreApplication. */
-       
-	bc.unlock();
-	setAppImage(QProcessEnvironment::systemEnvironment().value("APPIMAGE"));
-	bc.lock();
-	
+        /* Do not check the QCoreApplication first. First check if the environmental variable
+        * $APPIMAGE has something , if not then use the arguments given by QCoreApplication. */
 
-	/*
-	 * Lets try getting it from QCoreApplication arguments. */
-	if(s_AppImagePath.isEmpty()){
-	    auto arguments = QCoreApplication::arguments();
+        bc.unlock();
+        setAppImage(QProcessEnvironment::systemEnvironment().value("APPIMAGE"));
+        bc.lock();
+
+
+        /*
+         * Lets try getting it from QCoreApplication arguments. */
+        if(s_AppImagePath.isEmpty()) {
+            auto arguments = QCoreApplication::arguments();
             if(!arguments.isEmpty()) {
-            	bc.unlock();
-		setAppImage(QFileInfo(arguments.at(0)).absolutePath() + 
-			    QString::fromUtf8("/") + 
-			    QFileInfo(arguments.at(0)).fileName());
-		bc.lock();
-	    }
+                bc.unlock();
+                setAppImage(QFileInfo(arguments.at(0)).absolutePath() +
+                            QString::fromUtf8("/") +
+                            QFileInfo(arguments.at(0)).fileName());
+                bc.lock();
+            }
 
-	    if(s_AppImagePath.isEmpty() || !QFileInfo::exists(s_AppImagePath)){
-		emit(error(NoAppimagePathGiven));
-		return;
-	    }
-	}
+            if(s_AppImagePath.isEmpty() || !QFileInfo::exists(s_AppImagePath)) {
+                emit(error(NoAppimagePathGiven));
+                return;
+            }
+        }
     }
 
 
@@ -860,8 +846,7 @@ void AppImageUpdateInformationPrivate::getInfo(void)
  * Example:
  * 	AppImageInfo.clear();
 */
-void AppImageUpdateInformationPrivate::clear(void)
-{
+void AppImageUpdateInformationPrivate::clear(void) {
     if(b_Busy) {
         return;
     }
@@ -877,8 +862,7 @@ void AppImageUpdateInformationPrivate::clear(void)
 
 #ifndef LOGGING_DISABLED
 /* This private slot proxies the log messages from the logger signal to qInfo(). */
-void AppImageUpdateInformationPrivate::handleLogMessage(QString msg, QString path)
-{
+void AppImageUpdateInformationPrivate::handleLogMessage(QString msg, QString path) {
     (void)path;
     qInfo().noquote()  << "["
                        <<  QDateTime::currentDateTime().toString(Qt::ISODate)

@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
+
 option(LG "LOGGING_DISABLED" OFF)
 option(NG "NO_GUI" OFF)
 
@@ -68,6 +69,7 @@ list(APPEND toinstall
 
 if(LOGGING_DISABLED)
     message("-- [*] IMPORTANT: Logging will be disabled for this build.")
+    add_definitions(-DLOGGING_DISABLED)
 endif()
 
 if(NO_GUI)
@@ -83,7 +85,6 @@ else()
 endif()
 
 add_library(AppImageUpdaterBridge ${source})
-target_compile_definitions(AppImageUpdaterBridge PUBLIC LOGGING_DISABLED=LG)
 target_link_libraries(AppImageUpdaterBridge PUBLIC Qt5::Core Qt5::Network)
 target_include_directories(AppImageUpdaterBridge INTERFACE "$<BUILD_INTERFACE:. include>")
 target_include_directories(AppImageUpdaterBridge INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/AppImageUpdaterBridge>" )

@@ -3,8 +3,7 @@
 #include <AppImageUpdaterBridge>
 #include <AppImageUpdaterDialog>
 
-int main(int ac, char **av)
-{
+int main(int ac, char **av) {
     qInfo().noquote() << "SimpleUpdate , A Simple Updater using AppImageUpdaterBridge.";
     qInfo().noquote() << "Copyright (C) 2018 , Antony Jr.";
 
@@ -25,7 +24,7 @@ int main(int ac, char **av)
     QObject::connect(&UWidget, &AppImageUpdaterDialog::error, [&](QString eStr, short errorCode) {
         Q_UNUSED(errorCode);
         qInfo() << "error:: "<<eStr;
-	app.quit();
+        app.quit();
         return;
     });
 
@@ -35,7 +34,7 @@ int main(int ac, char **av)
     QObject::connect(&UWidget, &AppImageUpdaterDialog::finished, [&](QJsonObject newVersion) {
         (void)newVersion;
         if(it < args.count()) {
-	    DRevisioner.setAppImage(args.at(it));
+            DRevisioner.setAppImage(args.at(it));
             UWidget.init(&DRevisioner);
             ++it;
         } else {

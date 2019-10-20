@@ -10,13 +10,11 @@
 */
 #define APPIMAGE_TOOL_CONTROL_FILE_URL QUrl("https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage.zsync")
 
-class ZsyncRemoteControlFileParser : public QObject
-{
+class ZsyncRemoteControlFileParser : public QObject {
     Q_OBJECT
-private slots:
+  private slots:
 
-    void basicZsyncControlFileParsing(void)
-    {
+    void basicZsyncControlFileParsing(void) {
         using AppImageUpdaterBridge::ZsyncRemoteControlFileParserPrivate;
         ZsyncRemoteControlFileParserPrivate CFParser(&_pManager);
         CFParser.setControlFileUrl(APPIMAGE_TOOL_CONTROL_FILE_URL);
@@ -34,25 +32,23 @@ private slots:
         return;
     }
 
-    void verifyZsyncControlFileParserData(void)
-    {
+    void verifyZsyncControlFileParserData(void) {
         using AppImageUpdaterBridge::ZsyncRemoteControlFileParserPrivate;
         ZsyncRemoteControlFileParserPrivate CFParser(&_pManager);
         CFParser.setControlFileUrl(APPIMAGE_TOOL_CONTROL_FILE_URL);
         QSignalSpy spyReceiveControlFile(&CFParser, SIGNAL(receiveControlFile(void)));
-	QSignalSpy spyInfo(&CFParser , SIGNAL(zsyncInformation(qint32,qint32,qint32,
-                          		      qint32,qint32,qint32,
-                          		      QString,QString,QString,
-                          		      QUrl,QBuffer*,bool)));
-	CFParser.getControlFile();
+        QSignalSpy spyInfo(&CFParser, SIGNAL(zsyncInformation(qint32,qint32,qint32,
+                                             qint32,qint32,qint32,
+                                             QString,QString,QString,
+                                             QUrl,QBuffer*,bool)));
+        CFParser.getControlFile();
 
         /* Check if we received the control file */
         QVERIFY(spyReceiveControlFile.wait(10000) == true);
         return;
     }
 
-    void checkErrorSignal(void)
-    {
+    void checkErrorSignal(void) {
         using AppImageUpdaterBridge::ZsyncRemoteControlFileParserPrivate;
         ZsyncRemoteControlFileParserPrivate CFParser(&_pManager);
         CFParser.setControlFileUrl(QUrl("https://example.com/somecontrolfile.zsync"));
@@ -64,14 +60,13 @@ private slots:
         return;
     }
 
-    void cleanupTestCase(void)
-    {
+    void cleanupTestCase(void) {
         emit finished();
         return;
     }
-Q_SIGNALS:
+  Q_SIGNALS:
     void finished(void);
-private:
+  private:
     QNetworkAccessManager _pManager;
 };
 #endif

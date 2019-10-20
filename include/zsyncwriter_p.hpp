@@ -55,15 +55,13 @@
 #include "appimageupdaterbridge_enums.hpp"
 #include "zsyncinternalstructures_p.hpp"
 
-namespace AppImageUpdaterBridge
-{
-class ZsyncWriterPrivate : public QObject
-{
+namespace AppImageUpdaterBridge {
+class ZsyncWriterPrivate : public QObject {
     Q_OBJECT
-public:
+  public:
     explicit ZsyncWriterPrivate();
     ~ZsyncWriterPrivate();
-public Q_SLOTS:
+  public Q_SLOTS:
     void setShowLog(bool);
     void setLoggerName(const QString&);
     void setOutputDirectory(const QString&);
@@ -74,13 +72,12 @@ public Q_SLOTS:
     void start(void);
     void cancel(void);
 
-
     /* Used by the block range downloader. */
     void getBlockRanges();
     void writeSeqRaw(QByteArray*);
     void writeBlockRanges(qint32, qint32, QByteArray*);
 
-private Q_SLOTS:
+  private Q_SLOTS:
 #ifndef LOGGING_DISABLED
     void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
@@ -101,7 +98,7 @@ private Q_SLOTS:
     qint32 rangeBeforeBlock(zs_blockid);
     zs_blockid nextKnownBlock(zs_blockid);
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void initStart();
     void initCancel();
     void finishedConfiguring();
@@ -115,7 +112,7 @@ Q_SIGNALS:
     void statusChanged(short);
     void error(short);
     void logger(QString, QString);
-private:
+  private:
     bool b_Started = false,
          b_CancelRequested = false,
          b_AcceptRange = true;

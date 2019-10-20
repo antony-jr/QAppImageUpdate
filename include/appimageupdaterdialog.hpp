@@ -49,20 +49,18 @@
 #include "appimageupdaterbridge_enums.hpp"
 #include "appimagedeltarevisioner.hpp"
 
-// forward declare the required private classes since 
-// we don't want to include the private header 
+// forward declare the required private classes since
+// we don't want to include the private header
 // in a public one.
 class SoftwareUpdateDialog;
 namespace Ui {
-	class AppImageUpdaterDialog;
+class AppImageUpdaterDialog;
 }
 
-namespace AppImageUpdaterBridge
-{
-class AppImageUpdaterDialog : public QDialog
-{
+namespace AppImageUpdaterBridge {
+class AppImageUpdaterDialog : public QDialog {
     Q_OBJECT
-public:
+  public:
     enum {
         ShowProgressDialog = 0x1,
         ShowBeforeProgress = 0x2,
@@ -72,25 +70,25 @@ public:
         AlertWhenAuthorizationIsRequired = 0x20,
         NotifyWhenNoUpdateIsAvailable = 0x40,
         NoRemindMeLaterButton = 0x80,
-        NoSkipThisVersionButton = 0x100,	
-	Default = ShowBeforeProgress | 
-		  ShowProgressDialog |
+        NoSkipThisVersionButton = 0x100,
+        Default = ShowBeforeProgress |
+                  ShowProgressDialog |
                   ShowUpdateConfirmationDialog |
                   ShowFinishedDialog   |
                   ShowErrorDialog |
                   NotifyWhenNoUpdateIsAvailable |
-		  NoRemindMeLaterButton |
-		  NoSkipThisVersionButton
+                  NoRemindMeLaterButton |
+                  NoSkipThisVersionButton
     };
 
     AppImageUpdaterDialog(QPixmap img = QPixmap(),
                           QWidget *parent = nullptr, int flags = Default);
     ~AppImageUpdaterDialog();
 
-public Q_SLOTS:
-    void init(AppImageDeltaRevisioner *revisioner = nullptr ,
-	      const QString &applicationName = QApplication::applicationName());
-private Q_SLOTS:
+  public Q_SLOTS:
+    void init(AppImageDeltaRevisioner *revisioner = nullptr,
+              const QString &applicationName = QApplication::applicationName());
+  private Q_SLOTS:
     void doInit(QObject*, const QString&);
 
     void showWidget(void);
@@ -102,7 +100,7 @@ private Q_SLOTS:
     void handleProgress(int, qint64, qint64, double, QString);
     void resetConnections();
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void quit(void);
     void started(void);
     void canceled(void);
@@ -110,7 +108,7 @@ Q_SIGNALS:
     void finished(QJsonObject);
     void requiresAuthorization(QString, short, QString);
 
-private:
+  private:
     bool b_Busy = false;
     int p_Flags = 0;
     QString m_ApplicationName;

@@ -35,8 +35,7 @@
 #ifndef APPIMAGE_UPDATER_BRIDGE_ENUMS_HPP_INCLUDED
 #define APPIMAGE_UPDATER_BRIDGE_ENUMS_HPP_INCLUDED
 class QString;
-namespace AppImageUpdaterBridge
-{
+namespace AppImageUpdaterBridge {
 
 /* Status codes for all process.*/
 enum : short {
