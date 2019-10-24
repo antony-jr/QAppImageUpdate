@@ -415,11 +415,9 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed(void) {
     /* Cut all ties. */
     disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
-    disconnect(reply, &QNetworkReply::finished,
+    disconnect(senderReply, &QNetworkReply::finished,
                this,
-               &ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed,
-               Qt::UniqueConnection);
-
+               &ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed);
     QByteArray html = senderReply->readAll();
     s_ReleaseNotes = QString::fromLatin1(html);
     senderReply->deleteLater();
