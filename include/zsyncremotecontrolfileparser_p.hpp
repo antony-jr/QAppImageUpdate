@@ -72,9 +72,11 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
     void getControlFile(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
+
   private Q_SLOTS:
     void checkHeadTargetFileUrl(qint64, qint64);
     void handleBintrayRedirection(const QUrl&);
+    void handleGithubMarkdownParsed(void);
     void handleGithubAPIResponse(void);
     void handleDownloadProgress(qint64, qint64);
     void handleControlFile(void);

@@ -389,6 +389,44 @@ void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &u
     return;
 }
 
+void ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed(void) {
+    INFO_START LOGR " handleGithubMarkdownParsed : starting to parse github api response." INFO_END;
+    emit statusChanged(ParsingGithubApiResponse);
+    QNetworkReply *senderReply = qobject_cast<QNetworkReply*>(QObject::sender());
+    if(!senderReply)
+        return;
+
+    int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    INFO_START LOGR " handleGithubMarkdownParsed : http response code(" LOGR responseCode LOGR ")." INFO_END;
+    if(responseCode > 400) {
+        senderReply->deleteLater();
+        /*
+        * if status code is HTTP 403 then it means that we hit the
+         * github rate limit for the API usage.
+        */
+        if(responseCode == 403) {
+            emit error(GithubApiRateLimitReached);
+        } else {
+            emit error(ErrorResponseCode);
+        }
+        return;
+    }
+
+    /* Cut all ties. */
+    disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
+               this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
+    disconnect(reply, &QNetworkReply::finished,
+               this,
+               &ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed,
+               Qt::UniqueConnection);
+
+    QByteArray html = senderReply->readAll();
+    s_ReleaseNotes = QString::fromLatin1(html);
+    senderReply->deleteLater();
+    getControlFile(); // start the control file parsing now.
+    return;
+}
+
 /* This private slot parses the github api response. */
 void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
     INFO_START LOGR " handleGithubAPIResponse : starting to parse github api response." INFO_END;
@@ -426,8 +464,6 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
     QString version = jsonObject["tag_name"].toString();
     QVector<QJsonObject> assets;
 
-    s_ReleaseNotes = jsonObject["body"].toString();
-
     /* Patern matching with wildcards. */
     QRegExp rx(s_ZsyncFileName);
     rx.setPatternSyntax(QRegExp::Wildcard);
@@ -440,7 +476,24 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
         INFO_START " handleGithubAPIResponse : inspecting asset(" LOGR asset["name"].toString() INFO_END;
         if(rx.exactMatch(asset["name"].toString())) {
             setControlFileUrl(QUrl(asset["browser_download_url"].toString()));
-            getControlFile();
+            /* Convert Github flavored Markdown to HTML using their own API.
+            * And then call getControlFile(); */
+            QNetworkRequest request;
+            request.setUrl(QString::fromUtf8("https://api.github.com/markdown/raw"));
+            request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+            request.setRawHeader("Content-Type", "text/plain");
+
+            QByteArray md = (jsonObject["body"].toString()).toLocal8Bit();
+            QNetworkReply *reply = p_NManager->post(request, md);
+            connect(reply,
+                    SIGNAL(error(QNetworkReply::NetworkError)),
+                    this,
+                    SLOT(handleNetworkError(QNetworkReply::NetworkError)),
+                    Qt::UniqueConnection);
+            connect(reply, &QNetworkReply::finished,
+                    this,
+                    &ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed,
+                    Qt::UniqueConnection);
             return;
         }
         QCoreApplication::processEvents();
