@@ -192,7 +192,10 @@ void AppImageUpdaterDialog::handleUpdateAvailable(bool isUpdateAvailable, QJsonO
             newSha = newSha.toLower();
 
             m_ConfirmationDialog->init( m_ApplicationName, oldSha, newSha, notes);
-        }
+        }else{
+	    // Auto confirm if we are not showing the confirm dialog.
+	    doUpdate();
+	}
     } else {
         if(showNoUpdateDialog) {
             QMessageBox box(this);
