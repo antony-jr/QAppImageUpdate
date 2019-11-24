@@ -369,7 +369,6 @@ void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &u
     if(responseCode > 400) { // Check if we have a bad response code.
         senderReply->abort();
         senderReply->deleteLater();
-        emit error(ErrorResponseCode);
         return;
     }
     /* cut all ties. */
@@ -400,14 +399,12 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed(void) {
     INFO_START LOGR " handleGithubMarkdownParsed : http response code(" LOGR responseCode LOGR ")." INFO_END;
     if(responseCode > 400) {
         senderReply->deleteLater();
-        /*
-        * if status code is HTTP 403 then it means that we hit the
-         * github rate limit for the API usage.
-        */
-        if(responseCode == 403) {
+        // if status code is HTTP 403 then it means that we hit the
+        // github rate limit for the API usage.
+        // Do not rise any error other than Github API rate limit.
+	// handleNetworkError slot will handle all network errors anyways.
+	if(responseCode == 403) {
             emit error(GithubApiRateLimitReached);
-        } else {
-            emit error(ErrorResponseCode);
         }
         return;
     }
@@ -437,16 +434,13 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
     INFO_START LOGR " handleGithubAPIResponse : http response code(" LOGR responseCode LOGR ")." INFO_END;
     if(responseCode > 400) {
         senderReply->deleteLater();
-        /*
-        * if status code is HTTP 403 then it means that we hit the
-         * github rate limit for the API usage.
-        */
+        // if status code is HTTP 403 then it means that we hit the
+        // github rate limit for the API usage.
+        // Do not rise any network error here.
         if(responseCode == 403) {
             emit error(GithubApiRateLimitReached);
-        } else {
-            emit error(ErrorResponseCode);
         }
-        return;
+	return;
     }
 
     /* Cut all ties. */
@@ -511,8 +505,8 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void) {
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleControlFile : http response code(" LOGR responseCode LOGR ")." INFO_END;
     if(responseCode >= 400) {
-        senderReply->deleteLater();
-        emit error(ErrorResponseCode);
+        // Do not rise any error, handleNetworkError slot will do that for you.
+	senderReply->deleteLater();
         return;
     }
 

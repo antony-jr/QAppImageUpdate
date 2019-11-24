@@ -117,7 +117,8 @@ void AppImageUpdaterDialog::doInit(QObject *revisioner,
     connect(p_DRevisioner, &AppImageDeltaRevisioner::started, this, &AppImageUpdaterDialog::started, Qt::DirectConnection);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::finished, this, &AppImageUpdaterDialog::handleFinished);
     connect(p_DRevisioner, &AppImageDeltaRevisioner::progress, this, &AppImageUpdaterDialog::handleProgress);
-
+    connect(p_DRevisioner, &AppImageDeltaRevisioner::operatingAppImagePath, 
+		    this, &AppImageUpdaterDialog::handleOperatingAppImagePath);
     n_MegaBytesTotal = 0;
     p_DRevisioner->checkForUpdate();
     if(p_Flags & ShowBeforeProgress) {
@@ -142,6 +143,8 @@ void AppImageUpdaterDialog::resetConnections() {
     disconnect(p_DRevisioner, &AppImageDeltaRevisioner::started, this, &AppImageUpdaterDialog::started);
     disconnect(p_DRevisioner, &AppImageDeltaRevisioner::finished, this, &AppImageUpdaterDialog::handleFinished);
     disconnect(p_DRevisioner, &AppImageDeltaRevisioner::progress, this, &AppImageUpdaterDialog::handleProgress);
+    disconnect(p_DRevisioner, &AppImageDeltaRevisioner::operatingAppImagePath, 
+		    this, &AppImageUpdaterDialog::handleOperatingAppImagePath);
     b_Busy = false;
     p_DRevisioner = nullptr; /* Dereference */
 }
@@ -215,7 +218,6 @@ void AppImageUpdaterDialog::handleError(short errorCode) {
     bool show = p_Flags & ShowErrorDialog,
          alert = p_Flags &  AlertWhenAuthorizationIsRequired,
          doAlert = false;
-    QString path = s_CurrentAppImagePath;
     QString errorString = errorCodeToDescriptionString(errorCode);
 
     if(errorCode == NoReadPermission ||
@@ -229,15 +231,14 @@ void AppImageUpdaterDialog::handleError(short errorCode) {
         QMessageBox box(this);
         box.setWindowTitle(QString::fromUtf8("Update Failed"));
         box.setIcon(QMessageBox::Critical);
-        box.setText(QString::fromUtf8("Update failed for '") +
-                    path +
-                    QString::fromUtf8("': ") +
-                    errorString);
+        box.setText(QString::fromUtf8("Update failed for '") + 
+		    QFileInfo(s_CurrentAppImagePath).fileName() + 
+		    QString::fromUtf8("': ") + errorString);
         box.exec();
     }
 
     if(doAlert) {
-        emit requiresAuthorization(errorString, errorCode, path);
+        emit requiresAuthorization(errorString, errorCode, s_CurrentAppImagePath);
     } else {
         emit error(errorString, errorCode);
     }
@@ -301,4 +302,6 @@ void AppImageUpdaterDialog::handleProgress(int percent,
     return;
 }
 
-
+void AppImageUpdaterDialog::handleOperatingAppImagePath(QString path){
+  s_CurrentAppImagePath = path;
+}

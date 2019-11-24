@@ -68,6 +68,7 @@ class AppImageUpdateInformationPrivate : public QObject {
 #endif // LOGGING_DISABLED
 
   Q_SIGNALS:
+    void operatingAppImagePath(QString);
     void info(QJsonObject);
     void progress(int);
     void error(short);

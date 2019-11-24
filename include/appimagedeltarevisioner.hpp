@@ -78,6 +78,7 @@ class AppImageDeltaRevisioner : public QObject {
     void error(short);
     void progress(int, qint64, qint64, double, QString);
     void logger(QString, QString);
+    void operatingAppImagePath(QString);
 
   private:
     void connectSignals();

@@ -91,7 +91,9 @@ AppImageDeltaRevisionerPrivate::AppImageDeltaRevisionerPrivate(bool singleThread
     connect(p_UpdateInformation.data(), &AppImageUpdateInformationPrivate::logger,
             this, &AppImageDeltaRevisionerPrivate::logger,
             (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
-
+    connect(p_UpdateInformation.data(), &AppImageUpdateInformationPrivate::operatingAppImagePath,
+	    this, &AppImageDeltaRevisionerPrivate::operatingAppImagePath,
+	    (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
 
     /* Connect ZsyncRemoteControlFileParserPrivate */
     connect(p_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::statusChanged,

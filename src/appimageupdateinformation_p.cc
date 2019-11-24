@@ -279,6 +279,7 @@ static QByteArray readLine(QFile *IO) {
     return ret;
 }
 
+// TODO: Evaluate this using Regex instead.
 static QByteArray getExecPathFromDesktopFile(QFile *file) {
     QByteArray line;
     qint64 prevPos = file->pos();
@@ -439,7 +440,9 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
     * that the user called getInfo() twice or more.
     */
     if(!m_Info.isEmpty()) {
-        emit(info(m_Info));
+	QJsonObject fileInfo = m_Info.value("FileInformation").toObject();
+	emit(operatingAppImagePath(fileInfo.value("AppImageFilePath").toString()));
+	emit(info(m_Info));
         return;
     }
 
@@ -467,12 +470,13 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
             }
 
             if(s_AppImagePath.isEmpty() || !QFileInfo::exists(s_AppImagePath)) {
-                emit(error(NoAppimagePathGiven));
+		emit(error(NoAppimagePathGiven));
                 return;
             }
         }
     }
 
+    emit(operatingAppImagePath(s_AppImagePath)); 
 
     if(!p_AppImage) {
         /* Open appimage if the user only given the path. */
@@ -484,8 +488,8 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         }
 
         /*
-             * Check if its really a file and not a folder.
-            */
+         * Check if its really a file and not a folder.
+        */
         if(!QFileInfo(s_AppImagePath).isFile()) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;

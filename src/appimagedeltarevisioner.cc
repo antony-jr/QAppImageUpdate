@@ -144,4 +144,6 @@ void AppImageDeltaRevisioner::connectSignals() {
             this, &AppImageDeltaRevisioner::progress, Qt::DirectConnection);
     connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::logger,
             this, &AppImageDeltaRevisioner::logger, Qt::DirectConnection);
+    connect(p_DeltaRevisioner, &AppImageDeltaRevisionerPrivate::operatingAppImagePath,
+	    this, &AppImageDeltaRevisioner::operatingAppImagePath, Qt::DirectConnection);
 }

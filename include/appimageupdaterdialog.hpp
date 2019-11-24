@@ -98,6 +98,7 @@ class AppImageUpdaterDialog : public QDialog {
     void handleError(short);
     void handleFinished(QJsonObject, QString);
     void handleProgress(int, qint64, qint64, double, QString);
+    void handleOperatingAppImagePath(QString);
     void resetConnections();
 
   Q_SIGNALS:

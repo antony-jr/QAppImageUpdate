@@ -100,6 +100,7 @@ class AppImageDeltaRevisionerPrivate : public QObject {
     void error(short);
     void progress(int, qint64, qint64, double, QString);
     void logger(QString, QString);
+    void operatingAppImagePath(QString);
   private:
     bool b_Busy = false;
     QScopedPointer<AppImageUpdateInformationPrivate> p_UpdateInformation;
