@@ -1,5 +1,6 @@
 INCLUDEPATH += $$PWD $$PWD/include
 QT += core widgets network
+CONFIG += staticlib
 HEADERS += \
     $$PWD/include/appimageupdateinformation_p.hpp \
     $$PWD/include/zsyncremotecontrolfileparser_p.hpp \
@@ -46,4 +47,13 @@ NO_GUI {
 LOGGING_DISABLED {
 	message(Logging will be disabled for this build.)
 	DEFINES += LOGGING_DISABLED
+}
+
+BUILD_AS_PLUGIN {
+	message(AppImage Updater Bridge will be built as an Qt Plugin)
+	CONFIG -= staticlib
+	CONFIG += plugin
+	DEFINES += BUILD_AS_PLUGIN
+	OTHER_FILES = $$PWD/AppImageUpdaterBridge.json
+	SOURCES += $$PWD/src/appimageupdaterbridge.cc
 }

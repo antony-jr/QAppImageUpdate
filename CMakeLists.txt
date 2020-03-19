@@ -8,6 +8,7 @@ set(CMAKE_AUTOUIC ON)
 
 option(LG "LOGGING_DISABLED" OFF)
 option(NG "NO_GUI" OFF)
+option(BAP "BUILD_AS_PLUGIN" OFF)
 
 # Let cmake know that this is a release build.
 if(NOT CMAKE_BUILD_TYPE)
