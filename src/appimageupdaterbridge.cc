@@ -1,4 +1,5 @@
 #include "../include/appimageupdaterbridge.hpp"
+#include "../include/appimageupdaterbridge_p.hpp"
 
 using AppImageUpdaterBridge::AppImageDeltaRevisioner;
 
@@ -57,7 +58,6 @@ ClassAppImageUpdaterBridge::~AppImageUpdaterBridge() {
 void ClassAppImageUpdaterBridge::start() { m_Updater->start(); }
 void ClassAppImageUpdaterBridge::cancel(){ m_Updater->cancel(); }
 void ClassAppImageUpdaterBridge::setAppImage(const QString &appimage){ m_Updater->setAppImage(appimage); }
-//void ClassAppImageUpdaterBridge::setAppImage(QFile *appimage){ m_Updater->setAppImage(appimage); }	
 void ClassAppImageUpdaterBridge::setShowLog(bool v) { m_Updater->setShowLog(v); }
 void ClassAppImageUpdaterBridge::setOutputDirectory(const QString &dir){ m_Updater->setOutputDirectory(dir); }
 void ClassAppImageUpdaterBridge::setProxy(const QNetworkProxy &proxy){ m_Updater->setProxy(proxy); }

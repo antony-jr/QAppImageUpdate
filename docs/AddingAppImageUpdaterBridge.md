@@ -134,6 +134,7 @@ find_package(Qt5Widgets)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}) # just in case!
 # Add include directory
 include_directories(AppImageUpdaterBridge)
+include_directories(AppImageUpdaterBridge/include)
 
 # include subdirectories 
 add_subdirectory(AppImageUpdaterBridge)
