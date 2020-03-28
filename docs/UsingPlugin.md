@@ -8,7 +8,7 @@ AppImage Updater Bridge can compiled as a **Qt Plugin**. When it is built as a Q
 
 Qt plugins thus makes us to maintain a single code base instead of maintaining a lot of ports. This makes less bug in the code base and there is no time wasted in making bindings.
 
-You can see the plugin interface here.
+You can see the plugin interface [here](PluginInterface.html).
 
 To read more about Qt plugins, Please refer the official documentation.
 

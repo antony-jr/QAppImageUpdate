@@ -63,7 +63,7 @@ Eventhough all methods are reentrant , This class does not use **mutex** thanks 
 | void | [updateAvailable(bool, QJsonObject)](#void-updateavailablebool-qjsonobject) |
 | void | [statusChanged(short)](#void-statuschangedshort) |
 | void | [error(short)](#void-errorshort) |
-| void | [progress(int, qint64, qint64, double, QString)](#void-progressint-percentage-qint64-bytesreceived-qint64-bytestotal-double-speed-qstring-speedunits) |
+| void | [progress(int, qint64, qint64, double, QString)](#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits) |
 | void | [logger(QString, QString)](#void-loggerqstring-qstring) |
 
 
@@ -310,11 +310,13 @@ The updater's progress is emitted through this unified signal.
 
 **Where** ,
 
-    'percentage' is the percentage finished revising the latest AppImage.
-    'bytesReceived' is the received bytes of the latest AppImage.
-    'bytesTotal' is the total bytes of the latest AppImage.
-    'speed' is the transfer speed value.
-    'speedUnits' is the transfer speed unit(e.g. KiB/s , etc... ) for 'speed'.
+| Variable       | Description                                                      |
+|----------------|------------------------------------------------------------------|
+| percentage     | % Finished revising the latest AppImage.                         |
+| bytesReceived  | The received bytes of the latest AppImage.                       |
+| bytesTotal     | The total bytes of the latest AppImage.                          |
+| speed          | The transfer speed value.                                        |
+| speedUnit      | The transfer speed unit(e.g. KiB/s , etc... ) for **speed**.     |
 
 
 ### void logger(QString , QString)

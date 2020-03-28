@@ -17,7 +17,6 @@ namespace AppImageUpdaterBridge {
 			void start();
 			void cancel();
 			void setAppImage(const QString&);
-			//void setAppImage(QFile*);
 			void setShowLog(bool);
 			void setOutputDirectory(const QString&);
 			void setProxy(const QNetworkProxy&);

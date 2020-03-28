@@ -7,7 +7,7 @@
     "docs": {
       "AddingAppImageUpdaterBridge": {
         "title": "Add AppImage Updater Bridge to your Project",
-        "sidebar_label": "Add AppImage Updater Bridge to your Project."
+        "sidebar_label": "Adding to your Project."
       },
       "AppImageDeltaRevisionerExample": {
         "title": "Updating an AppImage",
@@ -40,6 +40,18 @@
       "Installation": {
         "title": "Installing AppImage Updater Bridge to your Project.",
         "sidebar_label": "Installation"
+      },
+      "PluginInterface": {
+        "title": "AppImage Updater Bridge Plugin Interface",
+        "sidebar_label": "Qt Plugin Interface"
+      },
+      "PyQt5PluginExample": {
+        "title": "Using AppImage Updater Bridge Plugin in PyQt5",
+        "sidebar_label": "Using Plugin in PyQt5"
+      },
+      "UsingPlugin": {
+        "title": "Build AppImage Updater Bridge as Qt Plugin",
+        "sidebar_label": "Building as Qt Plugin."
       }
     },
     "links": {

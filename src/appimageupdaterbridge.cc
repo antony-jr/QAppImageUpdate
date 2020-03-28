@@ -63,4 +63,3 @@ void ClassAppImageUpdaterBridge::setOutputDirectory(const QString &dir){ m_Updat
 void ClassAppImageUpdaterBridge::setProxy(const QNetworkProxy &proxy){ m_Updater->setProxy(proxy); }
 void ClassAppImageUpdaterBridge::checkForUpdate() { m_Updater->checkForUpdate(); }
 void ClassAppImageUpdaterBridge::clear(){ m_Updater->clear(); }
-	

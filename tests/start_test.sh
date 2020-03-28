@@ -13,6 +13,6 @@ cd ..
 mv build/tests .
 rm -rf build
 clear
-./tests
+eval ./tests
 rm -rf test_cases
 rm tests

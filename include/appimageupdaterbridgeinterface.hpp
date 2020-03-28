@@ -11,7 +11,6 @@ public Q_SLOTS:
 	virtual void start() = 0;
 	virtual void cancel() = 0;
 	virtual void setAppImage(const QString&) = 0;
-	//virtual void setAppImage(QFile*) = 0;
 	virtual void setShowLog(bool) = 0;
 	virtual void setOutputDirectory(const QString&) = 0;
 	virtual void setProxy(const QNetworkProxy&) = 0; 

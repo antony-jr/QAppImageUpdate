@@ -8,13 +8,15 @@
     "Guides" : [
 	   "AppImageDeltaRevisionerExample",
 	   "AppImageDeltaRevisionerProxyExample",
-	   "AppImageUpdaterDialogExample"
+	   "AppImageUpdaterDialogExample",
+	   "PyQt5PluginExample"
     ],
     "API" : [
 	   "AppImageUpdaterBridgeErrorCodes",
 	   "AppImageUpdaterBridgeStatusCodes",
 	   "ClassAppImageDeltaRevisioner",
-	   "ClassAppImageUpdaterDialog"
+	   "ClassAppImageUpdaterDialog",
+	   "PluginInterface"
     ]
   }
 }

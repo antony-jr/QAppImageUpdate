@@ -1,7 +1,7 @@
 ---
 id: AddingAppImageUpdaterBridge
 title: Add AppImage Updater Bridge to your Project
-sidebar_label: Add AppImage Updater Bridge to your Project.
+sidebar_label: Adding to your Project.
 ---
 
 AppImage Updater Bridge can compiled with both *QMake* and *CMake* , I recommend you to use *QMake* if you are
