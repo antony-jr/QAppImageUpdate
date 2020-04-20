@@ -456,10 +456,14 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         setAppImage(QProcessEnvironment::systemEnvironment().value("APPIMAGE"));
         bc.lock();
 
+	// Check if it's a AppImageLauncher's path, if so then use the map file to 
+	// get the actual appimage path.
+	QRegExp rx(QString::fromUtf8("/run/user/*/appimagelauncherfs/*.AppImage"));
+	rx.setPatternSyntax(QRegExp::Wildcard);
 
         /*
          * Lets try getting it from QCoreApplication arguments. */
-        if(s_AppImagePath.isEmpty()) {
+        if(s_AppImagePath.isEmpty() || rx.exactMatch(s_AppImagePath)) {
             auto arguments = QCoreApplication::arguments();
             if(!arguments.isEmpty()) {
                 bc.unlock();
@@ -589,8 +593,8 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
     QCoreApplication::processEvents();
 
     auto magicBytes = read(p_AppImage, /*offset=*/8,/*maxchars=*/ 3);
-    if (magicBytes[0] != 'A' && magicBytes[1] != 'I') {
-        /*
+    if (magicBytes[0] != 'A' || magicBytes[1] != 'I') {
+	/*
          * If its not an AppImage then lets check if its a linux desktop file , If so then parse the 'Exec'
          * to find the actual AppImage.
         */
