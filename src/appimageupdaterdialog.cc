@@ -39,9 +39,10 @@
 
 using namespace AppImageUpdaterBridge;
 
-AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img, QWidget *parent, int flags)
+AppImageUpdaterDialog::AppImageUpdaterDialog(QPixmap img, QWidget *parent, int flags, int delaySecs)
     : QDialog(parent),
-      p_Flags(flags) {
+      p_Flags(flags),
+      delay(delaySecs) {
     bool found = false;
     m_Ui.reset(new Ui::AppImageUpdaterDialog);
 
@@ -88,8 +89,7 @@ AppImageUpdaterDialog::~AppImageUpdaterDialog() {
 }
 
 void AppImageUpdaterDialog::init(AppImageDeltaRevisioner *revisioner,
-                                 const QString &applicationName) {
-
+                                 const QString &applicationName){
     getMethod(this, "doInit(QObject*,const QString&)")
     .invoke(this, Qt::QueuedConnection, Q_ARG(QObject*, revisioner),Q_ARG(QString,applicationName));
 }
@@ -254,14 +254,22 @@ void AppImageUpdaterDialog::handleFinished(QJsonObject newVersion, QString oldVe
     bool show = p_Flags & ShowFinishedDialog;
 
     if(show) {
-        QString currentAppImageName = QFileInfo(oldVersionPath).fileName();
+	auto curinfo = QFileInfo(oldVersionPath);
+        QString currentAppImageName = curinfo.fileName();
+	QString currentAppImageAbsPath = curinfo.absolutePath();
+
         QMessageBox box(this);
         box.setWindowTitle(QString::fromUtf8("Update Completed!"));
-        box.setText(QString::fromUtf8("Update completed successfully for ") +
+        box.setIcon(QMessageBox::Information);
+	box.setDetailedText(
+		QString::fromUtf8("Old version is at: ") + 
+	        currentAppImageAbsPath + QString::fromUtf8("/") + currentAppImageName + 
+		QString::fromUtf8("\n\n") + 
+		QString::fromUtf8("New version is saved at: ") +
+		newVersion["AbsolutePath"].toString());
+	box.setText(QString::fromUtf8("Update completed successfully for <b>") +
                     currentAppImageName +
-                    QString::fromUtf8(", the new version is saved at '") +
-                    newVersion["AbsolutePath"].toString() +
-                    QString::fromUtf8("', do you want to open it?"));
+                    QString::fromUtf8("</b>, do you want to launch the new version? View details for more information."));
         box.addButton(QMessageBox::Yes);
         box.addButton(QMessageBox::No);
         execute = (box.exec() == QMessageBox::Yes);
@@ -278,7 +286,15 @@ void AppImageUpdaterDialog::handleFinished(QJsonObject newVersion, QString oldVe
                                     info.permissions());
             }
         }
-        QProcess::startDetached(newVersion["AbsolutePath"].toString());
+        QProcess::startDetached("sh", 
+			        QStringList() 
+				<< "-c" 
+				<< (
+					QString::fromUtf8("sleep ") + 
+					QString::number(delay) + 
+					QString::fromUtf8("; ") +
+					newVersion["AbsolutePath"].toString()
+				   ));
         emit quit();
     }
     hide();

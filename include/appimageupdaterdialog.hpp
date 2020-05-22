@@ -82,7 +82,7 @@ class AppImageUpdaterDialog : public QDialog {
     };
 
     AppImageUpdaterDialog(QPixmap img = QPixmap(),
-                          QWidget *parent = nullptr, int flags = Default);
+                          QWidget *parent = nullptr, int flags = Default, int delaySecs = 10);
     ~AppImageUpdaterDialog();
 
   public Q_SLOTS:
@@ -111,6 +111,7 @@ class AppImageUpdaterDialog : public QDialog {
 
   private:
     bool b_Busy = false;
+    int delay = 0;
     int p_Flags = 0;
     QString m_ApplicationName;
     QString s_CurrentAppImagePath; /* Used only for error dialog box. */
