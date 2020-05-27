@@ -458,12 +458,45 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
 
 	// Check if it's a AppImageLauncher's path, if so then use the map file to 
 	// get the actual appimage path.
+	bool tryUsingProgramArguments = false;
 	QRegExp rx(QString::fromUtf8("/run/user/*/appimagelauncherfs/*.AppImage"));
 	rx.setPatternSyntax(QRegExp::Wildcard);
 
+	if(rx.exactMatch(s_AppImagePath)) {
+		QFileInfo pathInfo(s_AppImagePath);
+		QString mapPath = pathInfo.absolutePath();
+		mapPath += QString::fromUtf8("/map");
+
+		QString fileID = pathInfo.fileName();
+
+		QFile mapFile(mapPath);
+		if(mapFile.open(QIODevice::ReadOnly | QIODevice::Text)){
+			while (!mapFile.atEnd()) {
+				QByteArray line = mapFile.readLine();
+				QString str(line);
+				auto parts = str.split(QString::fromUtf8(" -> "));
+				QString partID = parts.at(0).left(fileID.size());
+				if(fileID == partID){
+					// Remove trailling new line
+					QString parsedPath = parts.at(1).left(parts.at(1).size() - 1);
+					
+					bc.unlock();
+					setAppImage(parsedPath);
+					bc.lock();
+					break;
+				}
+				QCoreApplication::processEvents();
+			}
+			mapFile.close();
+		}else{
+			tryUsingProgramArguments = true; // Try to parse from QCoreApplication.
+		}
+
+	}
+
         /*
          * Lets try getting it from QCoreApplication arguments. */
-        if(s_AppImagePath.isEmpty() || rx.exactMatch(s_AppImagePath)) {
+        if(s_AppImagePath.isEmpty() || tryUsingProgramArguments) {
             auto arguments = QCoreApplication::arguments();
             if(!arguments.isEmpty()) {
                 bc.unlock();
@@ -595,8 +628,8 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
     auto magicBytes = read(p_AppImage, /*offset=*/8,/*maxchars=*/ 3);
     if (magicBytes[0] != 'A' || magicBytes[1] != 'I') {
 	/*
-         * If its not an AppImage then lets check if its a linux desktop file , If so then parse the 'Exec'
-         * to find the actual AppImage.
+         * If its not an AppImage then lets check if its a linux desktop file,
+	 * If so then parse the 'Exec' to find the actual AppImage.
         */
         magicBytes = read(p_AppImage, 0, 15);
         if(magicBytes == "[Desktop Entry]") {
