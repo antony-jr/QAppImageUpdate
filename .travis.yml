@@ -43,6 +43,21 @@ script:
   - mkdir build-cmake ; cd build-cmake
   - cmake -DLOGGING_DISABLED=ON -DNO_GUI=ON ..
   - make -j$(nproc)
+  - rm -rf build-cmake
   - cd ..
   - cd tests
   - bash start_test.sh # Run Tests
+  - cd ..
+  - mkdir build
+  - cd build
+  - cmake -DBUILD_AS_PLUGIN=ON ..
+  - make -j$(nproc)
+
+after_success:
+  - wget "https://github.com/probonopd/uploadtool/raw/master/upload.sh"
+  - bash upload.sh libAppImageUpdaterBridge.so
+
+branches:
+  except:
+    - # Do not build tags that we create when we upload to GitHub Releases
+    - /^(?i:continuous)/
