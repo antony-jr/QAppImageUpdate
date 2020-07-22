@@ -1,17 +1,17 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
-#include <AppImageUpdaterBridge>
+#include <QAppImageUpdate>
 #include <cutelog.h>
 #include <strings.h>
 
-using namespace AppImageUpdaterBridge;
-
 int main(int ac, char **av) {
-    qInfo().noquote() << "SimpleUpdate, A Simple Updater using AppImageUpdaterBridge.";
+    qInfo().noquote() << "SimpleUpdate, A Simple Updater using QAppImageUpdate.";
     qInfo().noquote() << "Copyright (C) 2018 , Antony Jr.";
 
+    using QAppImageUpdate::AppImageUpdater;
+
     QCoreApplication app(ac, av);
-    AppImageDeltaRevisioner DRevisioner;
+    AppImageUpdater updater;
     cutelog_t log = cutelog_new();
 
 
@@ -27,7 +27,7 @@ int main(int ac, char **av) {
 
     qInfo().noquote() << "";
 
-    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::progress,
+    QObject::connect(&updater, &AppImageUpdater::progress,
     [&](int percent, qint64 br, qint64 bt, double speed, QString unit) {
         Q_UNUSED(br);
         Q_UNUSED(bt);
@@ -36,15 +36,15 @@ int main(int ac, char **av) {
         return;
     });
 
-    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::error, [&](short ecode) {
-        qCritical().noquote() << "error:: " << AppImageUpdaterBridge::errorCodeToString(ecode);
+    QObject::connect(&updater, &AppImageUpdater::error, [&](short ecode) {
+        qCritical().noquote() << "error:: " << QAppImageUpdate::errorCodeToString(ecode);
         cutelog_free(log);
         app.quit();
         return;
     });
 
 
-    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::logger, [&](QString msg, QString path) {
+    QObject::connect(&updater, &AppImageUpdater::logger, [&](QString msg, QString path) {
         Q_UNUSED(path);
         cutelog_mode(log, cutelog_multiline_mode);
 
@@ -58,7 +58,7 @@ int main(int ac, char **av) {
         return;
     });
 
-    QObject::connect(&DRevisioner, &AppImageDeltaRevisioner::finished, [&](QJsonObject newVersion, QString oldAppImagePath) {
+    QObject::connect(&updater, &AppImageUpdater::finished, [&](QJsonObject newVersion, QString oldAppImagePath) {
         cutelog_mode(log, cutelog_multiline_mode);
         cutelog_success(log, "Updated %s.", oldAppImagePath.toStdString().c_str());
         cutelog_success(log, "New Version: %s", ((newVersion["AbsolutePath"]).toString()).toStdString().c_str());
@@ -68,14 +68,14 @@ int main(int ac, char **av) {
             app.quit();
         } else {
             QString path(args[it]);
-            DRevisioner.setAppImage(path);
-            DRevisioner.start();
+            updater.setAppImage(path);
+            updater.start(confirm=true);
         }
         return;
     });
 
     QString path(args[it]);
-    DRevisioner.setAppImage(path);
-    DRevisioner.start();
+    updater.setAppImage(path);
+    updater.start(confirm=true);
     return app.exec();
 }
