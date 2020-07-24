@@ -364,13 +364,15 @@ void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &u
     if(!senderReply)
         return;
 
-    int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    INFO_START LOGR " handleBintrayRedirection : http response code(" LOGR responseCode LOGR ")." INFO_END;
-    if(responseCode > 400) { // Check if we have a bad response code.
+    if(senderReply->error() != QNetworkReply::NoError) {
         senderReply->abort();
         senderReply->deleteLater();
         return;
     }
+
+    int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    INFO_START LOGR " handleBintrayRedirection : http response code(" LOGR responseCode LOGR ")." INFO_END;
+    
     /* cut all ties. */
     disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
@@ -395,19 +397,13 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed(void) {
     if(!senderReply)
         return;
 
+    if(senderReply->error() != QNetworkReply::NoError){
+	    senderReply->deleteLater();
+	    return;
+    }
+
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleGithubMarkdownParsed : http response code(" LOGR responseCode LOGR ")." INFO_END;
-    if(responseCode > 400) {
-        senderReply->deleteLater();
-        // if status code is HTTP 403 then it means that we hit the
-        // github rate limit for the API usage.
-        // Do not rise any error other than Github API rate limit.
-	// handleNetworkError slot will handle all network errors anyways.
-	if(responseCode == 403) {
-            emit error(GithubApiRateLimitReached);
-        }
-        return;
-    }
 
     /* Cut all ties. */
     disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
@@ -430,19 +426,14 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
     if(!senderReply)
         return;
 
-    int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    INFO_START LOGR " handleGithubAPIResponse : http response code(" LOGR responseCode LOGR ")." INFO_END;
-    if(responseCode > 400) {
-        senderReply->deleteLater();
-        // if status code is HTTP 403 then it means that we hit the
-        // github rate limit for the API usage.
-        // Do not rise any network error here.
-        if(responseCode == 403) {
-            emit error(GithubApiRateLimitReached);
-        }
-	return;
+    if(senderReply->error() != QNetworkReply::NoError){
+	    senderReply->deleteLater();
+	    return;
     }
 
+    int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    INFO_START LOGR " handleGithubAPIResponse : http response code(" LOGR responseCode LOGR ")." INFO_END;
+    
     /* Cut all ties. */
     disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
@@ -502,13 +493,14 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void) {
     if(!senderReply)
         return;
 
+    if(senderReply->error() != QNetworkReply::NoError) {
+	    senderReply->deleteLater();
+	    return;
+    }
+
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleControlFile : http response code(" LOGR responseCode LOGR ")." INFO_END;
-    if(responseCode >= 400) {
-        // Do not rise any error, handleNetworkError slot will do that for you.
-	senderReply->deleteLater();
-        return;
-    }
+
 
     /* Check if the server supports Range requests.
      * Note:
@@ -718,19 +710,16 @@ void ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl(qint64 bytesRec
     auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
     if(!reply) {
         WARNING_START "invalid pointer sent to checkHeadTargetFileUrl" WARNING_END;
-
         return;
     }
 
     disconnect(reply, &QNetworkReply::downloadProgress,
                this, &ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl);
-    auto replyCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if(replyCode >= 400) {
-        reply->abort();
-        reply->deleteLater();
-        // The error will be reported by the handleNetworkError slot,
-        // No need to report here again.
-        return;
+  
+    if(reply->error() != QNetworkReply::NoError) {
+	    reply->abort();
+	    reply->deleteLater();
+	    return;
     }
 
     /* Check if the server supports Range requests. */

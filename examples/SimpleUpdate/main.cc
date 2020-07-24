@@ -8,10 +8,8 @@ int main(int ac, char **av) {
     qInfo().noquote() << "SimpleUpdate, A Simple Updater using QAppImageUpdate.";
     qInfo().noquote() << "Copyright (C) 2018 , Antony Jr.";
 
-    using QAppImageUpdate::AppImageUpdater;
-
     QCoreApplication app(ac, av);
-    AppImageUpdater updater;
+    QAppImageUpdate updater;
     cutelog_t log = cutelog_new();
 
 
@@ -27,8 +25,8 @@ int main(int ac, char **av) {
 
     qInfo().noquote() << "";
 
-    QObject::connect(&updater, &AppImageUpdater::progress,
-    [&](int percent, qint64 br, qint64 bt, double speed, QString unit) {
+    QObject::connect(&updater, &QAppImageUpdate::progress,
+    [&](short operation, int percent, qint64 br, qint64 bt, double speed, QString unit) {
         Q_UNUSED(br);
         Q_UNUSED(bt);
         cutelog_mode(log, cutelog_non_multiline_mode);
@@ -36,7 +34,7 @@ int main(int ac, char **av) {
         return;
     });
 
-    QObject::connect(&updater, &AppImageUpdater::error, [&](short ecode) {
+    QObject::connect(&updater, &QAppImageUpdate::error, [&](short operation, short ecode) {
         qCritical().noquote() << "error:: " << QAppImageUpdate::errorCodeToString(ecode);
         cutelog_free(log);
         app.quit();
@@ -44,7 +42,7 @@ int main(int ac, char **av) {
     });
 
 
-    QObject::connect(&updater, &AppImageUpdater::logger, [&](QString msg, QString path) {
+    QObject::connect(&updater, &QAppImageUpdate::logger, [&](QString msg, QString path) {
         Q_UNUSED(path);
         cutelog_mode(log, cutelog_multiline_mode);
 
@@ -58,7 +56,7 @@ int main(int ac, char **av) {
         return;
     });
 
-    QObject::connect(&updater, &AppImageUpdater::finished, [&](QJsonObject newVersion, QString oldAppImagePath) {
+    QObject::connect(&updater, &QAppImageUpdate::finished, [&](QJsonObject newVersion, QString oldAppImagePath) {
         cutelog_mode(log, cutelog_multiline_mode);
         cutelog_success(log, "Updated %s.", oldAppImagePath.toStdString().c_str());
         cutelog_success(log, "New Version: %s", ((newVersion["AbsolutePath"]).toString()).toStdString().c_str());
@@ -76,6 +74,7 @@ int main(int ac, char **av) {
 
     QString path(args[it]);
     updater.setAppImage(path);
-    updater.start(confirm=true);
+
+    updater.start(QAppImageUpdate::Operations::Update);
     return app.exec();
 }
