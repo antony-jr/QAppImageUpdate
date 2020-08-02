@@ -18,6 +18,7 @@ class QAppImageUpdatePrivate : public QObject {
 public:
     struct Action {
 	enum : short {
+	       None,
 	       GetEmbeddedInfo,
 	       CheckForUpdate,
 	       Update,
@@ -73,7 +74,7 @@ Q_SIGNALS:
     void logger(QString, QString); 
     void error(short, short);
 private:
-    short n_CurrentAction = Action::Update;
+    Action n_CurrentAction = Action::None;
     bool b_Started = false,
 	 b_Finished = false,
 	 b_Canceled = false,

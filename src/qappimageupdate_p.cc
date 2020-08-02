@@ -232,9 +232,13 @@ void QAppImageUpdatePrivate::start(short action) {
     b_Canceled = false
 
     if(action = Action::GetEmbeddedInfo){
+	    n_CurrentAction = action;
 	    connect(m_UpdateInformation.data(),  &AppImageUpdateInformationPrivate::info,
 		this, &QAppImageUpdatePrivate::redirectEmbeddedInformation,
 		Qt::QueuedConnection);
+
+	    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
+		    this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress);
 
 	    connect(m_UpdateInformation.data(),  &AppImageUpdateInformationPrivate::error,
 		this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoError,
@@ -245,10 +249,14 @@ void QAppImageUpdatePrivate::start(short action) {
 		    .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
     
     }else if(action == Action::CheckForUpdate) {
+	    n_CurrentAction = action;
 	    connect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
-	    
+
+	    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
+		    this, &QAppImageUpdatePrivate::handleCheckForUpdateProgress);
+
 	    connect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
 		     m_ControlFileParser.data(), SLOT(getUpdateCheckInformation(void)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
@@ -256,33 +264,51 @@ void QAppImageUpdatePrivate::start(short action) {
 	    connect(m_ControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
 		     this, SLOT(redirectUpdateCheck(QJsonObject)),
                      (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
-	    
+	   
+	    connect(m_ControlFileParser.data(), SIGNAL(progress(short)),
+		     this, SLOT(handleCheckForUpdateProgress));
+
 	    connect(m_ControlFileParser.data(), SIGNAL(error(short)),
 		     this, SLOT(handleCheckForUpdateError(short)),
                      (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
+	    connect(m_UpdateInformation.data(), SIGNAL(error(short)),
+		     this, SLOT(handleCheckForUpdateError(short)),
+                     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
 
 	    emit started(Action::CheckForUpdate); 
     	    getMethod(m_UpdateInformation.data(), "getInfo(void)")
 		    .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
     }else if(action == Action::Update) {
+	    n_CurrentAction = action;
 	    connect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
 	    
 	    connect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
-		    m_ControlFileParser.data(), SLOT(getUpdateCheckInformation(void)),
+		    m_ControlFileParser.data(), SLOT(getZsyncInformation(void)),
 		    (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
-    
-	    connect(m_ControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
-		     this, SLOT(doStart(QJsonObject)),
-                     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
 	    
+            connect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::zsyncInformation,
+                     m_DeltaWriter.data(), &ZsyncWriterPrivate::setConfiguration,
+                     (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+           
+	    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finishedConfiguring,
+                    m_DeltaWriter.data(), &ZsyncWriterPrivate::start,
+                    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+
+	    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finishedConfiguring,
+                    this, &QAppImageUpdatePrivate::handleUpdateProgress,
+                    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+
 	    getMethod(p_UpdateInformation.data(), "getInfo(void)")
 		    .invoke(p_UpdateInformation.data(), Qt::QueuedConnection);
 
     }else if(action == Action::UpdateWithGUI) {
-
+	    n_CurrentAction = action;
     }else {
+	    n_CurrentAction = Action::None;
 	    b_Started = b_Running = b_Canceled = false;
     }
     return;
@@ -298,8 +324,6 @@ void QAppImageUpdatePrivate::cancel(void) {
     if(n_CurrentAction == Action::Update || n_CurrentAction == Action::UpdateWithGUI) {
     	getMethod(m_DeltaWriter.data(),"cancel(void)")
 		.invoke(m_DeltaWriter.data(), Qt::QueuedConnection);
-    	getMethod(m_BlockDownloader.data(), "cancel(void)")
-		.invoke(m_BlockDownloader.data(), Qt::QueuedConnection);
     }
     return;
 }
@@ -351,7 +375,9 @@ void QAppImageUpdatePrivate::handleCheckForUpdateError(short code) {
 	       this, SLOT(redirectUpdateCheck(QJsonObject)));
 	disconnect(m_ControlFileParser.data(), SIGNAL(error(short)),
 	       this, SLOT(handleCheckForUpdateError(short)))
-  
+  	disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
+		   this, SLOT(handleCheckForUpdateError(short)));
+
 	emit error(code, QAppImageUpdatePrivate::Action::CheckForUpdate); 
 }
 
@@ -364,7 +390,9 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
 	       this, SLOT(redirectUpdateCheck(QJsonObject)));
     disconnect(m_ControlFileParser.data(), SIGNAL(error(short)),
 	       this, SLOT(handleCheckForUpdateError(short)))
-  
+    disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
+		   this, SLOT(handleCheckForUpdateError(short)));
+
     // Can this happen without an error? 
     if(info.isEmpty()) {
         return;
