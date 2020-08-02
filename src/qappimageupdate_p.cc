@@ -378,7 +378,7 @@ void QAppImageUpdatePrivate::handleCheckForUpdateError(short code) {
   	disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
 		   this, SLOT(handleCheckForUpdateError(short)));
 
-	emit error(code, QAppImageUpdatePrivate::Action::CheckForUpdate); 
+	emit error(code, Action::CheckForUpdate); 
 }
 
 void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
@@ -424,5 +424,5 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
 		emit canceled(Action::CheckForUpdate);
 		return;
     }
-    emit finished(updateinfo, QAppImageUpdatePrivate::CheckForUpdate);
+    emit finished(updateinfo, Action::CheckForUpdate);
 }
