@@ -6,68 +6,6 @@
 #include <QNetworkReply>
 #include <QScopedPointer>
 
-
-class RangeReplyManagerPrivate : public QObject {
-	Q_OBJECT
-public:
-	RangeReplyManagerPrivate() : 
-		QObject() {
-	}
-
-	~RangeReplyManagerPrivate() { }
-
-
-	void add(RangeReplyPrivate *obj) {
-		if(!obj) {
-			return;
-		}
-
-		connect(this, SIGNAL(cancelRequested()),
-			obj, SLOT(cancel()),
-			(Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
-		connect(this, SIGNAL(destroyRequested()),
-			obj, SLOT(destroy()),
-			(Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
-	}
-
-	void remove(RangeReplyPrivate *obj) {
-		disconnect(obj);
-	}
-
-	void removeAll() {
-		disconnect();
-	}
-
-	void destroyAll() {
-		emit destroyRequested();
-	}
-
-	void cancel() {
-		emit cancelRequested();
-	}
-Q_SIGNALS:
-	void cancelRequested();
-	void destroyRequested();
-};
-
-class RangeReplyCancelEmitter : public QObject {
-	Q_OBJECT
-public:
-	RangeReplyCancelEmitter() { }
-	~RangeReplyCancelEmitter() { }
-public Q_SLOTS:
-	void enlist(RangeReply *obj) {
-		connect(this, &RangeReplyCancelEmitter::cancelRequested,
-			 obj, &RangeReply::cancel,
-			 (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
-	}
-	void fire() {
-		emit cancelRequested();
-	}
-Q_SIGNALS:
-	void cancelRequested();
-};
-
 class RangeReply : public QObject { 
 	Q_OBJECT
 	QScopedPointer<RangeReplyPrivate> m_Private;
@@ -115,7 +53,7 @@ Q_SIGNALS:
 	void error(int, int);
 	void finished(qint32, qint32, QByteArray*, int);
 	void canceled(int);
-}
+};
 
 class RangeReplyPrivate : public QObject {
 	Q_OBJECT 
@@ -153,8 +91,8 @@ public:
 		}	
 		else if(b_Running) {	
 			m_Reply->disconnect();
+			m_Reply->abort();
 		}	
-		disconnect();
 	}
 
 public Q_SLOTS:
@@ -164,6 +102,7 @@ public Q_SLOTS:
 		}	
 		else if(b_Running) {	
 			m_Reply->disconnect();
+			m_Eeply->abort();
 		}
 		
 		resetInternalFlags();	
@@ -186,10 +125,6 @@ public Q_SLOTS:
 	}
 
 	void cancel() {
-		if(b_Halted) {
-			return;
-		}
-
 		if(b_Retrying) {
 			m_Timer.stop();
 			resetInternalFlags();
@@ -214,6 +149,10 @@ private Q_SLOTS:
 	}
 
 	void restart() {
+		if(b_Halted) {
+			return;
+		}
+
 		resetInternalFlags();
 		b_Retrying = false;
 
@@ -410,9 +349,32 @@ public Q_SLOTS:
 			return;
 		}
 		b_CancelRequested = true;
-		m_RRManager.cancel();	
+		for(auto iter = m_ActiveRequests.begin(),
+			 end = m_ActiveRequests.end();
+			 iter != end;
+			 ++iter) {
+			(*iter)->cancel();
+			QCoreApplication::processEvents();
+		}
 	}
 private Q_SLOTS:
+	QNetworkRequest makeRangeRequest(const QUrl &url, const QPair<qint32, qint32> &range) {
+		qint32 fromRange = range.first,
+		       toRange = range.second;		 
+		QNetworkRequest request;
+
+		request.setUrl(url);
+		if(fromRange || toRange) {
+        		QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(fromRange) + "-";
+        		rangeHeaderValue += QByteArray::number(toRange);
+        		request.setRawHeader("Range", rangeHeaderValue);
+    		}
+    		request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+    		request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+		return request;	
+	}
+
+
 	// Slots which does the url check routine
 	void handleUrlCheckError(QNetworkReply::NetworkError code) {
 	       	QNetworkReply *reply = qobject_cast<QNetworkReply*>(QObject::sender());
@@ -457,9 +419,7 @@ private Q_SLOTS:
 
 		// Now we will determine the maximum no. of requests to be handled at 
 		// a time.
-		m_SpaceStatus.clear();
 		int max_allowed = QThread::idealThreadCount() * 2;
-		m_SpaceStatus.fill(false, max_allowed);
 
 		for(auto iter = m_RequiredRanges.begin(),
 			 end = m_RequiredRanges.end();
@@ -467,22 +427,11 @@ private Q_SLOTS:
 			 if(n_Active + 1 >= max_allowed) {
 				 break;
 			 }
-			 qint32 fromRange = (*iter).first,
-		       		toRange = (*iter).second;		 
-			 QNetworkRequest request;
-
-			 request.setUrl(m_Url);
-			 if(fromRange || toRange) {
-        			QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(fromRange) + "-";
-        			rangeHeaderValue += QByteArray::number(toRange);
-        			request.setRawHeader("Range", rangeHeaderValue);
-    			}
-    			request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
-    			request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);jj
-			++n_Active;
+			 QNetworkRequest request = makeRangeRequest(m_Url, *iter);
+			 ++n_Active;
 			
 			auto rangeReply = new RangeReplyPrivate(n_Active, m_Manager->get(request), *iter);
-			m_RRManager.add(rangeReply);
+			m_RangeReplyCancel.enlist(rangeReply);
 
 			connect(rangeReply, SIGNAL(canceled(int)),
 				this, SLOT(handleRangeReplyCancel(int)),
@@ -510,13 +459,14 @@ private Q_SLOTS:
 	void handleRangeReplyCancel(int index) {
 		--n_Active;
 		if(n_Active == -1) {
+			b_Running = false;
 			b_CancelRequested = false;
 			emit canceled();
 		}
 	}
 
 	void handleRangeReplyRestart(int index) {
-		++n_Active;
+		/// TODO: Anything useful in this?	
 	}
 
 	void handleRangeReplyError(QNetworkReply::NetworkError code, int index) {
@@ -527,7 +477,10 @@ private Q_SLOTS:
 			m_RRManager.retry(/*Retry interval(in ms)=*/ 10000 /*=10 seconds*/);
 			return;
 		}
-		--n_Active;
+		if(n_Active == -1) {
+			b_Running = b_Finished = b_CancelRequested = false;
+			emit error(code);
+		}
 	}
 
 	void handleRangeReplyFinished(qint32 from, qint32 to, QByteArray *data, int index) {
@@ -535,12 +488,45 @@ private Q_SLOTS:
 		if(b_CancelRequested) {
 			return;
 		}
+
+		(m_ActiveRequests.at(index))->destroy();
+
 		emit rangeData(from, to, data);
+		if(n_Active == -1) {
+			b_Running = false;
+			b_Finsihed = true;
+			emit finished();
+			return;
+		}
+
+		if(m_RequiredRanges.isEmpty())
+			return;
+
+		auto range = m_RequiredRanges.takeFirst();
+		auto rangeReply = new RangeReplyPrivate(index, m_Manager->get(makeRangeRequest(m_Url, *range)), *range);
+		m_ActiveRequests[index] = rangeReply;
+
+		connect(rangeReply, SIGNAL(canceled(int)),
+				this, SLOT(handleRangeReplyCancel(int)),
+				Qt::QueuedConnection);
+
+		connect(rangeReply, SIGNAL(restarted(int)),
+				this, SLOT(handleRangeReplyRestart(int)),
+				Qt::QueuedConnection);
+
+		connect(rangeReply, SIGNAL(error(QNetworkReply::NetworkError, int)),
+				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int)),
+				Qt::QueuedConnection);
+
+		connect(rangeReply, SIGNAL(finished(qint32, qint32, QByteArray*, int)),
+				this, SLOT(handleRangeReplyFinished(qint32, qint32, QByteArray*, int)),
+				Qt::QueuedConnection);	
 	}
 
 Q_SIGNALS:
 	void started();
 	void canceled();
+	void finished();
 	void error(QNetworkReply::NetworkError);
 
 	void data(QByteArray *);
@@ -554,16 +540,7 @@ private:
 	    n_Canceled = -1;
 	QUrl m_Url;
 
-	RangeReplyManagerPrivate m_RRManager;
-
 	QVector<QPair<qint32, qint32>> m_RequiredRanges;
-	
-	/// If 'ith' active range reply is not finished and still running then 
-	//  the boolean at ith position in m_SpaceStatus will be false else 
-	//  it will be true. If the space is free then the ith object in the 
-	//  m_ActiveRequests can be replaced with a new required range reply
-	//  object. 
-	QVector<bool> m_SpaceStatus;
 	QVector<RangeReply*> m_ActiveRequests;
 
 };
