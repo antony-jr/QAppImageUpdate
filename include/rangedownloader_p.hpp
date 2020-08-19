@@ -260,8 +260,8 @@ private:
 class RangeDownloaderPrivate : public QObject {
 	Q_OBJECT
 public:
-	RangeDownloaderPrivate(QObject *parent = nullptr) {
-
+	RangeDownloaderPrivate(QObject *parent = nullptr) 
+		: QObject(parent) {
 	}
 	
 	~RangeDownloaderPrivate() { 
@@ -503,7 +503,7 @@ private Q_SLOTS:
 			return;
 
 		auto range = m_RequiredRanges.takeFirst();
-		auto rangeReply = new RangeReplyPrivate(index, m_Manager->get(makeRangeRequest(m_Url, *range)), *range);
+		auto rangeReply = new RangeReplyPrivate(index, m_Manager->get(makeRangeRequest(m_Url, range)), range);
 		m_ActiveRequests[index] = rangeReply;
 
 		connect(rangeReply, SIGNAL(canceled(int)),
@@ -543,6 +543,51 @@ private:
 	QVector<QPair<qint32, qint32>> m_RequiredRanges;
 	QVector<RangeReply*> m_ActiveRequests;
 
+};
+
+class RangeDownloader : public QObject { 
+	Q_OBJECT
+	QScopedPointer<RangeDownloaderPrivate> m_Private;
+public:
+	RangeDownloader(QObject *parent = nullptr) 
+		: QObject(parent) {
+		m_Private.reset(new RangeDownloaderPrivate);
+		auto obj = m_Private.data();
+
+		connect(obj, &RangeDownloaderPrivate::started, 
+			 this, &RangeDownloader::started,
+			 Qt::DirectConnection);
+
+		connect(obj, &RangeDownloaderPrivate::canceled, 
+			 this, &RangeDownloader::canceled,
+			 Qt::DirectConnection);
+
+		connect(obj, &RangeDownloaderPrivate::finished, 
+			this, &RangeDownloader::finished,
+			 Qt::DirectConnection);
+
+		connect(obj, &RangeDownloaderPrivate::error, 
+			 this, &RangeDownloader::error,
+			  Qt::DirectConnection);
+
+		connect(obj, &RangeDownloaderPrivate::data, 
+			 this, &RangeDownloader::data,
+			 Qt::DirectConnection);
+
+		connect(obj, &RangeDownloaderPrivate::rangeData, 
+			 this, &RangeDownloader::rangeData,
+			 Qt::DirectConnection);
+
+
+	}
+Q_SIGNALS:
+	void started();
+	void canceled();
+	void finished();
+	void error(QNetworkReply::NetworkError);
+
+	void data(QByteArray *);
+	void rangeData(qint32, qint32, QByteArray *);
 };
 
 #endif // RANGE_DOWNLOADER_PRIVATE_HPP_INCLUDED
