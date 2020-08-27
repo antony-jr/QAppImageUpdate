@@ -1,3 +1,5 @@
+#ifndef RANGE_REPLY_PRIVATE_HPP_INCLUDED
+#define RANGE_REPLY_PRIVATE_HPP_INCLUDED
 #include <QObject>
 #include <QUrl>
 #include <QVector>
@@ -47,5 +49,4 @@ private:
 	QNetworkAccessManager *m_Manager;
 	QScopedPointer<QByteArray> m_Data;
 };
-
-
+#endif // RANGE_REPLY_PRIVATE_INCLUDED

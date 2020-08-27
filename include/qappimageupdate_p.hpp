@@ -7,47 +7,15 @@
 #include <QByteArray>
 #include <QNetworkProxy>
 
-#include "appimageupdaterbridge_enums.hpp"
+#include "qappimageupdatecodes_p.hpp"
 #include "appimageupdateinformation_p.hpp"
 #include "zsyncremotecontrolfileparser_p.hpp"
 #include "zsyncwriter_p.hpp"
 #include "zsyncblockrangedownloader_p.hpp"
 
-class QAppImageUpdatePrivate : public QObject {
+class QAppImageUpdatePrivate : public QObject, public QAppImageUpdateCodesPrivate {
 	Q_OBJECT
 public:
-    struct Action {
-	enum : short {
-	       None,
-	       GetEmbeddedInfo,
-	       CheckForUpdate,
-	       Update,
-	       UpdateWithGUI       
-    	};
-    };
-
-    struct GuiFlags { 
-	enum {
-        ShowProgressDialog = 0x1,
-        ShowBeforeProgress = 0x2,
-        ShowUpdateConfirmationDialog = 0x4,
-        ShowFinishedDialog = 0x8,
-        ShowErrorDialog = 0x10,
-        AlertWhenAuthorizationIsRequired = 0x20,
-        NotifyWhenNoUpdateIsAvailable = 0x40,
-        NoRemindMeLaterButton = 0x80,
-        NoSkipThisVersionButton = 0x100,
-        Default = ShowBeforeProgress |
-                  ShowProgressDialog |
-                  ShowUpdateConfirmationDialog |
-                  ShowFinishedDialog   |
-                  ShowErrorDialog |
-                  NotifyWhenNoUpdateIsAvailable |
-                  NoRemindMeLaterButton |
-                  NoSkipThisVersionButton
-	};
-    };
-
     QAppImageUpdatePrivate();
     ~QAppImageUpdatePrivate();
 
@@ -58,7 +26,7 @@ public Q_SLOTS:
     void setOutputDirectory(const QString&);
     void setProxy(const QNetworkProxy&);
     void start(short action = Action::Update,
-	       int flags = GuiFlags::Default, 
+	       int flags = GuiFlag::Default, 
 	       QByteArray icon = QByteArray());
     void cancel();
     void clear();

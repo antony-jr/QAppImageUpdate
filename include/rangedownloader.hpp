@@ -10,6 +10,15 @@ class RangeDownloader : public QObject {
 	QScopedPointer<RangeDownloaderPrivate> m_Private;
 public:
 	RangeDownloader(QObject *parent = nullptr);
+public Q_SLOTS:
+	void setTargetFileUrl(const QUrl&);
+	void setFullDownload(bool);
+	void setRequiredRanges(const QVector<QPair<qint32, qint32>>&);
+	void appendRange(qint32, qint32);
+	void appendRange(QPair<qint32, qint32>);
+
+	void start();
+	void cancel();
 Q_SIGNALS:
 	void started();
 	void canceled();

@@ -35,47 +35,10 @@
 #ifndef APPIMAGE_UPDATER_BRIDGE_ENUMS_HPP_INCLUDED
 #define APPIMAGE_UPDATER_BRIDGE_ENUMS_HPP_INCLUDED
 class QString;
-namespace AppImageUpdaterBridge {
 
-/* Status codes for all process.*/
-enum : short {
-    /* Common status. */
-    Initializing = 0,
-    Idle = 1,
-
-    /* AppImage Update Information parser status. */
-    OpeningAppimage,
-    CalculatingAppimageSha1Hash,
-    ReadingAppimageMagicBytes,
-    ReadingAppimageUpdateInformation,
-    FindingAppimageType,
-    FindingAppimageArchitecture,
-    MappingAppimageToMemory,
-    SearchingForUpdateInformationSectionHeader,
-    UnmappingAppimageFromMemory,
-    FinalizingAppimageEmbededUpdateInformation,
-
-    /* Zsync control file parser status. */
-    ParsingAppimageEmbededUpdateInformation = 50,
-    RequestingGithubApi,
-    ParsingGithubApiResponse,
-    RequestingZsyncControlFile,
-    RequestingBintray,
-    ParsingBintrayRedirectedUrlForLatestPackageUrl,
-    ParsingZsyncControlFile,
-    SearchingTargetFileChecksumBlockOffsetInZsyncControlFile,
-    StoringZsyncControlFileDataToMemory,
-    FinalizingParsingZsyncControlFile,
-
-    /* Zsync writer status. */
-    WrittingDownloadedBlockRanges = 100,
-    EmittingRequiredBlockRanges,
-    CheckingChecksumsForDownloadedBlockRanges,
-    WrittingDownloadedBlockRangesToTargetFile,
-    CalculatingTargetFileSha1Hash,
-    ConstructingTargetFile
-};
-
+class QAppImageUpdateEnumsPrivate { // TODO: move this to the public class itself.
+public:
+struct Error {
 /* Error codes for all process. */
 enum : short {
     /* Common error. */
@@ -159,9 +122,10 @@ enum : short {
     CannotOpenTargetFile,
     TargetFileSha1HashMismatch
 };
-
+};
+/*
 QString errorCodeToString(short);
 QString errorCodeToDescriptionString(short);
-QString statusCodeToString(short);
-}
+QString statusCodeToString(short);*/
+};
 #endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED

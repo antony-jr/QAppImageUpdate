@@ -52,7 +52,8 @@
 #include <QTimer>
 #include <QTemporaryFile>
 
-#include "appimageupdaterbridge_enums.hpp"
+#include "qappimageupdate_enums.hpp"
+
 #include "zsyncinternalstructures_p.hpp"
 
 namespace AppImageUpdaterBridge {
@@ -71,16 +72,6 @@ class ZsyncWriterPrivate : public QObject {
                           QUrl, QBuffer*,bool);
     void start(void);
     void cancel(void);
-
-
-    /* Used by the block range downloader
-     * Now we are going implement this as private.
-     * Since ZsyncWriter will use the range downloader 
-     * privately.
-    void getBlockRanges();
-    void writeSeqRaw(QByteArray*);
-    void writeBlockRanges(qint32, qint32, QByteArray*);
-    */
 
   private Q_SLOTS:
 #ifndef LOGGING_DISABLED
