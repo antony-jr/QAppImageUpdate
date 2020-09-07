@@ -26,6 +26,9 @@ public:
     QAppImageUpdate(QFile *AppImage, bool singleThreaded = true, QObject *parent = nullptr); 
     ~QAppImageUpdate();
 
+    static QString errorCodeToString(short);
+    static QString errorCodeToDescriptionString(short); 
+
 public Q_SLOTS:
     void setAppImage(const QString&);
     void setAppImage(QFile*);

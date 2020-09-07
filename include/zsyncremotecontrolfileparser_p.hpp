@@ -54,10 +54,9 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 
-#include "appimageupdaterbridge_enums.hpp"
+#include "qappimageupdateenums.hpp"
 #include "zsyncinternalstructures_p.hpp"
 
-namespace AppImageUpdaterBridge {
 class ZsyncRemoteControlFileParserPrivate : public QObject {
     Q_OBJECT
   public:
@@ -129,6 +128,5 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
     QScopedPointer<QBuffer> p_ControlFile;
     QNetworkAccessManager *p_NManager = nullptr;
 };
-}
 
 #endif //ZSYNC_CONTROL_FILE_PARSER_PRIVATE_HPP_INCLUDED
