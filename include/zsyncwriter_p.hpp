@@ -52,9 +52,9 @@
 #include <QTimer>
 #include <QTemporaryFile>
 
+#include "rangedownloader.hpp"
 #include "zsyncinternalstructures_p.hpp"
 
-namespace AppImageUpdaterBridge {
 class ZsyncWriterPrivate : public QObject {
     Q_OBJECT
   public:
@@ -68,23 +68,23 @@ class ZsyncWriterPrivate : public QObject {
                           qint32,qint32,qint32,
                           const QString&,const QString&,const QString&,
                           QUrl, QBuffer*,bool);
-    void start(void);
-    void cancel(void);
+    void start();
+    void cancel();
 
   private Q_SLOTS:
 #ifndef LOGGING_DISABLED
     void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
-    bool verifyAndConstructTargetFile(void);
+    bool verifyAndConstructTargetFile();
     void addToRanges(zs_blockid);
     qint32 alreadyGotBlock(zs_blockid);
-    qint32 buildHash(void);
+    qint32 buildHash();
     qint32 checkCheckSumsOnHashChain(const hash_entry *, const unsigned char *, qint32 );
     quint32 calcRHash(const hash_entry *const);
     void calcMd4Checksum(unsigned char *, const unsigned char*,size_t);
     zs_blockid getHashEntryBlockId(const hash_entry *);
     short tryOpenSourceFile(const QString&, QFile**);
-    short parseTargetFileCheckSumBlocks(void);
+    short parseTargetFileCheckSumBlocks();
     void writeBlocks(const unsigned char *, zs_blockid, zs_blockid);
     void removeBlockFromHash(zs_blockid);
     qint32 submitSourceData(unsigned char*, size_t, off_t);
@@ -92,13 +92,13 @@ class ZsyncWriterPrivate : public QObject {
     qint32 rangeBeforeBlock(zs_blockid);
     zs_blockid nextKnownBlock(zs_blockid);
 
+    // For the Range Downloader
+    QVector<QPair<qint32, qint32>> getBlockRanges();
+    void writeBlockRanges(qint32, qint32, QByteArray*);
+    void writeSeqRaw(QByteArray*);
+
   Q_SIGNALS:
-    void initStart();
-    void initCancel();
     void finishedConfiguring();
-    void blockRange(qint32, qint32);
-    void endOfBlockRanges();
-    void download(qint64, qint64, QUrl);
     void started();
     void canceled();
     void finished(QJsonObject, QString);
@@ -108,7 +108,8 @@ class ZsyncWriterPrivate : public QObject {
   private:
     bool b_Started = false,
          b_CancelRequested = false,
-         b_AcceptRange = true;
+         b_AcceptRange = true,
+	 b_Configured = false;
     QUrl u_TargetFileUrl;
     QPair<rsum, rsum> p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     qint64 n_BytesWritten = 0;
@@ -139,7 +140,6 @@ class ZsyncWriterPrivate : public QObject {
 
     qint32 n_Ranges = 0;
     zs_blockid *p_Ranges = nullptr; /* Ranges needed to finish the under construction target file. */
-    QVector<QPair<qint32, qint32>> p_RequiredRanges;
     QScopedPointer<QBuffer> p_TargetFileCheckSumBlocks; /* Checksum blocks that needs to be loaded into the memory.*/
     QScopedPointer<QCryptographicHash> p_Md4Ctx; /* Md4 Hasher context.*/
     QString s_SourceFilePath,
@@ -148,11 +148,11 @@ class ZsyncWriterPrivate : public QObject {
             s_OutputDirectory;
     QScopedPointer<QTemporaryFile> p_TargetFile; /* under construction target file. */
     QScopedPointer<QTime> p_TransferSpeed;
+    QScopedPointer<RangeDownloader> m_RangeDownloader;
 #ifndef LOGGING_DISABLED
     QString s_LogBuffer,
             s_LoggerName;
     QScopedPointer<QDebug> p_Logger;
 #endif // LOGGING_DISABLED 
 };
-}
 #endif // ZSYNC_WRITER_PRIVATE_HPP_INCLUDED

@@ -32,7 +32,8 @@
  * @filename    : zsyncwriter_p.cc
  * @description : This is where the main zsync algorithm is implemented.
 */
-#include "../include/zsyncwriter_p.hpp"
+#include "zsyncwriter_p.hpp"
+#include "qappimageupdateenums.hpp"
 
 /*
  * An efficient logging system specially tailored
@@ -72,7 +73,6 @@
 					      } while (0)
 
 
-using namespace AppImageUpdaterBridge;
 
 /*
  * Zsync uses the same modified version of the Adler32 checksum
@@ -105,12 +105,10 @@ static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, si
 */
 ZsyncWriterPrivate::ZsyncWriterPrivate()
     : QObject() {
-    emit statusChanged(Initializing);
     p_Md4Ctx.reset(new QCryptographicHash(QCryptographicHash::Md4));
 #ifndef LOGGING_DISABLED
     p_Logger.reset(new QDebug(&s_LogBuffer));
 #endif // LOGGING_DISABLED	
-    emit statusChanged(Idle);
     return;
 }
 
@@ -176,93 +174,72 @@ void ZsyncWriterPrivate::handleLogMessage(QString msg, QString path) {
 }
 #endif // LOGGING_DISABLED
 
-/* Emits the required block ranges via blockRange signal.
- *
- * If the entire file is to be downloaded , This will emit
- * a invalid block range which should be interpreted as to
- * download the entire file.
-*/
-void ZsyncWriterPrivate::getBlockRanges(void) {
+// Returns the required ranges
+QVector<QPair<qint32, qint32>> ZsyncWriterPrivate::getBlockRanges() {
     if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
-        /* Emitting an empty blockRange implies the downloader to download the
-         * entire file sequentially.
-         * In case we have no usable data and have to download the entire file , Also
-         * if range requests are not support , We need to download the entire file.
-         * The final SHA1 checksum will ensure that the target file is retrived from
-         * a trusted source.
-        */
-        emit blockRange( 0, 0);
-        emit endOfBlockRanges();
-        emit statusChanged(Idle);
-        return;
+	QVector<QPair<qint32, qint32>> requiredRanges;
+        return requiredRanges;
     }
 
-    INFO_START " getBlockRanges : emitting required block ranges." INFO_END;
-    emit statusChanged(EmittingRequiredBlockRanges);
+    INFO_START " getBlockRanges : getting required block ranges." INFO_END;
 
+    QVector<QPair<qint32, qint32>> requiredBlocks;
 
-    if(p_RequiredRanges.isEmpty()) {
-        zs_blockid from = 0, to = n_Blocks;
-        p_RequiredRanges.append(qMakePair(from, to));
-        p_RequiredRanges.append(qMakePair(0, 0));
-
-        for(qint32 i = 0, n = 1; i < n_Ranges ; ++i) {
-            p_RequiredRanges.append(qMakePair(0, 0));
-            if (p_Ranges[2 * i] > p_RequiredRanges.at(n - 1).second)
+    zs_blockid from = 0, to = n_Blocks;
+    requiredBlocks.append(qMakePair(from, to));
+    requiredBlocks.append(qMakePair(0, 0));
+    
+    for(qint32 i = 0, n = 1; i < n_Ranges ; ++i) {
+            requiredBlocks.append(qMakePair(0, 0));
+            if (p_Ranges[2 * i] > requiredBlocks.at(n - 1).second)
                 continue;
             if (p_Ranges[2 * i + 1] < from)
                 continue;
 
             /* Okay, they intersect */
             if (n == 1 && p_Ranges[2 * i] <= from) {       /* Overlaps the start of our window */
-                p_RequiredRanges[0].first = p_Ranges[2 * i + 1] + 1;
+                requiredBlocks[0].first = p_Ranges[2 * i + 1] + 1;
             } else {
                 /* If the last block that we still (which is the last window end -1, due
                  * to half-openness) then this range just cuts the end of our window */
-                if (p_Ranges[2 * i + 1] >= p_RequiredRanges.at(n - 1).second - 1) {
-                    p_RequiredRanges[n - 1].second = p_Ranges[2 * i];
+                if (p_Ranges[2 * i + 1] >= requiredBlocks.at(n - 1).second - 1) {
+                    requiredBlocks[n - 1].second = p_Ranges[2 * i];
                 } else {
                     /* In the middle of our range, split it */
-                    p_RequiredRanges[n].first = p_Ranges[2 * i + 1] + 1;
-                    p_RequiredRanges[n].second = p_RequiredRanges.at(n-1).second;
-                    p_RequiredRanges[n-1].second = p_Ranges[2 * i];
+                    requiredBlocks[n].first = p_Ranges[2 * i + 1] + 1;
+                    requiredBlocks[n].second = requiredBlocks.at(n-1).second;
+                    requiredBlocks[n-1].second = p_Ranges[2 * i];
                     n++;
                 }
             }
             QCoreApplication::processEvents();
-        }
+     }
 
-        if (p_RequiredRanges.at(0).first >= p_RequiredRanges.at(0).second)
-            p_RequiredRanges.clear();
+     if (requiredBlocks.at(0).first >= requiredBlocks.at(0).second){
+	    requiredBlocks.clear();
+     }
+     requiredBlocks.removeAll(qMakePair(0, 0));
 
-        p_RequiredRanges.removeAll(qMakePair(0, 0));
-    }
 
-
-    /*
-     * Since p_RequiredRanges vector will be reduced on every emission of block range,
-     * this causes some wierd behaviour with the iterator. Thus we have to copy
-     * the vector first to a local vector then emit the block ranges.
-    */
-
-    auto requiredRanges = p_RequiredRanges;
+    QVector<QPair<qint32, qint32>> requiredRanges;
 
     for(auto iter = requiredRanges.constBegin(), end  = requiredRanges.constEnd(); iter != end; ++iter) {
-        auto to = ((*iter).second * n_BlockSize) - 1;
+        auto to = ((*iter).second * n_BlockSize);
+	if(to >= n_TargetFileLength) {
+		to = n_TargetFileLength;
+	}	
+
         auto from = (*iter).first * n_BlockSize;
 
         INFO_START " getBlockRanges : (" LOGR from LOGR " , " LOGR to LOGR ")." INFO_END;
 
-        emit blockRange(from, to);
+	requiredRanges.append(qMakePair<qint32, qint32>(from, to));
         QCoreApplication::processEvents();
     }
-    emit endOfBlockRanges();
 
     INFO_START " getBlockRanges : requesting " LOGR requiredRanges.size() LOGR " range requests to server." INFO_END;
 
-    emit statusChanged(Idle);
-    INFO_START " getBlockRanges : emitted required block ranges." INFO_END;
-    return;
+    return requiredRanges;
 }
 
 /* Simply writes whatever in downloadedData to the working target file ,
@@ -281,10 +258,7 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData) {
         return;
     }
 
-    n_BytesWritten += p_TargetFile->write(*(data.data()));
-    if(n_BytesWritten >= n_TargetFileLength) {
-        verifyAndConstructTargetFile();
-    }
+    p_TargetFile->write(*(data.data()));
     return;
 }
 
@@ -301,14 +275,9 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
     /* Build checksum hash tables if we don't have them yet */
     if (!p_RsumHash) {
         if (!buildHash()) {
-            emit error(CannotConstructHashTable);
+            emit error(QAppImageUpdateEnums::Error::CannotConstructHashTable);
             return;
         }
-    }
-
-    /* Check if transfer speed time already started , if not start it. */
-    if(p_TransferSpeed->isNull()) {
-        p_TransferSpeed->start();
     }
 
     bool Md4ChecksumsMatched = true;
@@ -317,11 +286,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
     buffer->open(QIODevice::ReadOnly);
 
     zs_blockid bfrom = fromRange >> n_BlockShift,
-               bto   = toRange >> n_BlockShift, /* adjust to avoid one left problem. */
-               actual_bto = (toRange + 1) >> n_BlockShift; /* retrive the actual to block id that we have in
-							      required ranges vector. */
-
-    emit statusChanged(WrittingDownloadedBlockRanges);
+               bto   = toRange >> n_BlockShift;
 
     /*
      * Only check MD4 sum if the to blockid is not the end blockid,
@@ -332,8 +297,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
      * fail on the end block which makes it impossible to finish the delta update
      * eventhough everything is authentic.
     */
-    if(actual_bto != n_Blocks) {
-        for (zs_blockid x = bfrom; x <= bto; ++x) {
+    for (zs_blockid x = bfrom; x <= bto; ++x) {
             QByteArray blockData = buffer->read(n_BlockSize);
             calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);
             if(memcmp(&md4sum, &(p_BlockHashes[x].checksum[0]), n_StrongCheckSumBytes)) {
@@ -342,36 +306,15 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
                 if (x > bfrom) {    /* Write any good blocks we did get */
                     INFO_START " writeBlockRanges : only writting good blocks. " INFO_END;
                     writeBlocks((const unsigned char*)downloaded->constData(), bfrom, x - 1);
-
-                    /*
-                     * Remove the entire range eventhough we did'nt write the
-                     * entire range , This is because in some cases only unwanted
-                     * data is marked as mismatched (like trailing zeros).
-                     * So to tolerate this , We remove the entire range only
-                     * if we write something , Thus when all ranges are finished
-                     * verifyAndConstructTargetFile() will automatically check for
-                     * integrity.
-                     *
-                     * If integrity check failed , When we request required again
-                     * , The p_RequiredRanges vector gets filled with needed blocks.
-                     */
-                    if(!p_RequiredRanges.isEmpty())
-                        p_RequiredRanges.removeAll(qMakePair(bfrom, actual_bto));
-
                 }
                 break;
             }
             QCoreApplication::processEvents();
-        }
     }
 
     if(Md4ChecksumsMatched) {
         /* All blocks are valid; write them and update our state */
         writeBlocks((const unsigned char*)downloadedData->constData(), bfrom, bto );
-
-        /* Remove the blocks we written successfully. */
-        if(!p_RequiredRanges.isEmpty())
-            p_RequiredRanges.removeAll(qMakePair(bfrom, actual_bto));
     }
 
     /* Calculate our progress. */
@@ -396,10 +339,6 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
         }
         emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);
     }
-    if(p_RequiredRanges.isEmpty()) {
-        verifyAndConstructTargetFile();
-    }
-    emit statusChanged(Idle);
     return;
 }
 
@@ -407,6 +346,15 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
  * Sets the configuration for the current ZsyncWriterPrivate.
  * This can be seen as somewhat like init.
  * Emits finishedConfiguring when finished.
+ *
+ * **IMPORTANT**: You should call this always before calling start.
+ * Even if canceled. If you are going to call start again, You are instructed
+ * to setConfiguration first and then start after getting finishedConfiguration signal.
+ * 
+ * This is because setConfiguration acts as clear and new config setter. Also
+ * b_Configured is set to True in setConfiguration and set to False in start.
+ *
+ * So start only works once after setConfiguration.
 */
 void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
         qint32 nblocks,
@@ -479,13 +427,13 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 
     QFileInfo perm(path);
     if(!perm.isWritable() || !perm.isReadable()) {
-        emit error(NoPermissionToReadWriteTargetFile);
+        emit error(QAppImageUpdateEnums::Error::NoPermissionToReadWriteTargetFile);
         return;
     }
 
     p_TargetFile.reset(new QTemporaryFile(targetFilePath));
     if(!p_TargetFile->open()) {
-        emit error(CannotOpenTargetFile);
+        emit error(QAppImageUpdateEnums::Error::CannotOpenTargetFile);
         return;
     }
     /*
@@ -494,21 +442,33 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     */
     (void)p_TargetFile->fileName();
     INFO_START " setConfiguration : temporary file will temporarily reside at " LOGR p_TargetFile->fileName() LOGR "." INFO_END;
+    
+    /// Create a range downloader
+    m_RangeDownloader.reset(new RangeDownloader);
+
+    b_Configured = true;    
     emit finishedConfiguring();
     return;
 }
 
 /* cancels the started process. */
-void ZsyncWriterPrivate::cancel(void) {
-    b_CancelRequested = b_Started;
+void ZsyncWriterPrivate::cancel() {
+    if(!b_Started) {
+	    return;
+    }
+    b_CancelRequested = true;
+    m_RangeDownloader->cancel();
     INFO_START " cancel : cancel requested " LOGR b_CancelRequested LOGR "." INFO_END;
     return;
 }
 
+/// You should only start after getting finishedConfiguring signal.
+//  If not, start does not work.
 /* start the zsync algorithm. */
-void ZsyncWriterPrivate::start(void) {
-    if(b_Started)
+void ZsyncWriterPrivate::start() {
+    if(b_Started || !b_Configured)
         return;
+    b_Configured = false;
     b_CancelRequested = false;
     b_Started = true;
     emit started();
@@ -603,10 +563,36 @@ void ZsyncWriterPrivate::start(void) {
         }
     }
 
+    p_TransferSpeed.reset(new QTime); // Refresh timer.
+
     if(n_BytesWritten >= n_TargetFileLength) {
         verifyAndConstructTargetFile();
     } else {
-        emit download(n_BytesWritten, n_TargetFileLength, u_TargetFileUrl);
+       m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
+       
+
+       if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
+       m_RangeDownloader->setFullDownload(true);
+       // Full Download
+       connect(m_RangeDownloader.data(), &RangeDownloader::data,
+		this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
+       }else {
+       // Partial Download
+       auto ranges = getRequiredRanges();  
+       m_RangeDownloader->setFullDownload(false);
+       m_RangeDownloader->setRequiredRanges(ranges);
+
+       connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
+	       this, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
+       
+       }
+
+       connect(m_RangeDownloader.data(), &RangeDownloader::finished,
+	       this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection);
+       connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
+	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
+
+       m_RangeDownloader->start();
     }
     return;
 }
@@ -625,7 +611,7 @@ void ZsyncWriterPrivate::start(void) {
  * 	if(errorCode > 0)
  * 		// Handle error.
 */
-short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks(void) {
+short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks() {
     if(!p_BlockHashes) {
         return HashTableNotAllocated;
     } else if(!p_TargetFileCheckSumBlocks ||
@@ -732,7 +718,7 @@ short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath, QFile **sou
  * server.
  * Returns true if successfully constructed the target file.
 */
-bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void) {
+bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
     if(!p_TargetFile->isOpen() || !p_TargetFile->autoRemove()) {
         return true;
     }
@@ -749,7 +735,6 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void) {
     p_TargetFile->seek(0);
 
     INFO_START " verifyAndConstructTargetFile : calculating sha1 hash on temporary target file. " INFO_END;
-    emit statusChanged(CalculatingTargetFileSha1Hash);
     if(n_TargetFileLength >= 1073741824) { // 1 GiB and more.
         bufferSize = 104857600; // copy per 100 MiB.
     } else if(n_TargetFileLength >= 1048576 ) { // 1 MiB and more.
@@ -771,7 +756,6 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void) {
 
     if(UnderConstructionFileSHA1 == s_TargetFileSHA1) {
         INFO_START " verifyAndConstructTargetFile : sha1 hash matches!" INFO_END;
-        emit statusChanged(ConstructingTargetFile);
         QString newTargetFileName;
         p_TargetFile->setAutoRemove(!(constructed = true));
         /*
@@ -805,8 +789,7 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void) {
     } else {
         b_Started = b_CancelRequested = false;
         FATAL_START " verifyAndConstructTargetFile : sha1 hash mismatch." FATAL_END;
-        emit statusChanged(Idle);
-        emit error(TargetFileSha1HashMismatch);
+        emit error(QAppImageUpdateEnums::Error::TargetFileSha1HashMismatch);
         return constructed;
     }
 
@@ -819,7 +802,6 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile(void) {
     };
     b_Started = b_CancelRequested = false;
     emit finished(newVersionDetails, s_SourceFilePath);
-    emit statusChanged(Idle);
     return constructed;
 }
 
@@ -1079,12 +1061,8 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {
             return (error = -2);
         }
 
-    if(p_TransferSpeed.isNull()) {
-        p_TransferSpeed.reset(new QTime);
-    } else if(!p_TransferSpeed->isNull()) {
-        p_TransferSpeed.reset(new QTime);
-    }
 
+    p_TransferSpeed.reset(new QTime);
     p_TransferSpeed->start();
     while (!file->atEnd()) {
         size_t len;
@@ -1157,7 +1135,7 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {
 /* Build hash tables to quickly lookup a block based on its rsum value.
  * Returns non-zero if successful.
  */
-qint32 ZsyncWriterPrivate::buildHash(void) {
+qint32 ZsyncWriterPrivate::buildHash() {
     zs_blockid id;
     qint32 i = 16;
 
@@ -1365,7 +1343,7 @@ void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom
          * have received and stored the data for */
         int id;
         for (id = bfrom; id <= bto; id++) {
-            removeBlockFromHash(id);
+	    removeBlockFromHash(id);
             addToRanges(id);
             QCoreApplication::processEvents();
         }
