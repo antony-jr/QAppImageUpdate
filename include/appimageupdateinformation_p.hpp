@@ -46,9 +46,6 @@
 #include <QScopedPointer>
 #include <QString>
 
-#include "appimageupdaterbridge_enums.hpp"
-
-namespace AppImageUpdaterBridge {
 class AppImageUpdateInformationPrivate : public QObject {
     Q_OBJECT
   public:
@@ -90,5 +87,4 @@ class AppImageUpdateInformationPrivate : public QObject {
 #endif // LOGGING_DISABLED
     QFile *p_AppImage = nullptr;
 };
-}
 #endif // APPIMAGE_UPDATE_INFORMATION_PRIVATE_HPP_INCLUDED

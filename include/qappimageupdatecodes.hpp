@@ -1,8 +1,7 @@
-#ifndef QAPPIMAGE_UPDATE_CODES_PRIVATE_HPP_INCLUDED
-#define QAPPIMAGE_UPDATE_CODES_PRIVATE_HPP_INCLUDED
+#ifndef QAPPIMAGE_UPDATE_CODES_HPP_INCLUDED
+#define QAPPIMAGE_UPDATE_CODES_HPP_INCLUDED
 
-class QAppImageUpdateCodesPrivate {
-public:
+struct QAppImageUpdateCodes {
 struct Action {
 enum : short {
 	       None,
@@ -36,4 +35,4 @@ enum {
 };
 };
 
-#endif // QAPPIMAGE_UPDATE_CODES_PRIVATE_HPP_INCLUDED
+#endif // QAPPIMAGE_UPDATE_CODES_HPP_INCLUDED

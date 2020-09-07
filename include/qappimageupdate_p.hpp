@@ -7,16 +7,18 @@
 #include <QByteArray>
 #include <QNetworkProxy>
 
-#include "qappimageupdatecodes_p.hpp"
+#include "qappimageupdatecodes.hpp"
 #include "appimageupdateinformation_p.hpp"
 #include "zsyncremotecontrolfileparser_p.hpp"
 #include "zsyncwriter_p.hpp"
 #include "zsyncblockrangedownloader_p.hpp"
 
-class QAppImageUpdatePrivate : public QObject, public QAppImageUpdateCodesPrivate {
+class QAppImageUpdatePrivate : public QAppImageUpdateCodes, public QObject {
 	Q_OBJECT
 public:
-    QAppImageUpdatePrivate();
+    QAppImageUpdatePrivate(bool singleThreaded = true, QObject *parent = nullptr);
+    QAppImageUpdatePrivate(const QString &AppImagePath, bool singleThreaded = true, QObject *parent = nullptr);
+    QAppImageUpdatePrivate(QFile *AppImage, bool singleThreaded = true, QObject *parent = nullptr);
     ~QAppImageUpdatePrivate();
 
 public Q_SLOTS:
@@ -34,10 +36,7 @@ public Q_SLOTS:
 Q_SIGNALS:
     void started(short);
     void canceled(short);
-
-    /// Each action gives different information when finished
     void finished(QJsonObject info, short);
-    
     void progress(int, qint64, qint64, double, QString, short);
     void logger(QString, QString); 
     void error(short, short);

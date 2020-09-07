@@ -29,17 +29,15 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @filename    : appimageupdaterbridge_enums.hpp
- * @description : Error codes and status codes are described here.
+ * @filename    : qappimageupdateenums.hpp
+ * @description : Error codes are described here.
 */
-#ifndef APPIMAGE_UPDATER_BRIDGE_ENUMS_HPP_INCLUDED
-#define APPIMAGE_UPDATER_BRIDGE_ENUMS_HPP_INCLUDED
-class QString;
+#ifndef QAPPIMAGE_UPDATE_ENUMS_HPP_INCLUDED
+#define QAPPIMAGE_UPDATE_ENUMS_HPP_INCLUDED
 
-class QAppImageUpdateEnumsPrivate { // TODO: move this to the public class itself.
-public:
-struct Error {
+struct QAppImageUpdateEnums {
 /* Error codes for all process. */
+struct Error {
 enum : short {
     /* Common error. */
     NoError = 0,
@@ -123,9 +121,5 @@ enum : short {
     TargetFileSha1HashMismatch
 };
 };
-/*
-QString errorCodeToString(short);
-QString errorCodeToDescriptionString(short);
-QString statusCodeToString(short);*/
 };
-#endif // APPIMAGE_UPDATER_BRIDGE_HPP_INCLUDED
+#endif // QAPPIMAGE_UPDATE_ENUMS_HPP_INCLUDED

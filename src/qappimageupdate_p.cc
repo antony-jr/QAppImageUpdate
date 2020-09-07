@@ -31,8 +31,8 @@
  *
 */
 
-#include "../include/qappimageupdate_p.hpp"
-#include "../include/helpers_p.hpp"
+#include "qappimageupdate_p.hpp"
+#include "helpers_p.hpp"
 
 
 QAppImageUpdatePrivate::QAppImageUpdatePrivate(bool singleThreaded, QObject *parent)

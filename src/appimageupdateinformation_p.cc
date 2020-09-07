@@ -36,7 +36,8 @@
 #include <QBuffer>
 #include <QProcessEnvironment>
 
-#include "../include/appimageupdateinformation_p.hpp"
+#include "appimageupdateinformation_p.hpp"
+#include "qappimageupdateenums.hpp"
 
 /*
  * An efficient logging system.
@@ -118,8 +119,6 @@
 
 
 
-
-using namespace AppImageUpdaterBridge;
 
 /*
  * AppImage update information positions and magic values.
@@ -312,16 +311,14 @@ static QByteArray getExecPathFromDesktopFile(QFile *file) {
 */
 AppImageUpdateInformationPrivate::AppImageUpdateInformationPrivate(QObject *parent)
     : QObject(parent) {
-    emit statusChanged(Initializing);
 #ifndef LOGGING_DISABLED
     try {
         p_Logger.reset(new QDebug(&s_LogBuffer));
     } catch ( ... ) {
-        MEMORY_ERROR();
+        emit(error(QAppImageUpdateEnums::Error::NotEnoughMemory));
         throw;
     }
 #endif // LOGGING_DISABLED
-    emit statusChanged(Idle);
     return;
 }
 
@@ -367,7 +364,6 @@ void AppImageUpdateInformationPrivate::setAppImage(const QString &AppImagePath) 
     INFO_START  " setAppImage : " LOGR AppImagePath LOGR "." INFO_END;
     s_AppImagePath = AppImagePath;
     s_AppImageName = QFileInfo(AppImagePath).fileName();
-    emit statusChanged(Idle);
     return;
 }
 
@@ -397,7 +393,6 @@ void AppImageUpdateInformationPrivate::setAppImage(QFile *AppImage) {
     p_AppImage = AppImage;
     s_AppImagePath = QFileInfo(AppImage->fileName()).canonicalFilePath();
     s_AppImageName = QFileInfo(s_AppImagePath).fileName();
-    emit statusChanged(Idle);
     return;
 }
 
@@ -507,7 +502,7 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
             }
 
             if(s_AppImagePath.isEmpty() || !QFileInfo::exists(s_AppImagePath)) {
-		emit(error(NoAppimagePathGiven));
+		emit(error(QAppImageUpdateEnums::Error::NoAppimagePathGiven));
                 return;
             }
         }
@@ -520,8 +515,8 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         try {
             p_AppImage = new QFile(this);
         } catch (...) {
-            MEMORY_ERROR();
-            return;
+	        emit(error(QAppImageUpdateEnums::Error::NotEnoughMemory));
+		return;
         }
 
         /*
@@ -530,24 +525,21 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         if(!QFileInfo(s_AppImagePath).isFile()) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;
-            emit statusChanged(Idle);
             FATAL_START " setAppImage : cannot use a directory as a file." FATAL_END;
-            APPIMAGE_NOT_FOUND_ERROR();
+            emit(error(QAppImageUpdateEnums::Error::AppimageNotFound));
             return;
         }
 
         p_AppImage->setFileName(s_AppImagePath);
 
-        emit statusChanged(OpeningAppimage);
         QCoreApplication::processEvents();
 
         /* Check if the file actually exists. */
         if(!p_AppImage->exists()) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;
-            emit statusChanged(Idle);
             FATAL_START  " setAppImage : cannot find the AppImage in the given path , file not found." FATAL_END;
-            APPIMAGE_NOT_FOUND_ERROR();
+            emit(error(QAppImageUpdateEnums::Error::AppimageNotFound));
             return;
         }
 
@@ -560,9 +552,8 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         ) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;
-            emit statusChanged(Idle);
             FATAL_START  " setAppImage : no permission(" LOGR perm LOGR ") for reading the given AppImage." FATAL_END;
-            APPIMAGE_PERMISSION_ERROR();
+            emit(error(QAppImageUpdateEnums::Error::NoReadPermission))
             return;
         }
 
@@ -572,43 +563,36 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         if(!p_AppImage->open(QIODevice::ReadOnly)) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;
-            emit statusChanged(Idle);
             FATAL_START  " setAppImage : cannot open AppImage for reading." FATAL_END;
-            APPIMAGE_OPEN_ERROR();
-            return;
+            emit(error(QAppImageUpdateEnums::Error::CannotOpenAppimage));
+	    return;
         }
-        emit statusChanged(Idle);
         QCoreApplication::processEvents();
 
     } else {
-        emit statusChanged(OpeningAppimage);
         QCoreApplication::processEvents();
 
         /* Check if exists */
         if(!p_AppImage->exists()) {
-            emit statusChanged(Idle);
             FATAL_START  " setAppImage : cannot find the AppImage from given QFile , file does not exists." FATAL_END;
-            APPIMAGE_NOT_FOUND_ERROR();
+            emit(error(QAppImageUpdateEnums::Error::AppimageNotFound)); 
             return;
         }
 
         /* Check if readable. */
         if(!p_AppImage->isReadable()) {
-            emit statusChanged(Idle);
-            FATAL_START  " setAppImage : invalid QFile given, not readable." FATAL_END;
-            APPIMAGE_READ_ERROR();
+            FATAL_START  " setAppImage : invalid QFile given, not readable." FATAL_END; 
+	    emit(error(QAppImageUpdateEnums::Error::AppimageNotReadable));
             return;
         }
 
         /* Check if opened. */
         if(!p_AppImage->isOpen()) {
-            emit statusChanged(Idle);
             FATAL_START  " setAppImage : invalid QFile given, not opened." FATAL_END;
-            APPIMAGE_OPEN_ERROR();
+            emit(error(QAppImageUpdateEnums::Error::CannotOpenAppimage));
             return;
         }
 
-        emit statusChanged(Idle);
         QCoreApplication::processEvents();
     }
 
@@ -622,7 +606,6 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
      * are hardcoded at the offset 8 with a maximum of 3 characters.
      * The 3rd character decides the type of the AppImage.
     */
-    emit statusChanged(ReadingAppimageMagicBytes);
     QCoreApplication::processEvents();
 
     auto magicBytes = read(p_AppImage, /*offset=*/8,/*maxchars=*/ 3);
@@ -645,21 +628,17 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
             }
         }
 
-        emit statusChanged(Idle);
         FATAL_START  " getInfo : invalid magic bytes("
         LOGR (unsigned)magicBytes[0] LOGR ","
         LOGR (unsigned)magicBytes[1] LOGR ")." FATAL_END;
-        MAGIC_BYTES_ERROR();
+        emit(error(QAppImageUpdateEnums::Error::InvalidMagicBytes));
         return;
     }
-
-
 
     /*
      * Calculate the AppImages SHA1 Hash which will be used later to find if we need to update the
      * AppImage.
     */
-    emit statusChanged(CalculatingAppimageSha1Hash);
     QCoreApplication::processEvents();
 
     {
@@ -684,7 +663,6 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         delete SHA1Hasher;
     }
 
-    emit statusChanged(FindingAppimageType);
     QCoreApplication::processEvents();
 
     /*
@@ -695,7 +673,6 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
     if(type == 0x1) {
         INFO_START  " getInfo : AppImage is confirmed to be type 1." INFO_END;
         progress(/*percentage=*/80); /*Signal progress.*/
-        emit statusChanged(ReadingAppimageUpdateInformation);
         QCoreApplication::processEvents();
 
         updateString = QString::fromUtf8(read(p_AppImage, AppimageType1UpdateInfoPos, AppimageType1UpdateInfoLen));
@@ -709,17 +686,14 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
             char *strTab = NULL;
             unsigned long offset = 0, length = 0;
 
-            emit statusChanged(MappingAppimageToMemory);
             uchar *mapped = p_AppImage->map(/*offset=*/0, /*max=*/p_AppImage->size());
 
             if(mapped == NULL) {
-                emit statusChanged(Idle);
                 FATAL_START  " getInfo : not enough memory to map AppImage to memory." FATAL_END;
-                MEMORY_ERROR();
+                emit(error(QAppImageUpdateEnums::Error::NotEnoughMemory));
                 return;
             }
 
-            emit statusChanged(FindingAppimageArchitecture);
             QCoreApplication::processEvents();
             data = (uint8_t*) mapped;
 
@@ -730,7 +704,6 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
                 Elf32_Shdr *shdr32 = (Elf32_Shdr *) (data + elf32->e_shoff);
 
                 strTab = (char *)(data + shdr32[elf32->e_shstrndx].sh_offset);
-                emit statusChanged(SearchingForUpdateInformationSectionHeader);
 
                 lookupSectionHeaders(strTab, shdr32, elf32, AppimageType2UpdateInfoShdr,
                                      /*variable to set offset=*/offset, /*length of the header=*/length,
@@ -742,32 +715,24 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
                 Elf64_Shdr *shdr64 = (Elf64_Shdr *) (data + elf64->e_shoff);
 
                 strTab = (char *)(data + shdr64[elf64->e_shstrndx].sh_offset);
-                emit statusChanged(SearchingForUpdateInformationSectionHeader);
                 lookupSectionHeaders(strTab, shdr64, elf64, AppimageType2UpdateInfoShdr,
                                      offset, length, progress);
             } else {
-                emit statusChanged(UnmappingAppimageFromMemory);
                 p_AppImage->unmap(mapped);
-                emit statusChanged(Idle);
                 FATAL_START  " getInfo : Unsupported elf format." FATAL_END;
-                ELF_FORMAT_ERROR();
+                emit(error(QAppImageUpdateEnums::Error::UnsupportedElfFormat));
                 return;
             }
 
-            emit statusChanged(UnmappingAppimageFromMemory);
             p_AppImage->unmap(mapped);
 
             if(offset == 0 || length == 0) {
-                emit statusChanged(Idle);
                 FATAL_START  " getInfo : cannot find '"
                 LOGR AppimageType2UpdateInfoShdr LOGR "' section header." FATAL_END;
-                SECTION_HEADER_NOT_FOUND_ERROR();
+                emit(error(QAppImageUpdateEnums::Error::SectionHeaderNotFound));
             } else {
-                emit statusChanged(ReadingAppimageUpdateInformation);
                 updateString = QString::fromUtf8(read(p_AppImage, offset, length));
             }
-
-            emit statusChanged(Idle);
         }
     } else {
         WARNING_START  " getInfo : unable to confirm AppImage type." WARNING_END;
@@ -777,22 +742,19 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         ) {
             WARNING_START  " getInfo : guessing AppImage type to be 1." WARNING_END;
             emit(progress(80));
-            emit statusChanged(ReadingAppimageUpdateInformation);
             updateString = QString::fromUtf8(read(p_AppImage, AppimageType1UpdateInfoPos, AppimageType1UpdateInfoLen));
         } else {
-            emit statusChanged(Idle);
             FATAL_START  " getInfo : invalid AppImage type(" LOGR type LOGR ")." FATAL_END;
-            APPIMAGE_TYPE_ERROR();
+            emit(error(QAppImageUpdateEnums::Error::InvalidAppimageType));
             return;
         }
     }
 
-    emit statusChanged(Idle);
     QCoreApplication::processEvents();
 
     if(updateString.isEmpty()) {
         FATAL_START  " getInfo : update information is empty." FATAL_END;
-        APPIMAGE_EMPTY_UI_ERROR();
+        emit(error(QAppImageUpdateEnums::Error::EmptyUpdateInformation));
         return;
     }
 
@@ -812,12 +774,9 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
 
     QJsonObject updateInformation; // will be filled up later on.
 
-    emit statusChanged(FinalizingAppimageEmbededUpdateInformation);
-
     if(data.size() < 2) {
-        emit statusChanged(Idle);
         FATAL_START  " getInfo : update information has invalid delimiters." FATAL_END;
-        APPIMAGE_INVALID_UI_ERROR();
+        emit(error(QAppImageUpdateEnums::Error::InvalidAppimageType));
         return;
     } else if(data.size() == 2) {
         {
@@ -851,16 +810,14 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
                 updateInformation = buffer;
             }
         } else {
-            emit statusChanged(Idle);
             FATAL_START  " getInfo : unsupported transport mechanism given." FATAL_END;
-            UNSUPPORTED_TRANSPORT_ERROR();
+            emit(error(QAppImageUpdateEnums::Error::UnsupportedTransport));
             return;
         }
 
     } else {
-        emit statusChanged(Idle);
         FATAL_START " getInfo : update information has invalid number of entries(" LOGR data.size() LOGR ")." FATAL_END;
-        APPIMAGE_INVALID_UI_ERROR();
+        emit(error(QAppImageUpdateEnums::Error::InvalidAppimageType));
         return;
     }
 
@@ -873,7 +830,6 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         m_Info = buffer;
     }
 
-    emit statusChanged(Idle);
     emit(progress(100)); /*Signal progress.*/
     emit(info(m_Info));
     INFO_START  " getInfo : finished." INFO_END;
