@@ -93,7 +93,6 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
     void receiveControlFile(void);
     void progress(int);
     void error(short);
-    void statusChanged(short);
     void logger(QString, QString);
   private:
     bool b_AcceptRange = false,

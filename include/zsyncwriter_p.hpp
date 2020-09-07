@@ -52,8 +52,6 @@
 #include <QTimer>
 #include <QTemporaryFile>
 
-#include "qappimageupdate_enums.hpp"
-
 #include "zsyncinternalstructures_p.hpp"
 
 namespace AppImageUpdaterBridge {
@@ -105,7 +103,6 @@ class ZsyncWriterPrivate : public QObject {
     void canceled();
     void finished(QJsonObject, QString);
     void progress(int percentage, qint64 bytesReceived, qint64 bytesTotal, double speed, QString units);
-    void statusChanged(short);
     void error(short);
     void logger(QString, QString);
   private:

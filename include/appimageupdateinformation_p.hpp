@@ -69,7 +69,6 @@ class AppImageUpdateInformationPrivate : public QObject {
     void info(QJsonObject);
     void progress(int);
     void error(short);
-    void statusChanged(short);
     void logger(QString, QString);
 
   private:
