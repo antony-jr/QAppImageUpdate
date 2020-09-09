@@ -205,12 +205,8 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 	    connect(m_UpdateInformation.data(),  &AppImageUpdateInformationPrivate::info,
 		this, &QAppImageUpdatePrivate::redirectEmbeddedInformation,
 		Qt::QueuedConnection);
-
-	    /*
-	     * TODO: GetEmbeddedInfo progress handle
 	    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
 		    this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress);
-	    */
 	    connect(m_UpdateInformation.data(),  &AppImageUpdateInformationPrivate::error,
 		this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoError,
 		Qt::QueuedConnection);
@@ -224,26 +220,21 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 	    connect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
-
-	    /*
+	   
 	    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
 		    this, &QAppImageUpdatePrivate::handleCheckForUpdateProgress);
-
-	     */
+	    
 	    connect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
 		     m_ControlFileParser.data(), SLOT(getUpdateCheckInformation(void)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
 	    
 	    connect(m_ControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
 		     this, SLOT(redirectUpdateCheck(QJsonObject)),
-                     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
-	  
-	    /*
-	     * TODO: Check for update Progress Handle 
+                     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));	 
+	    
 	    connect(m_ControlFileParser.data(), SIGNAL(progress(short)),
 		     this, SLOT(handleCheckForUpdateProgress));
-	    */
-
+	    
 	    connect(m_ControlFileParser.data(), SIGNAL(error(short)),
 		     this, SLOT(handleCheckForUpdateError(short)),
                      (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
@@ -310,6 +301,15 @@ void QAppImageUpdatePrivate::cancel(void) {
 
 /// * * *
 /// Private Slots
+
+void QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress(int percentage) {
+	emit progress(percentage, 1, 1, 0, QString(), Action::GetEmbeddedInfo);
+}
+
+void QAppImageUpdatePrivate::handleCheckForUpdateProgress(int percentage) {
+	emit progress(percentage, 1, 1, 0, QString(), Action::CheckForUpdate);
+}
+
 void QAppImageUpdatePrivate::handleGetEmbeddedInfoError(short code) {
 	b_Canceled = b_Started = b_Running = false;	
 	b_Finished = false;
@@ -318,6 +318,8 @@ void QAppImageUpdatePrivate::handleGetEmbeddedInfoError(short code) {
 		   this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoError);
 	disconnect(m_UpdateInformation.data(),  &AppImageUpdateInformationPrivate::info,
 		   this, &QAppImageUpdatePrivate::redirectEmbeddedInformation);   
+	disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
+		    this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress);
 	emit error(code, QAppImageUpdatePrivate::Action::GetEmbeddedInfo); 
 }
 
@@ -328,8 +330,9 @@ void QAppImageUpdatePrivate::redirectEmbeddedInformation(QJsonObject info) {
 		   this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoError);
 	disconnect(m_UpdateInformation.data(),  &AppImageUpdateInformationPrivate::info,
 		   this, &QAppImageUpdatePrivate::redirectEmbeddedInformation);   
+	disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
+		    this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress);
 	
-
 	if(b_CancelRequested) {
 		b_CancelRequested = false;
 		b_Canceled = true;
@@ -355,7 +358,11 @@ void QAppImageUpdatePrivate::handleCheckForUpdateError(short code) {
 	       this, SLOT(handleCheckForUpdateError(short)));
   	disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
 		   this, SLOT(handleCheckForUpdateError(short)));
-
+	disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
+		    this, &QAppImageUpdatePrivate::handleCheckForUpdateProgress);
+	disconnect(m_ControlFileParser.data(), SIGNAL(progress(short)),
+		     this, SLOT(handleCheckForUpdateProgress));
+	   
 	emit error(code, Action::CheckForUpdate); 
 }
 
@@ -370,7 +377,12 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
 	       this, SLOT(handleCheckForUpdateError(short)));
     disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
 		   this, SLOT(handleCheckForUpdateError(short)));
-
+    disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
+		    this, &QAppImageUpdatePrivate::handleCheckForUpdateProgress);
+    disconnect(m_ControlFileParser.data(), SIGNAL(progress(short)),
+		     this, SLOT(handleCheckForUpdateProgress));
+	   
+	
     // Can this happen without an error? 
     if(info.isEmpty()) {
         return;
