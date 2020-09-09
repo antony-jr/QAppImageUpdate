@@ -95,7 +95,7 @@ void RangeReplyPrivate::cancel() {
 //=================================
 
 void RangeReplyPrivate::resetInternalFlags(bool value) {
-	b_Halted = b_Running = b_Finished = b_CancelRequested = b_Retrying = false;
+	b_Halted = b_Running = b_Finished = b_CancelRequested = b_Retrying = value;
 }
 
 void RangeReplyPrivate::restart() {

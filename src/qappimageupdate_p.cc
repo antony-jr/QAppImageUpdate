@@ -67,47 +67,19 @@ QAppImageUpdatePrivate::QAppImageUpdatePrivate(bool singleThreaded, QObject *par
 
 
     // Update information
-    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
-            this, &QAppImageUpdatePrivate::handleUpdateInformationProgress,
-            Qt::UniqueConnection);
-    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::error,
-            this, &QAppImageUpdatePrivate::handleUpdateInformationError,
-            (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
     connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::logger,
             this, &QAppImageUpdatePrivate::logger,
             (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
 
     // Control file parsing
-    connect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::progress,
-            this, &QAppImageUpdatePrivate::handleZsyncRemoteControlFileProgress,
-            Qt::UniqueConnection);
-    connect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::error,
-            this, &QAppImageUpdatePrivate::handleZsyncRemoteControlFileError,
-            (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
     connect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::logger,
             this, &QAppImageUpdatePrivate::logger,
             (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
 
     // Delta Writer and Downloader
-    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::error,
-            this, &QAppImageUpdatePrivate::handleZsyncWriterError,
-            (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
     connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::logger,
             this, &QAppImageUpdatePrivate::logger,
             (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
-
-    // TODO: We need to figure out some way to avoid this
-    /* Connect the recieveControlFile signal to ZsyncWriter */
-    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
-            this, &QAppImageUpdatePrivate::progress,
-            (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
-    connect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::zsyncInformation,
-            m_DeltaWriter.data(), &ZsyncWriterPrivate::setConfiguration,
-            (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
-    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finishedConfiguring,
-            m_DeltaWriter.data(), &ZsyncWriterPrivate::start,
-            (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
-
 }
 
 QAppImageUpdatePrivate::QAppImageUpdatePrivate(const QString &AppImagePath, bool singleThreaded, QObject *parent)
@@ -228,15 +200,17 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
     b_Started = b_Running = true;
     b_Canceled = false;
 
-    if(action = Action::GetEmbeddedInfo){
+    if(action == Action::GetEmbeddedInfo){
 	    n_CurrentAction = action;
 	    connect(m_UpdateInformation.data(),  &AppImageUpdateInformationPrivate::info,
 		this, &QAppImageUpdatePrivate::redirectEmbeddedInformation,
 		Qt::QueuedConnection);
 
+	    /*
+	     * TODO: GetEmbeddedInfo progress handle
 	    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
 		    this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress);
-
+	    */
 	    connect(m_UpdateInformation.data(),  &AppImageUpdateInformationPrivate::error,
 		this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoError,
 		Qt::QueuedConnection);
@@ -251,9 +225,11 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
 
+	    /*
 	    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
 		    this, &QAppImageUpdatePrivate::handleCheckForUpdateProgress);
 
+	     */
 	    connect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
 		     m_ControlFileParser.data(), SLOT(getUpdateCheckInformation(void)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
@@ -261,9 +237,12 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 	    connect(m_ControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
 		     this, SLOT(redirectUpdateCheck(QJsonObject)),
                      (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
-	   
+	  
+	    /*
+	     * TODO: Check for update Progress Handle 
 	    connect(m_ControlFileParser.data(), SIGNAL(progress(short)),
 		     this, SLOT(handleCheckForUpdateProgress));
+	    */
 
 	    connect(m_ControlFileParser.data(), SIGNAL(error(short)),
 		     this, SLOT(handleCheckForUpdateError(short)),
@@ -295,10 +274,13 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
                     m_DeltaWriter.data(), &ZsyncWriterPrivate::start,
                     (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
 
-	    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finishedConfiguring,
+	    /*
+	    TODO: Update Handle
+	    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
                     this, &QAppImageUpdatePrivate::handleUpdateProgress,
                     (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
 
+	    */
 	    getMethod(m_UpdateInformation.data(), "getInfo(void)")
 		    .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
 
@@ -328,7 +310,6 @@ void QAppImageUpdatePrivate::cancel(void) {
 
 /// * * *
 /// Private Slots
-
 void QAppImageUpdatePrivate::handleGetEmbeddedInfoError(short code) {
 	b_Canceled = b_Started = b_Running = false;	
 	b_Finished = false;

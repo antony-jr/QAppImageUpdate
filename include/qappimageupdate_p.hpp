@@ -14,13 +14,17 @@
 #include "zsyncremotecontrolfileparser_p.hpp"
 #include "zsyncwriter_p.hpp"
 
-class QAppImageUpdatePrivate : public QAppImageUpdateCodes, public QObject {
+class QAppImageUpdatePrivate : public QObject {
 	Q_OBJECT
 public:
     QAppImageUpdatePrivate(bool singleThreaded = true, QObject *parent = nullptr);
     QAppImageUpdatePrivate(const QString &AppImagePath, bool singleThreaded = true, QObject *parent = nullptr);
     QAppImageUpdatePrivate(QFile *AppImage, bool singleThreaded = true, QObject *parent = nullptr);
     ~QAppImageUpdatePrivate();
+
+    struct Action : public QAppImageUpdateCodes::Action { };
+    struct GuiFlag : public QAppImageUpdateCodes::GuiFlag { };
+
 
 public Q_SLOTS:
     void setAppImage(const QString&);
@@ -35,16 +39,16 @@ public Q_SLOTS:
     void clear();
 
 private Q_SLOTS:
-    void handleGetEmbeddedInfoError(short code);
-    void redirectEmbeddedInformation(QJsonObject info);
-    void handleCheckForUpdateError(short code);
-    void redirectUpdateCheck(QJsonObject info);
+    void handleGetEmbeddedInfoError(short); 
+    void redirectEmbeddedInformation(QJsonObject);
+    void handleCheckForUpdateError(short);
+    void redirectUpdateCheck(QJsonObject);
 
 Q_SIGNALS:
     void started(short);
     void canceled(short);
     void finished(QJsonObject info, short);
-    void progress(int, qint64, qint64, double, QString, short);
+    void progress(int, qint64, qint64, int, QString, short);
     void logger(QString, QString); 
     void error(short, short);
 private:

@@ -43,7 +43,7 @@ void QAppImageUpdate::setAppImage(QFile *AppImage) {
     getMethod(m_Private.data(), "setAppImage(QFile*)")
 	    .invoke(m_Private.data(), 
 		    Qt::QueuedConnection,
-                    Q_ARG(QFile,AppImage)); 
+                    Q_ARG(QFile*,AppImage)); 
 }
 void QAppImageUpdate::setShowLog(bool boolean) {
     getMethod(m_Private.data(), "setShowLog(bool)")
@@ -66,9 +66,7 @@ void QAppImageUpdate::setProxy(const QNetworkProxy &Proxy) {
                     Q_ARG(QNetworkProxy, Proxy));
 }
 
-void QAppImageUpdate::start(short action = Action::Update, 
-		            int flags = GuiFlag::Default,
-		            QByteArray icon = QByteArray()) {
+void QAppImageUpdate::start(short action, int flags, QByteArray icon) {
     getMethod(m_Private.data(), "start(short, int, QByteArray)")
 	    .invoke(m_Private.data(), 
 		    Qt::QueuedConnection,
