@@ -3,7 +3,8 @@
 #include "helpers_p.hpp"
 
 QAppImageUpdate::QAppImageUpdate(bool singleThreaded, QObject *parent) {
-	m_Private.reset(new QAppImageUpdatePrivate(singleThreaded = singleThreaded, parent=parent));
+	m_Private = QSharedPointer<QAppImageUpdatePrivate>(
+			new QAppImageUpdatePrivate(singleThreaded = singleThreaded, parent=parent));
 	auto s = m_Private.data();
 
 	connect(s, &QAppImageUpdatePrivate::started,

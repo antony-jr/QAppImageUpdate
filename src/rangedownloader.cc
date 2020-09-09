@@ -2,9 +2,9 @@
 #include "rangedownloader_p.hpp"
 #include "helpers_p.hpp"
 
-RangeDownloader::RangeDownloader(QObject *parent) 
+RangeDownloader::RangeDownloader(QNetworkAccessManager *manager, QObject *parent) 
 		: QObject(parent) {
-		m_Private.reset(new RangeDownloaderPrivate);
+		m_Private = QSharedPointer<RangeDownloaderPrivate>(new RangeDownloaderPrivate(manager));
 		auto obj = m_Private.data();
 
 		connect(obj, &RangeDownloaderPrivate::started, 
@@ -49,25 +49,12 @@ void RangeDownloader::setFullDownload(bool choice){
                     Q_ARG(bool,choice));
 }
 
-void RangeDownloader::setRequiredRanges(const QVector<QPair<qint32, qint32>> &ranges) {
-    getMethod(m_Private.data(), "setRequiredRanges(const QVector<QPair<qint32, qint32>>&)")
-	    .invoke(m_Private.data(),
-                    Qt::QueuedConnection,
-                    Q_ARG(QVector<QPair<qint32, qint32>>,ranges));
-}	
-
 void RangeDownloader::appendRange(qint32 from, qint32 to) {
     getMethod(m_Private.data(), "appendRange(qint32,qint32)")
 	    .invoke(m_Private.data(),
                     Qt::QueuedConnection,
                     Q_ARG(qint32,from), Q_ARG(qint32,to));
 }	
-void RangeDownloader::appendRange(QPair<qint32, qint32> range) {
-    getMethod(m_Private.data(), "appendRange(QPair<qint32,qint32>)")
-	    .invoke(m_Private.data(),
-                    Qt::QueuedConnection,
-                    Q_ARG(QPair<qint32, qint32>,range));
-}
 
 void RangeDownloader::start() {
     getMethod(m_Private.data(), "start(void)")

@@ -15,7 +15,7 @@ RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPai
 			Qt::QueuedConnection);
 		connect(reply, SIGNAL(finished()),
 			this, SLOT(handleFinish),
-			Qt::QueuedConnenction);
+			Qt::QueuedConnection);
 		connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
 			this, SLOT(handleError(QNetworkReply::NetworkError)),
 			Qt::QueuedConnection);
@@ -48,7 +48,7 @@ void RangeReplyPrivate::destroy() {
 		}	
 		else if(b_Running) {	
 			m_Reply->disconnect();
-			m_Eeply->abort();
+			m_Reply->abort();
 		}
 		
 		resetInternalFlags();	
@@ -114,7 +114,7 @@ void RangeReplyPrivate::restart() {
 			Qt::QueuedConnection);
 		connect(reply, SIGNAL(finished()),
 			this, SLOT(handleFinish),
-			Qt::QueuedConnenction);
+			Qt::QueuedConnection);
 		connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
 			this, SLOT(handleError(QNetworkReply::NetworkError)),
 			Qt::QueuedConnection);
@@ -146,7 +146,7 @@ void RangeReplyPrivate::handleError(QNetworkReply::NetworkError code) {
 			return;
 		}
 
-		if(code == QNetworkReply::OperationCanceled || b_CancelRequested) {
+		if(code == QNetworkReply::OperationCanceledError || b_CancelRequested) {
 			m_Data->clear();
 			m_Reply->disconnect();
 

@@ -1,14 +1,14 @@
 #ifndef RANGE_REPLY_HPP_INCLUDED
 #define RANGE_REPLY_HPP_INCLUDED
 #include <QObject>
-#include <QScopedPointer>
+#include <QSharedPointer>
 #include <QNetworkReply>
 
 class RangeReplyPrivate; // Forward Declare.
 
 class RangeReply : public QObject { 
 	Q_OBJECT
-	QScopedPointer<RangeReplyPrivate> m_Private;
+	QSharedPointer<RangeReplyPrivate> m_Private;
 public:
 	RangeReply(int, QNetworkReply*, const QPair<qint32, qint32>&);
 	~RangeReply();

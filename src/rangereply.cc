@@ -4,7 +4,8 @@
 
 RangeReply::RangeReply(int index, QNetworkReply *reply, const QPair<qint32, qint32> &range)
 	 	: QObject() {
-	m_Private.reset(new RangeReplyPrivate(index, reply, range));
+	m_Private = QSharedPointer<RangeReplyPrivate>(
+			new RangeReplyPrivate(index, reply, range));
 		
 	auto ptr = m_Private.data();
 	connect(ptr, &RangeReplyPrivate::restarted,
@@ -35,7 +36,7 @@ void RangeReply::destroy() {
 
 void RangeReply::retry(int timeout) {
 	    getMethod(m_Private.data(), "retry(int)")
-		.invoke(m_Private.data(), Q_ARG(int, timeout), Qt::QueuedConnection);
+		.invoke(m_Private.data(), Qt::QueuedConnection, Q_ARG(int, timeout));
 	
 }
 

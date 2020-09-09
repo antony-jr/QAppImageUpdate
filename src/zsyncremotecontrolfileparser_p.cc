@@ -575,7 +575,7 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void) {
 
     {
         QString timeStr;
-        STORE_SPLIT(timeStr, ZsyncHeaderList.at(2), "MTime: ", InvalidZsyncMtime);
+        STORE_SPLIT(timeStr, ZsyncHeaderList.at(2), "MTime: ", QAppImageUpdateEnums::Error::InvalidZsyncMtime);
         QLocale locale(QLocale::English, QLocale::UnitedStates);
         m_MTime = locale.toDateTime(timeStr, "ddd, dd MMM yyyy HH:mm:ss +zzz0");
     }
@@ -708,6 +708,7 @@ void ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl(qint64 bytesRec
 	    return;
     }
 
+    auto replyCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     /* Check if the server supports Range requests. */
     b_AcceptRange = reply->hasRawHeader("Accept-Ranges") || replyCode == 206/*HTTP Status code 206 => partial retrival*/;
     if(b_AcceptRange == false) {

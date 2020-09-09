@@ -1,7 +1,7 @@
 #ifndef QAPPIMAGE_UPDATE_HPP_INCLUDED
 #define QAPPIMAGE_UPDATE_HPP_INCLUDED
 #include <QObject>
-#include <QScopedPointer>
+#include <QSharedPointer>
 #include <QString>
 #include <QFile>
 #include <QNetworkProxy>
@@ -49,7 +49,7 @@ Q_SIGNALS:
     void logger(QString, QString); 
     void error(short, short);
 private:
-    QScopedPointer<QAppImageUpdatePrivate> m_Private;
+    QSharedPointer<QAppImageUpdatePrivate> m_Private;
 };
 
 #endif // QAPPIMAGE_UPDATE_HPP_INCLUDED

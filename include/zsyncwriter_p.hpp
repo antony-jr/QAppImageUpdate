@@ -48,9 +48,10 @@
 #include <QUrl>
 #include <QString>
 #include <QScopedPointer>
-#include <QTime>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QTemporaryFile>
+#include <QNetworkAccessManager>
 
 #include "rangedownloader.hpp"
 #include "zsyncinternalstructures_p.hpp"
@@ -58,7 +59,7 @@
 class ZsyncWriterPrivate : public QObject {
     Q_OBJECT
   public:
-    explicit ZsyncWriterPrivate();
+    explicit ZsyncWriterPrivate(QNetworkAccessManager*);
     ~ZsyncWriterPrivate();
   public Q_SLOTS:
     void setShowLog(bool);
@@ -75,6 +76,7 @@ class ZsyncWriterPrivate : public QObject {
 #ifndef LOGGING_DISABLED
     void handleLogMessage(QString, QString);
 #endif // LOGGING_DISABLED
+    void handleCancel();
     bool verifyAndConstructTargetFile();
     void addToRanges(zs_blockid);
     qint32 alreadyGotBlock(zs_blockid);
@@ -93,7 +95,7 @@ class ZsyncWriterPrivate : public QObject {
     zs_blockid nextKnownBlock(zs_blockid);
 
     // For the Range Downloader
-    QVector<QPair<qint32, qint32>> getBlockRanges();
+    bool getBlockRanges();
     void writeBlockRanges(qint32, qint32, QByteArray*);
     void writeSeqRaw(QByteArray*);
 
@@ -147,8 +149,9 @@ class ZsyncWriterPrivate : public QObject {
             s_TargetFileSHA1,
             s_OutputDirectory;
     QScopedPointer<QTemporaryFile> p_TargetFile; /* under construction target file. */
-    QScopedPointer<QTime> p_TransferSpeed;
+    QScopedPointer<QElapsedTimer> p_TransferSpeed;
     QScopedPointer<RangeDownloader> m_RangeDownloader;
+    QNetworkAccessManager *m_Manager;
 #ifndef LOGGING_DISABLED
     QString s_LogBuffer,
             s_LoggerName;

@@ -1,17 +1,18 @@
 #ifndef QAPPIMAGE_UPDATE_PRIVATE_INCLUDED
 #define QAPPIMAGE_UPDATE_PRIVATE_INCLUDED
 #include <QObject>
+#include <QThread>
 #include <QScopedPointer>
 #include <QString>
 #include <QFile>
 #include <QByteArray>
 #include <QNetworkProxy>
+#include <QJsonObject>
 
 #include "qappimageupdatecodes.hpp"
 #include "appimageupdateinformation_p.hpp"
 #include "zsyncremotecontrolfileparser_p.hpp"
 #include "zsyncwriter_p.hpp"
-#include "zsyncblockrangedownloader_p.hpp"
 
 class QAppImageUpdatePrivate : public QAppImageUpdateCodes, public QObject {
 	Q_OBJECT
@@ -33,6 +34,12 @@ public Q_SLOTS:
     void cancel();
     void clear();
 
+private Q_SLOTS:
+    void handleGetEmbeddedInfoError(short code);
+    void redirectEmbeddedInformation(QJsonObject info);
+    void handleCheckForUpdateError(short code);
+    void redirectUpdateCheck(QJsonObject info);
+
 Q_SIGNALS:
     void started(short);
     void canceled(short);
@@ -41,7 +48,7 @@ Q_SIGNALS:
     void logger(QString, QString); 
     void error(short, short);
 private:
-    Action n_CurrentAction = Action::None;
+    int n_CurrentAction = Action::None;
     bool b_Started = false,
 	 b_Finished = false,
 	 b_Canceled = false,
@@ -50,7 +57,6 @@ private:
     QScopedPointer<AppImageUpdateInformationPrivate> m_UpdateInformation;
     QScopedPointer<ZsyncRemoteControlFileParserPrivate> m_ControlFileParser;
     QScopedPointer<ZsyncWriterPrivate> m_DeltaWriter;
-    QScopedPointer<ZsyncBlockRangeDownloaderPrivate> m_BlockDownloader;
     QScopedPointer<QThread> m_SharedThread;
     QScopedPointer<QNetworkAccessManager> m_SharedNetworkAccessManager;
 };

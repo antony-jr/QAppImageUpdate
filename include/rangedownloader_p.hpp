@@ -3,20 +3,20 @@
 #include <QObject>
 #include <QUrl>
 #include <QVector>
+#include <QNetworkAccessManager>
 #include <QNetworkReply>
-#include <QScopedPointer>
+
+#include "rangereply.hpp"
 
 class RangeDownloaderPrivate : public QObject {
 	Q_OBJECT
 public:
-	RangeDownloaderPrivate(QObject *parent = nullptr);
+	RangeDownloaderPrivate(QNetworkAccessManager*, QObject *parent = nullptr);
 	~RangeDownloaderPrivate();
 public Q_SLOTS:
 	void setTargetFileUrl(const QUrl&);
 	void setFullDownload(bool);
-	void setRequiredRanges(const QVector<QPair<qint32, qint32>>&);
 	void appendRange(qint32, qint32);
-	void appendRange(QPair<qint32, qint32>);
 
 	void start();
 	void cancel();
@@ -46,6 +46,8 @@ private:
 	    n_Canceled = -1;
 	QUrl m_Url;
 
+
+	QNetworkAccessManager *m_Manager;
 	QVector<QPair<qint32, qint32>> m_RequiredRanges;
 	QVector<RangeReply*> m_ActiveRequests;
 

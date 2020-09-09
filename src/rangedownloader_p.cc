@@ -1,7 +1,12 @@
+#include <QCoreApplication>
+#include <QThread>
+
 #include "rangedownloader_p.hpp"
 
-RangeDownloaderPrivate::RangeDownloaderPrivate(QObject *parent) 
+RangeDownloaderPrivate::RangeDownloaderPrivate(QNetworkAccessManager *manager, QObject *parent) 
 	: QObject(parent) {
+	m_Manager = manager;
+
 }
 	
 RangeDownloaderPrivate::~RangeDownloaderPrivate() { 
@@ -31,15 +36,7 @@ void RangeDownloaderPrivate::setFullDownload(bool fullDownload) {
 		if(b_Running) { 
 			return;
 		}
-		b_FullDownload = fullDownlaod;
-}
-
-void RangeDownloaderPrivate::setRequiredRanges(const QVector<QPair<qint32, qint32>> &ranges) {
-		if(b_Running) {
-			return;
-		}
-
-		m_RequiredRanges = ranges;
+		b_FullDownload = fullDownload;
 }
 
 void RangeDownloaderPrivate::appendRange(qint32 from, qint32 to) {
@@ -50,18 +47,11 @@ void RangeDownloaderPrivate::appendRange(qint32 from, qint32 to) {
 		m_RequiredRanges.append(qMakePair<qint32, qint32>(from, to));
 }
 
-void RangeDownloaderPrivate::appendRange(QPair<qint32, qint32> range) {
-		if(b_Running) {
-			return;
-		}
-		m_RequiredRanges.append(range);
-}
-
 void RangeDownloaderPrivate::start() {
 		if(b_Running) {
 			return;
 		}
-		b_Running = b_Finished = b_Canceled = false;
+		b_Running = b_Finished = false;
 		n_Active = n_Canceled = -1;		
 
 		QNetworkRequest request;
@@ -173,8 +163,7 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 			 QNetworkRequest request = makeRangeRequest(m_Url, *iter);
 			 ++n_Active;
 			
-			auto rangeReply = new RangeReplyPrivate(n_Active, m_Manager->get(request), *iter);
-			m_RangeReplyCancel.enlist(rangeReply);
+			auto rangeReply = new RangeReply(n_Active, m_Manager->get(request), *iter);
 
 			connect(rangeReply, SIGNAL(canceled(int)),
 				this, SLOT(handleRangeReplyCancel(int)),
@@ -192,6 +181,7 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 				this, SLOT(handleRangeReplyFinished(qint32, qint32, QByteArray*, int)),
 				Qt::QueuedConnection);	
 
+			m_ActiveRequests.append(rangeReply);
 			iter = m_RequiredRanges.erase(iter);			
 		}
 }
@@ -202,8 +192,7 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 void RangeDownloaderPrivate::handleRangeReplyCancel(int index) {
 		--n_Active;
 		if(n_Active == -1) {
-			b_Running = false;
-			b_CancelRequested = false;
+			b_Running = b_Finished = b_CancelRequested = false;
 			emit canceled();
 		}
 }
@@ -218,8 +207,9 @@ void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError c
 		//        a specific threshold
 		if( /* code is not severe and can be retried and max tries is not reached */0) {
 			(m_ActiveRequests.at(index))->retry();
-			m_RRManager.retry(/*Retry interval(in ms)=*/ 10000 /*=10 seconds*/);
 			return;
+		}else{
+			--n_Active;
 		}
 		if(n_Active == -1) {
 			b_Running = b_Finished = b_CancelRequested = false;
@@ -238,7 +228,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 		emit rangeData(from, to, data);
 		if(n_Active == -1) {
 			b_Running = false;
-			b_Finsihed = true;
+			b_Finished = true;
 			emit finished();
 			return;
 		}
@@ -247,7 +237,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 			return;
 
 		auto range = m_RequiredRanges.takeFirst();
-		auto rangeReply = new RangeReplyPrivate(index, m_Manager->get(makeRangeRequest(m_Url, range)), range);
+		auto rangeReply = new RangeReply(index, m_Manager->get(makeRangeRequest(m_Url, range)), range);
 		m_ActiveRequests[index] = rangeReply;
 
 		connect(rangeReply, SIGNAL(canceled(int)),

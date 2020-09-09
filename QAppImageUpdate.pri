@@ -7,11 +7,13 @@ HEADERS += \
     $$PWD/include/zsyncinternalstructures_p.hpp \
     $$PWD/include/zsyncwriter_p.hpp \
     $$PWD/include/rangereply_p.hpp \
+    $$PWD/include/rangereply.hpp \
     $$PWD/include/rangedownloader_p.hpp \
     $$PWD/include/rangedownloader.hpp \
-    $$PWD/include/qappimageupdate_enums.hpp \
+    $$PWD/include/qappimageupdateenums.hpp \
+    $$PWD/include/qappimageupdatecodes.hpp \
+    $$PWD/include/qappimageupdate_p.hpp \
     $$PWD/include/qappimageupdate.hpp \
-    $$PWD/include/qappimageupdate_p.hpp
     $$PWD/include/helpers_p.hpp
 
 SOURCES += \
@@ -19,11 +21,11 @@ SOURCES += \
     $$PWD/src/zsyncremotecontrolfileparser_p.cc \
     $$PWD/src/zsyncwriter_p.cc \
     $$PWD/src/rangereply_p.cc \
+    $$PWD/src/rangereply.cc \
     $$PWD/src/rangedownloader_p.cc \
     $$PWD/src/rangedownloader.cc \
-    $$PWD/src/qappimageupdate_enums.cc \
-    $$PWD/src/qappimageupdate.cc \
     $$PWD/src/qappimageupdate_p.cc \
+    $$PWD/src/qappimageupdate.cc \
     $$PWD/src/helpers_p.cc
 
 

@@ -103,8 +103,9 @@ static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, si
  * Needs a block range downloader in order to construct.
  *
 */
-ZsyncWriterPrivate::ZsyncWriterPrivate()
+ZsyncWriterPrivate::ZsyncWriterPrivate(QNetworkAccessManager *manager)
     : QObject() {
+    m_Manager = manager;
     p_Md4Ctx.reset(new QCryptographicHash(QCryptographicHash::Md4));
 #ifndef LOGGING_DISABLED
     p_Logger.reset(new QDebug(&s_LogBuffer));
@@ -175,10 +176,9 @@ void ZsyncWriterPrivate::handleLogMessage(QString msg, QString path) {
 #endif // LOGGING_DISABLED
 
 // Returns the required ranges
-QVector<QPair<qint32, qint32>> ZsyncWriterPrivate::getBlockRanges() {
+bool ZsyncWriterPrivate::getBlockRanges() {
     if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
-	QVector<QPair<qint32, qint32>> requiredRanges;
-        return requiredRanges;
+        return false;
     }
 
     INFO_START " getBlockRanges : getting required block ranges." INFO_END;
@@ -221,9 +221,7 @@ QVector<QPair<qint32, qint32>> ZsyncWriterPrivate::getBlockRanges() {
      requiredBlocks.removeAll(qMakePair(0, 0));
 
 
-    QVector<QPair<qint32, qint32>> requiredRanges;
-
-    for(auto iter = requiredRanges.constBegin(), end  = requiredRanges.constEnd(); iter != end; ++iter) {
+    for(auto iter = requiredBlocks.constBegin(), end  = requiredBlocks.constEnd(); iter != end; ++iter) {
         auto to = ((*iter).second * n_BlockSize);
 	if(to >= n_TargetFileLength) {
 		to = n_TargetFileLength;
@@ -233,13 +231,13 @@ QVector<QPair<qint32, qint32>> ZsyncWriterPrivate::getBlockRanges() {
 
         INFO_START " getBlockRanges : (" LOGR from LOGR " , " LOGR to LOGR ")." INFO_END;
 
-	requiredRanges.append(qMakePair<qint32, qint32>(from, to));
+	m_RangeDownloader->appendRange(from, to);
         QCoreApplication::processEvents();
     }
 
-    INFO_START " getBlockRanges : requesting " LOGR requiredRanges.size() LOGR " range requests to server." INFO_END;
+    INFO_START " getBlockRanges : requesting " LOGR requiredBlocks.size() LOGR " range requests to server." INFO_END;
 
-    return requiredRanges;
+    return true;
 }
 
 /* Simply writes whatever in downloadedData to the working target file ,
@@ -406,7 +404,6 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
         p_Ranges = nullptr;
         n_Ranges = 0;
     }
-    p_RequiredRanges.clear();
     p_Md4Ctx->reset();
 
     s_SourceFilePath = sourceFilePath;
@@ -444,7 +441,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     INFO_START " setConfiguration : temporary file will temporarily reside at " LOGR p_TargetFile->fileName() LOGR "." INFO_END;
     
     /// Create a range downloader
-    m_RangeDownloader.reset(new RangeDownloader);
+    m_RangeDownloader.reset(new RangeDownloader(m_Manager));
 
     b_Configured = true;    
     emit finishedConfiguring();
@@ -563,7 +560,7 @@ void ZsyncWriterPrivate::start() {
         }
     }
 
-    p_TransferSpeed.reset(new QTime); // Refresh timer.
+    p_TransferSpeed.reset(new QElapsedTimer); // Refresh timer.
 
     if(n_BytesWritten >= n_TargetFileLength) {
         verifyAndConstructTargetFile();
@@ -578,13 +575,18 @@ void ZsyncWriterPrivate::start() {
 		this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
        }else {
        // Partial Download
-       auto ranges = getRequiredRanges();  
-       m_RangeDownloader->setFullDownload(false);
-       m_RangeDownloader->setRequiredRanges(ranges);
+       auto partial = getBlockRanges();
+       m_RangeDownloader->setFullDownload(partial);
 
-       connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
-	       this, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
+       if(partial) {
+       	connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
+		       this, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
        
+       }else{
+	connect(m_RangeDownloader.data(), &RangeDownloader::data,
+		this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
+      
+       }
        }
 
        connect(m_RangeDownloader.data(), &RangeDownloader::finished,
@@ -595,6 +597,13 @@ void ZsyncWriterPrivate::start() {
        m_RangeDownloader->start();
     }
     return;
+}
+
+void ZsyncWriterPrivate::handleCancel() {
+	b_CancelRequested = false;
+	b_Started = false;
+	INFO_START " handleCancel : canceled." INFO_END; 
+	emit canceled();
 }
 
 /*
@@ -613,13 +622,13 @@ void ZsyncWriterPrivate::start() {
 */
 short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks() {
     if(!p_BlockHashes) {
-        return HashTableNotAllocated;
+        return QAppImageUpdateEnums::Error::HashTableNotAllocated;
     } else if(!p_TargetFileCheckSumBlocks ||
               p_TargetFileCheckSumBlocks->size() < (n_WeakCheckSumBytes + n_StrongCheckSumBytes)) {
-        return InvalidTargetFileChecksumBlocks;
+        return QAppImageUpdateEnums::Error::InvalidTargetFileChecksumBlocks;
     } else {
         if(!p_TargetFileCheckSumBlocks->open(QIODevice::ReadOnly))
-            return CannotOpenTargetFileChecksumBlocks;
+            return QAppImageUpdateEnums::Error::CannotOpenTargetFileChecksumBlocks;
     }
 
     p_TargetFileCheckSumBlocks->seek(0);
@@ -631,7 +640,7 @@ short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks() {
         /* Read on. */
         if (p_TargetFileCheckSumBlocks->read(((char *)&r) + 4 - n_WeakCheckSumBytes, n_WeakCheckSumBytes) < 1
                 || p_TargetFileCheckSumBlocks->read((char *)&checksum, n_StrongCheckSumBytes) < 1) {
-            return QbufferIoReadError;
+            return QAppImageUpdateEnums::Error::QbufferIoReadError;
         }
 
         /* Convert to host endian and store.
@@ -688,7 +697,7 @@ short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath, QFile **sou
     /* Check if the file actually exists. */
     if(!seedFile->exists()) {
         delete seedFile;
-        return SourceFileNotFound;
+        return QAppImageUpdateEnums::Error::SourceFileNotFound;
     }
     /* Check if we have the permission to read it. */
     auto perm = seedFile->permissions();
@@ -698,14 +707,14 @@ short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath, QFile **sou
         !(perm & QFileDevice::ReadOther)
     ) {
         delete seedFile;
-        return NoPermissionToReadSourceFile;
+        return QAppImageUpdateEnums::Error::NoPermissionToReadSourceFile;
     }
     /*
      * Finally open the file.
      */
     if(!seedFile->open(QIODevice::ReadOnly)) {
         delete seedFile;
-        return CannotOpenSourceFile;
+        return QAppImageUpdateEnums::Error::CannotOpenSourceFile;
     }
     *sourceFile = seedFile;
     return 0;
@@ -1062,7 +1071,7 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {
         }
 
 
-    p_TransferSpeed.reset(new QTime);
+    p_TransferSpeed.reset(new QElapsedTimer);
     p_TransferSpeed->start();
     while (!file->atEnd()) {
         size_t len;
@@ -1124,7 +1133,7 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {
             break;
         }
     }
-    p_TransferSpeed.reset(new QTime);
+    p_TransferSpeed.reset(new QElapsedTimer);
     file->close();
     free(buf);
     return error;

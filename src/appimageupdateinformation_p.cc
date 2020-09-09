@@ -553,7 +553,7 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
             p_AppImage->deleteLater();
             p_AppImage = nullptr;
             FATAL_START  " setAppImage : no permission(" LOGR perm LOGR ") for reading the given AppImage." FATAL_END;
-            emit(error(QAppImageUpdateEnums::Error::NoReadPermission))
+            emit(error(QAppImageUpdateEnums::Error::NoReadPermission));
             return;
         }
 
