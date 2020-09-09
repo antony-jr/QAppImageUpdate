@@ -221,9 +221,6 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
 	   
-	    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
-		    this, &QAppImageUpdatePrivate::handleCheckForUpdateProgress);
-	    
 	    connect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
 		     m_ControlFileParser.data(), SLOT(getUpdateCheckInformation(void)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
@@ -232,8 +229,8 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 		     this, SLOT(redirectUpdateCheck(QJsonObject)),
                      (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));	 
 	    
-	    connect(m_ControlFileParser.data(), SIGNAL(progress(short)),
-		     this, SLOT(handleCheckForUpdateProgress));
+	    connect(m_ControlFileParser.data(), SIGNAL(progress(int)),
+		     this, SLOT(handleCheckForUpdateProgress(int)));
 	    
 	    connect(m_ControlFileParser.data(), SIGNAL(error(short)),
 		     this, SLOT(handleCheckForUpdateError(short)),
@@ -358,10 +355,8 @@ void QAppImageUpdatePrivate::handleCheckForUpdateError(short code) {
 	       this, SLOT(handleCheckForUpdateError(short)));
   	disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
 		   this, SLOT(handleCheckForUpdateError(short)));
-	disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
-		    this, &QAppImageUpdatePrivate::handleCheckForUpdateProgress);
-	disconnect(m_ControlFileParser.data(), SIGNAL(progress(short)),
-		     this, SLOT(handleCheckForUpdateProgress));
+	disconnect(m_ControlFileParser.data(), SIGNAL(progress(int)),
+		     this, SLOT(handleCheckForUpdateProgress(int)));
 	   
 	emit error(code, Action::CheckForUpdate); 
 }
@@ -377,10 +372,8 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
 	       this, SLOT(handleCheckForUpdateError(short)));
     disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
 		   this, SLOT(handleCheckForUpdateError(short)));
-    disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
-		    this, &QAppImageUpdatePrivate::handleCheckForUpdateProgress);
-    disconnect(m_ControlFileParser.data(), SIGNAL(progress(short)),
-		     this, SLOT(handleCheckForUpdateProgress));
+    disconnect(m_ControlFileParser.data(), SIGNAL(progress(int)),
+		     this, SLOT(handleCheckForUpdateProgress(int)));
 	   
 	
     // Can this happen without an error? 
