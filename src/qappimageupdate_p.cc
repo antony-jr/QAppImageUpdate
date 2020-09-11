@@ -262,13 +262,26 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
                     m_DeltaWriter.data(), &ZsyncWriterPrivate::start,
                     (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
 
-	    /*
-	    TODO: Update Handle
+	    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finished,
+		    this, &QAppImageUpdatePrivate::handleUpdateFinished,
+		    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+
+	    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError,
+		    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+		
+	    connect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError,
+		    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+	    
+	    connect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError,
+		    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+
 	    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
                     this, &QAppImageUpdatePrivate::handleUpdateProgress,
                     (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
 
-	    */
 	    getMethod(m_UpdateInformation.data(), "getInfo(void)")
 		    .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
 
@@ -298,6 +311,14 @@ void QAppImageUpdatePrivate::cancel(void) {
 
 /// * * *
 /// Private Slots
+
+void QAppImageUpdatePrivate::handleUpdateProgress(int percentage, 
+						  qint64 bytesReceived, 
+						  qint64 bytesTotal, 
+						  double speed, 
+						  QString units){
+	emit progress(percentage, bytesReceived, bytesTotal, speed, units, Action::Update);
+}
 
 void QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress(int percentage) {
 	emit progress(percentage, 1, 1, 0, QString(), Action::GetEmbeddedInfo);
@@ -409,4 +430,56 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
 		return;
     }
     emit finished(updateinfo, Action::CheckForUpdate);
+}
+
+void QAppImageUpdatePrivate::handleUpdateError(short ecode) {
+	    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
+		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
+	    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
+		    m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));
+            disconnect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::zsyncInformation,
+                     m_DeltaWriter.data(), &ZsyncWriterPrivate::setConfiguration);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finishedConfiguring,
+                    m_DeltaWriter.data(), &ZsyncWriterPrivate::start);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finished,
+		    this, &QAppImageUpdatePrivate::handleUpdateFinished);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError);	
+	    disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError); 
+	    disconnect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
+                    this, &QAppImageUpdatePrivate::handleUpdateProgress);
+
+	    emit error(ecode, Action::Update);
+}
+
+void QAppImageUpdatePrivate::handleUpdateFinished(QJsonObject info, QString oldVersionPath) {
+	    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
+		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
+	    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
+		    m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));
+            disconnect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::zsyncInformation,
+                     m_DeltaWriter.data(), &ZsyncWriterPrivate::setConfiguration);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finishedConfiguring,
+                    m_DeltaWriter.data(), &ZsyncWriterPrivate::start);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finished,
+		    this, &QAppImageUpdatePrivate::handleUpdateFinished);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError);	
+	    disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError); 
+	    disconnect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
+                    this, &QAppImageUpdatePrivate::handleUpdateProgress);
+
+	QJsonObject result {
+		{"OldVersionPath", oldVersionPath},
+		{"NewVersionPath", info["AbsolutePath"].toString()},
+		{"NewVersionSha1Hash", info["Sha1Hash"].toString()} 
+	};
+
+	emit finished(result, Action::Update);
 }
