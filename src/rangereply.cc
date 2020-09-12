@@ -2,10 +2,10 @@
 #include "rangereply_p.hpp"
 #include "helpers_p.hpp"
 
-RangeReply::RangeReply(int index, QNetworkReply *reply, const QPair<qint32, qint32> &range)
+RangeReply::RangeReply(int index, QNetworkReply *reply, const QPair<qint32, qint32> &range, qint32 blocks)
 	 	: QObject() {
 	m_Private = QSharedPointer<RangeReplyPrivate>(
-			new RangeReplyPrivate(index, reply, range));
+			new RangeReplyPrivate(index, reply, range, blocks));
 		
 	auto ptr = m_Private.data();
 	connect(ptr, &RangeReplyPrivate::restarted,

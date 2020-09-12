@@ -39,12 +39,13 @@ void RangeDownloaderPrivate::setFullDownload(bool fullDownload) {
 		b_FullDownload = fullDownload;
 }
 
-void RangeDownloaderPrivate::appendRange(qint32 from, qint32 to) {
+void RangeDownloaderPrivate::appendRange(qint32 from, qint32 to, qint32 blocks) {
 		if(b_Running) {
 			return;
 		}
 
-		m_RequiredRanges.append(qMakePair<qint32, qint32>(from, to));
+
+		m_RequiredRanges.append(Range(from, to, blocks));
 }
 
 void RangeDownloaderPrivate::start() {
@@ -67,11 +68,9 @@ void RangeDownloaderPrivate::start() {
 
     		auto reply = m_Manager->get(request);
     		connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
-            		this, SLOT(handleUrlCheckError(QNetworkReply::NetworkError)),
-            		Qt::QueuedConnection);
+            		this, SLOT(handleUrlCheckError(QNetworkReply::NetworkError)));
     		connect(reply, SIGNAL(downloadProgress(qint64, qint64)),
-            		this, SLOT(handleUrlCheck(qint64, qint64)),
-            		Qt::QueuedConnection);
+            		this, SLOT(handleUrlCheck(qint64, qint64)));
 		b_Running = true;
 		emit started();
 }
@@ -91,16 +90,14 @@ void RangeDownloaderPrivate::cancel() {
 }
 
 /// Private Slots
-QNetworkRequest RangeDownloaderPrivate::makeRangeRequest(const QUrl &url, const QPair<qint32, qint32> &range) {
-		qint32 fromRange = range.first,
-		       toRange = range.second;		 
+QNetworkRequest RangeDownloaderPrivate::makeRangeRequest(const QUrl &url, const Range &range){
 		QNetworkRequest request;
 
 		request.setUrl(url);
-		if(fromRange || toRange) {
-        		QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(fromRange) + "-";
-        		rangeHeaderValue += QByteArray::number(toRange);
-        		request.setRawHeader("Range", rangeHeaderValue);
+		if(range.from || range.to) {
+			QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(range.from) + "-";
+        		rangeHeaderValue += QByteArray::number(range.to);
+			request.setRawHeader("Range", rangeHeaderValue);
     		}
     		request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     		request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
@@ -153,17 +150,20 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 		// Now we will determine the maximum no. of requests to be handled at 
 		// a time.
 		int max_allowed = QThread::idealThreadCount() * 2;
+		int i = n_Done;
 
-		for(auto iter = m_RequiredRanges.begin(),
-			 end = m_RequiredRanges.end();
-			 iter != end;) {
+		for(;i < m_RequiredRanges.size(); ++i){
 			 if(n_Active + 1 >= max_allowed) {
 				 break;
 			 }
-			 QNetworkRequest request = makeRangeRequest(m_Url, *iter);
+			 
+			 auto range = m_RequiredRanges.at(i);
+
+			 QNetworkRequest request = makeRangeRequest(m_Url, range);
 			 ++n_Active;
 			
-			auto rangeReply = new RangeReply(n_Active, m_Manager->get(request), *iter);
+			auto rangeReply = new RangeReply(n_Active, m_Manager->get(request), 
+							 qMakePair<qint32, qint32>(range.from, range.to), range.blocks);
 
 			connect(rangeReply, SIGNAL(canceled(int)),
 				this, SLOT(handleRangeReplyCancel(int)),
@@ -177,13 +177,13 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int)),
 				Qt::QueuedConnection);
 
-			connect(rangeReply, SIGNAL(finished(qint32, qint32, QByteArray*, int)),
-				this, SLOT(handleRangeReplyFinished(qint32, qint32, QByteArray*, int)),
+			connect(rangeReply, SIGNAL(finished(qint32, qint32,qint32, QByteArray*, int)),
+				this, SLOT(handleRangeReplyFinished(qint32, qint32,qint32, QByteArray*, int)),
 				Qt::QueuedConnection);	
 
 			m_ActiveRequests.append(rangeReply);
-			iter = m_RequiredRanges.erase(iter);			
 		}
+		n_Done = i;
 }
 
 /// ----
@@ -217,7 +217,7 @@ void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError c
 		}
 }
 
-void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QByteArray *data, int index) {
+void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, qint32 blocks, QByteArray *data, int index) {
 		--n_Active;
 		if(b_CancelRequested) {
 			return;
@@ -225,7 +225,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 
 		(m_ActiveRequests.at(index))->destroy();
 
-		emit rangeData(from, to, data);
+		emit rangeData(from, to, blocks, data);
 		if(n_Active == -1) {
 			b_Running = false;
 			b_Finished = true;
@@ -233,11 +233,13 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 			return;
 		}
 
-		if(m_RequiredRanges.isEmpty())
+		if(n_Done >= m_RequiredRanges.size())
 			return;
 
-		auto range = m_RequiredRanges.takeFirst();
-		auto rangeReply = new RangeReply(index, m_Manager->get(makeRangeRequest(m_Url, range)), range);
+		auto range = m_RequiredRanges.at(n_Done++);
+		QNetworkRequest request = makeRangeRequest(m_Url, range);
+		auto rangeReply = new RangeReply(index, m_Manager->get(request), 
+							qMakePair<qint32, qint32>(range.from, range.to), range.blocks);
 		m_ActiveRequests[index] = rangeReply;
 
 		connect(rangeReply, SIGNAL(canceled(int)),
@@ -252,7 +254,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int)),
 				Qt::QueuedConnection);
 
-		connect(rangeReply, SIGNAL(finished(qint32, qint32, QByteArray*, int)),
-				this, SLOT(handleRangeReplyFinished(qint32, qint32, QByteArray*, int)),
+		connect(rangeReply, SIGNAL(finished(qint32, qint32, qint32, QByteArray*, int)),
+				this, SLOT(handleRangeReplyFinished(qint32, qint32, qint32,  QByteArray*, int)),
 				Qt::QueuedConnection);	
 }

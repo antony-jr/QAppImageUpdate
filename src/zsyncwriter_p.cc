@@ -32,6 +32,8 @@
  * @filename    : zsyncwriter_p.cc
  * @description : This is where the main zsync algorithm is implemented.
 */
+#include <cstdlib>
+
 #include "zsyncwriter_p.hpp"
 #include "qappimageupdateenums.hpp"
 
@@ -182,56 +184,83 @@ bool ZsyncWriterPrivate::getBlockRanges() {
     }
 
     INFO_START " getBlockRanges : getting required block ranges." INFO_END;
-
-    QVector<QPair<qint32, qint32>> requiredBlocks;
-
-    zs_blockid from = 0, to = n_Blocks;
-    requiredBlocks.append(qMakePair(from, to));
-    requiredBlocks.append(qMakePair(0, 0));
     
-    for(qint32 i = 0, n = 1; i < n_Ranges ; ++i) {
-            requiredBlocks.append(qMakePair(0, 0));
-            if (p_Ranges[2 * i] > requiredBlocks.at(n - 1).second)
-                continue;
-            if (p_Ranges[2 * i + 1] < from)
-                continue;
+    QVector<QPair<qint32, qint32>> requiredBlocks;
+    {
 
-            /* Okay, they intersect */
-            if (n == 1 && p_Ranges[2 * i] <= from) {       /* Overlaps the start of our window */
-                requiredBlocks[0].first = p_Ranges[2 * i + 1] + 1;
-            } else {
-                /* If the last block that we still (which is the last window end -1, due
-                 * to half-openness) then this range just cuts the end of our window */
-                if (p_Ranges[2 * i + 1] >= requiredBlocks.at(n - 1).second - 1) {
-                    requiredBlocks[n - 1].second = p_Ranges[2 * i];
-                } else {
-                    /* In the middle of our range, split it */
-                    requiredBlocks[n].first = p_Ranges[2 * i + 1] + 1;
-                    requiredBlocks[n].second = requiredBlocks.at(n-1).second;
-                    requiredBlocks[n-1].second = p_Ranges[2 * i];
-                    n++;
+    int i, n;
+    int alloc_n = 100;
+    zs_blockid from = 0, to = n_Blocks;
+    zs_blockid *r = (zs_blockid*)malloc(2 * alloc_n * sizeof(zs_blockid));
+
+    if (!r)
+        return NULL;
+
+    r[0] = from;
+    r[1] = to;
+    n = 1;
+    /* Note r[2*n-1] is the last range in our prospective list */
+
+    for (i = 0; i < n_Ranges; i++) {
+        if (p_Ranges[2 * i] > r[2 * n - 1])
+            continue;
+        if (p_Ranges[2 * i + 1] < from)
+            continue;
+
+        /* Okay, they intersect */
+        if (n == 1 && p_Ranges[2 * i] <= from) {       /* Overlaps the start of our window */
+            r[0] = p_Ranges[2 * i + 1] + 1;
+        }
+        else {
+            /* If the last block that we still (which is the last window end -1, due
+             * to half-openness) then this range just cuts the end of our window */
+            if (p_Ranges[2 * i + 1] >= r[2 * n - 1] - 1) {
+                r[2 * n - 1] = p_Ranges[2 * i];
+            }
+            else {
+                /* In the middle of our range, split it */
+                r[2 * n] = p_Ranges[2 * i + 1] + 1;
+                r[2 * n + 1] = r[2 * n - 1];
+                r[2 * n - 1] = p_Ranges[2 * i];
+                n++;
+                if (n == alloc_n) {
+                    zs_blockid *r2;
+                    alloc_n += 100;
+                    r2 = (zs_blockid*)realloc(r, 2 * alloc_n * sizeof *r);
+                    if (!r2) {
+                        free(r);
+                        return NULL;
+                    }
+                    r = r2;
                 }
             }
-            QCoreApplication::processEvents();
-     }
+        }
+    }
+    r = (zs_blockid*)realloc(r, 2 * n * sizeof *r);
+    if (n == 1 && r[0] >= r[1]){
+	n = 0;
+    }
+   
+    for(i = 0; i < n; ++i) {
+	    requiredBlocks.append(qMakePair<qint32, qint32>(r[2*i], r[2*i + 1]));
+    }
+    free((void*)r);
+    }
 
-     if (requiredBlocks.at(0).first >= requiredBlocks.at(0).second){
-	    requiredBlocks.clear();
-     }
-     requiredBlocks.removeAll(qMakePair(0, 0));
+
+    qDebug() << requiredBlocks;
 
 
     for(auto iter = requiredBlocks.constBegin(), end  = requiredBlocks.constEnd(); iter != end; ++iter) {
-        auto to = ((*iter).second * n_BlockSize);
-	if(to >= n_TargetFileLength) {
-		to = n_TargetFileLength;
-	}	
+	auto to = ((*iter).second) * n_BlockSize - 1;
+	auto from = (*iter).first * n_BlockSize;
 
-        auto from = (*iter).first * n_BlockSize;
 
         INFO_START " getBlockRanges : (" LOGR from LOGR " , " LOGR to LOGR ")." INFO_END;
 
-	m_RangeDownloader->appendRange(from, to);
+	auto blocks = (*iter).second - (*iter).first;
+
+	m_RangeDownloader->appendRange(from, to, blocks);
         QCoreApplication::processEvents();
     }
 
@@ -266,7 +295,7 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData) {
  * from the zsync control file.
  * Incase there is a mismatch , Only verified blocks are written the working target file.
 */
-void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByteArray *downloadedData) {
+void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, qint32 blocks,  QByteArray *downloadedData) {
 
 
     unsigned char md4sum[CHECKSUM_SIZE];
@@ -283,8 +312,12 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
     QScopedPointer<QBuffer> buffer(new QBuffer(downloadedData));
     buffer->open(QIODevice::ReadOnly);
 
-    zs_blockid bfrom = fromRange >> n_BlockShift,
-               bto   = toRange >> n_BlockShift;
+   
+    
+    zs_blockid bfrom = fromRange / n_BlockSize,
+               bto   = bfrom + blocks - 1;
+
+    qDebug() << "Bfrom:: " << bfrom << "Bto:: " << bto;
 
     /*
      * Only check MD4 sum if the to blockid is not the end blockid,
@@ -297,11 +330,21 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
     */
     for (zs_blockid x = bfrom; x <= bto; ++x) {
             QByteArray blockData = buffer->read(n_BlockSize);
-            calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);
-            if(memcmp(&md4sum, &(p_BlockHashes[x].checksum[0]), n_StrongCheckSumBytes)) {
+       	    if(blockData.size() != n_BlockSize){
+		    QByteArray newBlockData;
+		    newBlockData.fill('\0', (n_BlockSize - blockData.size()));
+		    newBlockData.append(blockData);
+		    blockData = newBlockData;
+	    }
+	    calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);
+	    if(memcmp(&md4sum, &(p_BlockHashes[x].checksum[0]), n_StrongCheckSumBytes)) {
                 Md4ChecksumsMatched = false;
-                WARNING_START " writeBlockRanges : md4 checksums mismatch." WARNING_END;
-                if (x > bfrom) {    /* Write any good blocks we did get */
+                WARNING_START " writeBlockRanges : MD4 checksums mismatch." WARNING_END;
+               	WARNING_START " writeBlockRanges : MD4 Sum of Data : " LOGR 
+			QByteArray((const char *)(&md4sum[0])).toHex() WARNING_END;
+	    	WARNING_START " writeBlockRanges : MD4 Sum of Required :  " LOGR 
+			QByteArray((const char *)(&(p_BlockHashes[x].checksum[0]))).toHex() WARNING_END;
+		if (x > bfrom) {    /* Write any good blocks we did get */
                     INFO_START " writeBlockRanges : only writting good blocks. " INFO_END;
                     writeBlocks((const unsigned char*)downloaded->constData(), bfrom, x - 1);
                 }
@@ -312,7 +355,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
 
     if(Md4ChecksumsMatched) {
         /* All blocks are valid; write them and update our state */
-        writeBlocks((const unsigned char*)downloadedData->constData(), bfrom, bto );
+	writeBlocks((const unsigned char*)downloaded->constData(), bfrom, bto);
     }
 
     /* Calculate our progress. */
@@ -336,6 +379,9 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, QByt
             sUnit = "MB/s";
         }
         emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);
+    }
+    if(n_BytesWritten >= n_TargetFileLength) {
+	verifyAndConstructTargetFile();
     }
     return;
 }
@@ -561,6 +607,7 @@ void ZsyncWriterPrivate::start() {
     }
 
     p_TransferSpeed.reset(new QElapsedTimer); // Refresh timer.
+    p_TransferSpeed->start();
 
     if(n_BytesWritten >= n_TargetFileLength) {
         verifyAndConstructTargetFile();
@@ -576,7 +623,7 @@ void ZsyncWriterPrivate::start() {
        }else {
        // Partial Download
        auto partial = getBlockRanges();
-       m_RangeDownloader->setFullDownload(partial);
+       m_RangeDownloader->setFullDownload(!partial);
 
        if(partial) {
        	connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
@@ -589,11 +636,14 @@ void ZsyncWriterPrivate::start() {
        }
        }
 
+       /*
        connect(m_RangeDownloader.data(), &RangeDownloader::finished,
 	       this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection);
+       */
        connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
 	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
 
+       m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
        m_RangeDownloader->start();
     }
     return;

@@ -1,25 +1,26 @@
+#include <QDebug>
 #include "rangereply_p.hpp"
 
-RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPair<qint32, qint32> &range) {
+RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPair<qint32, qint32> &range, qint32 blocks) {
 		n_Index = index;
 		n_FromRange = range.first;
 		n_ToRange = range.second;
+		n_Blocks = blocks;
 		m_Request = reply->request();
 		m_Manager = reply->manager();
 		m_Reply.reset(reply);
 		m_Data.reset(new QByteArray);
 		m_Timer.setSingleShot(true);
 
-		connect(reply, SIGNAL(progress(qint64, qint64)),
+		connect(reply, SIGNAL(downloadProgress(qint64, qint64)),
 			this, SLOT(handleData(qint64, qint64)),
 			Qt::QueuedConnection);
-		connect(reply, SIGNAL(finished()),
-			this, SLOT(handleFinish),
+		connect(reply, SIGNAL(finished(void)),
+			this, SLOT(handleFinish(void)),
 			Qt::QueuedConnection);
 		connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
 			this, SLOT(handleError(QNetworkReply::NetworkError)),
 			Qt::QueuedConnection);
-	
 		//// Connect timer for retry action
 		connect(&m_Timer, SIGNAL(timeout()),
 			 this, SLOT(restart()));
@@ -134,7 +135,7 @@ void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
 		if(m_Reply->error() != QNetworkReply::NoError){
 			return;
 		}
-
+		
 		if(m_Reply->isOpen() && m_Reply->isReadable()){
 			m_Data->append(m_Reply->readAll());
 		}
@@ -182,7 +183,7 @@ void RangeReplyPrivate::handleFinish() {
 		m_Data->append(m_Reply->readAll());
 	
 		/// Finish the range reply	
-		emit finished(n_FromRange, n_ToRange, m_Data.take(), n_Index);
-	
+		emit finished(n_FromRange, n_ToRange, n_Blocks, m_Data.take(), n_Index);	
+		
 		m_Reply->disconnect();
 }

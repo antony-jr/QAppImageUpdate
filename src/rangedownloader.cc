@@ -49,11 +49,11 @@ void RangeDownloader::setFullDownload(bool choice){
                     Q_ARG(bool,choice));
 }
 
-void RangeDownloader::appendRange(qint32 from, qint32 to) {
-    getMethod(m_Private.data(), "appendRange(qint32,qint32)")
+void RangeDownloader::appendRange(qint32 from, qint32 to, qint32 blocks) {
+    getMethod(m_Private.data(), "appendRange(qint32,qint32, qint32)")
 	    .invoke(m_Private.data(),
                     Qt::QueuedConnection,
-                    Q_ARG(qint32,from), Q_ARG(qint32,to));
+                    Q_ARG(qint32,from), Q_ARG(qint32,to), Q_ARG(qint32, blocks));
 }	
 
 void RangeDownloader::start() {

@@ -14,7 +14,7 @@
 class RangeReplyPrivate : public QObject {
 	Q_OBJECT 
 public:
-	RangeReplyPrivate(int, QNetworkReply*, const QPair<qint32, qint32>&);
+	RangeReplyPrivate(int, QNetworkReply*, const QPair<qint32, qint32>&, qint32);
 	~RangeReplyPrivate();
 
 public Q_SLOTS:
@@ -30,8 +30,8 @@ private Q_SLOTS:
 	void handleFinish();
 Q_SIGNALS:
 	void restarted(int);
-	void error(int, int);
-	void finished(qint32, qint32, QByteArray*, int);
+	void error(QNetworkReply::NetworkError, int);
+	void finished(qint32, qint32,qint32, QByteArray*, int);
 	void canceled(int);
 private:
 	bool b_Running = false,
@@ -43,6 +43,7 @@ private:
 	int n_Index;
 	qint32 n_FromRange,
 	       n_ToRange;
+	qint32 n_Blocks;
 	QTimer m_Timer;
 	QScopedPointer<QNetworkReply> m_Reply;
 	QNetworkRequest m_Request;

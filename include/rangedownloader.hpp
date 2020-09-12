@@ -15,7 +15,7 @@ public:
 public Q_SLOTS:
 	void setTargetFileUrl(const QUrl&);
 	void setFullDownload(bool);
-	void appendRange(qint32, qint32);
+	void appendRange(qint32, qint32, qint32);
 
 	void start();
 	void cancel();
@@ -26,6 +26,6 @@ Q_SIGNALS:
 	void error(QNetworkReply::NetworkError);
 
 	void data(QByteArray *);
-	void rangeData(qint32, qint32, QByteArray *);
+	void rangeData(qint32, qint32, qint32, QByteArray *);
 };
 #endif // RANGE_DOWNLOADER_HPP_INCLUDED
