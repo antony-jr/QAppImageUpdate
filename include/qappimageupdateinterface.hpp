@@ -11,8 +11,8 @@ class QAppImageUpdateInterface {
 public Q_SLOTS:
 	virtual void setGuiFlag(int) = 0;
 	virtual void setIcon(QByteArray) = 0;
-	virtual void setAppImage(const QString&) = 0;
-	virtual void setAppImage(QFile*) = 0;
+	virtual void setAppImagePath(const QString&) = 0;
+	virtual void setAppImageFile(QFile*) = 0;
 	virtual void setShowLog(bool) = 0;
 	virtual void setOutputDirectory(const QString&) = 0;
 	virtual void setProxy(const QNetworkProxy&) = 0;

@@ -23,8 +23,8 @@ public:
 public Q_SLOTS:
     void setIcon(QByteArray);
     void setGuiFlag(int);
-    void setAppImage(const QString&);
-    void setAppImage(QFile*);
+    void setAppImagePath(const QString&);
+    void setAppImageFile(QFile*);
     void setShowLog(bool);
     void setOutputDirectory(const QString&);
     void setProxy(const QNetworkProxy&);

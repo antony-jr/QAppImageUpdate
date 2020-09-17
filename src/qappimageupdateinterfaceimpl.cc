@@ -1,7 +1,9 @@
 #ifdef BUILD_AS_PLUGIN
 #include "qappimageupdateinterfaceimpl.hpp"
 
-QAppImageUpdateInterfaceImpl::QAppImageUpdateInterfaceImpl(QObject *parent) {
+QAppImageUpdateInterfaceImpl::QAppImageUpdateInterfaceImpl(QObject *parent)
+	: QObject(parent)
+{
 	m_Private.reset(new QAppImageUpdate);
 
 	auto s = m_Private.data();
@@ -31,11 +33,11 @@ void QAppImageUpdateInterfaceImpl::setGuiFlag(int flags) {
 	m_Private->setGuiFlag(flags);
 }
 
-void QAppImageUpdateInterfaceImpl::setAppImage(const QString &a) {
+void QAppImageUpdateInterfaceImpl::setAppImagePath(const QString &a) {
 	m_Private->setAppImage(a);
 }
 
-void QAppImageUpdateInterfaceImpl::setAppImage(QFile *a) {
+void QAppImageUpdateInterfaceImpl::setAppImageFile(QFile *a) {
 	m_Private->setAppImage(a);
 }
 

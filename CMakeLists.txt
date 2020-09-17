@@ -110,39 +110,39 @@ endif()
 
 # Add pkg-config and install instructions
 configure_file(
-  "${PROJECT_SOURCE_DIR}/other/pkgconfig/AppImageUpdaterBridge.pc.in"
-  "${PROJECT_BINARY_DIR}/AppImageUpdaterBridge.pc"
+	"${PROJECT_SOURCE_DIR}/other/pkgconfig/QAppImageUpdate.pc.in"
+	"${PROJECT_BINARY_DIR}/QAppImageUpdate.pc"
   @ONLY
 )
 
 install(FILES
-  ${PROJECT_BINARY_DIR}/AppImageUpdaterBridge.pc
+	${PROJECT_BINARY_DIR}/QAppImageUpdate.pc
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
 install(TARGETS
 	QAppImageUpdate
-  EXPORT AppImageUpdaterBridgeTargets
+	EXPORT QAppImageUpdateTargets
   DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 install(FILES
   ${toinstall}
-  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/AppImageUpdaterBridge")
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate")
 
 # Add CMake config
-set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/AppImageUpdaterBridge")
+set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/QAppImageUpdate")
 if(NOT NO_GUI)
     set(PACKAGE_FIND_DEPENDENCY_QTWIDGETS "find_dependency(Qt5Widgets ${MIN_QT_VERSION})")
 endif()
 configure_package_config_file(
-  "${PROJECT_SOURCE_DIR}/other/cmake/AppImageUpdaterBridgeConfig.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/AppImageUpdaterBridgeConfig.cmake"
+	"${PROJECT_SOURCE_DIR}/other/cmake/QAppImageUpdateConfig.cmake.in"
+	"${CMAKE_CURRENT_BINARY_DIR}/QAppImageUpdateConfig.cmake"
   INSTALL_DESTINATION  ${CMAKECONFIG_INSTALL_DIR}
 )
 
 install(FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/AppImageUpdaterBridgeConfig.cmake"
+	"${CMAKE_CURRENT_BINARY_DIR}/QAppImageUpdateConfig.cmake"
   DESTINATION "${CMAKECONFIG_INSTALL_DIR}")
 
-install(EXPORT AppImageUpdaterBridgeTargets
-  FILE AppImageUpdaterBridgeTargets.cmake
+install(EXPORT QAppImageUpdateTargets
+	FILE QAppImageUpdateTargets.cmake
   DESTINATION "${CMAKECONFIG_INSTALL_DIR}")

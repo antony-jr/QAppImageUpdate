@@ -5,4 +5,4 @@ find_dependency(Qt5Core @MIN_QT_VERSION@)
 find_dependency(Qt5Network @MIN_QT_VERSION@)
 @PACKAGE_FIND_DEPENDENCY_QTWIDGETS@
 
-include("${CMAKE_CURRENT_LIST_DIR}/AppImageUpdaterBridgeTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/QAppImageUpdateTargets.cmake")
