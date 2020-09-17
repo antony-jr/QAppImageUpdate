@@ -65,6 +65,10 @@ void QAppImageUpdateInterfaceImpl::clear() {
 	m_Private->clear();
 }
 
+QObject *QAppImageUpdateInterfaceImpl::getObject() {
+	return (QObject*)this;
+}
+
 QString QAppImageUpdateInterfaceImpl::errorCodeToString(short a) {
 	return QAppImageUpdate::errorCodeToString(a);
 }
