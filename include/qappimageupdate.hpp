@@ -7,12 +7,12 @@
 #include <QNetworkProxy>
 #include <QByteArray>
 #include <QJsonObject>
+#include <QtPlugin>
 
 /// Enums and Codes
 #include "qappimageupdateenums.hpp"
 #include "qappimageupdatecodes.hpp"
 /// ----
-
 
 /// Forward declare private class.
 class QAppImageUpdatePrivate; 
@@ -24,15 +24,16 @@ public:
     QAppImageUpdate(const QString &AppImagePath, bool singleThreaded = true, QObject *parent = nullptr);
     QAppImageUpdate(QFile *AppImage, bool singleThreaded = true, QObject *parent = nullptr); 
     ~QAppImageUpdate();
-
+    
     struct Action : public QAppImageUpdateCodes::Action { };
     struct GuiFlag : public QAppImageUpdateCodes::GuiFlag { };
     struct Error : public QAppImageUpdateEnums::Error { };
 
     static QString errorCodeToString(short);
     static QString errorCodeToDescriptionString(short); 
-
 public Q_SLOTS:
+    void setIcon(QByteArray);
+    void setGuiFlag(int);
     void setAppImage(const QString&);
     void setAppImage(QFile*);
     void setShowLog(bool);

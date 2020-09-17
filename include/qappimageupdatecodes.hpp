@@ -14,6 +14,7 @@ enum : short {
 
 struct GuiFlag {
 enum {
+	None = 0x0,
         ShowProgressDialog = 0x1,
         ShowBeforeProgress = 0x2,
         ShowUpdateConfirmationDialog = 0x4,

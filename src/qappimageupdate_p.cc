@@ -112,6 +112,22 @@ QAppImageUpdatePrivate::~QAppImageUpdatePrivate() {
     return;
 }
 
+void QAppImageUpdatePrivate::setIcon(QByteArray icon) {
+	if(b_Started || b_Running) {
+		return;
+	}
+
+	m_Icon = icon;	
+}
+
+void QAppImageUpdatePrivate::setGuiFlag(int flag) {
+	if(b_Started || b_Running) {
+		return;
+	}
+
+	n_GuiFlag = flag;
+}
+
 void QAppImageUpdatePrivate::setAppImage(const QString &AppImagePath) {
     if(b_Started || b_Running) {
         return;
@@ -199,6 +215,14 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 
     b_Started = b_Running = true;
     b_Canceled = false;
+
+    if(flags == GuiFlag::None) {
+	    flags = (n_GuiFlag != GuiFlag::None) ? n_GuiFlag : GuiFlag::Default;
+    }
+
+    if(icon.isEmpty() && !m_Icon.isEmpty()){
+	    icon = m_Icon;
+    }
 
     if(action == Action::GetEmbeddedInfo){
 	    n_CurrentAction = action;

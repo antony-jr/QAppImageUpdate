@@ -1,10 +1,14 @@
+#ifdef BUILD_AS_PLUGIN
+#include "qappimageupdateinterface.hpp"
+#endif
 #include "qappimageupdate.hpp"
 #include "qappimageupdate_p.hpp"
 #include "helpers_p.hpp"
 
-QAppImageUpdate::QAppImageUpdate(bool singleThreaded, QObject *parent) {
+QAppImageUpdate::QAppImageUpdate(bool singleThreaded, QObject *parent)
+	: QObject(parent) {
 	m_Private = QSharedPointer<QAppImageUpdatePrivate>(
-			new QAppImageUpdatePrivate(singleThreaded = singleThreaded, parent=parent));
+			new QAppImageUpdatePrivate(singleThreaded = singleThreaded));
 	auto s = m_Private.data();
 
 	connect(s, &QAppImageUpdatePrivate::started,
@@ -32,6 +36,24 @@ QAppImageUpdate::QAppImageUpdate(QFile *AppImage, bool singleThreaded, QObject *
 }
 
 QAppImageUpdate::~QAppImageUpdate() { }
+
+
+
+void QAppImageUpdate::setIcon(QByteArray icon) {
+    getMethod(m_Private.data(), "setIcon(QByteArray)")
+	    .invoke(m_Private.data(), 
+		    Qt::QueuedConnection,
+                    Q_ARG(QByteArray,icon)); 
+}
+
+
+void QAppImageUpdate::setGuiFlag(int flags) {
+    getMethod(m_Private.data(), "setGuiFlag(int)")
+	    .invoke(m_Private.data(), 
+		    Qt::QueuedConnection,
+                    Q_ARG(int,flags)); 
+}
+
 
 void QAppImageUpdate::setAppImage(const QString &AppImagePath) {
     getMethod(m_Private.data(), "setAppImage(const QString&)")

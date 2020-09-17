@@ -27,13 +27,15 @@ public:
 
 
 public Q_SLOTS:
+    void setIcon(QByteArray);
+    void setGuiFlag(int);
     void setAppImage(const QString&);
     void setAppImage(QFile*);
     void setShowLog(bool);
     void setOutputDirectory(const QString&);
     void setProxy(const QNetworkProxy&);
     void start(short action = Action::Update,
-	       int flags = GuiFlag::Default, 
+	       int flags = GuiFlag::None, 
 	       QByteArray icon = QByteArray());
     void cancel();
     void clear();
@@ -56,7 +58,9 @@ Q_SIGNALS:
     void logger(QString, QString); 
     void error(short, short);
 private:
-    int n_CurrentAction = Action::None;
+    QByteArray m_Icon;
+    int n_GuiFlag = GuiFlag::None;
+    short n_CurrentAction = Action::None;
     bool b_Started = false,
 	 b_Finished = false,
 	 b_Canceled = false,

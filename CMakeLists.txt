@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
-project(QAppImageUpdate VERSION 1.1.5)
+project(QAppImageUpdate VERSION 2.0.0)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -39,33 +39,36 @@ include_directories(${CMAKE_BINARY_DIR})
 
 SET(source)
 list(APPEND source
-    src/appimagedeltarevisioner.cc
-    src/appimagedeltarevisioner_p.cc
-    src/zsyncblockrangedownloader_p.cc
+    src/qappimageupdate.cc
+    src/qappimageupdate_p.cc
+    src/rangereply.cc
+    src/rangereply_p.cc
+    src/rangedownloader.cc
+    src/rangedownloader_p.cc
     src/zsyncremotecontrolfileparser_p.cc
     src/appimageupdateinformation_p.cc
-    src/zsyncblockrangereply_p.cc
     src/zsyncwriter_p.cc
-    src/appimageupdaterbridge_enums.cc
     src/helpers_p.cc
-    include/appimagedeltarevisioner.hpp
-    include/appimageupdaterbridge.hpp
-    include/appimagedeltarevisioner_p.hpp
-    include/zsyncblockrangereply_p.hpp
+    include/qappimageupdate.hpp
+    include/qappimageupdate_p.hpp
+    include/rangereply.hpp
+    include/rangereply_p.hpp
     include/zsyncremotecontrolfileparser_p.hpp
     include/appimageupdateinformation_p.hpp
-    include/zsyncblockrangedownloader_p.hpp
+    include/rangedownloader.hpp
+    include/rangedownloader_p.hpp
     include/zsyncinternalstructures_p.hpp
     include/zsyncwriter_p.hpp
-    include/appimageupdaterbridge_enums.hpp
+    include/qappimageupdatecodes.hpp
+    include/qappimageupdateenums.hpp
     include/helpers_p.hpp)
 
 SET(toinstall)
 list(APPEND toinstall
-    AppImageUpdaterBridge
-    include/appimageupdaterbridge.hpp
-    include/appimageupdaterbridge_enums.hpp
-    include/appimagedeltarevisioner.hpp
+    QAppImageUpdate
+    include/qappimageupdate.hpp
+    include/qappimageupdateenums.hpp
+    include/qappimageupdatecodes.hpp
 )	
 
 if(LOGGING_DISABLED)
@@ -88,20 +91,20 @@ endif()
 if(BUILD_AS_PLUGIN)
    message("-- [*] IMPORTANT: Building as a Qt Plugin.")
    add_definitions(-DBUILD_AS_PLUGIN)
-   list(APPEND source src/appimageupdaterbridge.cc
-	              include/appimageupdaterbridge_p.hpp
-	              include/appimageupdaterbridgeinterface.hpp)
-   add_library(AppImageUpdaterBridge SHARED ${source})
+   list(APPEND source include/qappimageupdateinterface.hpp
+	              include/qappimageupdateinterfaceimpl.hpp
+		      src/qappimageupdateinterfaceimpl.cc)
+   add_library(QAppImageUpdate SHARED ${source})
 else()
-    add_library(AppImageUpdaterBridge ${source})
+	add_library(QAppImageUpdate ${source})
 endif()
 
-target_link_libraries(AppImageUpdaterBridge PUBLIC Qt5::Core Qt5::Network)
-target_include_directories(AppImageUpdaterBridge INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include>")
-target_include_directories(AppImageUpdaterBridge INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/AppImageUpdaterBridge>" )
+target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network)
+target_include_directories(QAppImageUpdate INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include>")
+target_include_directories(QAppImageUpdate INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate>" )
 
 if(NOT NO_GUI)
-    target_link_libraries(AppImageUpdaterBridge PUBLIC Qt5::Widgets)
+	target_link_libraries(QAppImageUpdate PUBLIC Qt5::Widgets)
 endif()
 
 
@@ -117,7 +120,7 @@ install(FILES
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 
 install(TARGETS
-  AppImageUpdaterBridge
+	QAppImageUpdate
   EXPORT AppImageUpdaterBridgeTargets
   DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 

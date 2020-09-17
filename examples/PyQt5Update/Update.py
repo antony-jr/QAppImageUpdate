@@ -13,7 +13,7 @@ app = QCoreApplication(sys.argv)
 # Try to load the plugin from predefined 
 # Qt Plugin paths.
 loader = QPluginLoader()
-loader.setFileName('libAppImageUpdaterBridge')
+loader.setFileName('libQAppImageUpdate')
 if not loader.load():
     try:
         plugin_path = os.eviron['PLUGIN_PATH']

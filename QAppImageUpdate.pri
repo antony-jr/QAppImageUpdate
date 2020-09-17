@@ -53,6 +53,11 @@ BUILD_AS_PLUGIN {
 	message(QAppImageUpdate will be built as an Qt Plugin)
 	CONFIG -= staticlib
 	CONFIG += plugin
-	DEFINES += BUILD_AS_PLUGIN
-	OTHER_FILES = $$PWD/QAppImageUpdate.json
+	DEFINES += BUILD_AS_PLUGIN	
+	OTHER_FILES += $$PWD/QAppImageUpdate.json
+
+	HEADERS += $$PWD/include/qappimageupdateinterface.hpp \
+                   $$PWD/include/qappimageupdateinterfaceimpl.hpp
+
+	SOURCES += $$PWD/src/qappimageupdateinterfaceimpl.cc
 }
