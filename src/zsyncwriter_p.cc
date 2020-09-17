@@ -185,9 +185,6 @@ bool ZsyncWriterPrivate::getBlockRanges() {
 
     INFO_START " getBlockRanges : getting required block ranges." INFO_END;
     
-    QVector<QPair<qint32, qint32>> requiredBlocks;
-    {
-
     int i, n;
     int alloc_n = 100;
     zs_blockid from = 0, to = n_Blocks;
@@ -242,30 +239,20 @@ bool ZsyncWriterPrivate::getBlockRanges() {
     }
    
     for(i = 0; i < n; ++i) {
-	    requiredBlocks.append(qMakePair<qint32, qint32>(r[2*i], r[2*i + 1]));
-    }
-    free((void*)r);
-    }
-
-
-    qDebug() << requiredBlocks;
-
-
-    for(auto iter = requiredBlocks.constBegin(), end  = requiredBlocks.constEnd(); iter != end; ++iter) {
-	auto to = ((*iter).second) * n_BlockSize - 1;
-	auto from = (*iter).first * n_BlockSize;
+	// Note: to = to * blocksize - 1; As given by author.
+	auto to = r[2*i + 1];
+	auto from = r[2*i];
 
 
         INFO_START " getBlockRanges : (" LOGR from LOGR " , " LOGR to LOGR ")." INFO_END;
 
-	auto blocks = (*iter).second - (*iter).first;
-
-	m_RangeDownloader->appendRange(from, to, blocks);
+	m_RangeDownloader->appendRange(from, to);
         QCoreApplication::processEvents();
     }
 
-    INFO_START " getBlockRanges : requesting " LOGR requiredBlocks.size() LOGR " range requests to server." INFO_END;
-
+    INFO_START " getBlockRanges : requesting " LOGR n LOGR " requests to server." INFO_END;
+    
+    free((void*)r);
     return true;
 }
 
@@ -285,7 +272,12 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData) {
         return;
     }
 
-    p_TargetFile->write(*(data.data()));
+    // Not to be confused with writeBlocks method
+    // which updates n_BytesWritten by itself.
+    n_BytesWritten = p_TargetFile->write(*(data.data()));
+    if(n_BytesWritten >= n_TargetFileLength) {
+        verifyAndConstructTargetFile();
+    }
     return;
 }
 
@@ -295,7 +287,7 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData) {
  * from the zsync control file.
  * Incase there is a mismatch , Only verified blocks are written the working target file.
 */
-void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, qint32 blocks,  QByteArray *downloadedData) {
+void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByteArray *downloadedData) {
 
 
     unsigned char md4sum[CHECKSUM_SIZE];
@@ -314,20 +306,35 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, qint
 
    
     
-    zs_blockid bfrom = fromRange / n_BlockSize,
-               bto   = bfrom + blocks - 1;
+    // In the original code the author uses the similar with the following equation,
+    // bfrom = rangeFrom / blocksize
+    // bto = bfrom + blocks - 1 .. (1)
+    //
+    // Such that blocks = bto - bfrom .. (2)
+    //
+    // If we substitute (2) in (1) we get,
+    // bto = bfrom + bto - bfrom - 1
+    //     = bto - 1 .. (3)
+    //
+    // Hence I've used bto = <original to block value> - 1;
+    //
+    //
+    // Reason for using this is, the writeBlock function which writes the
+    // given data to the actual working block uses the following equation as
+    // length
+    //
+    // length = bto - brom + 1 .. (4)
+    // 
+    // Equating (3) in (4) we get,
+    // length = bfrom + bto - bfrom - bfrom - 1 + 1
+    //        = bto - bfrom
+    //        = actual no. of blocks got.
+    zs_blockid bfrom = fromBlock,
+               bto   = toBlock - 1;
+
 
     qDebug() << "Bfrom:: " << bfrom << "Bto:: " << bto;
 
-    /*
-     * Only check MD4 sum if the to blockid is not the end blockid,
-     * If we are writting the end blockid then simply write it to file,
-     * Later the final checksum will verify everything anyways.
-     * This is because the end block md4 sum is not always accurate to the target file's end block md4 sum
-     * since the fetched data might not have zeros filled up, Therefore the md4 checks always
-     * fail on the end block which makes it impossible to finish the delta update
-     * eventhough everything is authentic.
-    */
     for (zs_blockid x = bfrom; x <= bto; ++x) {
             QByteArray blockData = buffer->read(n_BlockSize);
        	    if(blockData.size() != n_BlockSize){
@@ -354,32 +361,10 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromRange, qint32 toRange, qint
     }
 
     if(Md4ChecksumsMatched) {
-        /* All blocks are valid; write them and update our state */
 	writeBlocks((const unsigned char*)downloaded->constData(), bfrom, bto);
     }
 
-    /* Calculate our progress. */
-    {
-        qint64 bytesReceived = n_BytesWritten, bytesTotal = n_TargetFileLength;
-        QString sUnit;
-        int nPercentage = static_cast<int>(
-                              (static_cast<float>
-                               (bytesReceived) * 100.0
-                              ) / static_cast<float>
-                              (bytesTotal)
-                          );
-        double nSpeed =  bytesReceived * 1000.0 / p_TransferSpeed->elapsed();
-        if (nSpeed < 1024) {
-            sUnit = "bytes/sec";
-        } else if (nSpeed < 1024 * 1024) {
-            nSpeed /= 1024;
-            sUnit = "kB/s";
-        } else {
-            nSpeed /= 1024 * 1024;
-            sUnit = "MB/s";
-        }
-        emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);
-    }
+
     if(n_BytesWritten >= n_TargetFileLength) {
 	verifyAndConstructTargetFile();
     }
@@ -638,11 +623,14 @@ void ZsyncWriterPrivate::start() {
 
        /*
        connect(m_RangeDownloader.data(), &RangeDownloader::finished,
-	       this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection);
-       */
+	       this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection); */
        connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
 	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
 
+       connect(m_RangeDownloader.data(), &RangeDownloader::progress,
+	       this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
+
+       m_RangeDownloader->setBlockSize(n_BlockSize);
        m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
        m_RangeDownloader->start();
     }
@@ -1385,6 +1373,13 @@ void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom
     if(!p_TargetFile->isOpen() || !p_TargetFile->autoRemove())
         return;
 
+    // Equation of length with
+    // bto = <original bto> - 1;
+    // bfrom = <original bfrom>;
+    //
+    // len = <original bto> - 1 - bfrom + 1
+    //     = <original bto> - bfrom
+    //     = actual no. of blocks got.
 
     off_t len = ((off_t) (bto - bfrom + 1)) << n_BlockShift;
     off_t offset = ((off_t)bfrom) << n_BlockShift;

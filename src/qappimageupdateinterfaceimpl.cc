@@ -65,6 +65,58 @@ void QAppImageUpdateInterfaceImpl::clear() {
 	m_Private->clear();
 }
 
+int QAppImageUpdateInterfaceImpl::getConstant(const QString &constant) {
+	int r = 0;
+	auto split = constant.split("::");
+	if(split.size() != 2) {
+		return r;
+	}
+
+	auto type = split[0].toLower();
+	auto constName = split[1].toLower();
+	
+	if(type == QString::fromUtf8("action")) {
+		if(constName == QString::fromUtf8("getembeddedinfo")){
+			r = QAppImageUpdate::Action::GetEmbeddedInfo;
+		}else if(constName == QString::fromUtf8("checkforupdate")){
+			r = QAppImageUpdate::Action::CheckForUpdate;
+		}else if(constName == QString::fromUtf8("update")){
+			r = QAppImageUpdate::Action::Update;
+		}else if(constName == QString::fromUtf8("updatewithgui")){
+			r = QAppImageUpdate::Action::UpdateWithGUI;
+		}else{
+			r = 0;
+		}
+	}else if(type == QString::fromUtf8("guiflag")){
+
+		if(constName == QString::fromUtf8("showprogressdialog")){
+			r = QAppImageUpdate::GuiFlag::ShowProgressDialog
+		} else if(constName == QString::fromUtf8("showbeforeprogress")){
+			r = QAppImageUpdate::GuiFlag::ShowBeforeProgress;
+		} else if(constName == QString::fromUtf8("showupdateconfirmationdialog")){
+			r = QAppImageUpdate::GuiFlag::ShowUpdateConfirmationDialog;
+		} else if(constName == QString::fromUtf8("showfinisheddialog")){
+			r = QAppImageUpdate::GuiFlag::ShowFinishedDialog;
+		} else if(constName == QString::fromUtf8("showerrordialog")){
+			r = QAppImageUpdate::GuiFlag::ShowErrorDialog;
+		} else if(constName == QString::fromUtf8("alertwhenauthorizationisrequired")){
+			r = QAppImageUpdate::GuiFlag::AlertWhenAuthorizationIsRequired;
+		} else if(constName == QString::fromUtf8("notifywhennoupdateisavailable")){
+			r = QAppImageUpdate::GuiFlag::NotifyWhenNoUpdateIsAvailable;
+		} else if(constName == QString::fromUtf8("noremindmelaterbutton")) {
+			r = QAppImageUpdate::GuiFlag::NoRemindMeLaterButton;
+		} else if(constName == QString::fromUtf8("noskipthisversionbutton")) {
+			r = QAppImageUpdate::GuiFlag::NoSkipThisVersionButton;
+		} else if(constName == QString::fromUtf8("default")) {
+			r = QAppImageUpdate::GuiFlag::Default;	
+		} else  {
+			r = 0;
+		}
+	}
+
+	return r;
+}
+
 QObject *QAppImageUpdateInterfaceImpl::getObject() {
 	return (QObject*)this;
 }

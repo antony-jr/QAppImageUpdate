@@ -20,6 +20,7 @@ public Q_SLOTS:
 	virtual void cancel() = 0;
 	virtual void clear() = 0;
 
+	virtual int getConstant(const QString&) = 0;
 	virtual QObject *getObject() = 0;
 
 	virtual QString errorCodeToString(short) = 0;

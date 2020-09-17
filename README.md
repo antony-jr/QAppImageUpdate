@@ -38,13 +38,13 @@ This library gives absolute support for *Qt*, Infact, All you need is the minima
 
 int main(int argc, char **argv) 
 {
-    using QAppImageUpdate::AppImageUpdater;
-
     QCoreApplication app(argc, argv);
-    AppImageUpdater updater;
-    QObject::connect(&updater, &AppImageUpdater::finished, &app, &QCoreApplication::quit);
-    updater.setShowLog(true); // Display logs?
-    updater.start(gui=true, confirm=true/*say yes to confirmation*/);
+    QAppImageUpdate updater;
+
+    QObject::connect(&updater, &QAppImageUpdate::finished, &app, &QCoreApplication::quit);
+    
+    updater.setShowLog(true);
+    updater.start();
     return app.exec();
 }
 ```

@@ -10,7 +10,7 @@ class RangeReply : public QObject {
 	Q_OBJECT
 	QSharedPointer<RangeReplyPrivate> m_Private;
 public:
-	RangeReply(int, QNetworkReply*, const QPair<qint32, qint32>&, qint32);
+	RangeReply(int, QNetworkReply*, const QPair<qint32, qint32>&);
 	~RangeReply();
 public Q_SLOTS:
 	void destroy();
@@ -19,7 +19,8 @@ public Q_SLOTS:
 Q_SIGNALS:
 	void restarted(int);
 	void error(QNetworkReply::NetworkError, int);
-	void finished(qint32, qint32,qint32, QByteArray*, int);
+	void progress(qint64, qint64, int);
+	void finished(qint32,qint32,  QByteArray*, int);
 	void canceled(int);
 };
 #endif // RANGE_REPLY_HPP_INCLUDED

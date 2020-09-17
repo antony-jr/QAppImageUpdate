@@ -25,6 +25,13 @@ RangeDownloaderPrivate::~RangeDownloaderPrivate() {
 
 /// Public Slots.
 
+void RangeDownloaderPrivate::setBlockSize(qint32 blockSize) {
+	if(b_Running) {
+		return;
+	}
+	n_BlockSize = blockSize;
+}
+
 void RangeDownloaderPrivate::setTargetFileUrl(const QUrl &url) {
 		if(b_Running) {
 			return;
@@ -39,13 +46,13 @@ void RangeDownloaderPrivate::setFullDownload(bool fullDownload) {
 		b_FullDownload = fullDownload;
 }
 
-void RangeDownloaderPrivate::appendRange(qint32 from, qint32 to, qint32 blocks) {
+void RangeDownloaderPrivate::appendRange(qint32 from, qint32 to) {
 		if(b_Running) {
 			return;
 		}
 
 
-		m_RequiredRanges.append(Range(from, to, blocks));
+		m_RequiredBlocks.append(qMakePair<qint32, qint32>(from,to));
 }
 
 void RangeDownloaderPrivate::start() {
@@ -90,13 +97,13 @@ void RangeDownloaderPrivate::cancel() {
 }
 
 /// Private Slots
-QNetworkRequest RangeDownloaderPrivate::makeRangeRequest(const QUrl &url, const Range &range){
+QNetworkRequest RangeDownloaderPrivate::makeRangeRequest(const QUrl &url, const QPair<qint32, qint32> &range){
 		QNetworkRequest request;
 
 		request.setUrl(url);
-		if(range.from || range.to) {
-			QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(range.from) + "-";
-        		rangeHeaderValue += QByteArray::number(range.to);
+		if(range.first || range.second) {
+			QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(range.first * n_BlockSize) + "-";
+        		rangeHeaderValue += QByteArray::number(range.second * n_BlockSize);
 			request.setRawHeader("Range", rangeHeaderValue);
     		}
     		request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
@@ -149,21 +156,24 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 
 		// Now we will determine the maximum no. of requests to be handled at 
 		// a time.
-		int max_allowed = QThread::idealThreadCount() * 2;
+		int max_allowed = QThread::idealThreadCount();
 		int i = n_Done;
 
-		for(;i < m_RequiredRanges.size(); ++i){
+		m_RecievedBytes.clear();
+		m_RecievedBytes.fill(qMakePair<qint32, qint32>(0,0), max_allowed);
+		m_ElapsedTimer.start();
+
+		for(;i < m_RequiredBlocks.size(); ++i){
 			 if(n_Active + 1 >= max_allowed) {
 				 break;
 			 }
 			 
-			 auto range = m_RequiredRanges.at(i);
+			 auto range = m_RequiredBlocks.at(i);
 
 			 QNetworkRequest request = makeRangeRequest(m_Url, range);
 			 ++n_Active;
 			
-			auto rangeReply = new RangeReply(n_Active, m_Manager->get(request), 
-							 qMakePair<qint32, qint32>(range.from, range.to), range.blocks);
+			auto rangeReply = new RangeReply(n_Active, m_Manager->get(request), range);
 
 			connect(rangeReply, SIGNAL(canceled(int)),
 				this, SLOT(handleRangeReplyCancel(int)),
@@ -177,9 +187,13 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int)),
 				Qt::QueuedConnection);
 
-			connect(rangeReply, SIGNAL(finished(qint32, qint32,qint32, QByteArray*, int)),
-				this, SLOT(handleRangeReplyFinished(qint32, qint32,qint32, QByteArray*, int)),
-				Qt::QueuedConnection);	
+			connect(rangeReply, SIGNAL(finished(qint32,qint32, QByteArray*, int)),
+				this, SLOT(handleRangeReplyFinished(qint32,qint32, QByteArray*, int)),
+				Qt::QueuedConnection);
+			
+			connect(rangeReply, SIGNAL(progress(qint64, qint64, int)), 
+				 this, SLOT(handleRangeReplyProgress(qint64, qint64, int)),
+				 Qt::QueuedConnection);
 
 			m_ActiveRequests.append(rangeReply);
 		}
@@ -217,7 +231,7 @@ void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError c
 		}
 }
 
-void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, qint32 blocks, QByteArray *data, int index) {
+void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QByteArray *data, int index) {
 		--n_Active;
 		if(b_CancelRequested) {
 			return;
@@ -225,7 +239,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, qi
 
 		(m_ActiveRequests.at(index))->destroy();
 
-		emit rangeData(from, to, blocks, data);
+		emit rangeData(from, to,  data);
 		if(n_Active == -1) {
 			b_Running = false;
 			b_Finished = true;
@@ -233,13 +247,12 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, qi
 			return;
 		}
 
-		if(n_Done >= m_RequiredRanges.size())
+		if(n_Done >= m_RequiredBlocks.size())
 			return;
 
-		auto range = m_RequiredRanges.at(n_Done++);
+		auto range = m_RequiredBlocks.at(n_Done++);
 		QNetworkRequest request = makeRangeRequest(m_Url, range);
-		auto rangeReply = new RangeReply(index, m_Manager->get(request), 
-							qMakePair<qint32, qint32>(range.from, range.to), range.blocks);
+		auto rangeReply = new RangeReply(index, m_Manager->get(request), range);
 		m_ActiveRequests[index] = rangeReply;
 
 		connect(rangeReply, SIGNAL(canceled(int)),
@@ -254,7 +267,50 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, qi
 				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int)),
 				Qt::QueuedConnection);
 
-		connect(rangeReply, SIGNAL(finished(qint32, qint32, qint32, QByteArray*, int)),
-				this, SLOT(handleRangeReplyFinished(qint32, qint32, qint32,  QByteArray*, int)),
+		connect(rangeReply, SIGNAL(finished(qint32, qint32, QByteArray*, int)),
+				this, SLOT(handleRangeReplyFinished(qint32, qint32, QByteArray*, int)),
 				Qt::QueuedConnection);	
+
+		connect(rangeReply, SIGNAL(progress(qint64, qint64, int)), 
+				 this, SLOT(handleRangeReplyProgress(qint64, qint64, int)),
+				 Qt::QueuedConnection);
+
+
+}
+
+void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, qint64 bytesTot, int index) {
+	(m_RecievedBytes[index]).first = bytesRc;
+	(m_RecievedBytes[index]).second = bytesTot;
+	// first = bytes recieved
+	// second = total bytes
+
+
+	qint64 bytesRecieved = 0;
+	qint64 bytesTotal = 0;
+	for(auto iter = m_RecievedBytes.begin(),
+		 end = m_RecievedBytes.end();
+		 iter != end;
+		 ++iter) {
+		bytesRecieved += (*iter).first;
+		bytesTotal += (*iter).second; 
+	}
+
+	QString sUnit;
+        int nPercentage = static_cast<int>(
+                              (static_cast<float>
+                               (bytesRecieved) * 100.0
+                              ) / static_cast<float>
+                              (bytesTotal)
+                          );
+        double nSpeed =  bytesRecieved * 1000.0 / m_ElapsedTimer.elapsed();
+        if (nSpeed < 1024) {
+            sUnit = "bytes/sec";
+        } else if (nSpeed < 1024 * 1024) {
+            nSpeed /= 1024;
+            sUnit = "kB/s";
+        } else {
+            nSpeed /= 1024 * 1024;
+            sUnit = "MB/s";
+        }
+        emit progress(nPercentage, bytesRecieved, bytesTotal, nSpeed, sUnit);	
 }

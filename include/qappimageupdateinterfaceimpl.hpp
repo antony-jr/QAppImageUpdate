@@ -32,6 +32,9 @@ public Q_SLOTS:
     void cancel();
     void clear();
 
+    int getConstant(const QString&);
+    QObject *getObject();
+
     QString errorCodeToString(short);
     QString errorCodeToDescriptionString(short);
 Q_SIGNALS:

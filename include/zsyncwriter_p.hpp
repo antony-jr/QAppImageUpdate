@@ -96,7 +96,7 @@ class ZsyncWriterPrivate : public QObject {
 
     // For the Range Downloader
     bool getBlockRanges();
-    void writeBlockRanges(qint32, qint32, qint32, QByteArray*);
+    void writeBlockRanges(qint32, qint32, QByteArray*);
     void writeSeqRaw(QByteArray*);
 
   Q_SIGNALS:

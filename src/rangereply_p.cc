@@ -1,11 +1,10 @@
 #include <QDebug>
 #include "rangereply_p.hpp"
 
-RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPair<qint32, qint32> &range, qint32 blocks) {
+RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPair<qint32, qint32> &blockRange) {	
 		n_Index = index;
-		n_FromRange = range.first;
-		n_ToRange = range.second;
-		n_Blocks = blocks;
+		n_FromBlock = blockRange.first;
+		n_ToBlock = blockRange.second;
 		m_Request = reply->request();
 		m_Manager = reply->manager();
 		m_Reply.reset(reply);
@@ -125,8 +124,7 @@ void RangeReplyPrivate::restart() {
 }
 
 void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
-		Q_UNUSED(bytesRec);
-		Q_UNUSED(bytesTotal);
+		emit progress(bytesRec, bytesTotal, n_Index);
 
 		if(m_Reply.isNull() || b_Halted) {
 			return;
@@ -183,7 +181,7 @@ void RangeReplyPrivate::handleFinish() {
 		m_Data->append(m_Reply->readAll());
 	
 		/// Finish the range reply	
-		emit finished(n_FromRange, n_ToRange, n_Blocks, m_Data.take(), n_Index);	
+		emit finished(n_FromBlock, n_ToBlock,  m_Data.take(), n_Index);	
 		
 		m_Reply->disconnect();
 }
