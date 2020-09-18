@@ -4,52 +4,52 @@ sudo: require
 dist: xenial
 
 before_install:
-  - sudo add-apt-repository ppa:beineri/opt-qt-5.15.0-xenial -y
+  - sudo add-apt-repository ppa:beineri/opt-qt593-xenial -y
   - sudo apt-get update -qq
 
 install:
-  - sudo apt-get -y install build-essential libgl1-mesa-dev xvfb qt515base
+  - sudo apt-get -y install build-essential libgl1-mesa-dev xvfb qt593base
   - source /opt/qt*/bin/qt*-env.sh
 
 script:
-  - mkdir build-qmake ; cd build-qmake # Check if it builds as a library using qmake.
-  - qmake ..
-  - make -j$(nproc)
-  - make clean
-  - qmake "CONFIG+=LOGGING_DISABLED" ..
-  - make -j$(nproc) # test if build succeeds without log support
-  - make clean
-  - qmake "CONFIG+=NO_GUI" ..
-  - make -j$(nproc) # test if build succeeds without gui support
-  - make clean
-  - qmake "CONFIG+=LOGGING_DISABLED" "CONFIG+=NO_GUI" ..
-  - make -j$(nproc) # test if build succeeds without gui and log support
-  - cd ..
-  - mkdir build-cmake ; cd build-cmake # Check if it builds as a library using cmake.
-  - cmake ..
-  - make -j$(nproc)
-  - cd ..
-  - rm -rf build-cmake
-  - mkdir build-cmake ; cd build-cmake
-  - cmake -DLOGGING_DISABLED=ON ..
-  - make -j$(nproc)
-  - cd ..
-  - rm -rf build-cmake
-  - mkdir build-cmake ; cd build-cmake
-  - cmake -DNO_GUI=ON ..
-  - make -j$(nproc)
-  - cd ..
-  - rm -rf build-cmake
-  - mkdir build-cmake ; cd build-cmake
-  - cmake -DLOGGING_DISABLED=ON -DNO_GUI=ON ..
-  - make -j$(nproc)
-  - rm -rf build-cmake
-  - cd ..
+  - # mkdir build-qmake ; cd build-qmake # Check if it builds as a library using qmake.
+  - # qmake ..
+  - # make -j$(nproc)
+  - # make clean
+  - # qmake "CONFIG+=LOGGING_DISABLED" ..
+  - # make -j$(nproc) # test if build succeeds without log support
+  - # make clean
+  - # qmake "CONFIG+=NO_GUI" ..
+  - # make -j$(nproc) # test if build succeeds without gui support
+  - # make clean
+  - # qmake "CONFIG+=LOGGING_DISABLED" "CONFIG+=NO_GUI" ..
+  - # make -j$(nproc) # test if build succeeds without gui and log support
+  - # cd ..
+  - # mkdir build-cmake ; cd build-cmake # Check if it builds as a library using cmake.
+  - # cmake ..
+  - # make -j$(nproc)
+  - # cd ..
+  - # rm -rf build-cmake
+  - # mkdir build-cmake ; cd build-cmake
+  - # cmake -DLOGGING_DISABLED=ON ..
+  - # make -j$(nproc)
+  - # cd ..
+  - # rm -rf build-cmake
+  - # mkdir build-cmake ; cd build-cmake
+  - # cmake -DNO_GUI=ON ..
+  - # make -j$(nproc)
+  - # cd ..
+  - # rm -rf build-cmake
+  - # mkdir build-cmake ; cd build-cmake
+  - # cmake -DLOGGING_DISABLED=ON -DNO_GUI=ON ..
+  - # make -j$(nproc)
+  - # rm -rf build-cmake
+  - # cd ..
   - cd tests
   - qmake .
   - make -j$(nproc)
-  - Xvfb :100 -ac &
-  - export DISPLAY=:100.0
+  - # Xvfb :100 -ac &
+  - # export DISPLAY=:100.0
   - ./tests
   - cd ..
   - mkdir build

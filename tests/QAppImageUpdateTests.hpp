@@ -9,8 +9,8 @@
 #include <QStringList>
 #include <QCoreApplication>
 #include <QJsonObject>
-#include <QtConcurrent>
-#include <QFuture>
+//#include <QtConcurrent>
+//#include <QFuture>
 #include <QEventLoop>
 
 #include "SimpleDownload.hpp"
@@ -91,7 +91,7 @@ class QAppImageUpdateTests : public QObject {
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 	
 	updater.start(QAppImageUpdate::Action::GetEmbeddedInfo);
-	
+
 	spyInfo.wait(10 * 1000);
 
 	QVERIFY(spyInfo.count() == 1);
@@ -272,6 +272,7 @@ class QAppImageUpdateTests : public QObject {
 
     }
 
+#if 0
     /// I have no idea on how to test thread safety,
     //  so we are just gonna call setAppImage and
     //  start from multiple threads.
@@ -329,7 +330,8 @@ class QAppImageUpdateTests : public QObject {
 
 	    QVERIFY(action == QAppImageUpdate::Action::Update);
     }
-    
+#endif
+
     void cleanupTestCase(void) {
         m_TempDir->remove();
 	emit finished();
