@@ -46,7 +46,9 @@ script:
   - rm -rf build-cmake
   - cd ..
   - cd tests
-  - bash start_test.sh # Run Tests
+  - qmake .
+  - make -j$(nproc)
+  - ./tests
   - cd ..
   - mkdir build
   - cd build
@@ -55,7 +57,7 @@ script:
 
 after_success:
   - wget "https://github.com/probonopd/uploadtool/raw/master/upload.sh"
-  - bash upload.sh libAppImageUpdaterBridge.so
+  - bash upload.sh libQAppImageUpdate.so
 
 branches:
   except:

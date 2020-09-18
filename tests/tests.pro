@@ -1,8 +1,7 @@
-include(../AppImageUpdaterBridge.pri)
+include(../QAppImageUpdate.pri)
 INCLUDEPATH += .
 CONFIG += release
+TARGET = tests
 QT += testlib
 SOURCES += main.cc
-HEADERS += AppImageUpdateInformation.hpp \
-	   ZsyncRemoteControlFileParser.hpp \
-	   AppImageDeltaRevisioner.hpp
+HEADERS += QAppImageUpdateTests.hpp SimpleDownload.hpp

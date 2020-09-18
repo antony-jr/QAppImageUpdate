@@ -7,6 +7,9 @@
 #include <QScopedPointer>
 #include <QUrl>
 #include <QFile>
+#include <QElapsedTimer>
+#include <QDebug>
+#include <QFileInfo>
 
 // Sync Downloader
 class SimpleDownload {
@@ -19,10 +22,13 @@ public:
 	int download(const QUrl &url, const QString &destination) {
 		QScopedPointer<QNetworkReply> reply;
 		QScopedPointer<QFile> file;
+		QString fileName = QFileInfo(destination).fileName();
 
 		QNetworkRequest req;
 		req.setUrl(url);
-		
+    		req.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+    		req.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+	
 
 		file.reset(new QFile);
 		file->setFileName(destination);
@@ -32,10 +38,15 @@ public:
 
 		reply.reset(m_Manager->get(req));
 
+		QElapsedTimer elapsed;
+		elapsed.start();
+
+		qInfo().noquote() << "Downloading " << fileName;
 
 		while(!reply->isFinished()) {
 			if(reply->error() != QNetworkReply::NoError){
 				reply->deleteLater();
+				qCritical().noquote() << "Download Failed " << fileName << " : " << reply->error();
 				return -1;
 			}
 			if(reply->isReadable()){
@@ -46,6 +57,7 @@ public:
 
 		file->write(reply->readAll());
 		file->close();
+		qInfo().noquote() << "Downloaded  " << fileName;
 		return 0;
 	}
 
