@@ -85,22 +85,6 @@ class QAppImageUpdateTests : public QObject {
         return;
     }
 
-    void benchmark() {
-        QAppImageUpdate updater;
-	QEventLoop loop;	
-	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
-	  
-        QBENCHMARK { 
-	    updater.setAppImage(m_Available.at(0));
-            updater.start();
-
-	    loop.exec();
-	    
-	    QVERIFY(spyInfo.count() == 1);
-	}
-    }
-
     void actionGetEmbeddedInfo() {
 	QAppImageUpdate updater;
 	updater.setAppImage(m_Available.at(0));
