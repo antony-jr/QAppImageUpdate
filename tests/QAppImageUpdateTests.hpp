@@ -123,47 +123,44 @@ class QAppImageUpdateTests : public QObject {
     }
     
     void actionGetEmbeddedInfoAll(void) {
+	short action = 0;
+	QJsonObject result,fileInfo,updateInfo;
+	QList<QVariant> sg;
 	QAppImageUpdate updater;
+	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 
 	for(auto iter = m_Available.begin(),
 		 end = m_Available.end();
 		 iter != end;
 		 ++iter) {	 
-	
 	updater.setAppImage(*iter);
-
-	{
-	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	
 	updater.start(QAppImageUpdate::Action::GetEmbeddedInfo);
-
+	
 	spyInfo.wait(10 * 1000);
-
-	QVERIFY(spyInfo.count() == 1);
+	QCOMPARE(spyInfo.count(), 1);
 
         /* Get resultant QJsonObject and Compare. */
-	auto sg = spyInfo.takeFirst();
-        QJsonObject result = sg.at(0).toJsonObject();
-	short action = sg.at(1).toInt();
+	sg = spyInfo.takeFirst();
+        result = sg.at(0).toJsonObject();
+	action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::GetEmbeddedInfo);
 
         /* Check if the result has a json sub-object called 'FileInformation'.
          * If so then compare it with our test case file information.
          */
-        auto fileInfo = result["FileInformation"].toObject();
+        fileInfo = result["FileInformation"].toObject();
 
         /* If the file info is empty then fail. */
         QVERIFY(!fileInfo.isEmpty());
 
-        auto updateInfo = result["UpdateInformation"].toObject();
+        updateInfo = result["UpdateInformation"].toObject();
 
         /* if the update info is empty then fail. */
         QVERIFY(!updateInfo.isEmpty());
 
         /* both are not empty , Check the value for isEmpty in the resultant. */
         QVERIFY(!result["isEmpty"].toBool());
-	}
 	}
     }
  
@@ -173,8 +170,8 @@ class QAppImageUpdateTests : public QObject {
 	
 	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
-	
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
+
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);
 	loop.exec();
 
@@ -189,34 +186,34 @@ class QAppImageUpdateTests : public QObject {
     }
     
     void actionCheckForUpdateAll() {
-        QAppImageUpdate updater;
+        short action = 0;
+	QJsonObject result;
+	QList<QVariant> sg;
+	QAppImageUpdate updater;
+	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	QEventLoop loop;	
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
 	
 	for(auto iter = m_Available.begin(),
 		 end = m_Available.end();
 		 iter != end;
-		 ++iter) {	 
-	
+		 ++iter) { 	
 	updater.setAppImage(*iter);
-	{
-	QEventLoop loop;	
-	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
-	
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);
 	loop.exec();
 
-        QVERIFY(spyInfo.count() == 1);
+        QCOMPARE(spyInfo.count(), 1);
 
-	auto sg = spyInfo.takeFirst();
-	QJsonObject result = sg.at(0).toJsonObject();
-	short action = sg.at(1).toInt();
+	sg = spyInfo.takeFirst();
+	result = sg.at(0).toJsonObject();
+	action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
 	QVERIFY(result.contains("UpdateAvailable"));
 	}
-	}
     }
 
+#if 0
     // Test the default action sequence
     // GheckForUpdate -> Update
     // Make sure that exactly the required signals are 
@@ -271,7 +268,6 @@ class QAppImageUpdateTests : public QObject {
 
     }
 
-#if 0
     /// I have no idea on how to test thread safety,
     //  so we are just gonna call setAppImage and
     //  start from multiple threads.
