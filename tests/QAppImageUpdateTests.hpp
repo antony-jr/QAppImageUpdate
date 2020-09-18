@@ -133,12 +133,11 @@ class QAppImageUpdateTests : public QObject {
 	updater.setAppImage(*iter);
 
 	{
-	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
 	
 	updater.start(QAppImageUpdate::Action::GetEmbeddedInfo);
-	loop.exec();
+
+	spyInfo.wait(10 * 1000);
 
 	QVERIFY(spyInfo.count() == 1);
 
