@@ -89,7 +89,7 @@ class QAppImageUpdateTests : public QObject {
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 
         QBENCHMARK {
-	    updater.setAppImage(m_Available.first());
+	    updater.setAppImage(m_Available.at(0));
             updater.start();
 
 	    /* This update should take atmost 50 seconds */
@@ -99,7 +99,7 @@ class QAppImageUpdateTests : public QObject {
 
     void actionGetEmbeddedInfo() {
 	QAppImageUpdate updater;
-	updater.setAppImage(m_Available.first());
+	updater.setAppImage(m_Available.at(0));
 	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 
@@ -178,7 +178,7 @@ class QAppImageUpdateTests : public QObject {
  
     void actionCheckForUpdate() {
         QAppImageUpdate updater;
-	updater.setAppImage(m_Available.first());
+	updater.setAppImage(m_Available.at(0));
 
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);

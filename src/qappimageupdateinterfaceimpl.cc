@@ -90,7 +90,7 @@ int QAppImageUpdateInterfaceImpl::getConstant(const QString &constant) {
 	}else if(type == QString::fromUtf8("guiflag")){
 
 		if(constName == QString::fromUtf8("showprogressdialog")){
-			r = QAppImageUpdate::GuiFlag::ShowProgressDialog
+			r = QAppImageUpdate::GuiFlag::ShowProgressDialog;
 		} else if(constName == QString::fromUtf8("showbeforeprogress")){
 			r = QAppImageUpdate::GuiFlag::ShowBeforeProgress;
 		} else if(constName == QString::fromUtf8("showupdateconfirmationdialog")){
