@@ -11,6 +11,7 @@
 #include <QJsonObject>
 #include <QtConcurrent>
 #include <QFuture>
+#include <QEventLoop>
 
 #include "SimpleDownload.hpp"
 
@@ -40,7 +41,7 @@ class QAppImageUpdateTests : public QObject {
 	     /* Largest AppImage */
 	     << "https://github.com/FreeCAD/FreeCAD/releases/download/0.18.2/FreeCAD_0.18-16117-Linux-Conda_Py3Qt5_glibc2.12-x86_64.AppImage"
 	     ;	  
-
+	
 	/// Bintray based AppImage Update
 	urls /* Slightly larger AppImage */
 	     << "https://bintray.com/probono/AppImages/download_file?file_path=Brackets-1.6.0.16680-x86_64.AppImage"
@@ -86,31 +87,37 @@ class QAppImageUpdateTests : public QObject {
 
     void benchmark() {
         QAppImageUpdate updater;
+	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-
-        QBENCHMARK {
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+	  
+        QBENCHMARK { 
 	    updater.setAppImage(m_Available.at(0));
             updater.start();
 
-	    /* This update should take atmost 50 seconds */
-            QVERIFY(spyInfo.wait(50 * 1000));
-        }
+	    loop.exec();
+	    
+	    QVERIFY(spyInfo.count() == 1);
+	}
     }
 
     void actionGetEmbeddedInfo() {
 	QAppImageUpdate updater;
 	updater.setAppImage(m_Available.at(0));
-	
+	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+	
 	updater.start(QAppImageUpdate::Action::GetEmbeddedInfo);
+	loop.exec();
 
-        QVERIFY(spyInfo.count() || spyInfo.wait());
+	QVERIFY(spyInfo.count() == 1);
 
         /* Get resultant QJsonObject and Compare. */
-        QJsonObject result = spyInfo.takeFirst().at(0).toJsonObject();
-	short action = spyInfo.takeFirst().at(1).toInt();
+        auto sg = spyInfo.takeFirst();
 
+	QJsonObject result = sg.at(0).toJsonObject();
+	short action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::GetEmbeddedInfo);
 
@@ -131,7 +138,7 @@ class QAppImageUpdateTests : public QObject {
         QVERIFY(!result["isEmpty"].toBool());
         return;
     }
-   
+    
     void actionGetEmbeddedInfoAll(void) {
 	QAppImageUpdate updater;
 
@@ -143,17 +150,19 @@ class QAppImageUpdateTests : public QObject {
 	updater.setAppImage(*iter);
 
 	{
+	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+	
 	updater.start(QAppImageUpdate::Action::GetEmbeddedInfo);
-
-        QVERIFY(spyInfo.count() || spyInfo.wait());
+	loop.exec();
 
 	QVERIFY(spyInfo.count() == 1);
 
         /* Get resultant QJsonObject and Compare. */
-        QJsonObject result = spyInfo.takeFirst().at(0).toJsonObject();
-	short action = spyInfo.takeFirst().at(1).toInt();
+	auto sg = spyInfo.takeFirst();
+        QJsonObject result = sg.at(0).toJsonObject();
+	short action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::GetEmbeddedInfo);
 
@@ -179,15 +188,19 @@ class QAppImageUpdateTests : public QObject {
     void actionCheckForUpdate() {
         QAppImageUpdate updater;
 	updater.setAppImage(m_Available.at(0));
-
+	
+	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+	
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);
+	loop.exec();
 
-        QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
-    
+	QVERIFY(spyInfo.count() == 1);
 
-	QJsonObject result = spyInfo.takeFirst().at(0).toJsonObject();
-	short action = spyInfo.takeFirst().at(1).toInt();
+	auto sg = spyInfo.takeFirst();
+	QJsonObject result = sg.at(0).toJsonObject();
+	short action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
 	QVERIFY(result.contains("UpdateAvailable"));
@@ -203,14 +216,18 @@ class QAppImageUpdateTests : public QObject {
 	
 	updater.setAppImage(*iter);
 	{
+	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+	
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);
+	loop.exec();
 
-        QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
-    	
-	QJsonObject result = spyInfo.takeFirst().at(0).toJsonObject();
-	short action = spyInfo.takeFirst().at(1).toInt();
+        QVERIFY(spyInfo.count() == 1);
 
+	auto sg = spyInfo.takeFirst();
+	QJsonObject result = sg.at(0).toJsonObject();
+	short action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
 	QVERIFY(result.contains("UpdateAvailable"));
@@ -233,13 +250,18 @@ class QAppImageUpdateTests : public QObject {
 	
 	updater.setAppImage(*iter);
 	{
+	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+	
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);
+	loop.exec();
 
-        QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
-    	
-	QJsonObject result = spyInfo.takeFirst().at(0).toJsonObject();
-	short action = spyInfo.takeFirst().at(1).toInt();
+        QVERIFY(spyInfo.count() == 1);
+
+	auto sg = spyInfo.takeFirst();
+	QJsonObject result = sg.at(0).toJsonObject();
+	short action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
 	QVERIFY(result.contains("UpdateAvailable"));
@@ -248,13 +270,18 @@ class QAppImageUpdateTests : public QObject {
 
 	// Now Update 
 	{
+	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+	
 	updater.start();
+	loop.exec();
 
-        QVERIFY(spyInfo.count() || spyInfo.wait(30 * 1000));
-    	
-	QJsonObject result = spyInfo.takeFirst().at(0).toJsonObject();
-	short action = spyInfo.takeFirst().at(1).toInt();
+        QVERIFY(spyInfo.count() == 1);
+
+	auto sg = spyInfo.takeFirst();
+	QJsonObject result = sg.at(0).toJsonObject();
+	short action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::Update);	
 	}
@@ -276,10 +303,12 @@ class QAppImageUpdateTests : public QObject {
     //  is finished. and not multiple signals.
     void threadSafety() {
 	    QAppImageUpdate updater;
+	    QEventLoop loop;	
 	    QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	    
+	    connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+
 	    auto function = [&]() {
-		    updater.setAppImage(m_Available.at(1));
+		    updater.setAppImage(m_Available.at(0));
 		    updater.start();
 	    };
 
@@ -302,17 +331,22 @@ class QAppImageUpdateTests : public QObject {
 	    delete future2;
 	    delete future3;
 	    delete future4;
-        
-	    
-	    QVERIFY(spyInfo.wait(160 * 1000));
-	    QVERIFY(spyInfo.count() == 1); // Only one signal should be emitted
-	    
-	    QJsonObject result = spyInfo.takeFirst().at(0).toJsonObject();
-	    short action = spyInfo.takeFirst().at(1).toInt();
+
+    	    if(spyInfo.count() < 1) {
+		    if(!spyInfo.wait()){
+		    	loop.exec();
+		    }
+	    }
+
+	    QVERIFY(spyInfo.count() == 1);
+
+	    auto sg = spyInfo.takeFirst();
+	    QJsonObject result = sg.at(0).toJsonObject();
+	    short action = sg.at(1).toInt();
 
 	    QVERIFY(action == QAppImageUpdate::Action::Update);
     }
-
+    
     void cleanupTestCase(void) {
         m_TempDir->remove();
 	emit finished();
