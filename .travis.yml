@@ -48,8 +48,8 @@ script:
   - cd tests
   - qmake .
   - make -j$(nproc)
-  - # Xvfb :100 -ac &
-  - # export DISPLAY=:100.0
+  - Xvfb :100 -ac &
+  - export DISPLAY=:100.0
   - ./tests
   - cd ..
   - mkdir build
