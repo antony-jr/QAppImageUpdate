@@ -79,13 +79,13 @@ endif()
 if(NO_GUI)
     message("-- [*] IMPORTANT: No gui classes will be included in this build.")
 else()
-    list(APPEND source src/appimageupdaterdialog.cc 
-	               include/appimageupdaterdialog.hpp
-		       src/softwareupdatedialog_p.cc
-		       include/softwareupdatedialog_p.hpp)
-    list(APPEND toinstall
-	AppImageUpdaterDialog 
-	include/appimageupdaterdialog.hpp)
+#    list(APPEND source src/appimageupdaterdialog.cc 
+#	               include/appimageupdaterdialog.hpp
+#		       src/softwareupdatedialog_p.cc
+#		       include/softwareupdatedialog_p.hpp)
+#    list(APPEND toinstall
+#	AppImageUpdaterDialog 
+#	include/appimageupdaterdialog.hpp)
 endif()
 
 if(BUILD_AS_PLUGIN)
