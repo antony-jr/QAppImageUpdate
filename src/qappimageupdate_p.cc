@@ -215,6 +215,15 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 
     b_Started = b_Running = true;
     b_Canceled = false;
+    b_Finished = false;
+
+    if(b_CancelRequested) {
+	    b_Started = b_Running = false;
+	    b_Canceled = true;
+	    b_CancelRequested = false;
+	    emit canceled(action);
+	    return;
+    }
 
     if(flags == GuiFlag::None) {
 	    flags = (n_GuiFlag != GuiFlag::None) ? n_GuiFlag : GuiFlag::Default;
@@ -476,6 +485,16 @@ void QAppImageUpdatePrivate::handleUpdateError(short ecode) {
 	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
                     this, &QAppImageUpdatePrivate::handleUpdateProgress);
 
+    	    b_Started = b_Running = b_Finished = false;
+   	    b_Canceled = false;
+    
+    	    if(b_CancelRequested) {
+		b_CancelRequested = false;
+		b_Canceled = true;
+		emit canceled(Action::Update);
+		return;
+    	    }
+
 	    emit error(ecode, Action::Update);
 }
 
@@ -504,6 +523,16 @@ void QAppImageUpdatePrivate::handleUpdateFinished(QJsonObject info, QString oldV
 		{"NewVersionPath", info["AbsolutePath"].toString()},
 		{"NewVersionSha1Hash", info["Sha1Hash"].toString()} 
 	};
+	b_Started = b_Running = false;
+	b_Finished = true;
+   	b_Canceled = false;
+    
+    	if(b_CancelRequested) {
+		b_CancelRequested = false;
+		b_Canceled = true;
+		emit canceled(Action::Update);
+		return;
+    	}
 
 	emit finished(result, Action::Update);
 }

@@ -37,11 +37,11 @@ class QAppImageUpdateTests : public QObject {
 	urls /* Small AppImages */
 	     << "https://github.com/AppImage/AppImageKit/releases/download/10/appimagetool-x86_64.AppImage"
 	     /* Slightly larger AppImage */
-	     << "https://github.com/antony-jr/AppImageUpdater/releases/download/14/AppImageUpdater-9b4000e-x86_64.AppImage" 
+	     << "https://github.com/antony-jr/AppImageUpdater/releases/download/14/AppImageUpdater-9b4000e-x86_64.AppImage"
 	     /* Largest AppImage */
 	     << "https://github.com/FreeCAD/FreeCAD/releases/download/0.18.2/FreeCAD_0.18-16117-Linux-Conda_Py3Qt5_glibc2.12-x86_64.AppImage"
 	     ;	  
-	
+
 	/// Bintray based AppImage Update
 	urls /* Slightly larger AppImage */
 	     << "https://bintray.com/probono/AppImages/download_file?file_path=Brackets-1.6.0.16680-x86_64.AppImage"
@@ -57,7 +57,6 @@ class QAppImageUpdateTests : public QObject {
 	
 	/// Direct zsync AppImage Update
 	urls << "https://releases.openclonk.org/snapshots/2020-08-08T17:14:06Z-master-dc43c2b72/OpenClonk-x86_64.AppImage";
-
 
 	/// AppImage Update without range request support
 	/// Cannot find anything for now. 
