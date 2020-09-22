@@ -9,8 +9,8 @@
 #include <QStringList>
 #include <QCoreApplication>
 #include <QJsonObject>
-//#include <QtConcurrent>
-//#include <QFuture>
+#include <QtConcurrent>
+#include <QFuture>
 #include <QEventLoop>
 
 #include "SimpleDownload.hpp"
@@ -208,59 +208,51 @@ class QAppImageUpdateTests : public QObject {
 	}
     }
 
-#if 0
     // Test the default action sequence
-    // GheckForUpdate -> Update
+    // CheckForUpdate -> Update
     // Make sure that exactly the required signals are 
     // emitted.
     void actionSequenceAll() {
-	    
+        short action = 0;
+	QJsonObject result;
+	QList<QVariant> sg;
 	QAppImageUpdate updater;
+	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	QEventLoop loop;	
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
 	
 	for(auto iter = m_Available.begin(),
 		 end = m_Available.end();
 		 iter != end;
-		 ++iter) {	 
-	
+		 ++iter) { 	
 	updater.setAppImage(*iter);
-	{
-	QEventLoop loop;	
-	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
-	
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);
 	loop.exec();
 
-        QVERIFY(spyInfo.count() == 1);
+        QCOMPARE(spyInfo.count(), 1);
 
-	auto sg = spyInfo.takeFirst();
-	QJsonObject result = sg.at(0).toJsonObject();
-	short action = sg.at(1).toInt();
+	sg = spyInfo.takeFirst();
+	result = sg.at(0).toJsonObject();
+	action = sg.at(1).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
 	QVERIFY(result.contains("UpdateAvailable"));
 
-	}
+	auto remoteSha1 = result["RemoteSha1Hash"].toString();
 
 	// Now Update 
-	{
-	QEventLoop loop;	
-	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
-	
 	updater.start();
 	loop.exec();
 
-        QVERIFY(spyInfo.count() == 1);
+	QCOMPARE(spyInfo.count(), 1);
 
-	auto sg = spyInfo.takeFirst();
-	QJsonObject result = sg.at(0).toJsonObject();
-	short action = sg.at(1).toInt();
+	sg = spyInfo.takeFirst();
+	result = sg.at(0).toJsonObject();
+	action = sg.at(1).toInt();
 
-	QVERIFY(action == QAppImageUpdate::Action::Update);	
+	QVERIFY(action == QAppImageUpdate::Action::Update);
+	QCOMPARE(remoteSha1, result["NewVersionSha1Hash"].toString());
 	}
-	}
-
     }
 
     /// I have no idea on how to test thread safety,
@@ -279,7 +271,7 @@ class QAppImageUpdateTests : public QObject {
 	    QAppImageUpdate updater;
 	    QEventLoop loop;	
 	    QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
-	    connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit);
+	    connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
 
 	    auto function = [&]() {
 		    updater.setAppImage(m_Available.at(0));
@@ -312,7 +304,7 @@ class QAppImageUpdateTests : public QObject {
 		    }
 	    }
 
-	    QVERIFY(spyInfo.count() == 1);
+	    QCOMPARE(spyInfo.count(), 1);
 
 	    auto sg = spyInfo.takeFirst();
 	    QJsonObject result = sg.at(0).toJsonObject();
@@ -320,7 +312,6 @@ class QAppImageUpdateTests : public QObject {
 
 	    QVERIFY(action == QAppImageUpdate::Action::Update);
     }
-#endif
 
     void cleanupTestCase(void) {
         m_TempDir->remove();
