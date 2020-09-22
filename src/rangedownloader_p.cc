@@ -232,23 +232,24 @@ void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError c
 }
 
 void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QByteArray *data, int index) {
-		--n_Active;
 		if(b_CancelRequested) {
+			--n_Active;
 			return;
 		}
 
 		(m_ActiveRequests.at(index))->destroy();
 
 		emit rangeData(from, to,  data);
-		if(n_Active == -1) {
-			b_Running = false;
-			b_Finished = true;
-			emit finished();
+
+		if(n_Done >= m_RequiredBlocks.size()){
+			--n_Active;
+			if(n_Active == -1) {
+				b_Running = false;
+				b_Finished = true;
+				emit finished();
+			}
 			return;
 		}
-
-		if(n_Done >= m_RequiredBlocks.size())
-			return;
 
 		auto range = m_RequiredBlocks.at(n_Done++);
 		QNetworkRequest request = makeRangeRequest(m_Url, range);
