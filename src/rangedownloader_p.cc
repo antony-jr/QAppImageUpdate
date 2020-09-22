@@ -102,8 +102,12 @@ QNetworkRequest RangeDownloaderPrivate::makeRangeRequest(const QUrl &url, const 
 
 		request.setUrl(url);
 		if(range.first || range.second) {
-			QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(range.first * n_BlockSize) + "-";
-        		rangeHeaderValue += QByteArray::number(range.second * n_BlockSize);
+
+			auto fromRange = range.first * n_BlockSize;
+			auto toRange = range.second * n_BlockSize - 1;
+
+			QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(fromRange) + "-";
+        		rangeHeaderValue += QByteArray::number(toRange);
 			request.setRawHeader("Range", rangeHeaderValue);
     		}
     		request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
