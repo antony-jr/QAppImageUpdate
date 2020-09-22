@@ -411,7 +411,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     n_Skip = n_NextKnown =p_HashMask = p_BitHashMask = 0;
     p_Rover = p_NextMatch = nullptr;
     b_AcceptRange = rangeSupported;
-    b_TorrentAvail = !torrentFileUrl.isEmpty();
+    b_TorrentAvail = torrentFileUrl.isEmpty();
     u_TorrentFileUrl = torrentFileUrl;
 
     // Since Zsync Writer is only finished officially when all the data is sent and SHA-1 hashes match.
