@@ -44,16 +44,12 @@ class QAppImageUpdateTests : public QObject {
 
 	/// Bintray based AppImage Update
 	urls /* Large AppImage < 200 MiB */
-	     << "https://bintray.com/probono/AppImages/download_file?file_path=Blender-2.78-x86_64.AppImage"
-	     << "https://bintray.com/probono/AppImages/download_file?file_path=FreeCAD-0.17.git201709021132.glibc2.17-x86_64.AppImage"
-	     /* Largest AppImage (Largest I could find, update it if you found something larger */
-	     << "https://bintray.com/probono/AppImages/download_file?file_path=RetroArch-1.3.6%2Br455.glibc2.17-x86_64.AppImage"
-	     ;
+	 << "https://bintray.com/probono/AppImages/download_file?file_path=Blender-2.78-x86_64.AppImage"
+	 << "https://bintray.com/probono/AppImages/download_file?file_path=FreeCAD-0.17.git201709021132.glibc2.17-x86_64.AppImage";
 
-	
-	/// Direct zsync AppImage Update
-	/// Cannot find any decent AppImage that uses direct method.
-	/// Please add one if you find one.
+
+	/// Direct zsync AppImage Update 	
+	urls << "https://releases.openclonk.org/snapshots/2020-08-08T17:14:06Z-master-dc43c2b72/OpenClonk-x86_64.AppImage";
 	
 	/// AppImage Update without range request support
 	/// Cannot find anything for now. 
