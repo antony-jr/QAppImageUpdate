@@ -9,7 +9,7 @@ before_install:
 
 install:
   - # Qt 5.9.3 has OpenSSL support while Qt 5.15 does not in this package.
-  - sudo apt-get -y install build-essential libgl1-mesa-dev xvfb qt59base
+  - sudo apt-get -y install build-essential libgl1-mesa-dev xvfb qt59base libtorrent-rasterbar libtorrent-rasterbar-dbg
   - source /opt/qt*/bin/qt*-env.sh
 
 script:
