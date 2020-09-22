@@ -43,11 +43,7 @@ class QAppImageUpdateTests : public QObject {
 	     ;	  
 
 	/// Bintray based AppImage Update
-	urls /* Slightly larger AppImage */
-	     << "https://bintray.com/probono/AppImages/download_file?file_path=Brackets-1.6.0.16680-x86_64.AppImage"
-	     << "https://bintray.com/probono/AppImages/download_file?file_path=Calibre-2.58.0.glibc2.7-x86_64.AppImage"
-	     << "https://bintray.com/probono/AppImages/download_file?file_path=Audacity-2.0.5.glibc2.15-x86_64.AppImage"
-	     /* Large AppImage < 200 MiB */
+	urls /* Large AppImage < 200 MiB */
 	     << "https://bintray.com/probono/AppImages/download_file?file_path=Blender-2.78-x86_64.AppImage"
 	     << "https://bintray.com/probono/AppImages/download_file?file_path=FreeCAD-0.17.git201709021132.glibc2.17-x86_64.AppImage"
 	     /* Largest AppImage (Largest I could find, update it if you found something larger */
