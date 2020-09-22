@@ -333,9 +333,6 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
     zs_blockid bfrom = fromBlock,
                bto   = toBlock - 1;
 
-
-    qDebug() << "Bfrom:: " << bfrom << "Bto:: " << bto;
-
     for (zs_blockid x = bfrom; x <= bto; ++x) {
             QByteArray blockData = buffer->read(n_BlockSize);
        	    if(blockData.size() != n_BlockSize){
