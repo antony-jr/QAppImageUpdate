@@ -26,7 +26,6 @@ public:
 
 		QNetworkRequest req;
 		req.setUrl(url);
-    		req.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     		req.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 	
 

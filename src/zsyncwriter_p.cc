@@ -36,6 +36,7 @@
 
 #include "zsyncwriter_p.hpp"
 #include "qappimageupdateenums.hpp"
+#include "helpers_p.hpp"
 
 /*
  * An efficient logging system specially tailored
@@ -630,11 +631,20 @@ void ZsyncWriterPrivate::start() {
        connect(m_RangeDownloader.data(), &RangeDownloader::progress,
 	       this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
 
+       connect(m_RangeDownloader.data(), &RangeDownloader::error,
+	       this, &ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection);
+
        m_RangeDownloader->setBlockSize(n_BlockSize);
        m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
        m_RangeDownloader->start();
     }
     return;
+}
+
+void ZsyncWriterPrivate::handleNetworkError(QNetworkReply::NetworkError code) {
+	b_Started = false;
+	FATAL_START " handleNetworkError : " LOGR code FATAL_END;
+	emit error(translateQNetworkReplyError(code));
 }
 
 void ZsyncWriterPrivate::handleCancel() {

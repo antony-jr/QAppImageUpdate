@@ -96,6 +96,7 @@ class ZsyncWriterPrivate : public QObject {
     bool getBlockRanges();
     void writeBlockRanges(qint32, qint32, QByteArray*);
     void writeSeqRaw(QByteArray*);
+    void handleNetworkError(QNetworkReply::NetworkError);
 
   Q_SIGNALS:
     void finishedConfiguring();
