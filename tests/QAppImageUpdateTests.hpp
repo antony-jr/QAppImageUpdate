@@ -83,6 +83,7 @@ class QAppImageUpdateTests : public QObject {
     void actionGetEmbeddedInfo() {
 	QAppImageUpdate updater;
 	updater.setAppImage(m_Available.at(0));
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 	
 	updater.start(QAppImageUpdate::Action::GetEmbeddedInfo);
@@ -122,6 +123,7 @@ class QAppImageUpdateTests : public QObject {
 	QJsonObject result,fileInfo,updateInfo;
 	QList<QVariant> sg;
 	QAppImageUpdate updater;
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 
 	for(auto iter = m_Available.begin(),
@@ -129,6 +131,8 @@ class QAppImageUpdateTests : public QObject {
 		 iter != end;
 		 ++iter) {	 
 	updater.setAppImage(*iter);
+	qInfo().noquote() << "GetEmbeddedInfo(" << *iter << ")";
+
 	updater.start(QAppImageUpdate::Action::GetEmbeddedInfo);
 	
 	spyInfo.wait(10 * 1000);
@@ -162,7 +166,8 @@ class QAppImageUpdateTests : public QObject {
     void actionCheckForUpdate() {
         QAppImageUpdate updater;
 	updater.setAppImage(m_Available.at(0));
-	
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
+
 	QEventLoop loop;	
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
@@ -185,6 +190,7 @@ class QAppImageUpdateTests : public QObject {
 	QJsonObject result;
 	QList<QVariant> sg;
 	QAppImageUpdate updater;
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 	QEventLoop loop;	
 	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
@@ -194,6 +200,8 @@ class QAppImageUpdateTests : public QObject {
 		 iter != end;
 		 ++iter) { 	
 	updater.setAppImage(*iter);
+	qInfo().noquote() << "CheckForUpdate(" << *iter << ")";
+
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);
 	loop.exec();
 
@@ -217,6 +225,7 @@ class QAppImageUpdateTests : public QObject {
 	QJsonObject result;
 	QList<QVariant> sg;
 	QAppImageUpdate updater;
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 	QEventLoop loop;	
 	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
@@ -226,6 +235,8 @@ class QAppImageUpdateTests : public QObject {
 		 iter != end;
 		 ++iter) { 	
 	updater.setAppImage(*iter);
+	qInfo().noquote() << "Update(" << *iter << ")";
+
 	updater.start(QAppImageUpdate::Action::CheckForUpdate);
 	loop.exec();
 
@@ -240,7 +251,7 @@ class QAppImageUpdateTests : public QObject {
 
 	auto remoteSha1 = result["RemoteSha1Hash"].toString();
 
-	// Now Update 
+	// Now Update	
 	updater.start();
 	loop.exec();
 
@@ -269,7 +280,8 @@ class QAppImageUpdateTests : public QObject {
     //  is finished. and not multiple signals.
     void threadSafety() {
 	    QAppImageUpdate updater;
-	    QEventLoop loop;	
+	    QEventLoop loop;
+	    connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
 	    QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 	    connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
 
@@ -316,6 +328,14 @@ class QAppImageUpdateTests : public QObject {
     void cleanupTestCase(void) {
         m_TempDir->remove();
 	emit finished();
+        return;
+    }
+  protected slots:
+    void defaultErrorHandler(short code, short action) {
+	Q_UNUSED(action);
+        auto scode = QAppImageUpdate::errorCodeToString(code);
+        scode.prepend("error:: ");
+        QFAIL(QTest::toString(scode));
         return;
     }
   Q_SIGNALS:
