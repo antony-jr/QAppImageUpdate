@@ -335,11 +335,11 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
 
     for (zs_blockid x = bfrom; x <= bto; ++x) {
             QByteArray blockData = buffer->read(n_BlockSize);
-       	    if(blockData.size() != n_BlockSize){
+       	    //// Fill with zeros if the block size is less than the required blocksize.
+	    if(blockData.size() != n_BlockSize){
 		    QByteArray newBlockData;
 		    newBlockData.fill('\0', (n_BlockSize - blockData.size()));
-		    newBlockData.append(blockData);
-		    blockData = newBlockData;
+		    blockData.append(newBlockData);
 	    }
 	    calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);
 	    if(memcmp(&md4sum, &(p_BlockHashes[x].checksum[0]), n_StrongCheckSumBytes)) {
