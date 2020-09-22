@@ -394,7 +394,8 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
         const QString &targetFileSHA1,
         QUrl targetFileUrl,
         QBuffer *targetFileCheckSumBlocks,
-        bool rangeSupported) {
+        bool rangeSupported,
+	QUrl torrentFileUrl) {
     p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     n_Blocks = nblocks,
     n_BlockSize = blocksize,
@@ -410,6 +411,8 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     n_Skip = n_NextKnown =p_HashMask = p_BitHashMask = 0;
     p_Rover = p_NextMatch = nullptr;
     b_AcceptRange = rangeSupported;
+    b_TorrentAvail = !torrentFileUrl.isEmpty();
+    u_TorrentFileUrl = torrentFileUrl;
 
     // Since Zsync Writer is only finished officially when all the data is sent and SHA-1 hashes match.
     // But sometimes the block range downloader can have a error or could be canceled and the Zsync Writer
@@ -470,7 +473,11 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     INFO_START " setConfiguration : temporary file will temporarily reside at " LOGR p_TargetFile->fileName() LOGR "." INFO_END;
     
     /// Create a range downloader
-    m_RangeDownloader.reset(new RangeDownloader(m_Manager));
+    if(!b_TorrentAvail) {
+    	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
+    }else {
+	m_TorrentDownloader.reset(new TorrentDownloader(m_Manager));
+    }
 
     b_Configured = true;    
     emit finishedConfiguring();
@@ -483,7 +490,11 @@ void ZsyncWriterPrivate::cancel() {
 	    return;
     }
     b_CancelRequested = true;
-    m_RangeDownloader->cancel();
+    if(!b_TorrentAvail) {
+    	m_RangeDownloader->cancel();
+    }else {
+    	m_TorrentDownloader->cancel();
+    }
     INFO_START " cancel : cancel requested " LOGR b_CancelRequested LOGR "." INFO_END;
     return;
 }
@@ -594,7 +605,21 @@ void ZsyncWriterPrivate::start() {
 
     if(n_BytesWritten >= n_TargetFileLength) {
         verifyAndConstructTargetFile();
-    } else {
+    } else if(b_TorrentAvail) {
+       m_TorrentDownloader->setTargetFileLength(n_TargetFileLength);
+       m_TorrentDownloader->setTorrentFileUrl(u_TorrentFileUrl);
+       m_TorrentDownloader->setTargetFile(p_TargetFile.data());
+       m_TorrentDownloader->setTargetFileName(s_TargetFileName);
+
+       connect(m_TorrentDownloader.data(), &TorrentDownloader::finished,
+		this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection);
+       connect(m_TorrentDownloader.data(), &TorrentDownloader::error,
+	       this, &ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection); 
+       connect(m_TorrentDownloader.data(), &TorrentDownloader::canceled,
+	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
+       m_TorrentDownloader->start();
+    }
+    else {     
        m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
        
 
@@ -812,7 +837,9 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
         INFO_START " verifyAndConstructTargetFile : sha1 hash matches!" INFO_END;
         QString newTargetFileName;
         p_TargetFile->setAutoRemove(!(constructed = true));
-        /*
+
+	if(!b_TorrentAvail) {
+	/*
          * Rename the new version with current time stamp.
          * Do not touch anything else.
          * Note: Since we checked for permissions earlier
@@ -836,6 +863,7 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
             }
         }
         p_TargetFile->rename(QFileInfo(p_TargetFile->fileName()).path() + "/" + newTargetFileName);
+	}
 
         /*Set the same permission as the old version and close. */
         p_TargetFile->setPermissions(QFileInfo(s_SourceFilePath).permissions());

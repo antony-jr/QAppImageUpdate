@@ -35,6 +35,8 @@
  * zsync control file and produce us with a more sensible data to work with.
  * This also produces information for ZsyncWriterPrivate.
 */
+#include <QFileInfo>
+
 #include "zsyncremotecontrolfileparser_p.hpp"
 #include "qappimageupdateenums.hpp"
 #include "helpers_p.hpp"
@@ -184,7 +186,8 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
     if(information["transport"].toString() == "zsync" ) {
         INFO_START " setControlFileUrl : using direct zsync transport." INFO_END;
         setControlFileUrl(QUrl(information["zsyncUrl"].toString()));
-        getControlFile();
+
+	getControlFile();
     } else if(information["transport"].toString() == "gh-releases-zsync") {
         INFO_START " setControlFileUrl : using github releases zsync transport." INFO_END;
         QUrl apiLink = QUrl("https://api.github.com/repos/" + information["username"].toString() +
@@ -254,6 +257,7 @@ void ZsyncRemoteControlFileParserPrivate::clear(void) {
     n_StrongCheckSumBytes = n_ConsecutiveMatchNeeded = n_CheckSumBlocksOffset = 0;
     u_TargetFileUrl.clear();
     u_ControlFileUrl.clear();
+    u_TorrentFile.clear();
     p_ControlFile.reset(nullptr);
     return;
 }
@@ -325,7 +329,7 @@ void ZsyncRemoteControlFileParserPrivate::getZsyncInformation(void) {
     /* leave the buffer ownership to the one who called it. */
     emit zsyncInformation(n_TargetFileBlockSize, n_TargetFileBlocks, n_WeakCheckSumBytes, n_StrongCheckSumBytes,
                           n_ConsecutiveMatchNeeded, n_TargetFileLength, SeedFilePath, s_TargetFileName,
-                          s_TargetFileSHA1, u_TargetFileUrl, buffer, b_AcceptRange);
+                          s_TargetFileSHA1, u_TargetFileUrl, buffer, b_AcceptRange, u_TorrentFile);
     return;
 }
 
@@ -441,14 +445,36 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
     QRegExp rx(s_ZsyncFileName);
     rx.setPatternSyntax(QRegExp::Wildcard);
 
+    QString torrentFileName = QFileInfo(s_ZsyncFileName).completeBaseName();
+    torrentFileName += QString::fromUtf8(".torrent");
+    QRegExp rx_torrent(torrentFileName);
+    rx.setPatternSyntax(QRegExp::Wildcard);
+
+    QString requiredAssetUrl;
+
+
     INFO_START " handleGithubAPIResponse : latest version is " LOGR version INFO_END;
     INFO_START " handleGithubAPIResponse : asset required is " LOGR s_ZsyncFileName INFO_END;
 
     foreach (const QJsonValue &value, assetsArray) {
-        auto asset = value.toObject();
-        INFO_START " handleGithubAPIResponse : inspecting asset(" LOGR asset["name"].toString() INFO_END;
-        if(rx.exactMatch(asset["name"].toString())) {
-            setControlFileUrl(QUrl(asset["browser_download_url"].toString()));
+	    auto asset = value.toObject();
+	    if(rx.exactMatch(asset["name"].toString())) {
+            	requiredAssetUrl = asset["browser_download_url"].toString();
+	    } 
+	    if(rx_torrent.exactMatch(asset["name"].toString())) {
+		    u_TorrentFile = QUrl(asset["browser_download_url"].toString());
+	    }
+	    QCoreApplication::processEvents();
+    }
+
+
+
+    if(requiredAssetUrl.isEmpty()){
+    	emit error(QAppImageUpdateEnums::Error::ZsyncControlFileNotFound);
+    	return;
+    }
+
+      setControlFileUrl(QUrl(requiredAssetUrl));
             /* Convert Github flavored Markdown to HTML using their own API.
             * And then call getControlFile(); */
             QNetworkRequest request;
@@ -466,12 +492,7 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
             connect(reply, &QNetworkReply::finished,
                     this,
                     &ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed,
-                    Qt::UniqueConnection);
-            return;
-        }
-        QCoreApplication::processEvents();
-    }
-    emit error(QAppImageUpdateEnums::Error::ZsyncControlFileNotFound);
+                    Qt::UniqueConnection); 
     return;
 }
 

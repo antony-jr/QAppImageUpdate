@@ -54,6 +54,7 @@
 #include <QNetworkAccessManager>
 
 #include "rangedownloader.hpp"
+#include "torrentdownloader.hpp"
 #include "zsyncinternalstructures_p.hpp"
 
 class ZsyncWriterPrivate : public QObject {
@@ -68,7 +69,7 @@ class ZsyncWriterPrivate : public QObject {
     void setConfiguration(qint32,qint32,qint32,
                           qint32,qint32,qint32,
                           const QString&,const QString&,const QString&,
-                          QUrl, QBuffer*,bool);
+                          QUrl, QBuffer*,bool,QUrl);
     void start();
     void cancel();
 
@@ -110,8 +111,10 @@ class ZsyncWriterPrivate : public QObject {
     bool b_Started = false,
          b_CancelRequested = false,
          b_AcceptRange = true,
-	 b_Configured = false;
-    QUrl u_TargetFileUrl;
+	 b_Configured = false,
+	 b_TorrentAvail = false;
+    QUrl u_TargetFileUrl,
+	 u_TorrentFileUrl;
     QPair<rsum, rsum> p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     qint64 n_BytesWritten = 0;
     qint32 n_Blocks = 0,
@@ -150,6 +153,7 @@ class ZsyncWriterPrivate : public QObject {
     QScopedPointer<QTemporaryFile> p_TargetFile; /* under construction target file. */
     QScopedPointer<QElapsedTimer> p_TransferSpeed;
     QScopedPointer<RangeDownloader> m_RangeDownloader;
+    QScopedPointer<TorrentDownloader> m_TorrentDownloader;
     QNetworkAccessManager *m_Manager;
 #ifndef LOGGING_DISABLED
     QString s_LogBuffer,

@@ -45,6 +45,8 @@ list(APPEND source
     src/rangereply_p.cc
     src/rangedownloader.cc
     src/rangedownloader_p.cc
+    src/torrentdownloader.cc
+    src/torrentdownloader_p.cc
     src/zsyncremotecontrolfileparser_p.cc
     src/appimageupdateinformation_p.cc
     src/zsyncwriter_p.cc
@@ -57,6 +59,8 @@ list(APPEND source
     include/appimageupdateinformation_p.hpp
     include/rangedownloader.hpp
     include/rangedownloader_p.hpp
+    include/torrentdownloader.hpp
+    include/torrentdownloader_p.hpp
     include/zsyncinternalstructures_p.hpp
     include/zsyncwriter_p.hpp
     include/qappimageupdatecodes.hpp
@@ -99,7 +103,7 @@ else()
 	add_library(QAppImageUpdate ${source})
 endif()
 
-target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network)
+target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network torrent-rasterbar)
 target_include_directories(QAppImageUpdate INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include>")
 target_include_directories(QAppImageUpdate INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate>" )
 

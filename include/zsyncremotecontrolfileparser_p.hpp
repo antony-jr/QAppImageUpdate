@@ -88,7 +88,7 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
     void zsyncInformation(qint32,qint32,qint32,
                           qint32,qint32,qint32,
                           QString,QString,QString,
-                          QUrl,QBuffer*,bool);
+                          QUrl,QBuffer*,bool,QUrl);
     void updateCheckInformation(QJsonObject);
     void receiveControlFile(void);
     void progress(int);
@@ -119,7 +119,8 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
            n_ConsecutiveMatchNeeded = 0;
     qint64 n_CheckSumBlocksOffset = 0;
     QUrl u_TargetFileUrl,
-         u_ControlFileUrl;
+         u_ControlFileUrl,
+	 u_TorrentFile;
 
 #ifndef LOGGING_DISABLED
     QScopedPointer<QDebug> p_Logger;
