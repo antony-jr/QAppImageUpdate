@@ -34,19 +34,19 @@ def handleFinish(info, old_appimge_path):
     app.quit()
 
 def handleError(code, action):
-    print("A error occured, error code: {}".format(code))
+    print("ERROR: {}".format(obj.errorCodeToDescriptionString(code)))
     app.quit()
 
 def handleFinishedSignal(result, action):
-    if action == 3:
+    if action == obj.getConstant("Action::Update"):
         for i in result:
             print("{} : {}".format(i, result[i].toString()))
         app.quit()
-    elif action == 2: 
-        if result['UpdateAvailable']:
+    elif action == obj.getConstant("Action::CheckForUpdate"): 
+        if result['UpdateAvailable'].toBool():
             print("A new version of the AppImage is available.")
             print("Updating now... ")
-            obj.start(3)
+            obj.start(obj.getConstant("Action::Update"))
         else:
             print("You have the latest AppImage!")
             app.quit()
@@ -57,5 +57,5 @@ obj.error.connect(handleError)
 obj.setAppImagePath(appimage_path)
 
 print("Checking for Update... ")
-obj.start(2)
+obj.start(obj.getConstant("Action::CheckForUpdate"))
 sys.exit(app.exec_())
