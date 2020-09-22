@@ -52,8 +52,9 @@ class QAppImageUpdateTests : public QObject {
 
 	
 	/// Direct zsync AppImage Update
-	urls << "https://releases.openclonk.org/snapshots/2020-08-08T17:14:06Z-master-dc43c2b72/OpenClonk-x86_64.AppImage";
-
+	/// Cannot find any decent AppImage that uses direct method.
+	/// Please add one if you find one.
+	
 	/// AppImage Update without range request support
 	/// Cannot find anything for now. 
 
