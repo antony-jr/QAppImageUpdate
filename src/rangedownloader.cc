@@ -31,7 +31,9 @@ RangeDownloader::RangeDownloader(QNetworkAccessManager *manager, QObject *parent
 			 this, &RangeDownloader::rangeData,
 			 Qt::DirectConnection);
 
-
+		connect(obj, &RangeDownloaderPrivate::progress,
+			 this, &RangeDownloader::progress,
+			 Qt::DirectConnection);
 }
 
 

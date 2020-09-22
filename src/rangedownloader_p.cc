@@ -151,6 +151,7 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 		//  we have to initiate a very simple download.
 		if(b_FullDownload) {
 			/// TODO: Use a new class to handle full download.
+			qDebug() << "FullDownload is Requested";
 			return;
 		}
 
