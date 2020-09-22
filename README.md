@@ -21,7 +21,7 @@ This library gives absolute support for *Qt*, Infact, All you need is the minima
 
 * *Easy to Use API* - Made some effort to match Qt's style.
 
-* *Cyclic API, No use of mutex* - The whole library is fully cyclic and therefore no mutex is used.(Only signals and slots.)
+* *Cyclic and Async API* - The whole library is fully cyclic and Async.(Only signals and slots.)
 
 * *Pure C++* - Ported most of the legacy Zsync code to C++.
 
