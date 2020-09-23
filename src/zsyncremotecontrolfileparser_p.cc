@@ -448,7 +448,7 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
     QString torrentFileName = QFileInfo(s_ZsyncFileName).completeBaseName();
     torrentFileName += QString::fromUtf8(".torrent");
     QRegExp rx_torrent(torrentFileName);
-    rx.setPatternSyntax(QRegExp::Wildcard);
+    rx_torrent.setPatternSyntax(QRegExp::Wildcard);
 
     QString requiredAssetUrl;
 
@@ -462,7 +462,7 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
             	requiredAssetUrl = asset["browser_download_url"].toString();
 	    } 
 	    if(rx_torrent.exactMatch(asset["name"].toString())) {
-		    u_TorrentFile = QUrl(asset["browser_download_url"].toString());
+		u_TorrentFile = QUrl(asset["browser_download_url"].toString());
 	    }
 	    QCoreApplication::processEvents();
     }

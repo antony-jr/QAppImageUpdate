@@ -1,4 +1,8 @@
 #include <QFileInfo>
+#include <QDebug>
+#include <QCoreApplication>
+#include <vector>
+#include <iostream>
 
 #include "torrentdownloader_p.hpp"
 
@@ -6,8 +10,11 @@
 TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manager) 
 	: QObject() {
 	n_TargetFileLength = 0;
- 	lt::settings_pack p;
-  	p.set_int(lt::settings_pack::alert_mask, lt::alert_category::status | lt::alert_category::error);	
+	lt::session_params p = lt::session_params();
+  	p.settings.set_int(lt::settings_pack::alert_mask, 
+			lt::alert_category::status | 
+			lt::alert_category::error | 
+			lt::alert_category::storage);	
 	m_Manager = manager;
 	m_Session.reset(new lt::session(p));
 	m_TorrentFile.reset(new QTemporaryFile);
@@ -44,6 +51,7 @@ void TorrentDownloaderPrivate::setTorrentFileUrl(const QUrl &url) {
 	if(b_Running) {
 		return;
 	}
+	qDebug() <<"Set::" << url;
 	m_Url = url;
 }
 	
@@ -57,10 +65,11 @@ void TorrentDownloaderPrivate::start() {
 	m_TorrentFile->open();
 	(void)m_TorrentFile->fileName();
 
+	qDebug() << "Downloading... " << m_Url;
+
 	QNetworkRequest request;
     	request.setUrl(m_Url);
-    	request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
-    	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
     	auto reply = m_Manager->get(request);
     	connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
@@ -164,6 +173,10 @@ void TorrentDownloaderPrivate::handleTorrentFileFinish() {
 }
 
 void TorrentDownloaderPrivate::torrentDownloadLoop() {
+	if(b_Finished) {
+		m_Timer.stop();
+		return;
+	}
 	if(b_CancelRequested) {
 		m_Timer.stop();
 		m_Session->abort();
@@ -176,11 +189,14 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 	m_Session->pop_alerts(&alerts);
 	for (lt::alert const* a : alerts) {
 		if (lt::alert_cast<lt::torrent_finished_alert>(a)) {
+			m_File->setAutoRemove(true);
+			m_File->open();
 			m_Timer.stop();
-	       		m_Session->abort();
+			m_Session->abort();
 			b_Running = false;
 			b_Finished = true;
 			emit finished();
+			QCoreApplication::processEvents();
 			return;		
 		}
 		if (lt::alert_cast<lt::torrent_error_alert>(a)) {
@@ -203,5 +219,6 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 				       QString::fromUtf8(" KB/s "));
 			}
       		}
+		QCoreApplication::processEvents();
 	}
 }

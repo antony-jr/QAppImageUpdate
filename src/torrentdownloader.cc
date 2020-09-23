@@ -39,7 +39,7 @@ void TorrentDownloader::setTargetFileLength(qint64 n) {
 
 
 void TorrentDownloader::setTorrentFileUrl(const QUrl &url) {
-    getMethod(m_Private.data(), "setTorrentFileUrl(const QUrl&)")
+     getMethod(m_Private.data(), "setTorrentFileUrl(const QUrl&)")
 	    .invoke(m_Private.data(),
                     Qt::QueuedConnection,
                     Q_ARG(QUrl,url));
