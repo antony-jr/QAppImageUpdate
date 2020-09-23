@@ -1,6 +1,6 @@
 INCLUDEPATH += $$PWD $$PWD/include
 QT += core widgets network
-LIBS += -ltorrent-rasterbar
+LIBS += -ltorrent-rasterbar -lboost_system -lpthread
 CONFIG += staticlib
 HEADERS += \
     $$PWD/include/appimageupdateinformation_p.hpp \

@@ -103,7 +103,7 @@ else()
 	add_library(QAppImageUpdate ${source})
 endif()
 
-target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network torrent-rasterbar)
+target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network torrent-rasterbar boost_system pthread)
 target_include_directories(QAppImageUpdate INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include>")
 target_include_directories(QAppImageUpdate INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate>" )
 

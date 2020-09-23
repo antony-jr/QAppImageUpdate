@@ -18,6 +18,12 @@ TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manage
 	m_Manager = manager;
 	m_Session.reset(new lt::session(p));
 	m_TorrentFile.reset(new QTemporaryFile);
+
+	connect(&m_Timer, &QTimer::timeout, 
+		 this, &TorrentDownloaderPrivate::torrentDownloadLoop,
+		 Qt::QueuedConnection);
+
+
 }
 TorrentDownloaderPrivate::~TorrentDownloaderPrivate() {
 
@@ -164,11 +170,6 @@ void TorrentDownloaderPrivate::handleTorrentFileFinish() {
 
 	m_Timer.setSingleShot(false);
 	m_Timer.setInterval(500);
-	
-	connect(&m_Timer, &QTimer::timeout, 
-		 this, &TorrentDownloaderPrivate::torrentDownloadLoop,
-		 Qt::QueuedConnection);
-
 	m_Timer.start();	
 }
 
@@ -196,7 +197,6 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 			b_Running = false;
 			b_Finished = true;
 			emit finished();
-			QCoreApplication::processEvents();
 			return;		
 		}
 		if (lt::alert_cast<lt::torrent_error_alert>(a)) {
