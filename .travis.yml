@@ -5,15 +5,24 @@ dist: xenial
 
 before_install:
   - sudo add-apt-repository ppa:beineri/opt-qt-5.12.9-xenial -y
-  - sudo add-apt-repository ppa:qbittorrent-team/qbittorrent-stable -y
   - sudo apt-get update -qq
 
 install:
-  - # Qt 5.12 has OpenSSL support while Qt 5.15 does not in this package.
-  - sudo apt-get -y install build-essential libgl1-mesa-dev xvfb qt512base libtorrent-rasterbar10 libtorrent-rasterbar-dev
+  - # Qt 5.12 has OpenSSL support while Qt 5.15 does not in this packages
+  - sudo apt-get -y install build-essential libgl1-mesa-dev xvfb qt512base
+  - sudo apt-get -y install libboost-system-dev libboost-python-dev libboost-chrono-dev libboost-random-dev libssl-dev
   - source /opt/qt*/bin/qt*-env.sh
 
 script:
+  - wget -q "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1.2.8/libtorrent-rasterbar-1.2.8.tar.gz"
+  - tar -xvf libtorrent-rasterbar-1.2.8.tar.gz
+  - cd libtorrent-rasterbar-1.2.8
+  - mkdir build
+  - cmake ..
+  - make -j$(nproc)
+  - sudo make install -j$(nproc)
+  - cd ..
+  - cd ..
   - mkdir build-qmake ; cd build-qmake # Check if it builds as a library using qmake.
   - qmake ..
   - make -j$(nproc)

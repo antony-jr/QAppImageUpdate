@@ -30,7 +30,7 @@ public Q_SLOTS:
 	void setTargetFile(QTemporaryFile*);
 	void setTargetFileName(const QString&);
 	void setTorrentFileUrl(const QUrl&);
-	
+
 	void start();
 	void cancel();
 
