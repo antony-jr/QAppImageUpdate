@@ -10,8 +10,6 @@ HEADERS += \
     $$PWD/include/rangereply.hpp \
     $$PWD/include/rangedownloader_p.hpp \
     $$PWD/include/rangedownloader.hpp \
-    $$PWD/include/torrentdownloader_p.hpp \
-    $$PWD/include/torrentdownloader.hpp \
     $$PWD/include/qappimageupdateenums.hpp \
     $$PWD/include/qappimageupdatecodes.hpp \
     $$PWD/include/qappimageupdate_p.hpp \
@@ -26,8 +24,6 @@ SOURCES += \
     $$PWD/src/rangereply.cc \
     $$PWD/src/rangedownloader_p.cc \
     $$PWD/src/rangedownloader.cc \
-    $$PWD/src/torrentdownloader_p.cc \
-    $$PWD/src/torrentdownloader.cc \ 
     $$PWD/src/qappimageupdate_p.cc \
     $$PWD/src/qappimageupdate.cc \
     $$PWD/src/helpers_p.cc
