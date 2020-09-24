@@ -18,6 +18,7 @@ script:
   - tar -xvf libtorrent-rasterbar-1.2.8.tar.gz
   - cd libtorrent-rasterbar-1.2.8
   - mkdir build
+  - cd build
   - cmake ..
   - make -j$(nproc)
   - sudo make install -j$(nproc)
