@@ -37,8 +37,8 @@ script:
   - make clean
   - qmake "CONFIG+=LOGGING_DISABLED" "CONFIG+=NO_GUI" ..
   - make -j$(nproc) # test if build succeeds without gui and log support
-  - qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" 
-  - make -j$(nproc)
+  - qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" ..  
+  - make -j$(nproc) # test if build succeeds with libtorrent in qmake build config
   - cd ..
   - mkdir build-cmake ; cd build-cmake # Check if it builds as a library using cmake.
   - cmake ..
@@ -61,7 +61,7 @@ script:
   - rm -rf build-cmake
   - cd ..
   - cd tests
-  - qmake .
+  - qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" . # Test if everything get passed with libtorrent linked 
   - make -j$(nproc)
   - Xvfb :100 -ac &
   - export DISPLAY=:100.0

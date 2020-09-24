@@ -475,7 +475,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     /// Create a range downloader or a Torrent Client to download the update
     /// in a decentralized way. Saves bandwidth for the server.
 
-#ifdef DECENTRALIZED_UPDATE_ENABLED 
+#if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208  
     if(b_TorrentAvail && b_AcceptRange) {
     	INFO_START " setConfiguration : candidate suitable for decentralized update" INFO_END;
 	m_TorrentDownloader.reset(new TorrentDownloader(m_Manager));
@@ -502,7 +502,7 @@ void ZsyncWriterPrivate::cancel() {
 	    return;
     }
     b_CancelRequested = true;
-#ifdef DECENTRALIZED_UPDATE_ENABLED
+#if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
     if(!b_TorrentAvail) {
     	if(!m_RangeDownloader.isNull()){
 		m_RangeDownloader->cancel();
@@ -628,7 +628,7 @@ void ZsyncWriterPrivate::start() {
     if(n_BytesWritten >= n_TargetFileLength) {
         verifyAndConstructTargetFile();
     }
-#ifdef DECENTRALIZED_UPDATE_ENABLED
+#if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
     /// See BEP 17 and BEP 19, Web seeds or url seeds needs a server which accepts 
     /// range requests, It is possible for the torrent client to update if there are
     /// ample amounts of peers seeding it but there is no assurance that the AppImage 
@@ -703,7 +703,7 @@ void ZsyncWriterPrivate::handleNetworkError(QNetworkReply::NetworkError code) {
 	emit error(translateQNetworkReplyError(code));
 }
 
-#ifdef DECENTRALIZED_UPDATE_ENABLED
+#if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
 void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {
 	Q_UNUSED(code);
 	FATAL_START " handleTorrentError : " LOGR code FATAL_END;

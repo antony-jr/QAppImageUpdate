@@ -55,6 +55,7 @@
 
 #include "rangedownloader.hpp"
 #ifdef DECENTRALIZED_UPDATE_ENABLED
+#include <libtorrent/version.hpp>
 #include "torrentdownloader.hpp"
 #endif
 #include "zsyncinternalstructures_p.hpp"
@@ -100,9 +101,11 @@ class ZsyncWriterPrivate : public QObject {
     void writeBlockRanges(qint32, qint32, QByteArray*);
     void writeSeqRaw(QByteArray*);
     void handleNetworkError(QNetworkReply::NetworkError);
-#ifdef DECENTRALIZED_UPDATE_ENABLED 
+#ifdef DECENTRALIZED_UPDATE_ENABLED
+#if LIBTORRENT_VERSION_NUM >= 10208 
     void handleTorrentError(QNetworkReply::NetworkError);
     void handleTorrentLogger(QString);
+#endif
 #endif
 
   Q_SIGNALS:
@@ -160,7 +163,9 @@ class ZsyncWriterPrivate : public QObject {
     QScopedPointer<QElapsedTimer> p_TransferSpeed;
     QScopedPointer<RangeDownloader> m_RangeDownloader;
 #ifdef DECENTRALIZED_UPDATE_ENABLED
+#if LIBTORRENT_VERSION_NUM >= 10208
     QScopedPointer<TorrentDownloader> m_TorrentDownloader;
+#endif // VERSION CHECK
 #endif // DECENTRALIZED_UPDATE_ENABLED
     QNetworkAccessManager *m_Manager;
 #ifndef LOGGING_DISABLED
