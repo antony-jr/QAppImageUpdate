@@ -24,9 +24,7 @@ script:
   - sudo make install -j$(nproc)
   - cd ..
   - cd ..
-  - ls -altr /usr/lib/x86_64-linux-gnu | grep libtorrent
-  - ls -altr /usr/local/lib/
-  - ln -s /usr/local/lib/libtorrent-rasterbar.so.1.2.8 /usr/lib/libtorrent-rasterbar.so.10
+  - sudo ln -s /usr/local/lib/libtorrent-rasterbar.so.1.2.8 /usr/lib/libtorrent-rasterbar.so.10
   - mkdir build-qmake ; cd build-qmake # Check if it builds as a library using qmake.
   - qmake ..
   - make -j$(nproc)
