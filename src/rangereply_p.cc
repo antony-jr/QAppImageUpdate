@@ -124,7 +124,7 @@ void RangeReplyPrivate::restart() {
 }
 
 void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
-		emit progress(bytesRec, bytesTotal, n_Index);
+		emit progress(bytesRec, n_Index);
 
 		if(m_Reply.isNull() || b_Halted) {
 			return;

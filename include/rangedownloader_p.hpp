@@ -17,6 +17,7 @@ public:
 public Q_SLOTS:
 	void setBlockSize(qint32);
 	void setTargetFileUrl(const QUrl&);
+	void setTargetFileLength(qint32);
 	void setFullDownload(bool);
 	void appendRange(qint32, qint32);
 
@@ -29,7 +30,7 @@ private Q_SLOTS:
 	void handleUrlCheck(qint64, qint64);
 	void handleRangeReplyCancel(int);
 	void handleRangeReplyRestart(int);
-	void handleRangeReplyProgress(qint64, qint64, int);
+	void handleRangeReplyProgress(qint64, int);
 	void handleRangeReplyError(QNetworkReply::NetworkError, int);
 	void handleRangeReplyFinished(qint32,qint32,QByteArray*, int);
 Q_SIGNALS:
@@ -39,7 +40,7 @@ Q_SIGNALS:
 	void error(QNetworkReply::NetworkError);
 
 	void data(QByteArray *);
-	void rangeData(qint32, qint32, QByteArray *);
+	void rangeData(qint32, qint32, QByteArray *, /*this is true when the given range is the last one*/bool);
 
 	void progress(int, qint64, qint64, double, QString);
 private:
@@ -52,11 +53,11 @@ private:
 	    n_Done = 0;
 	QUrl m_Url;
 	qint32 n_BlockSize = 1024;
-
+	qint64 n_TotalSize = -1;
 
 	QNetworkAccessManager *m_Manager;
 	QElapsedTimer m_ElapsedTimer;
-	QVector<QPair<qint64, qint64>> m_RecievedBytes;
+	QVector<qint64> m_RecievedBytes;
 	QVector<QPair<qint32, qint32>> m_RequiredBlocks;
 	QVector<RangeReply*> m_ActiveRequests;
 

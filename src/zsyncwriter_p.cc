@@ -288,9 +288,7 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData) {
  * from the zsync control file.
  * Incase there is a mismatch , Only verified blocks are written the working target file.
 */
-void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByteArray *downloadedData) {
-
-
+void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByteArray *downloadedData, bool isLast) {
     unsigned char md4sum[CHECKSUM_SIZE];
     /* Build checksum hash tables if we don't have them yet */
     if (!p_RsumHash) {
@@ -363,7 +361,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
     }
 
 
-    if(n_BytesWritten >= n_TargetFileLength) {
+    if(isLast) {
 	verifyAndConstructTargetFile();
     }
     return;
@@ -655,7 +653,7 @@ void ZsyncWriterPrivate::start() {
 #endif // DECENTRALIZED_UPDATE_ENABLED
     else {     
        m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
-       
+       m_RangeDownloader->setTargetFileLength(n_TargetFileLength);       
 
        if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
        m_RangeDownloader->setFullDownload(true);
@@ -716,6 +714,8 @@ void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {
 
 	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
 	m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
+	m_RangeDownloader->setTargetFileLength(n_TargetFileLength);       
+
 
        	if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
 		m_RangeDownloader->setFullDownload(true);

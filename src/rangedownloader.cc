@@ -55,6 +55,15 @@ void RangeDownloader::setTargetFileUrl(const QUrl &url) {
 
 }
 
+void RangeDownloader::setTargetFileLength(qint32 n) {
+    getMethod(m_Private.data(), "setTargetFileLength(qint32)")
+	    .invoke(m_Private.data(),
+                    Qt::QueuedConnection,
+                    Q_ARG(qint32,n));
+}	
+
+
+
 void RangeDownloader::setFullDownload(bool choice){
     getMethod(m_Private.data(), "setFullDownload(bool)")
 	    .invoke(m_Private.data(),

@@ -165,7 +165,7 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 		int i = n_Done;
 
 		m_RecievedBytes.clear();
-		m_RecievedBytes.fill(qMakePair<qint32, qint32>(0,0), max_allowed);
+		m_RecievedBytes.fill(0, max_allowed);
 		m_ElapsedTimer.start();
 
 		for(;i < m_RequiredBlocks.size(); ++i){
@@ -223,7 +223,7 @@ void RangeDownloaderPrivate::handleRangeReplyRestart(int index) {
 
 void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError code, int index) {
 		/// TODO: If the error is not severe then we might want to retry to 
-		//        a specific threshold
+		//        a specific threshold	
 		if( /* code is not severe and can be retried and max tries is not reached */0) {
 			(m_ActiveRequests.at(index))->retry();
 			return;
@@ -239,12 +239,17 @@ void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError c
 void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QByteArray *data, int index) {
 		if(b_CancelRequested) {
 			--n_Active;
+			if(n_Active == -1) {
+				b_Running = b_Finished = b_CancelRequested = false;
+				emit canceled();
+			}
 			return;
 		}
 
 		(m_ActiveRequests.at(index))->destroy();
 
-		emit rangeData(from, to,  data);
+		bool isLast = (n_Done >= m_RequiredBlocks.size() && n_Active - 1 == -1);
+		emit rangeData(from, to,  data, isLast);
 
 		if(n_Done >= m_RequiredBlocks.size()){
 			--n_Active;
@@ -284,21 +289,18 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 
 }
 
-void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, qint64 bytesTot, int index) {
-	(m_RecievedBytes[index]).first = bytesRc;
-	(m_RecievedBytes[index]).second = bytesTot;
-	// first = bytes recieved
-	// second = total bytes
-
-
+void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {	
+	m_RecievedBytes[index] += bytesRc;
 	qint64 bytesRecieved = 0;
-	qint64 bytesTotal = 0;
-	for(auto iter = m_RecievedBytes.begin(),
-		 end = m_RecievedBytes.end();
+
+	/// Copy the vector since will be calling the event loop when 
+	/// looping.
+	auto recievedBytes = m_RecievedBytes;
+	for(auto iter = recievedBytes.begin(),
+		 end = recievedBytes.end();
 		 iter != end;
 		 ++iter) {
-		bytesRecieved += (*iter).first;
-		bytesTotal += (*iter).second; 
+		bytesRecieved += *iter;
 	}
 
 	QString sUnit;
@@ -306,7 +308,7 @@ void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, qint64 byt
                               (static_cast<float>
                                (bytesRecieved) * 100.0
                               ) / static_cast<float>
-                              (bytesTotal)
+                              (n_TotalSize)
                           );
         double nSpeed =  bytesRecieved * 1000.0 / m_ElapsedTimer.elapsed();
         if (nSpeed < 1024) {
@@ -318,5 +320,5 @@ void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, qint64 byt
             nSpeed /= 1024 * 1024;
             sUnit = "MB/s";
         }
-        emit progress(nPercentage, bytesRecieved, bytesTotal, nSpeed, sUnit);	
+        emit progress(nPercentage, bytesRecieved, n_TotalSize, nSpeed, sUnit);	
 }
