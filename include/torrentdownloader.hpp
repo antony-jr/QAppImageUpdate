@@ -1,5 +1,6 @@
 #ifndef TORRENT_DOWNLOADER_HPP_INCLUDED
 #define TORRENT_DOWNLOADER_HPP_INCLUDED
+#ifdef DECENTRALIZED_UPDATE_ENABLED
 #include <QObject>
 #include <QSharedPointer>
 #include <QNetworkAccessManager>
@@ -16,9 +17,9 @@ public:
 public Q_SLOTS:
 	void setTargetFileLength(qint64);
 	void setTargetFile(QTemporaryFile*);
-	void setTargetFileName(const QString&);
 	void setTorrentFileUrl(const QUrl&);
-	
+	void setTargetFileUrl(const QUrl&); 
+
 	void start();
 	void cancel();
 Q_SIGNALS:
@@ -27,6 +28,8 @@ Q_SIGNALS:
 	void finished();
 	void error(QNetworkReply::NetworkError);
 
+	void logger(QString);
 	void progress(int, qint64, qint64, double, QString);
 };
+#endif // DECENTRALIZED_UPDATE_ENABLED
 #endif // RANGE_DOWNLOADER_HPP_INCLUDED

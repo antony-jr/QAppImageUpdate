@@ -1,3 +1,4 @@
+#ifdef DECENTRALIZED_UPDATE_ENABLED
 #include "torrentdownloader.hpp"
 #include "torrentdownloader_p.hpp"
 #include "helpers_p.hpp"
@@ -23,6 +24,10 @@ TorrentDownloader::TorrentDownloader(QNetworkAccessManager *manager, QObject *pa
 			 this, &TorrentDownloader::error,
 			  Qt::DirectConnection);
 
+		connect(obj, &TorrentDownloaderPrivate::logger,
+			 this, &TorrentDownloader::logger,
+			 Qt::DirectConnection);
+
 		connect(obj, &TorrentDownloaderPrivate::progress,
 			 this, &TorrentDownloader::progress,
 			 Qt::DirectConnection);
@@ -46,14 +51,13 @@ void TorrentDownloader::setTorrentFileUrl(const QUrl &url) {
 
 }
 
-void TorrentDownloader::setTargetFileName(const QString &name) {
-    getMethod(m_Private.data(), "setTargetFileName(const QString&)")
+void TorrentDownloader::setTargetFileUrl(const QUrl &url) {
+     getMethod(m_Private.data(), "setTargetFileUrl(const QUrl&)")
 	    .invoke(m_Private.data(),
                     Qt::QueuedConnection,
-                    Q_ARG(QString,name));
+                    Q_ARG(QUrl,url));
 
 }
-
 
 void TorrentDownloader::setTargetFile(QTemporaryFile *file) {
     getMethod(m_Private.data(), "setTargetFile(QTemporaryFile*)")
@@ -74,4 +78,4 @@ void TorrentDownloader::cancel() {
 	    .invoke(m_Private.data(),
                     Qt::QueuedConnection);
 }
-
+#endif // DECENTRALIZED_UPDATE_ENABLED

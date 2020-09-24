@@ -1,3 +1,4 @@
+#ifdef DECENTRALIZED_UPDATE_ENABLED
 #include <QFileInfo>
 #include <QDebug>
 #include <QCoreApplication>
@@ -5,7 +6,6 @@
 #include <iostream>
 
 #include "torrentdownloader_p.hpp"
-
 
 TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manager) 
 	: QObject() {
@@ -17,7 +17,7 @@ TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manage
 			lt::alert_category::storage);	
 	m_Manager = manager;
 	m_Session.reset(new lt::session(p));
-	m_TorrentFile.reset(new QTemporaryFile);
+	m_TorrentMeta.reset(new QByteArray);
 
 	connect(&m_Timer, &QTimer::timeout, 
 		 this, &TorrentDownloaderPrivate::torrentDownloadLoop,
@@ -45,22 +45,20 @@ void TorrentDownloaderPrivate::setTargetFile(QTemporaryFile *file) {
 	m_File = file;
 }
 
-void TorrentDownloaderPrivate::setTargetFileName(const QString &fileName) {
-	if(b_Running) {
-		return;
-	}
-
-	m_FileName = fileName;
-}
-
 void TorrentDownloaderPrivate::setTorrentFileUrl(const QUrl &url) {
 	if(b_Running) {
 		return;
 	}
-	qDebug() <<"Set::" << url;
-	m_Url = url;
+	m_TorrentFileUrl = url;
 }
+
+void TorrentDownloaderPrivate::setTargetFileUrl(const QUrl &url) {
+	if(b_Running) {
+		return;
+	}
+	m_TargetFileUrl = url;
 	
+}
 
 void TorrentDownloaderPrivate::start() {
 	if(b_Running) {
@@ -68,13 +66,11 @@ void TorrentDownloaderPrivate::start() {
 	}
 	b_Running = b_Finished = false;
 
-	m_TorrentFile->open();
-	(void)m_TorrentFile->fileName();
 
-	qDebug() << "Downloading... " << m_Url;
+	m_TorrentMeta->clear();
 
 	QNetworkRequest request;
-    	request.setUrl(m_Url);
+    	request.setUrl(m_TorrentFileUrl);
 	request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
     	auto reply = m_Manager->get(request);
@@ -121,52 +117,55 @@ void TorrentDownloaderPrivate::handleTorrentFileData(qint64 br, qint64 bt) {
 		}
 
 		if(reply->isReadable()) {
-			m_TorrentFile->write(reply->readAll());
+			m_TorrentMeta->append(reply->readAll());
 		}
 }
 
 void TorrentDownloaderPrivate::handleTorrentFileFinish() {
 	auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
-	m_TorrentFile->write(reply->readAll());
-	m_TorrentFile->close();
+	m_TorrentMeta->append(reply->readAll());
 
 	reply->disconnect();
 	reply->deleteLater();
 
 	if(b_CancelRequested) {
+		m_File->setAutoRemove(true);
+		m_File->open();
 		b_CancelRequested = false;
 		b_Running = b_Finished = false;	
 		emit canceled();
 		return;
 	}
 
-	// Now start the actual torrent download.
-	m_OldTempName = m_File->fileName();
-	QFileInfo sameFile(QFileInfo(m_File->fileName()).path() + "/" + m_FileName);
-        if(sameFile.exists()) {
-                QString newTargetFileName = sameFile.baseName() +
-                                    QString("-moved-on-") +
-                                    QDateTime::currentDateTime().toString(Qt::ISODate)
-                                    .replace(":", "-")
-                                    .replace(" ", "-") +
-                                    QString(".") +
-                                    sameFile.completeSuffix();
-		
-		QFile f;
-		f.setFileName(sameFile.absoluteFilePath());
-		if(!f.open(QIODevice::ReadWrite)) {
-
-		}
-		f.rename(QFileInfo(m_File->fileName()).path() + "/" + newTargetFileName);
-		f.close();
-	}
-        m_File->rename(QFileInfo(m_File->fileName()).path() + "/" + m_FileName);
-
 	lt::add_torrent_params params;
        	QString savePath = QFileInfo(m_File->fileName()).path() + "/";
+
 	params.save_path = savePath.toStdString();
-	params.ti = std::make_shared<lt::torrent_info>(m_TorrentFile->fileName().toStdString());
+	auto ti = std::make_shared<lt::torrent_info>(m_TorrentMeta->constData(), (int)m_TorrentMeta->size());
+
+	/// We know that MakeAppImageTorrent only packs a single file that is the 
+	/// the Target AppImage. So We just need to check if it is bundled correctly.
+	if(ti->num_files() != 1) {
+		emit error(QNetworkReply::ProtocolFailure);
+		return;
+	}
+
+	/// Since only 1 file is packaged in the torrent, we can 
+	/// assume that the file index for our Target AppImage is 0
+	ti->rename_file(0, 
+		   QFileInfo(m_File->fileName()).fileName().toStdString());	
+
+
+	/// Add the target file url as web seed
+	/// See BEP 17 and BEP 19
+	ti->add_url_seed(m_TargetFileUrl.toString().toStdString());
+
+	params.ti = ti;
 	m_Handle = m_Session->add_torrent(params);
+	if(!m_Handle.is_valid()) {
+		emit error(QNetworkReply::ProtocolFailure);
+		return;
+	}
 
 	m_Timer.setSingleShot(false);
 	m_Timer.setInterval(500);
@@ -179,6 +178,8 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 		return;
 	}
 	if(b_CancelRequested) {
+		m_File->setAutoRemove(true);
+		m_File->open();
 		m_Timer.stop();
 		m_Session->abort();
 		b_CancelRequested = false;
@@ -189,6 +190,7 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 	std::vector<lt::alert*> alerts;
 	m_Session->pop_alerts(&alerts);
 	for (lt::alert const* a : alerts) {
+		emit logger(QString::fromStdString(a->message()));	
 		if (lt::alert_cast<lt::torrent_finished_alert>(a)) {
 			m_File->setAutoRemove(true);
 			m_File->open();
@@ -200,11 +202,13 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 			return;		
 		}
 		if (lt::alert_cast<lt::torrent_error_alert>(a)) {
+			m_File->setAutoRemove(true);
+			m_File->open();
 			m_Timer.stop();
 	       		m_Session->abort();
 			b_Running = false;
 			b_Finished = false;
-			emit error(QNetworkReply::UnknownNetworkError);
+			emit error(QNetworkReply::ProtocolFailure);
 			return;	
 		}
 
@@ -222,3 +226,4 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 		QCoreApplication::processEvents();
 	}
 }
+#endif // DECENTRALIZED_UPDATE_ENABLED

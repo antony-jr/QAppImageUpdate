@@ -45,8 +45,6 @@ list(APPEND source
     src/rangereply_p.cc
     src/rangedownloader.cc
     src/rangedownloader_p.cc
-    src/torrentdownloader.cc
-    src/torrentdownloader_p.cc
     src/zsyncremotecontrolfileparser_p.cc
     src/appimageupdateinformation_p.cc
     src/zsyncwriter_p.cc
@@ -59,8 +57,6 @@ list(APPEND source
     include/appimageupdateinformation_p.hpp
     include/rangedownloader.hpp
     include/rangedownloader_p.hpp
-    include/torrentdownloader.hpp
-    include/torrentdownloader_p.hpp
     include/zsyncinternalstructures_p.hpp
     include/zsyncwriter_p.hpp
     include/qappimageupdatecodes.hpp
@@ -92,6 +88,20 @@ else()
 #	include/appimageupdaterdialog.hpp)
 endif()
 
+
+if(DECENTRALIZED_UPDATE_ENABLED)
+    message("-- [*] IMPORTANT: Decentralized update feature is ENABLED.")
+    add_definitions(-DDECENTRALIZED_UPDATE_ENABLED)
+    list(APPEND source src/torrentdownloader.cc
+	    	       src/torrentdownloader_p.cc
+		       include/torrentdownloader.hpp
+		       include/torrentdownloader_p.hpp)
+endif()
+
+if(NOT DECENTRALIZED_UPDATE_ENABLED)
+    message("-- [*] IMPORTANT: Decentralized update feature is DISABLED in this build.")
+endif()
+
 if(BUILD_AS_PLUGIN)
    message("-- [*] IMPORTANT: Building as a Qt Plugin.")
    add_definitions(-DBUILD_AS_PLUGIN)
@@ -100,12 +110,16 @@ if(BUILD_AS_PLUGIN)
 		      src/qappimageupdateinterfaceimpl.cc)
    add_library(QAppImageUpdate SHARED ${source})
 else()
-	add_library(QAppImageUpdate ${source})
+   add_library(QAppImageUpdate ${source})
 endif()
 
-target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network torrent-rasterbar boost_system pthread)
+target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network)
 target_include_directories(QAppImageUpdate INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include>")
 target_include_directories(QAppImageUpdate INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate>" )
+
+if(DECENTRALIZED_UPDATE_ENABLED)
+	target_link_libraries(QAppImageUpdate PUBLIC torrent-rasterbar boost_system pthread)
+endif()
 
 if(NOT NO_GUI)
 	target_link_libraries(QAppImageUpdate PUBLIC Qt5::Widgets)

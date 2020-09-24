@@ -472,12 +472,24 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     (void)p_TargetFile->fileName();
     INFO_START " setConfiguration : temporary file will temporarily reside at " LOGR p_TargetFile->fileName() LOGR "." INFO_END;
     
-    /// Create a range downloader
-    if(!b_TorrentAvail) {
-    	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
-    }else {
+    /// Create a range downloader or a Torrent Client to download the update
+    /// in a decentralized way. Saves bandwidth for the server.
+
+#ifdef DECENTRALIZED_UPDATE_ENABLED 
+    if(b_TorrentAvail && b_AcceptRange) {
+    	INFO_START " setConfiguration : candidate suitable for decentralized update" INFO_END;
 	m_TorrentDownloader.reset(new TorrentDownloader(m_Manager));
+    }else{
+  	WARNING_START " setConfiguration : candidate not suitable for decentralized update" WARNING_END;	
+	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
     }
+#else
+    if(b_TorrentAvail && b_AcceptRange) {
+	    WARNING_START " setConfiguration : candidate suitable for decentralized update but this build has no capabilities"
+		    		WARNING_END;
+    }
+    m_RangeDownloader.reset(new RangeDownloader(m_Manager));
+#endif // DECENTRALIZED_UPDATE_ENABLED
 
     b_Configured = true;    
     emit finishedConfiguring();
@@ -490,11 +502,21 @@ void ZsyncWriterPrivate::cancel() {
 	    return;
     }
     b_CancelRequested = true;
+#ifdef DECENTRALIZED_UPDATE_ENABLED
     if(!b_TorrentAvail) {
-    	m_RangeDownloader->cancel();
+    	if(!m_RangeDownloader.isNull()){
+		m_RangeDownloader->cancel();
+	}
     }else {
-    	m_TorrentDownloader->cancel();
+	if(!m_TorrentDownloader.isNull()){
+    		m_TorrentDownloader->cancel();
+	}
     }
+#else
+    if(!m_RangeDownloader.isNull()) {
+	    m_RangeDownloader->cancel();
+    }
+#endif // DECENTRALIZED_UPDATE_ENABLED
     INFO_START " cancel : cancel requested " LOGR b_CancelRequested LOGR "." INFO_END;
     return;
 }
@@ -605,20 +627,32 @@ void ZsyncWriterPrivate::start() {
 
     if(n_BytesWritten >= n_TargetFileLength) {
         verifyAndConstructTargetFile();
-    } else if(b_TorrentAvail) {
+    }
+#ifdef DECENTRALIZED_UPDATE_ENABLED
+    /// See BEP 17 and BEP 19, Web seeds or url seeds needs a server which accepts 
+    /// range requests, It is possible for the torrent client to update if there are
+    /// ample amounts of peers seeding it but there is no assurance that the AppImage 
+    /// is being seeded. So if we try torrenting with a unsupported url seed then 
+    /// the update will just be quietly waiting for seeds forever.
+    /// So the best way is to just do a dumb http download.
+    else if(b_TorrentAvail && b_AcceptRange) {
        m_TorrentDownloader->setTargetFileLength(n_TargetFileLength);
        m_TorrentDownloader->setTorrentFileUrl(u_TorrentFileUrl);
        m_TorrentDownloader->setTargetFile(p_TargetFile.data());
-       m_TorrentDownloader->setTargetFileName(s_TargetFileName);
+       m_TorrentDownloader->setTargetFileUrl(u_TargetFileUrl);
 
        connect(m_TorrentDownloader.data(), &TorrentDownloader::finished,
 		this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection);
        connect(m_TorrentDownloader.data(), &TorrentDownloader::error,
-	       this, &ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection); 
+	       this, &ZsyncWriterPrivate::handleTorrentError, Qt::QueuedConnection); 
        connect(m_TorrentDownloader.data(), &TorrentDownloader::canceled,
 	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
+       connect(m_TorrentDownloader.data(), &TorrentDownloader::logger,
+	       this, &ZsyncWriterPrivate::handleTorrentLogger);
+        
        m_TorrentDownloader->start();
     }
+#endif // DECENTRALIZED_UPDATE_ENABLED
     else {     
        m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
        
@@ -668,6 +702,60 @@ void ZsyncWriterPrivate::handleNetworkError(QNetworkReply::NetworkError code) {
 	FATAL_START " handleNetworkError : " LOGR code FATAL_END;
 	emit error(translateQNetworkReplyError(code));
 }
+
+#ifdef DECENTRALIZED_UPDATE_ENABLED
+void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {
+	Q_UNUSED(code);
+	FATAL_START " handleTorrentError : " LOGR code FATAL_END;
+	INFO_START " handleTorrentError : Falling back to range download" INFO_END;
+
+	m_TorrentDownloader->disconnect();
+	m_TorrentDownloader.reset(nullptr); // Delete the torrent downloader completely.
+
+	b_TorrentAvail = false;
+
+	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
+	m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
+
+       	if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
+		m_RangeDownloader->setFullDownload(true);
+       		// Full Download
+       		connect(m_RangeDownloader.data(), &RangeDownloader::data,
+			this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
+	}else {
+       		// Partial Download
+       		auto partial = getBlockRanges();
+       		m_RangeDownloader->setFullDownload(!partial);
+
+       		if(partial) {
+       			connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
+		       		this, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
+       
+      	 	}else{
+			connect(m_RangeDownloader.data(), &RangeDownloader::data,
+				this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
+      
+       		}
+       }
+
+       connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
+	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
+
+       connect(m_RangeDownloader.data(), &RangeDownloader::progress,
+	       this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
+
+       connect(m_RangeDownloader.data(), &RangeDownloader::error,
+	       this, &ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection);
+
+       m_RangeDownloader->setBlockSize(n_BlockSize);
+       m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
+       m_RangeDownloader->start(); 
+}
+
+void ZsyncWriterPrivate::handleTorrentLogger(QString msg) {
+	INFO_START msg INFO_END;
+}
+#endif // DECENTRALIZED_UPDATE_ENABLED
 
 void ZsyncWriterPrivate::handleCancel() {
 	b_CancelRequested = false;

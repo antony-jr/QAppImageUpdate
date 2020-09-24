@@ -1,5 +1,6 @@
 #ifndef TORRENT_DOWNLOADER_PRIVATE_HPP_INCLUDED
 #define TORRENT_DOWNLOADER_PRIVATE_HPP_INCLUDED
+#ifdef DECENTRALIZED_UPDATE_ENABLED
 #include <QObject>
 #include <QScopedPointer>
 #include <QNetworkAccessManager>
@@ -30,6 +31,7 @@ public Q_SLOTS:
 	void setTargetFile(QTemporaryFile*);
 	void setTargetFileName(const QString&);
 	void setTorrentFileUrl(const QUrl&);
+	void setTargetFileUrl(const QUrl&);
 
 	void start();
 	void cancel();
@@ -47,7 +49,7 @@ Q_SIGNALS:
 	void finished();
 	void error(QNetworkReply::NetworkError);
 
-
+	void logger(QString);
 	void progress(int, qint64, qint64, double, QString);
 private:
 	bool b_Finished = false,
@@ -56,13 +58,13 @@ private:
 
 	qint64 n_TargetFileLength;
 	QTimer m_Timer;
-	QUrl m_Url;
-	QString m_FileName;
-	QString m_OldTempName;
+	QUrl m_TorrentFileUrl,
+	     m_TargetFileUrl;
 	QTemporaryFile *m_File;
 	QNetworkAccessManager *m_Manager;
-	QScopedPointer<QTemporaryFile> m_TorrentFile;
+	QScopedPointer<QByteArray> m_TorrentMeta;
 	QScopedPointer<lt::session> m_Session;
 	lt::torrent_handle m_Handle;
 };
+#endif // DECENTRALIZED_UPDATE_ENABLED
 #endif // TORRENT_DOWNLOADER_PRIVATE_HPP_INCLUDED

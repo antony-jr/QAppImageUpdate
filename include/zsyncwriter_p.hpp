@@ -54,7 +54,9 @@
 #include <QNetworkAccessManager>
 
 #include "rangedownloader.hpp"
+#ifdef DECENTRALIZED_UPDATE_ENABLED
 #include "torrentdownloader.hpp"
+#endif
 #include "zsyncinternalstructures_p.hpp"
 
 class ZsyncWriterPrivate : public QObject {
@@ -98,6 +100,10 @@ class ZsyncWriterPrivate : public QObject {
     void writeBlockRanges(qint32, qint32, QByteArray*);
     void writeSeqRaw(QByteArray*);
     void handleNetworkError(QNetworkReply::NetworkError);
+#ifdef DECENTRALIZED_UPDATE_ENABLED 
+    void handleTorrentError(QNetworkReply::NetworkError);
+    void handleTorrentLogger(QString);
+#endif
 
   Q_SIGNALS:
     void finishedConfiguring();
@@ -153,7 +159,9 @@ class ZsyncWriterPrivate : public QObject {
     QScopedPointer<QTemporaryFile> p_TargetFile; /* under construction target file. */
     QScopedPointer<QElapsedTimer> p_TransferSpeed;
     QScopedPointer<RangeDownloader> m_RangeDownloader;
+#ifdef DECENTRALIZED_UPDATE_ENABLED
     QScopedPointer<TorrentDownloader> m_TorrentDownloader;
+#endif // DECENTRALIZED_UPDATE_ENABLED
     QNetworkAccessManager *m_Manager;
 #ifndef LOGGING_DISABLED
     QString s_LogBuffer,

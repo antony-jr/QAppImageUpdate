@@ -37,6 +37,8 @@ script:
   - make clean
   - qmake "CONFIG+=LOGGING_DISABLED" "CONFIG+=NO_GUI" ..
   - make -j$(nproc) # test if build succeeds without gui and log support
+  - qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" 
+  - make -j$(nproc)
   - cd ..
   - mkdir build-cmake ; cd build-cmake # Check if it builds as a library using cmake.
   - cmake ..
@@ -63,7 +65,6 @@ script:
   - make -j$(nproc)
   - Xvfb :100 -ac &
   - export DISPLAY=:100.0
-  - ldd tests
   - ./tests
   - cd ..
   - mkdir build
