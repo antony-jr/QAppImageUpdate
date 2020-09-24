@@ -31,7 +31,6 @@ public:
 public Q_SLOTS:
 	void setTargetFileLength(qint64);
 	void setTargetFile(QTemporaryFile*);
-	void setTargetFileName(const QString&);
 	void setTorrentFileUrl(const QUrl&);
 	void setTargetFileUrl(const QUrl&);
 
