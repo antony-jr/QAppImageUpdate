@@ -264,25 +264,9 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 		(m_ActiveRequests.at(index))->destroy();
 
 		bool isLast = (n_Done >= m_RequiredBlocks.size() && n_Active - 1 == -1);
+		
 		emit rangeData(from, to,  data, isLast);
-
-		if(isLast) {
-			QString sUnit;
-			double nSpeed =  (n_TotalSize) * 1000.0 / m_ElapsedTimer.elapsed();
-        		if (nSpeed < 1024) {
-            			sUnit = "bytes/sec";
-        		} else if (nSpeed < 1024 * 1024) {
-            			nSpeed /= 1024;
-            			sUnit = "kB/s";
-        		} else {
-            			nSpeed /= 1024 * 1024;
-            			sUnit = "MB/s";
-			}
- 
-			emit progress(100, n_TotalSize, n_TotalSize, nSpeed, sUnit);
-		}
-	
-
+		
 		if(n_Done >= m_RequiredBlocks.size()){
 			--n_Active;
 			if(n_Active == -1) {
@@ -324,6 +308,11 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {
 	n_RecievedBytes += bytesRc;
 	qint64 bytesRecieved = n_BytesWritten + n_RecievedBytes;
+	
+	if(bytesRecieved >= n_TotalSize) {
+		bytesRecieved = n_TotalSize;
+	}
+
 	QString sUnit;
         int nPercentage = static_cast<int>(
                               (static_cast<float>
@@ -331,7 +320,8 @@ void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index)
                               ) / static_cast<float>
                               (n_TotalSize)
                           );
-        double nSpeed =  bytesRecieved * 1000.0 / m_ElapsedTimer.elapsed();
+
+        double nSpeed =  (n_RecievedBytes) * 1000.0 / m_ElapsedTimer.elapsed();
         if (nSpeed < 1024) {
             sUnit = "bytes/sec";
         } else if (nSpeed < 1024 * 1024) {
