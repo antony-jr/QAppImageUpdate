@@ -62,6 +62,12 @@ void RangeDownloader::setTargetFileLength(qint32 n) {
                     Q_ARG(qint32,n));
 }	
 
+void RangeDownloader::setBytesWritten(qint64 n) {
+    getMethod(m_Private.data(), "setBytesWritten(qint64)")
+	    .invoke(m_Private.data(),
+                    Qt::QueuedConnection,
+                    Q_ARG(qint64,n));
+}	
 
 
 void RangeDownloader::setFullDownload(bool choice){

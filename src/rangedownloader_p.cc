@@ -39,6 +39,20 @@ void RangeDownloaderPrivate::setTargetFileUrl(const QUrl &url) {
 		m_Url = url;
 }
 
+void RangeDownloaderPrivate::setTargetFileLength(qint32 len) {
+		if(b_Running) {
+			return;
+		}
+		n_TotalSize = len;
+}
+
+void RangeDownloaderPrivate::setBytesWritten(qint64 len) {
+		if(b_Running) {
+			return;
+		}
+		n_BytesWritten = len;
+}
+
 void RangeDownloaderPrivate::setFullDownload(bool fullDownload) {
 		if(b_Running) { 
 			return;
@@ -196,8 +210,8 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 				this, SLOT(handleRangeReplyFinished(qint32,qint32, QByteArray*, int)),
 				Qt::QueuedConnection);
 			
-			connect(rangeReply, SIGNAL(progress(qint64, qint64, int)), 
-				 this, SLOT(handleRangeReplyProgress(qint64, qint64, int)),
+			connect(rangeReply, SIGNAL(progress(qint64, int)), 
+				 this, SLOT(handleRangeReplyProgress(qint64, int)),
 				 Qt::QueuedConnection);
 
 			m_ActiveRequests.append(rangeReply);
@@ -224,6 +238,8 @@ void RangeDownloaderPrivate::handleRangeReplyRestart(int index) {
 void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError code, int index) {
 		/// TODO: If the error is not severe then we might want to retry to 
 		//        a specific threshold	
+		qDebug() << "Error" << code;
+
 		if( /* code is not severe and can be retried and max tries is not reached */0) {
 			(m_ActiveRequests.at(index))->retry();
 			return;
@@ -282,8 +298,8 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 				this, SLOT(handleRangeReplyFinished(qint32, qint32, QByteArray*, int)),
 				Qt::QueuedConnection);	
 
-		connect(rangeReply, SIGNAL(progress(qint64, qint64, int)), 
-				 this, SLOT(handleRangeReplyProgress(qint64, qint64, int)),
+		connect(rangeReply, SIGNAL(progress(qint64, int)), 
+				 this, SLOT(handleRangeReplyProgress(qint64, int)),
 				 Qt::QueuedConnection);
 
 
@@ -291,7 +307,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 
 void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {	
 	m_RecievedBytes[index] += bytesRc;
-	qint64 bytesRecieved = 0;
+	qint64 bytesRecieved = n_BytesWritten;
 
 	/// Copy the vector since will be calling the event loop when 
 	/// looping.
@@ -310,7 +326,7 @@ void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index)
                               ) / static_cast<float>
                               (n_TotalSize)
                           );
-        double nSpeed =  bytesRecieved * 1000.0 / m_ElapsedTimer.elapsed();
+        double nSpeed =  (bytesRecieved - n_BytesWritten) * 1000.0 / m_ElapsedTimer.elapsed();
         if (nSpeed < 1024) {
             sUnit = "bytes/sec";
         } else if (nSpeed < 1024 * 1024) {

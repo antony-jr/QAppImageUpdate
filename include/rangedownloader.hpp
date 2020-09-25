@@ -16,6 +16,7 @@ public Q_SLOTS:
 	void setBlockSize(qint32);
 	void setTargetFileUrl(const QUrl&);
 	void setTargetFileLength(qint32);
+	void setBytesWritten(qint64);
 	void setFullDownload(bool);
 	void appendRange(qint32, qint32);
 	

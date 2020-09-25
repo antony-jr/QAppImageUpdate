@@ -14,8 +14,8 @@ RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPai
 		connect(reply, SIGNAL(downloadProgress(qint64, qint64)),
 			this, SLOT(handleData(qint64, qint64)),
 			Qt::QueuedConnection);
-		connect(reply, SIGNAL(finished(void)),
-			this, SLOT(handleFinish(void)),
+		connect(reply, SIGNAL(finished()),
+			this, SLOT(handleFinish()),
 			Qt::QueuedConnection);
 		connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
 			this, SLOT(handleError(QNetworkReply::NetworkError)),
@@ -23,6 +23,8 @@ RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPai
 		//// Connect timer for retry action
 		connect(&m_Timer, SIGNAL(timeout()),
 			 this, SLOT(restart()));
+
+		qDebug() << reply->size();
 }
 
 RangeReplyPrivate::~RangeReplyPrivate() {
@@ -109,11 +111,11 @@ void RangeReplyPrivate::restart() {
 		m_Reply.reset(m_Manager->get(m_Request));
 
 		auto reply = m_Reply.data();
-		connect(reply, SIGNAL(progress(qint64, qint64)),
+		connect(reply, SIGNAL(downloadProgress(qint64, qint64)),
 			this, SLOT(handleData(qint64, qint64)),
 			Qt::QueuedConnection);
 		connect(reply, SIGNAL(finished()),
-			this, SLOT(handleFinish),
+			this, SLOT(handleFinish()),
 			Qt::QueuedConnection);
 		connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
 			this, SLOT(handleError(QNetworkReply::NetworkError)),
@@ -141,6 +143,7 @@ void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
 
 
 void RangeReplyPrivate::handleError(QNetworkReply::NetworkError code) {
+		qDebug() << "Error";
 		if(b_Halted) {
 			return;
 		}
@@ -162,7 +165,8 @@ void RangeReplyPrivate::handleError(QNetworkReply::NetworkError code) {
 }
 
 void RangeReplyPrivate::handleFinish() {
-		if(b_Halted) {
+		qDebug() << "Finished ragne reply";
+	        if(b_Halted) {
 			return;
 		}
 

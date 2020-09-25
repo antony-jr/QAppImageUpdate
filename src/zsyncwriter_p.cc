@@ -361,6 +361,8 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
     }
 
 
+    //// Verify and construct if the current block range is the 
+    //// last.
     if(isLast) {
 	verifyAndConstructTargetFile();
     }
@@ -654,6 +656,7 @@ void ZsyncWriterPrivate::start() {
     else {     
        m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
        m_RangeDownloader->setTargetFileLength(n_TargetFileLength);       
+       m_RangeDownloader->setBytesWritten(n_BytesWritten);
 
        if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
        m_RangeDownloader->setFullDownload(true);
@@ -715,6 +718,8 @@ void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {
 	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
 	m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
 	m_RangeDownloader->setTargetFileLength(n_TargetFileLength);       
+	m_RangeDownloader->setBytesWritten(n_BytesWritten);
+
 
 
        	if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
@@ -925,8 +930,6 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
         INFO_START " verifyAndConstructTargetFile : sha1 hash matches!" INFO_END;
         QString newTargetFileName;
         p_TargetFile->setAutoRemove(!(constructed = true));
-
-	if(!b_TorrentAvail) {
 	/*
          * Rename the new version with current time stamp.
          * Do not touch anything else.
@@ -951,7 +954,6 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
             }
         }
         p_TargetFile->rename(QFileInfo(p_TargetFile->fileName()).path() + "/" + newTargetFileName);
-	}
 
         /*Set the same permission as the old version and close. */
         p_TargetFile->setPermissions(QFileInfo(s_SourceFilePath).permissions());

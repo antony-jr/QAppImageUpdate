@@ -17,6 +17,7 @@ public:
 public Q_SLOTS:
 	void setBlockSize(qint32);
 	void setTargetFileUrl(const QUrl&);
+	void setBytesWritten(qint64);
 	void setTargetFileLength(qint32);
 	void setFullDownload(bool);
 	void appendRange(qint32, qint32);
@@ -53,6 +54,7 @@ private:
 	    n_Done = 0;
 	QUrl m_Url;
 	qint32 n_BlockSize = 1024;
+	qint64 n_BytesWritten = 0;
 	qint64 n_TotalSize = -1;
 
 	QNetworkAccessManager *m_Manager;

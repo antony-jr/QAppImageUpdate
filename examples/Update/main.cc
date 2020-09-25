@@ -20,9 +20,15 @@ int main(int ac, char **av) {
 
     QObject::connect(&updater, &QAppImageUpdate::error, [&](short ecode, short action) {
         qCritical().noquote() << "error:: " << QAppImageUpdate::errorCodeToString(ecode);
-        return;
+        app.quit();
+	return;
     });
 
+    QObject::connect(&updater, &QAppImageUpdate::progress, 
+    [&](int percentage, qint64 rc, qint64 total, double speed, QString units) {
+    	qInfo().noquote() << "Updating " << percentage << "%: Revised " << rc << "/" << total 
+	           << " bytes at " << speed << units << "... ";
+    });
 
     QObject::connect(&updater, &QAppImageUpdate::finished, [&](QJsonObject info, short action) {
 	qInfo().noquote() << info;
