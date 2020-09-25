@@ -23,8 +23,6 @@ RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPai
 		//// Connect timer for retry action
 		connect(&m_Timer, SIGNAL(timeout()),
 			 this, SLOT(restart()));
-
-		qDebug() << reply->size();
 }
 
 RangeReplyPrivate::~RangeReplyPrivate() {
@@ -36,7 +34,7 @@ RangeReplyPrivate::~RangeReplyPrivate() {
 		else if(b_Running) {	
 			m_Reply->disconnect();
 			m_Reply->abort();
-		}	
+		}
 }
 
 
@@ -106,7 +104,6 @@ void RangeReplyPrivate::restart() {
 		}
 
 		resetInternalFlags();
-		b_Retrying = false;
 
 		m_Reply.reset(m_Manager->get(m_Request));
 
@@ -126,6 +123,7 @@ void RangeReplyPrivate::restart() {
 }
 
 void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
+		Q_UNUSED(bytesTotal);
 		emit progress(bytesRec, n_Index);
 
 		if(m_Reply.isNull() || b_Halted) {
@@ -143,7 +141,6 @@ void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
 
 
 void RangeReplyPrivate::handleError(QNetworkReply::NetworkError code) {
-		qDebug() << "Error";
 		if(b_Halted) {
 			return;
 		}
@@ -165,7 +162,6 @@ void RangeReplyPrivate::handleError(QNetworkReply::NetworkError code) {
 }
 
 void RangeReplyPrivate::handleFinish() {
-		qDebug() << "Finished ragne reply";
 	        if(b_Halted) {
 			return;
 		}
@@ -183,7 +179,10 @@ void RangeReplyPrivate::handleFinish() {
 		
 		/// Append any data that is left.
 		m_Data->append(m_Reply->readAll());
-	
+
+		/// Emit the progress for 100%
+		emit progress(m_Data->size(), n_Index);
+
 		/// Finish the range reply	
 		emit finished(n_FromBlock, n_ToBlock,  m_Data.take(), n_Index);	
 		

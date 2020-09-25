@@ -273,7 +273,6 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void) {
 
     QNetworkRequest request;
     request.setUrl(u_ControlFileUrl);
-    request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
     auto reply = p_NManager->get(request);
@@ -693,7 +692,6 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void) {
         QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(0) + "-";
         rangeHeaderValue += QByteArray::number(200); // Just get the first 200 Bytes of data.
         request.setUrl(u_TargetFileUrl);
-        request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
         request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
         request.setRawHeader("Range", rangeHeaderValue);
         auto reply = p_NManager->get(request);

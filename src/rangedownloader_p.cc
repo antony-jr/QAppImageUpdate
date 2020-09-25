@@ -6,7 +6,7 @@
 RangeDownloaderPrivate::RangeDownloaderPrivate(QNetworkAccessManager *manager, QObject *parent) 
 	: QObject(parent) {
 	m_Manager = manager;
-
+	m_Manager->clearAccessCache();
 }
 	
 RangeDownloaderPrivate::~RangeDownloaderPrivate() { 
@@ -124,7 +124,8 @@ QNetworkRequest RangeDownloaderPrivate::makeRangeRequest(const QUrl &url, const 
         		rangeHeaderValue += QByteArray::number(toRange);
 			request.setRawHeader("Range", rangeHeaderValue);
     		}
-    		request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+		// Http pipelining is not helping in our case.
+    		//request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     		request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 		return request;	
 }
@@ -191,7 +192,7 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 
 			 QNetworkRequest request = makeRangeRequest(m_Url, range);
 			 ++n_Active;
-			
+
 			auto rangeReply = new RangeReply(n_Active, m_Manager->get(request), range);
 
 			connect(rangeReply, SIGNAL(canceled(int)),
@@ -238,8 +239,6 @@ void RangeDownloaderPrivate::handleRangeReplyRestart(int index) {
 void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError code, int index) {
 		/// TODO: If the error is not severe then we might want to retry to 
 		//        a specific threshold	
-		qDebug() << "Error" << code;
-
 		if( /* code is not severe and can be retried and max tries is not reached */0) {
 			(m_ActiveRequests.at(index))->retry();
 			return;
@@ -265,6 +264,21 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 		(m_ActiveRequests.at(index))->destroy();
 
 		bool isLast = (n_Done >= m_RequiredBlocks.size() && n_Active - 1 == -1);
+		if(isLast) {
+			QString sUnit;
+			double nSpeed =  (n_TotalSize) * 1000.0 / m_ElapsedTimer.elapsed();
+        		if (nSpeed < 1024) {
+            			sUnit = "bytes/sec";
+        		} else if (nSpeed < 1024 * 1024) {
+            			nSpeed /= 1024;
+            			sUnit = "kB/s";
+        		} else {
+            			nSpeed /= 1024 * 1024;
+            			sUnit = "MB/s";
+			}
+ 
+			emit progress(100, n_TotalSize, n_TotalSize, nSpeed, sUnit);
+		}
 		emit rangeData(from, to,  data, isLast);
 
 		if(n_Done >= m_RequiredBlocks.size()){
@@ -305,8 +319,8 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 
 }
 
-void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {	
-	m_RecievedBytes[index] += bytesRc;
+void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {
+	m_RecievedBytes[index] = bytesRc;
 	qint64 bytesRecieved = n_BytesWritten;
 
 	/// Copy the vector since will be calling the event loop when 
@@ -317,6 +331,7 @@ void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index)
 		 iter != end;
 		 ++iter) {
 		bytesRecieved += *iter;
+		QCoreApplication::processEvents();
 	}
 
 	QString sUnit;

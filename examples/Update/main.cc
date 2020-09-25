@@ -35,7 +35,7 @@ int main(int ac, char **av) {
 
 	++it;
         if(it >= parser.positionalArguments().count()) {
-            app.quit();
+	    app.quit();
         } else {
             QString path(args[it]);
             updater.setAppImage(path);
