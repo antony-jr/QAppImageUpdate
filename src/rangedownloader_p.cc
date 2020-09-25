@@ -84,7 +84,6 @@ void RangeDownloaderPrivate::start() {
     		// We should not send a HEAD request since it may not be supported by some
     		// hosts.
     		request.setUrl(m_Url);
-    		request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     		request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
     		auto reply = m_Manager->get(request);
@@ -224,6 +223,7 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 
 /// Range Reply Handlers
 void RangeDownloaderPrivate::handleRangeReplyCancel(int index) {
+		Q_UNUSED(index);
 		--n_Active;
 		if(n_Active == -1) {
 			b_Running = b_Finished = b_CancelRequested = false;
@@ -234,6 +234,7 @@ void RangeDownloaderPrivate::handleRangeReplyCancel(int index) {
 
 void RangeDownloaderPrivate::handleRangeReplyRestart(int index) {
 		/// TODO: Anything useful in this?	
+		Q_UNUSED(index);
 }
 
 void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError code, int index) {
@@ -264,6 +265,8 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 		(m_ActiveRequests.at(index))->destroy();
 
 		bool isLast = (n_Done >= m_RequiredBlocks.size() && n_Active - 1 == -1);
+		emit rangeData(from, to,  data, isLast);
+
 		if(isLast) {
 			QString sUnit;
 			double nSpeed =  (n_TotalSize) * 1000.0 / m_ElapsedTimer.elapsed();
@@ -279,7 +282,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
  
 			emit progress(100, n_TotalSize, n_TotalSize, nSpeed, sUnit);
 		}
-		emit rangeData(from, to,  data, isLast);
+	
 
 		if(n_Done >= m_RequiredBlocks.size()){
 			--n_Active;
@@ -320,7 +323,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 }
 
 void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {
-	m_RecievedBytes[index] = bytesRc;
+	m_RecievedBytes[index] += bytesRc - m_RecievedBytes.at(index);
 	qint64 bytesRecieved = n_BytesWritten;
 
 	/// Copy the vector since will be calling the event loop when 
