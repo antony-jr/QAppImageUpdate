@@ -74,7 +74,7 @@ void RangeDownloaderPrivate::start() {
 			return;
 		}
 		b_Running = b_Finished = false;
-		n_Active = n_Canceled = -1;		
+		n_Active = -1;
 
 		QNetworkRequest request;
 		
@@ -123,8 +123,6 @@ QNetworkRequest RangeDownloaderPrivate::makeRangeRequest(const QUrl &url, const 
         		rangeHeaderValue += QByteArray::number(toRange);
 			request.setRawHeader("Range", rangeHeaderValue);
     		}
-		// Http pipelining is not helping in our case.
-    		//request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
     		request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 		return request;	
 }
@@ -165,11 +163,44 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 		/// Now we will start the actual download since we got 
 		//  the clean url to the target file.
 
+		/// Amount of bytes downloaded
+		n_RecievedBytes = 0;
+		m_ElapsedTimer.start();
+
 		/// If this flag is set then it means we can't use range request and 
 		//  we have to initiate a very simple download.
 		if(b_FullDownload) {
-			/// TODO: Use a new class to handle full download.
-			qDebug() << "FullDownload is Requested";
+			/// Full download just launch a single RangeReply object.
+			++n_Active;
+			auto range = qMakePair<qint32,qint32>(0,0);
+			auto rangeReply = new RangeReply(n_Active, m_Manager->get(makeRangeRequest(m_Url, range)), range);
+
+			connect(rangeReply, SIGNAL(canceled(int)),
+				this, SLOT(handleRangeReplyCancel(int)),
+				Qt::QueuedConnection);
+
+			connect(rangeReply, SIGNAL(restarted(int)),
+				this, SLOT(handleRangeReplyRestart(int)),
+				Qt::QueuedConnection);
+
+			connect(rangeReply, SIGNAL(error(QNetworkReply::NetworkError, int,bool)),
+				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int,bool)),
+				Qt::QueuedConnection);
+
+			connect(rangeReply, SIGNAL(finished(qint32,qint32, QByteArray*, int)),
+				this, SLOT(handleRangeReplyFinished(qint32,qint32, QByteArray*, int)),
+				Qt::QueuedConnection);
+		
+			connect(rangeReply, SIGNAL(progress(qint64, int)), 
+				 this, SLOT(handleRangeReplyProgress(qint64, int)),
+				 Qt::QueuedConnection);
+
+			connect(rangeReply, SIGNAL(data(QByteArray*, bool)),
+				 this, SIGNAL(data(QByteArray*, bool)),
+				 Qt::DirectConnection);
+
+			m_ActiveRequests.append(rangeReply);
+
 			return;
 		}
 
@@ -177,9 +208,6 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 		// a time.
 		int max_allowed = QThread::idealThreadCount() * 2;
 		int i = n_Done;
-
-		n_RecievedBytes = 0;
-		m_ElapsedTimer.start();
 
 		for(;i < m_RequiredBlocks.size(); ++i){
 			 if(n_Active + 1 >= max_allowed) {
@@ -201,8 +229,8 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 				this, SLOT(handleRangeReplyRestart(int)),
 				Qt::QueuedConnection);
 
-			connect(rangeReply, SIGNAL(error(QNetworkReply::NetworkError, int)),
-				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int)),
+			connect(rangeReply, SIGNAL(error(QNetworkReply::NetworkError, int,bool)),
+				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int,bool)),
 				Qt::QueuedConnection);
 
 			connect(rangeReply, SIGNAL(finished(qint32,qint32, QByteArray*, int)),
@@ -222,7 +250,8 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 
 /// Range Reply Handlers
 void RangeDownloaderPrivate::handleRangeReplyCancel(int index) {
-		Q_UNUSED(index);
+		(m_ActiveRequests.at(index))->destroy();
+		m_ActiveRequests[index] = nullptr;
 		--n_Active;
 		if(n_Active == -1) {
 			b_Running = b_Finished = b_CancelRequested = false;
@@ -232,27 +261,14 @@ void RangeDownloaderPrivate::handleRangeReplyCancel(int index) {
 
 
 void RangeDownloaderPrivate::handleRangeReplyRestart(int index) {
-		/// TODO: Anything useful in this?	
 		Q_UNUSED(index);
+
 }
 
-void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError code, int index) {
-		/// TODO: If the error is not severe then we might want to retry to 
-		//        a specific threshold	
-		if( /* code is not severe and can be retried and max tries is not reached */0) {
-			(m_ActiveRequests.at(index))->retry();
-			return;
-		}else{
-			--n_Active;
-		}
-		if(n_Active == -1) {
-			b_Running = b_Finished = b_CancelRequested = false;
-			emit error(code);
-		}
-}
-
-void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QByteArray *data, int index) {
+void RangeDownloaderPrivate::handleRangeReplyError(QNetworkReply::NetworkError code, int index, bool threshReached) {
 		if(b_CancelRequested) {
+			(m_ActiveRequests.at(index))->destroy();
+			m_ActiveRequests[index] = nullptr;
 			--n_Active;
 			if(n_Active == -1) {
 				b_Running = b_Finished = b_CancelRequested = false;
@@ -261,12 +277,65 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 			return;
 		}
 
-		(m_ActiveRequests.at(index))->destroy();
 
-		bool isLast = (n_Done >= m_RequiredBlocks.size() && n_Active - 1 == -1);
+
+		/// Let's try to retry some type of errors.	
+		/// We don't try to retry a full download, if it 
+		/// fails then the update has to be started from the 
+		/// start. This is because even if we try to restart
+		/// we have to download it from the begining and so
+		/// It has some complications.
+		if((code == QNetworkReply::RemoteHostClosedError ||
+		   code == QNetworkReply::HostNotFoundError ||
+		   code == QNetworkReply::TimeoutError ||
+		   code == QNetworkReply::TemporaryNetworkFailureError ||
+		   code == QNetworkReply::BackgroundRequestNotAllowedError ||
+		   code == QNetworkReply::ProxyConnectionClosedError ||
+		   code == QNetworkReply::ProxyTimeoutError ||
+		   code == QNetworkReply::ContentAccessDenied ||
+		   code == QNetworkReply::ContentReSendError || 
+		   code == QNetworkReply::InternalServerError ||
+		   code == QNetworkReply::ServiceUnavailableError) && !threshReached && !b_FullDownload) {
+			(m_ActiveRequests.at(index))->retry();
+			return;
+		}else {
+			n_Active = -1;
+			for(auto iter = m_ActiveRequests.begin(),
+				 end = m_ActiveRequests.end();
+	 		 	 iter != end;
+			 	 ++iter) {
+		   	     if(*iter){ 
+				(*iter)->disconnect();
+				(*iter)->destroy();
+		   	     }
+			}
+			m_ActiveRequests.clear();	
+			b_Running = b_Finished = b_CancelRequested = false;
+			emit error(code);
+		}
+}
+
+void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QByteArray *Data, int index) {
+		(m_ActiveRequests.at(index))->destroy();
+		m_ActiveRequests[index] = nullptr;
+
+		if(b_CancelRequested) {
+			--n_Active;
+			if(n_Active == -1) {
+				b_Running = b_Finished = b_CancelRequested = false;
+				emit canceled();
+			}
+			return;
+		}
 		
-		emit rangeData(from, to,  data, isLast);
-		
+		if(b_FullDownload) {
+			emit data(Data, true);
+			return;
+		}else {	
+			bool isLast = (n_Done >= m_RequiredBlocks.size() && n_Active - 1 == -1);	
+			emit rangeData(from, to,  Data, isLast);
+		}
+
 		if(n_Done >= m_RequiredBlocks.size()){
 			--n_Active;
 			if(n_Active == -1) {
@@ -290,8 +359,8 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 				this, SLOT(handleRangeReplyRestart(int)),
 				Qt::QueuedConnection);
 
-		connect(rangeReply, SIGNAL(error(QNetworkReply::NetworkError, int)),
-				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int)),
+		connect(rangeReply, SIGNAL(error(QNetworkReply::NetworkError, int, bool)),
+				this, SLOT(handleRangeReplyError(QNetworkReply::NetworkError, int, bool)),
 				Qt::QueuedConnection);
 
 		connect(rangeReply, SIGNAL(finished(qint32, qint32, QByteArray*, int)),
@@ -306,17 +375,18 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 }
 
 void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {
+	Q_UNUSED(index);
 	n_RecievedBytes += bytesRc;
-	qint64 bytesRecieved = n_BytesWritten + n_RecievedBytes;
+	qint64 totalBytesRecieved = n_BytesWritten + n_RecievedBytes;
 	
-	if(bytesRecieved >= n_TotalSize) {
-		bytesRecieved = n_TotalSize;
+	if(totalBytesRecieved >= n_TotalSize) {
+		totalBytesRecieved = n_TotalSize;
 	}
 
 	QString sUnit;
         int nPercentage = static_cast<int>(
                               (static_cast<float>
-                               (bytesRecieved) * 100.0
+                               (totalBytesRecieved) * 100.0
                               ) / static_cast<float>
                               (n_TotalSize)
                           );
@@ -331,5 +401,5 @@ void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index)
             nSpeed /= 1024 * 1024;
             sUnit = "MB/s";
         }
-        emit progress(nPercentage, bytesRecieved, n_TotalSize, nSpeed, sUnit);	
+        emit progress(nPercentage, totalBytesRecieved, n_TotalSize, nSpeed, sUnit);	
 }

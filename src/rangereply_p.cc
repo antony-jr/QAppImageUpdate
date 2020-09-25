@@ -1,15 +1,23 @@
 #include <QDebug>
 #include "rangereply_p.hpp"
 
+/// The number of times a request can be retried if the error
+/// is not severe.
+#define FAIL_THRESHOLD 50
+
 RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPair<qint32, qint32> &blockRange) {	
 		n_Index = index;
 		n_BytesRecieved = 0;
 		n_FromBlock = blockRange.first;
 		n_ToBlock = blockRange.second;
+		n_Fails = 0;
 		m_Request = reply->request();
 		m_Manager = reply->manager();
+		b_FullDownload = (!n_FromBlock || !n_ToBlock);
 		m_Reply.reset(reply);
-		m_Data.reset(new QByteArray);
+		if(!b_FullDownload) {
+			m_Data.reset(new QByteArray);
+		}
 		m_Timer.setSingleShot(true);
 
 		connect(reply, SIGNAL(downloadProgress(qint64, qint64)),
@@ -139,7 +147,14 @@ void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
 		}
 		
 		if(m_Reply->isOpen() && m_Reply->isReadable()){
-			m_Data->append(m_Reply->readAll());
+			if(!b_FullDownload) {
+				m_Data->append(m_Reply->readAll());
+			}else {
+				QByteArray *datafrag = new QByteArray;
+				datafrag->append(m_Reply->readAll());
+				emit data(datafrag, false);
+			}
+
 		}
 }
 
@@ -150,7 +165,9 @@ void RangeReplyPrivate::handleError(QNetworkReply::NetworkError code) {
 		}
 
 		if(code == QNetworkReply::OperationCanceledError || b_CancelRequested) {
-			m_Data->clear();
+			if(!b_FullDownload) {
+				m_Data->clear();
+			}
 			m_Reply->disconnect();
 
 			resetInternalFlags();
@@ -160,7 +177,9 @@ void RangeReplyPrivate::handleError(QNetworkReply::NetworkError code) {
 			return;
 		}
 		resetInternalFlags();
-		emit error(code, n_Index);
+		++n_Fails;
+		bool thresholdReached = (n_Fails > FAIL_THRESHOLD);
+		emit error(code, n_Index, thresholdReached);
 		return;
 
 }
@@ -171,7 +190,9 @@ void RangeReplyPrivate::handleFinish() {
 		}
 
 		if(b_CancelRequested) {
-			m_Data->clear();
+			if(!b_FullDownload) {
+				m_Data->clear();
+			}
 			resetInternalFlags();
 			b_Canceled = true;
 
@@ -182,14 +203,17 @@ void RangeReplyPrivate::handleFinish() {
 		b_Finished = true;
 		
 		/// Append any data that is left.
-		m_Data->append(m_Reply->readAll());
+		if(!b_FullDownload){
+			m_Data->append(m_Reply->readAll());
+		}
 
-		/// Emit the progress for 100%
-		//qint64 actualBytes = m_Data->size() - n_BytesRecieved;
-		//emit progress(actualBytes, n_Index);
-
-		/// Finish the range reply	
-		emit finished(n_FromBlock, n_ToBlock,  m_Data.take(), n_Index);	
-		
+		/// Finish the range reply
+		if(!b_FullDownload) {
+			emit finished(n_FromBlock, n_ToBlock, m_Data.take(), n_Index);	
+		}else {
+			QByteArray *datafrag = new QByteArray;	
+			datafrag->append(m_Reply->readAll());	
+			emit finished(n_FromBlock, n_ToBlock, datafrag , n_Index);
+		}
 		m_Reply->disconnect();
 }

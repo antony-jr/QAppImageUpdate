@@ -30,8 +30,9 @@ private Q_SLOTS:
 	void handleFinish();
 Q_SIGNALS:
 	void restarted(int);
-	void error(QNetworkReply::NetworkError, int);
+	void error(QNetworkReply::NetworkError, int, bool);
 	void progress(qint64, int);
+	void data(QByteArray*, bool);
 	void finished(qint32,qint32,QByteArray*, int);
 	void canceled(int);
 private:
@@ -40,8 +41,10 @@ private:
 	     b_Canceled = false,
 	     b_CancelRequested = false,
 	     b_Retrying = false,
-	     b_Halted = false;
+	     b_Halted = false,
+	     b_FullDownload = false;
 	int n_Index;
+	int n_Fails;
 	qint64 n_BytesRecieved;
 	qint32 n_FromBlock,
 	       n_ToBlock;

@@ -32,7 +32,7 @@ private Q_SLOTS:
 	void handleRangeReplyCancel(int);
 	void handleRangeReplyRestart(int);
 	void handleRangeReplyProgress(qint64, int);
-	void handleRangeReplyError(QNetworkReply::NetworkError, int);
+	void handleRangeReplyError(QNetworkReply::NetworkError, int, bool);
 	void handleRangeReplyFinished(qint32,qint32,QByteArray*, int);
 Q_SIGNALS:
 	void started();
@@ -40,7 +40,7 @@ Q_SIGNALS:
 	void finished();
 	void error(QNetworkReply::NetworkError);
 
-	void data(QByteArray *);
+	void data(QByteArray *, bool);
 	void rangeData(qint32, qint32, QByteArray *, /*this is true when the given range is the last one*/bool);
 
 	void progress(int, qint64, qint64, double, QString);
@@ -50,7 +50,6 @@ private:
 	     b_CancelRequested = false,
 	     b_FullDownload = false;
 	int n_Active = -1,
-	    n_Canceled = -1,
 	    n_Done = 0;
 	QUrl m_Url;
 	qint32 n_BlockSize = 1024;

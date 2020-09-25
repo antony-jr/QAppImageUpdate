@@ -99,7 +99,7 @@ class ZsyncWriterPrivate : public QObject {
     zs_blockid nextKnownBlock(zs_blockid);
     bool getBlockRanges();
     void writeBlockRanges(qint32, qint32, QByteArray*, bool);
-    void writeSeqRaw(QByteArray*);
+    void writeDataSequential(QByteArray*, bool);
     void handleNetworkError(QNetworkReply::NetworkError);
 #ifdef DECENTRALIZED_UPDATE_ENABLED
 #if LIBTORRENT_VERSION_NUM >= 10208 

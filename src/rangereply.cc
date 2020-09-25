@@ -17,6 +17,9 @@ RangeReply::RangeReply(int index, QNetworkReply *reply, const QPair<qint32, qint
 		connect(ptr, &RangeReplyPrivate::finished,
 			 this, &RangeReply::finished,
 		 	 Qt::DirectConnection);
+		connect(ptr, &RangeReplyPrivate::data,
+			 this, &RangeReply::data,
+		 	 Qt::DirectConnection);	
 		connect(ptr, &RangeReplyPrivate::canceled,
 			 this, &RangeReply::canceled,
 		 	 Qt::DirectConnection);

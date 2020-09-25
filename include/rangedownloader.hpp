@@ -28,7 +28,7 @@ Q_SIGNALS:
 	void finished();
 	void error(QNetworkReply::NetworkError);
 
-	void data(QByteArray *);
+	void data(QByteArray *, bool);
 	void rangeData(qint32, qint32, QByteArray *,bool);
 	void progress(int, qint64, qint64, double, QString);
 };

@@ -262,8 +262,8 @@ bool ZsyncWriterPrivate::getBlockRanges() {
  * This automatically manages the memory of the given pointer to
  * QByteArray.
 */
-void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData) {
-    QScopedPointer<QByteArray> data(downloadedData);
+void ZsyncWriterPrivate::writeDataSequential(QByteArray *dataFragment, bool isLast) {
+    QScopedPointer<QByteArray> data(dataFragment);
     if(!p_TargetFile->isOpen()) {
         /*
          * If the target file is not opened then it most likely means
@@ -272,12 +272,12 @@ void ZsyncWriterPrivate::writeSeqRaw(QByteArray *downloadedData) {
         */
         return;
     }
-
+    
     // Not to be confused with writeBlocks method
     // which updates n_BytesWritten by itself.
-    n_BytesWritten = p_TargetFile->write(*(data.data()));
-    if(n_BytesWritten >= n_TargetFileLength) {
-        verifyAndConstructTargetFile();
+    n_BytesWritten += p_TargetFile->write(*(data.data()));
+    if(isLast) {
+	    QTimer::singleShot(2500, this, &ZsyncWriterPrivate::verifyAndConstructTargetFile);
     }
     return;
 }
@@ -349,23 +349,23 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
 			QByteArray((const char *)(&(p_BlockHashes[x].checksum[0]))).toHex() WARNING_END;
 		if (x > bfrom) {    /* Write any good blocks we did get */
                     INFO_START " writeBlockRanges : only writting good blocks. " INFO_END;
-                    writeBlocks((const unsigned char*)downloaded->constData(), bfrom, x - 1);
+		    writeBlocks((const unsigned char*)downloaded->constData(), bfrom, x - 1);
                 }
                 break;
             }
             QCoreApplication::processEvents();
     }
 
+
     if(Md4ChecksumsMatched) {
 	writeBlocks((const unsigned char*)downloaded->constData(), bfrom, bto);
     }
 
 
-    //// Verify and construct if the current block range is the 
-    //// last.
     if(isLast) {
-	verifyAndConstructTargetFile();
+	    QTimer::singleShot(2500, this, &ZsyncWriterPrivate::verifyAndConstructTargetFile);
     }
+
     return;
 }
 
@@ -662,7 +662,7 @@ void ZsyncWriterPrivate::start() {
        m_RangeDownloader->setFullDownload(true);
        // Full Download
        connect(m_RangeDownloader.data(), &RangeDownloader::data,
-		this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
+		this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
        }else {
        // Partial Download
        auto partial = getBlockRanges();
@@ -674,14 +674,11 @@ void ZsyncWriterPrivate::start() {
        
        }else{
 	connect(m_RangeDownloader.data(), &RangeDownloader::data,
-		this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
+		this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
       
        }
        }
 
-       /*
-       connect(m_RangeDownloader.data(), &RangeDownloader::finished,
-	       this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection); */
        connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
 	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
 
@@ -894,6 +891,10 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
     if(!p_TargetFile->isOpen() || !p_TargetFile->autoRemove()) { 
 	return true;
     }
+
+    /// Disconnect all signals and slots connection of the target file
+    /// in case something was connected earlier.
+    p_TargetFile->disconnect();
 
     bool constructed = false;
     QString UnderConstructionFileSHA1;

@@ -18,8 +18,9 @@ public Q_SLOTS:
 	void cancel();
 Q_SIGNALS:
 	void restarted(int);
-	void error(QNetworkReply::NetworkError, int);
+	void error(QNetworkReply::NetworkError, int, bool);
 	void progress(qint64, int);
+	void data(QByteArray*, bool);
 	void finished(qint32,qint32,  QByteArray*, int);
 	void canceled(int);
 };
