@@ -12,8 +12,8 @@ RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPai
 		n_ToBlock = blockRange.second;
 		n_Fails = 0;
 		m_Request = reply->request();
-		m_Manager = reply->manager();
-		b_FullDownload = (!n_FromBlock || !n_ToBlock);
+		m_Manager = reply->manager(); 
+		b_FullDownload = (!n_FromBlock && !n_ToBlock); // Careful on this logic expression
 		m_Reply.reset(reply);
 		if(!b_FullDownload) {
 			m_Data.reset(new QByteArray);

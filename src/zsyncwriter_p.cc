@@ -329,12 +329,13 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
     //        = bto - bfrom
     //        = actual no. of blocks got.
     zs_blockid bfrom = fromBlock,
-               bto   = toBlock - 1;
-
+	       bto = toBlock - 1;
+    
     for (zs_blockid x = bfrom; x <= bto; ++x) {
             QByteArray blockData = buffer->read(n_BlockSize);
        	    //// Fill with zeros if the block size is less than the required blocksize.
 	    if(blockData.size() != n_BlockSize){
+		    INFO_START " writeBlockRanges : padding block(" LOGR bfrom LOGR "," LOGR bto LOGR ")." INFO_END;
 		    QByteArray newBlockData;
 		    newBlockData.fill('\0', (n_BlockSize - blockData.size()));
 		    blockData.append(newBlockData);
@@ -342,7 +343,8 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
 	    calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);
 	    if(memcmp(&md4sum, &(p_BlockHashes[x].checksum[0]), n_StrongCheckSumBytes)) {
                 Md4ChecksumsMatched = false;
-                WARNING_START " writeBlockRanges : MD4 checksums mismatch." WARNING_END;
+                WARNING_START " writeBlockRanges : block(" LOGR bfrom LOGR "," LOGR bto LOGR ")." WARNING_END;
+		WARNING_START " writeBlockRanges : MD4 checksums mismatch." WARNING_END;
                	WARNING_START " writeBlockRanges : MD4 Sum of Data : " LOGR 
 			QByteArray((const char *)(&md4sum[0])).toHex() WARNING_END;
 	    	WARNING_START " writeBlockRanges : MD4 Sum of Required :  " LOGR 

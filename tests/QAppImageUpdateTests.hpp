@@ -1,5 +1,5 @@
-#ifndef APPIMAGE_DELTA_REVISIONER_TESTS_HPP_INCLUDED
-#define APPIMAGE_DELTA_REVISIONER_TESTS_HPP_INCLUDED
+#ifndef QAPPIMAGE_UPDATE_TESTS_HPP_INCLUDED
+#define QAPPIMAGE_UPDATE_TESTS_HPP_INCLUDED
 #include <QTest>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -36,6 +36,9 @@ class QAppImageUpdateTests : public QObject {
 	/// Github based AppImage Update
 	urls /* Small AppImages */
 	     << "https://github.com/AppImage/AppImageKit/releases/download/10/appimagetool-x86_64.AppImage"
+#ifdef QUICK_TEST
+	     ;
+#else
 	     /* Slightly larger AppImage */
 	     << "https://github.com/antony-jr/AppImageUpdater/releases/download/14/AppImageUpdater-9b4000e-x86_64.AppImage"
 	     /* Largest AppImage */
@@ -53,6 +56,7 @@ class QAppImageUpdateTests : public QObject {
 	
 	/// AppImage Update without range request support
 	/// Cannot find anything for now. 
+#endif // QUICK TEST
 
 	/// Download the required testing AppImages
 	int count = 1;

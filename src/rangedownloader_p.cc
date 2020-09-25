@@ -119,6 +119,7 @@ QNetworkRequest RangeDownloaderPrivate::makeRangeRequest(const QUrl &url, const 
 			auto fromRange = range.first * n_BlockSize;
 			auto toRange = range.second * n_BlockSize;
 
+
 			QByteArray rangeHeaderValue = "bytes=" + QByteArray::number(fromRange) + "-";
         		rangeHeaderValue += QByteArray::number(toRange);
 			request.setRawHeader("Range", rangeHeaderValue);
