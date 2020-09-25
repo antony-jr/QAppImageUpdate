@@ -3,6 +3,7 @@
 
 RangeReplyPrivate::RangeReplyPrivate(int index, QNetworkReply *reply, const QPair<qint32, qint32> &blockRange) {	
 		n_Index = index;
+		n_BytesRecieved = 0;
 		n_FromBlock = blockRange.first;
 		n_ToBlock = blockRange.second;
 		m_Request = reply->request();
@@ -124,7 +125,10 @@ void RangeReplyPrivate::restart() {
 
 void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
 		Q_UNUSED(bytesTotal);
-		emit progress(bytesRec, n_Index);
+		qint64 actualBytesRec = bytesRec - n_BytesRecieved;
+		n_BytesRecieved = bytesRec;
+
+		emit progress(actualBytesRec, n_Index);
 
 		if(m_Reply.isNull() || b_Halted) {
 			return;
@@ -181,7 +185,8 @@ void RangeReplyPrivate::handleFinish() {
 		m_Data->append(m_Reply->readAll());
 
 		/// Emit the progress for 100%
-		emit progress(m_Data->size(), n_Index);
+		//qint64 actualBytes = m_Data->size() - n_BytesRecieved;
+		//emit progress(actualBytes, n_Index);
 
 		/// Finish the range reply	
 		emit finished(n_FromBlock, n_ToBlock,  m_Data.take(), n_Index);	

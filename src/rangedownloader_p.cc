@@ -175,11 +175,10 @@ void RangeDownloaderPrivate::handleUrlCheck(qint64 br, qint64 bt) {
 
 		// Now we will determine the maximum no. of requests to be handled at 
 		// a time.
-		int max_allowed = QThread::idealThreadCount();
+		int max_allowed = QThread::idealThreadCount() * 2;
 		int i = n_Done;
 
-		m_RecievedBytes.clear();
-		m_RecievedBytes.fill(0, max_allowed);
+		n_RecievedBytes = 0;
 		m_ElapsedTimer.start();
 
 		for(;i < m_RequiredBlocks.size(); ++i){
@@ -323,20 +322,8 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 }
 
 void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {
-	m_RecievedBytes[index] += bytesRc - m_RecievedBytes.at(index);
-	qint64 bytesRecieved = n_BytesWritten;
-
-	/// Copy the vector since will be calling the event loop when 
-	/// looping.
-	auto recievedBytes = m_RecievedBytes;
-	for(auto iter = recievedBytes.begin(),
-		 end = recievedBytes.end();
-		 iter != end;
-		 ++iter) {
-		bytesRecieved += *iter;
-		QCoreApplication::processEvents();
-	}
-
+	n_RecievedBytes += bytesRc;
+	qint64 bytesRecieved = n_BytesWritten + n_RecievedBytes;
 	QString sUnit;
         int nPercentage = static_cast<int>(
                               (static_cast<float>
@@ -344,7 +331,7 @@ void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index)
                               ) / static_cast<float>
                               (n_TotalSize)
                           );
-        double nSpeed =  (bytesRecieved - n_BytesWritten) * 1000.0 / m_ElapsedTimer.elapsed();
+        double nSpeed =  bytesRecieved * 1000.0 / m_ElapsedTimer.elapsed();
         if (nSpeed < 1024) {
             sUnit = "bytes/sec";
         } else if (nSpeed < 1024 * 1024) {

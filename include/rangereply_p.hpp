@@ -42,6 +42,7 @@ private:
 	     b_Retrying = false,
 	     b_Halted = false;
 	int n_Index;
+	qint64 n_BytesRecieved;
 	qint32 n_FromBlock,
 	       n_ToBlock;
 	QTimer m_Timer;

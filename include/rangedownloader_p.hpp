@@ -56,10 +56,10 @@ private:
 	qint32 n_BlockSize = 1024;
 	qint64 n_BytesWritten = 0;
 	qint64 n_TotalSize = -1;
-
+	qint64 n_RecievedBytes;
+	
 	QNetworkAccessManager *m_Manager;
 	QElapsedTimer m_ElapsedTimer;
-	QVector<qint64> m_RecievedBytes;
 	QVector<QPair<qint32, qint32>> m_RequiredBlocks;
 	QVector<RangeReply*> m_ActiveRequests;
 
