@@ -654,7 +654,6 @@ void ZsyncWriterPrivate::start() {
     }
 #endif // DECENTRALIZED_UPDATE_ENABLED
     else {     
-       m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
        m_RangeDownloader->setTargetFileLength(n_TargetFileLength);       
        m_RangeDownloader->setBytesWritten(n_BytesWritten);
 
@@ -713,17 +712,14 @@ void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {
 	b_TorrentAvail = false;
 
 	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
-	m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
 	m_RangeDownloader->setTargetFileLength(n_TargetFileLength);       
 	m_RangeDownloader->setBytesWritten(n_BytesWritten);
-
-
 
        	if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
 		m_RangeDownloader->setFullDownload(true);
        		// Full Download
        		connect(m_RangeDownloader.data(), &RangeDownloader::data,
-			this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
+			 this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
 	}else {
        		// Partial Download
        		auto partial = getBlockRanges();
@@ -735,8 +731,7 @@ void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {
        
       	 	}else{
 			connect(m_RangeDownloader.data(), &RangeDownloader::data,
-				this, &ZsyncWriterPrivate::writeSeqRaw, Qt::QueuedConnection);
-      
+			 this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
        		}
        }
 
