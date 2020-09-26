@@ -78,7 +78,7 @@ script:
   - make -j$(nproc)
   - Xvfb :100 -ac &
   - export DISPLAY=:100.0
-  - ./tests
+  - ./QAppImageUpdateTests
   - cd ..
   - cd ..
   - mkdir build

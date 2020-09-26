@@ -1,8 +1,6 @@
 #ifndef TORRENT_DOWNLOADER_PRIVATE_HPP_INCLUDED
 #define TORRENT_DOWNLOADER_PRIVATE_HPP_INCLUDED
 #ifdef DECENTRALIZED_UPDATE_ENABLED
-//#include <libtorrent/version.hpp>
-//#if LIBTORRENT_VERSION_NUM >= 10208
 #include <QObject>
 #include <QScopedPointer>
 #include <QNetworkAccessManager>
@@ -67,6 +65,5 @@ private:
 	QScopedPointer<lt::session> m_Session;
 	lt::torrent_handle m_Handle;
 };
-//#endif // VERSION CHECK
 #endif // DECENTRALIZED_UPDATE_ENABLED
 #endif // TORRENT_DOWNLOADER_PRIVATE_HPP_INCLUDED
