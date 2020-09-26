@@ -60,6 +60,11 @@ script:
   - # make -j$(nproc)
   - # cd ..
   - # rm -rf build-cmake
+  - cd examples/TorrentVersion
+  - qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" .
+  - make -j$(nproc)
+  - ./TorrentVersion
+  - cd ../..
   - mkdir build ; cd build
   - cmake -DDECENTRALIZED_UPDATE_ENABLED=ON ..
   - make -j$(nproc)
