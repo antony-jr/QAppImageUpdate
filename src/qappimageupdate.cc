@@ -113,7 +113,7 @@ void QAppImageUpdate::clear() {
 
 //// Static Methods
 QString QAppImageUpdate::errorCodeToString(short errorCode) {
-    QString ret = "AppImageUpdaterBridge::errorCode(";
+    QString ret = "QAppImageUpdate::errorCode(";
     switch(errorCode) {
     case QAppImageUpdateEnums::Error::NoAppimagePathGiven:
         ret += "NoAppImagePathGiven";

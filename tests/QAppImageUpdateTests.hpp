@@ -355,14 +355,18 @@ class QAppImageUpdateTests : public QObject {
 	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
 	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
 	QSignalSpy cancelInfo(&updater, SIGNAL(canceled(short)));
-	
+
 	QEventLoop loop;	
 	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
 	connect(&updater, &QAppImageUpdate::canceled, &loop, &QEventLoop::quit, Qt::QueuedConnection);
 
 	updater.setAppImage(m_Available.at(0));
-	updater.start(QAppImageUpdate::Action::Update);
-	updater.cancel();
+	
+	/// Cancel as soon as the delta writer starts up
+	connect(&updater, &QAppImageUpdate::started, &updater, &QAppImageUpdate::cancel, Qt::DirectConnection);	
+
+	/// Start the updater.
+	updater.start();
 	
 	loop.exec();
 
@@ -374,6 +378,23 @@ class QAppImageUpdateTests : public QObject {
 	action = sg.at(0).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::Update);
+    }
+
+    //// This should not crash the test
+    //// That is the test.
+    void destructWhileUpdate() {
+	    {
+		    QAppImageUpdate updater;
+		    QEventLoop startLoop;
+		    connect(&updater, &QAppImageUpdate::started, &startLoop, &QEventLoop::quit, Qt::QueuedConnection);	
+		    connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);	
+
+		    updater.setAppImage(m_Available.at(0));
+		    updater.start();
+		    
+		    // Destruct as soon as the update starts.
+		    startLoop.exec(); 
+	    }
     }
 
     /// I have no idea on how to test thread safety,

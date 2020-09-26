@@ -500,7 +500,9 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 
 /* cancels the started process. */
 void ZsyncWriterPrivate::cancel() {
+    INFO_START " cancel : cancel requested." INFO_END;
     if(!b_Started) {
+	    INFO_START " cancel : called before started!" INFO_END;
 	    return;
     }
     b_CancelRequested = true;
@@ -579,15 +581,29 @@ void ZsyncWriterPrivate::start() {
                     return;
                 }
 
-                if(submitSourceFile(targetFile) < 0) {
+
+		int r = 0;
+                if((r = submitSourceFile(targetFile)) < 0) {
                     delete targetFile;
-                    b_Started = b_CancelRequested = false;
-                    return;
+		    if(r == -2) {
+			    /// Cannot construst hash table.
+			    b_Started = b_CancelRequested = false;
+			    emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated); 
+		    }else if(r == -3) {
+			    /// Canceled the update
+			    b_Started = false;
+		    }
+
+		    if(r != -1) {
+		    	/// -1 cannot allocated memory. 
+			return;
+		    }
                 }
                 delete targetFile;
             }
         }
 
+	if(n_BytesWritten < n_TargetFileLength) {
         for(auto iter = foundGarbageFiles.constBegin(),
                 end  = foundGarbageFiles.constEnd();
                 iter != end && n_BytesWritten < n_TargetFileLength;
@@ -598,14 +614,26 @@ void ZsyncWriterPrivate::start() {
                 return;
             }
 
-            if(submitSourceFile(sourceFile) < 0) {
+	    int r = 0;
+            if((r = submitSourceFile(sourceFile)) < 0) {
                 delete sourceFile;
-                b_Started = b_CancelRequested = false;
-                return;
+		if(r == -2) {
+			/// Cannot construst hash table.
+			b_Started = b_CancelRequested = false;
+			emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated); 
+		}else if(r == -3) {
+			/// Canceled the update
+			b_Started = false;
+		}
+		if(r != -1) {
+		    /// -1 cannot allocated memory. 
+		    return;
+		}
             }
             delete sourceFile;
             QFile::remove((*iter));
-        }
+	}
+	}
 
 
         if(n_BytesWritten < n_TargetFileLength) {
@@ -615,9 +643,22 @@ void ZsyncWriterPrivate::start() {
                 return;
             }
 
-            if(submitSourceFile(sourceFile) < 0) {
+	    int r = 0;
+            if((r = submitSourceFile(sourceFile)) < 0) {
                 delete sourceFile;
-                b_Started = b_CancelRequested = false;
+		if(r == -1) {
+			/// Cannot allocate buffer memory
+			b_Started = b_CancelRequested = false;
+			emit error(QAppImageUpdateEnums::Error::NotEnoughMemory);
+		}else if(r == -2) {
+			/// Cannot construst hash table.
+			b_Started = b_CancelRequested = false;
+			emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated); 
+		}else if(r == -3) {
+			/// Canceled the update
+			b_Started = false;
+		}
+		b_Started = b_CancelRequested = false;	
                 return;
             }
             delete sourceFile;
@@ -628,6 +669,12 @@ void ZsyncWriterPrivate::start() {
     p_TransferSpeed->start();
 
     if(n_BytesWritten >= n_TargetFileLength) {
+    	QCoreApplication::processEvents(); // Check if cancel requested.
+	if(b_CancelRequested) {
+		b_Started = b_CancelRequested = false;
+		emit canceled();
+		return;
+	}	
         verifyAndConstructTargetFile();
     }
 #if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
@@ -1228,11 +1275,12 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {
         return (error = -1);
 
     /* Build checksum hash tables ready to analyse the blocks we find */
-    if (!p_RsumHash)
+    if (!p_RsumHash){
         if (!buildHash()) {
             free(buf);
             return (error = -2);
         }
+    }
 
 
     p_TransferSpeed.reset(new QElapsedTimer);

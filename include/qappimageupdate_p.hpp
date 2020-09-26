@@ -47,7 +47,9 @@ private Q_SLOTS:
     void redirectUpdateCheck(QJsonObject);
     void handleCheckForUpdateProgress(int);
     void handleGetEmbeddedInfoProgress(int);
-    void handleUpdateProgress(int, qint64, qint64, double, QString); 
+    void handleUpdateProgress(int, qint64, qint64, double, QString);
+    void handleUpdateStart();
+    void handleUpdateCancel();
     void handleUpdateFinished(QJsonObject, QString);
     void handleUpdateError(short);
 Q_SIGNALS:

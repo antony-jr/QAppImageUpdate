@@ -80,6 +80,9 @@ QAppImageUpdatePrivate::QAppImageUpdatePrivate(bool singleThreaded, QObject *par
     connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::logger,
             this, &QAppImageUpdatePrivate::logger,
             (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
+    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::started,
+	     this, &QAppImageUpdatePrivate::handleUpdateStart,
+	     (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
 }
 
 QAppImageUpdatePrivate::QAppImageUpdatePrivate(const QString &AppImagePath, bool singleThreaded, QObject *parent)
@@ -97,12 +100,6 @@ QAppImageUpdatePrivate::QAppImageUpdatePrivate(QFile *AppImage, bool singleThrea
 QAppImageUpdatePrivate::~QAppImageUpdatePrivate() {
     if(b_Started || b_Running){
 	    cancel();
-	    /*
-	     * TODO: It might be a good idea to do this after running some tests.
-	       QEventLoop loop;
-	       connect(this, &QAppImageUpdatePrivate::canceled, &loop, &QEventLoop::quit); 
-	       loop.exec();
-	    */
     }
 
     if(!m_SharedThread.isNull()) {
@@ -315,6 +312,12 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
                     this, &QAppImageUpdatePrivate::handleUpdateProgress,
                     (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
 
+	    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::canceled,
+		    this, &QAppImageUpdatePrivate::handleUpdateCancel,
+		    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+
+	    //// Started signal will be emitted by handleUpdateStart 
+	    //// which is connected at the construction.
 	    getMethod(m_UpdateInformation.data(), "getInfo(void)")
 		    .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
 
@@ -328,16 +331,13 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 }
 
 void QAppImageUpdatePrivate::cancel(void) {
-    if(!b_Started || !b_Running) {
+    if(!b_Started && !b_Running) {
 	    return;
     }
 
     b_CancelRequested = true;
-
-    if(n_CurrentAction == Action::Update || n_CurrentAction == Action::UpdateWithGUI) {
-    	getMethod(m_DeltaWriter.data(),"cancel(void)")
+    getMethod(m_DeltaWriter.data(),"cancel()")
 		.invoke(m_DeltaWriter.data(), Qt::QueuedConnection);
-    }
     return;
 }
 
@@ -465,6 +465,39 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
     emit finished(updateinfo, Action::CheckForUpdate);
 }
 
+void QAppImageUpdatePrivate::handleUpdateStart() {
+	emit started(Action::Update);
+}
+
+void QAppImageUpdatePrivate::handleUpdateCancel() {
+	    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
+		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
+	    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
+		    m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));
+            disconnect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::zsyncInformation,
+                     m_DeltaWriter.data(), &ZsyncWriterPrivate::setConfiguration);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finishedConfiguring,
+                    m_DeltaWriter.data(), &ZsyncWriterPrivate::start);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::finished,
+		    this, &QAppImageUpdatePrivate::handleUpdateFinished);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError);	
+	    disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError); 
+	    disconnect(m_ControlFileParser.data(), &ZsyncRemoteControlFileParserPrivate::error,
+		    this, &QAppImageUpdatePrivate::handleUpdateError);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
+                    this, &QAppImageUpdatePrivate::handleUpdateProgress);
+	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::canceled,
+		    this, &QAppImageUpdatePrivate::handleUpdateCancel);
+
+    	    b_Started = b_Running = b_Finished = b_CancelRequested = false;
+   	    b_Canceled = true; 
+
+	    emit canceled(Action::Update);
+
+}
+
 void QAppImageUpdatePrivate::handleUpdateError(short ecode) {
 	    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
@@ -484,6 +517,9 @@ void QAppImageUpdatePrivate::handleUpdateError(short ecode) {
 		    this, &QAppImageUpdatePrivate::handleUpdateError);
 	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
                     this, &QAppImageUpdatePrivate::handleUpdateProgress);
+disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::canceled,
+		    this, &QAppImageUpdatePrivate::handleUpdateCancel);
+
 
     	    b_Started = b_Running = b_Finished = false;
    	    b_Canceled = false;
@@ -517,6 +553,9 @@ void QAppImageUpdatePrivate::handleUpdateFinished(QJsonObject info, QString oldV
 		    this, &QAppImageUpdatePrivate::handleUpdateError);
 	    disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::progress,
                     this, &QAppImageUpdatePrivate::handleUpdateProgress);
+disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::canceled,
+		    this, &QAppImageUpdatePrivate::handleUpdateCancel);
+
 
 	QJsonObject result {
 		{"OldVersionPath", oldVersionPath},
