@@ -64,31 +64,6 @@
 #define FATAL_START LOGS "  FATAL: " LOGR
 #define FATAL_END LOGE
 
-
-/*
- * Macros used for readbility and to reduce repeated code in the source.
- *
- * Warning:
- *     Hardcoded , Do not use this outside AppImageUpdateInformationPrivate
- *     class.
- *
- * Example:
- * 	MEMORY_ERROR()
-*/
-#define MEMORY_ERROR() emit(error(NotEnoughMemory));
-#define APPIMAGE_OPEN_ERROR() emit(error(CannotOpenAppimage));
-#define APPIMAGE_PERMISSION_ERROR() emit(error(NoReadPermission));
-#define APPIMAGE_NOT_FOUND_ERROR() emit(error(AppimageNotFound));
-#define APPIMAGE_READ_ERROR() emit(error(AppimageNotReadable));
-#define APPIMAGE_INVALID_UI_ERROR() emit(error(InvalidUpdateInformation));
-#define APPIMAGE_EMPTY_UI_ERROR() emit(error(EmptyUpdateInformation));
-#define MAGIC_BYTES_ERROR() emit(error(InvalidMagicBytes));
-#define ELF_FORMAT_ERROR() emit(error(UnsupportedElfFormat));
-#define SECTION_HEADER_NOT_FOUND_ERROR() emit(error(SectionHeaderNotFound));
-#define APPIMAGE_TYPE_ERROR() emit(error(InvalidAppimageType));
-#define UNSUPPORTED_TRANSPORT_ERROR() emit(error(UnsupportedTransport));
-
-
 /*
  * Sets the offset and length of the need section header
  * from a elf file.
@@ -116,7 +91,6 @@
 						  } \
 						 }\
 					        }
-
 
 
 
@@ -454,10 +428,30 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
 	// Check if it's a AppImageLauncher's path, if so then use the map file to 
 	// get the actual appimage path.
 	bool tryUsingProgramArguments = false;
+	bool checkForAIL = true;
+	
 	QRegExp rx(QString::fromUtf8("/run/user/*/appimagelauncherfs/*.AppImage"));
 	rx.setPatternSyntax(QRegExp::Wildcard);
 
-	if(rx.exactMatch(s_AppImagePath)) {
+	QString desktopIntegration;
+	if(QProcessEnvironment::systemEnvironment().contains("DESKTOPINTEGRATION")) {
+		desktopIntegration = QProcessEnvironment::systemEnvironment().value("DESKTOPINTEGRATION");
+		INFO_START " getInfo: Desktop integration detected" INFO_END;
+		if(desktopIntegration == QString::fromStdString("AppImageLauncher")) {
+			INFO_START " getInfo: Desktop integration seems to be AppImageLauncher." INFO_END;
+			QString progPath = QProcessEnvironment::systemEnvironment().value("ARGV0");
+			INFO_START " getInfo: ARGV0 = " LOGR progPath INFO_END;
+			if(!progPath.isEmpty()) {
+				bc.unlock();
+				setAppImage(progPath);
+				bc.lock();
+				checkForAIL = false;
+			}
+		}
+	}
+
+	if(checkForAIL && rx.exactMatch(s_AppImagePath)) {
+		INFO_START " getInfo: Reading AppImageLauncher internal Map file to get the actual AppImage" INFO_END;
 		QFileInfo pathInfo(s_AppImagePath);
 		QString mapPath = pathInfo.absolutePath();
 		mapPath += QString::fromUtf8("/map");
@@ -484,6 +478,7 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
 			}
 			mapFile.close();
 		}else{
+			INFO_START " getInfo: Failed to get the actual AppImage path, trying to use program arguments." INFO_END;
 			tryUsingProgramArguments = true; // Try to parse from QCoreApplication.
 		}
 
@@ -492,6 +487,7 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         /*
          * Lets try getting it from QCoreApplication arguments. */
         if(s_AppImagePath.isEmpty() || tryUsingProgramArguments) {
+	    INFO_START " getInfo: getting the AppImage path from program arguments, This might not work inside firejail." INFO_END;	
             auto arguments = QCoreApplication::arguments();
             if(!arguments.isEmpty()) {
                 bc.unlock();

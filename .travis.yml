@@ -25,41 +25,41 @@ script:
   - cd ..
   - cd ..
   - sudo ln -s /usr/local/lib/libtorrent-rasterbar.so.1.2.8 /usr/lib/libtorrent-rasterbar.so.10
-  - # mkdir build-qmake ; cd build-qmake # Check if it builds as a library using qmake.
-  - # qmake ..
-  - # make -j$(nproc)
-  - # make clean
-  - # qmake "CONFIG+=LOGGING_DISABLED" ..
-  - # make -j$(nproc) # test if build succeeds without log support
-  - # make clean
-  - # qmake "CONFIG+=NO_GUI" ..
-  - # make -j$(nproc) # test if build succeeds without gui support
-  - # make clean
-  - # qmake "CONFIG+=LOGGING_DISABLED" "CONFIG+=NO_GUI" ..
-  - # make -j$(nproc) # test if build succeeds without gui and log support
-  - # qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" ..  
-  - # make -j$(nproc) # test if build succeeds with libtorrent in qmake build config
-  - # cd ..
-  - # mkdir build-cmake ; cd build-cmake # Check if it builds as a library using cmake.
-  - # cmake ..
-  - # make -j$(nproc)
-  - # cd ..
-  - # rm -rf build-cmake
-  - # mkdir build-cmake ; cd build-cmake
-  - # cmake -DLOGGING_DISABLED=ON ..
-  - # make -j$(nproc)
-  - # cd ..
-  - # rm -rf build-cmake
-  - # mkdir build-cmake ; cd build-cmake
-  - # cmake -DNO_GUI=ON ..
-  - # make -j$(nproc)
-  - # cd ..
-  - # rm -rf build-cmake
-  - # mkdir build-cmake ; cd build-cmake
-  - # cmake -DLOGGING_DISABLED=ON -DNO_GUI=ON ..
-  - # make -j$(nproc)
-  - # cd ..
-  - # rm -rf build-cmake
+  - mkdir build-qmake ; cd build-qmake # Check if it builds as a library using qmake.
+  - qmake ..
+  - make -j$(nproc)
+  - make clean
+  - qmake "CONFIG+=LOGGING_DISABLED" ..
+  - make -j$(nproc) # test if build succeeds without log support
+  - make clean
+  - qmake "CONFIG+=NO_GUI" ..
+  - make -j$(nproc) # test if build succeeds without gui support
+  - make clean
+  - qmake "CONFIG+=LOGGING_DISABLED" "CONFIG+=NO_GUI" ..
+  - make -j$(nproc) # test if build succeeds without gui and log support
+  - qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" ..  
+  - make -j$(nproc) # test if build succeeds with libtorrent in qmake build config
+  - cd ..
+  - mkdir build-cmake ; cd build-cmake # Check if it builds as a library using cmake.
+  - cmake ..
+  - make -j$(nproc)
+  - cd ..
+  - rm -rf build-cmake
+  - mkdir build-cmake ; cd build-cmake
+  - cmake -DLOGGING_DISABLED=ON ..
+  - make -j$(nproc)
+  - cd ..
+  - rm -rf build-cmake
+  - mkdir build-cmake ; cd build-cmake
+  - cmake -DNO_GUI=ON ..
+  - make -j$(nproc)
+  - cd ..
+  - rm -rf build-cmake
+  - mkdir build-cmake ; cd build-cmake
+  - cmake -DLOGGING_DISABLED=ON -DNO_GUI=ON ..
+  - make -j$(nproc)
+  - cd ..
+  - rm -rf build-cmake
   - cd examples/TorrentVersion
   - qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" .
   - make -j$(nproc)
@@ -83,14 +83,5 @@ script:
   - cd ..
   - mkdir build
   - cd build
-  - cmake -DBUILD_AS_PLUGIN=ON ..
+  - cmake -DDECENTRALIZED_UPDATE_ENABLED=ON -DBUILD_AS_PLUGIN=ON ..
   - make -j$(nproc)
-
-after_success:
-  - wget "https://github.com/probonopd/uploadtool/raw/master/upload.sh"
-  - bash upload.sh libQAppImageUpdate.so
-
-branches:
-  except:
-    - # Do not build tags that we create when we upload to GitHub Releases
-    - /^(?i:continuous)/
