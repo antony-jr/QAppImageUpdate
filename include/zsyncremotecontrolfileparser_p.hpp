@@ -68,6 +68,7 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
     void setControlFileUrl(QJsonObject);
     void setLoggerName(const QString&);
     void setShowLog(bool);
+    void setUseBittorrent(bool);
     void getControlFile(void);
     void getUpdateCheckInformation(void);
     void getZsyncInformation(void);
@@ -96,7 +97,8 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
     void logger(QString, QString);
   private:
     bool b_AcceptRange = false,
-         b_Busy = false;
+         b_Busy = false,
+	 b_WithBT = false;
     QJsonObject j_UpdateInformation;
     QString s_ZsyncMakeVersion,
             s_ZsyncFileName, /* only used for github transport. */

@@ -149,6 +149,10 @@ void ZsyncRemoteControlFileParserPrivate::setShowLog(bool choose) {
     return;
 }
 
+void ZsyncRemoteControlFileParserPrivate::setUseBittorrent(bool withBt) {
+    b_WithBT = withBt;
+}
+
 /* This public method safely sets the zsync control file url. */
 void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(const QUrl &controlFileUrl) {
     INFO_START LOGR " setControlFileUrl : using " LOGR controlFileUrl LOGR " as zsync control file." INFO_END;
@@ -294,7 +298,8 @@ void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void) {
     QJsonObject result {
         { "EmbededUpdateInformation", j_UpdateInformation},
         { "RemoteTargetFileSHA1Hash", s_TargetFileSHA1 },
-        { "ReleaseNotes", s_ReleaseNotes }
+        { "ReleaseNotes", s_ReleaseNotes },
+	{ "TorrentSupported" , u_TorrentFile.isValid() },
     };
 
     emit updateCheckInformation(result);
@@ -459,9 +464,11 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
 	    auto asset = value.toObject();
 	    if(rx.exactMatch(asset["name"].toString())) {
             	requiredAssetUrl = asset["browser_download_url"].toString();
-	    } 
-	    if(rx_torrent.exactMatch(asset["name"].toString())) {
-		u_TorrentFile = QUrl(asset["browser_download_url"].toString());
+	    }
+	    if(b_WithBT) { 
+	    	if(rx_torrent.exactMatch(asset["name"].toString())) {
+			u_TorrentFile = QUrl(asset["browser_download_url"].toString());
+	    	}
 	    }
 	    QCoreApplication::processEvents();
     }

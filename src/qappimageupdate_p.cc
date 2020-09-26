@@ -247,6 +247,11 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
     
     }else if(action == Action::CheckForUpdate) {
 	    n_CurrentAction = action;
+
+	    //// Needed to check if Bittorrent file is 
+	    //// supported.
+	    m_ControlFileParser->setUseBittorrent(true);
+
 	    connect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
@@ -274,8 +279,14 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 	    emit started(Action::CheckForUpdate); 
     	    getMethod(m_UpdateInformation.data(), "getInfo(void)")
 		    .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
-    }else if(action == Action::Update) {
+    }else if(action == Action::Update || action == Action::UpdateWithTorrent) {
 	    n_CurrentAction = action;
+
+	    //// With respect to GDPR, It is strongly adviced 
+	    //// to use Torrent only if the user explicitly 
+	    //// asks for it.
+	    m_ControlFileParser->setUseBittorrent((action == Action::UpdateWithTorrent));
+
 	    connect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
@@ -321,8 +332,11 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 	    getMethod(m_UpdateInformation.data(), "getInfo(void)")
 		    .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
 
-    }else if(action == Action::UpdateWithGUI) {
+    }else if(action == Action::UpdateWithGUI || action == Action::UpdateWithGUIAndTorrent) {
 	    n_CurrentAction = action;
+
+	    m_ControlFileParser->setUseBittorrent((action == Action::UpdateWithGUIAndTorrent));
+
     }else {
 	    n_CurrentAction = Action::None;
 	    b_Started = b_Running = b_Canceled = false;
@@ -350,15 +364,15 @@ void QAppImageUpdatePrivate::handleUpdateProgress(int percentage,
 						  qint64 bytesTotal, 
 						  double speed, 
 						  QString units){
-	emit progress(percentage, bytesReceived, bytesTotal, speed, units, Action::Update);
+	emit progress(percentage, bytesReceived, bytesTotal, speed, units, n_CurrentAction);
 }
 
 void QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress(int percentage) {
-	emit progress(percentage, 1, 1, 0, QString(), Action::GetEmbeddedInfo);
+	emit progress(percentage, 1, 1, 0, QString(), n_CurrentAction);
 }
 
 void QAppImageUpdatePrivate::handleCheckForUpdateProgress(int percentage) {
-	emit progress(percentage, 1, 1, 0, QString(), Action::CheckForUpdate);
+	emit progress(percentage, 1, 1, 0, QString(), n_CurrentAction);
 }
 
 void QAppImageUpdatePrivate::handleGetEmbeddedInfoError(short code) {
@@ -371,7 +385,7 @@ void QAppImageUpdatePrivate::handleGetEmbeddedInfoError(short code) {
 		   this, &QAppImageUpdatePrivate::redirectEmbeddedInformation);   
 	disconnect(m_UpdateInformation.data(), &AppImageUpdateInformationPrivate::progress,
 		    this, &QAppImageUpdatePrivate::handleGetEmbeddedInfoProgress);
-	emit error(code, QAppImageUpdatePrivate::Action::GetEmbeddedInfo); 
+	emit error(code, n_CurrentAction); 
 }
 
 void QAppImageUpdatePrivate::redirectEmbeddedInformation(QJsonObject info) {
@@ -387,10 +401,10 @@ void QAppImageUpdatePrivate::redirectEmbeddedInformation(QJsonObject info) {
 	if(b_CancelRequested) {
 		b_CancelRequested = false;
 		b_Canceled = true;
-		emit canceled(Action::GetEmbeddedInfo);
+		emit canceled(n_CurrentAction);
 		return;
 	}
-	emit finished(info, Action::GetEmbeddedInfo); 
+	emit finished(info, n_CurrentAction); 
 }
 
 
@@ -412,7 +426,7 @@ void QAppImageUpdatePrivate::handleCheckForUpdateError(short code) {
 	disconnect(m_ControlFileParser.data(), SIGNAL(progress(int)),
 		     this, SLOT(handleCheckForUpdateProgress(int)));
 	   
-	emit error(code, Action::CheckForUpdate); 
+	emit error(code, n_CurrentAction); 
 }
 
 void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
@@ -443,12 +457,15 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
             localAppImageSHA1Hash = oldVersionInformation["AppImageSHA1Hash"].toString(),
             localAppImagePath = oldVersionInformation["AppImageFilePath"].toString();
 
+    bool torrentSupported = info["TorrentSupported"].toBool();
+
     QJsonObject updateinfo {
 	{ "UpdateAvailable", localAppImageSHA1Hash != remoteTargetFileSHA1Hash},
 	{ "AbsolutePath", localAppImagePath},
-	{ "Sha1Hash",  localAppImageSHA1Hash },
+	{ "LocalSha1Hash",  localAppImageSHA1Hash },
 	{ "RemoteSha1Hash", remoteTargetFileSHA1Hash},
-	{ "ReleaseNotes", releaseNotes}
+	{ "ReleaseNotes", releaseNotes},
+	{ "TorrentSupported", torrentSupported}
     };
     
     b_Started = b_Running = false;
@@ -459,14 +476,14 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
     if(b_CancelRequested) {
 		b_CancelRequested = false;
 		b_Canceled = true;
-		emit canceled(Action::CheckForUpdate);
+		emit canceled(n_CurrentAction);
 		return;
     }
-    emit finished(updateinfo, Action::CheckForUpdate);
+    emit finished(updateinfo, n_CurrentAction);
 }
 
 void QAppImageUpdatePrivate::handleUpdateStart() {
-	emit started(Action::Update);
+	emit started(n_CurrentAction);
 }
 
 void QAppImageUpdatePrivate::handleUpdateCancel() {
@@ -494,7 +511,7 @@ void QAppImageUpdatePrivate::handleUpdateCancel() {
     	    b_Started = b_Running = b_Finished = b_CancelRequested = false;
    	    b_Canceled = true; 
 
-	    emit canceled(Action::Update);
+	    emit canceled(n_CurrentAction);
 
 }
 
@@ -527,11 +544,11 @@ disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::canceled,
     	    if(b_CancelRequested) {
 		b_CancelRequested = false;
 		b_Canceled = true;
-		emit canceled(Action::Update);
+		emit canceled(n_CurrentAction);
 		return;
     	    }
 
-	    emit error(ecode, Action::Update);
+	    emit error(ecode, n_CurrentAction);
 }
 
 void QAppImageUpdatePrivate::handleUpdateFinished(QJsonObject info, QString oldVersionPath) {
@@ -560,7 +577,8 @@ disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::canceled,
 	QJsonObject result {
 		{"OldVersionPath", oldVersionPath},
 		{"NewVersionPath", info["AbsolutePath"].toString()},
-		{"NewVersionSha1Hash", info["Sha1Hash"].toString()} 
+		{"NewVersionSha1Hash", info["Sha1Hash"].toString()},
+		{"UsedTorrent" , info["UsedTorrent"].toBool()}
 	};
 	b_Started = b_Running = false;
 	b_Finished = true;
@@ -569,9 +587,9 @@ disconnect(m_DeltaWriter.data(), &ZsyncWriterPrivate::canceled,
     	if(b_CancelRequested) {
 		b_CancelRequested = false;
 		b_Canceled = true;
-		emit canceled(Action::Update);
+		emit canceled(n_CurrentAction);
 		return;
     	}
 
-	emit finished(result, Action::Update);
+	emit finished(result, n_CurrentAction);
 }

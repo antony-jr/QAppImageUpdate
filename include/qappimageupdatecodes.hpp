@@ -8,7 +8,9 @@ enum : short {
 	       GetEmbeddedInfo,
 	       CheckForUpdate,
 	       Update,
-	       UpdateWithGUI       
+	       UpdateWithTorrent,
+	       UpdateWithGUI,
+	       UpdateWithGUIAndTorrent
 };
 };
 

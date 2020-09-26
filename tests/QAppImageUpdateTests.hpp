@@ -57,6 +57,9 @@ class QAppImageUpdateTests : public QObject {
 	/// Gitlab zsync AppImage Update
 	urls << "https://gitlab.com/probono/QtQuickApp/-/jobs/73879740/artifacts/raw/QtQuickApp-x86_64.AppImage";
 
+	/// Torrent Based Update supported AppImage.
+	urls << "https://github.com/antony-jr/ShareMyHost/releases/download/1/ShareMyHost-a3b2973-x86_64.AppImage";	
+
 	/// AppImage Update without range request support
 	/// Cannot find anything for now. Please add one if you find it.
 #endif // QUICK TEST
@@ -243,6 +246,9 @@ class QAppImageUpdateTests : public QObject {
 
 	QVERIFY(action == QAppImageUpdate::Action::Update);
 	QVERIFY(result.contains("NewVersionSha1Hash"));	
+
+	/// Remove the appimage if its updated.
+	QFile::remove(result["NewVersionPath"].toString());	
     }
 
     // Test the default action sequence
@@ -278,6 +284,7 @@ class QAppImageUpdateTests : public QObject {
 	QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
 	QVERIFY(result.contains("UpdateAvailable"));
 
+	bool torrentSupported = result["TorrentSupported"].toBool();
 	auto remoteSha1 = result["RemoteSha1Hash"].toString();
 
 	// Now Update	
@@ -292,6 +299,14 @@ class QAppImageUpdateTests : public QObject {
 
 	QVERIFY(action == QAppImageUpdate::Action::Update);
 	QCOMPARE(remoteSha1, result["NewVersionSha1Hash"].toString());
+	
+	/// Should not use torrent if it supports it.
+	if(torrentSupported ) {
+		QCOMPARE(false, result["UsedTorrent"].toBool());
+	}
+
+	/// Remove all appimage if its updated.
+	QFile::remove(result["NewVersionPath"].toString());	
 	}
     }
 
@@ -378,6 +393,60 @@ class QAppImageUpdateTests : public QObject {
 	action = sg.at(0).toInt();
 
 	QVERIFY(action == QAppImageUpdate::Action::Update);
+    }
+
+    void actionUpdateWithTorrent() {
+	short action = 0;
+	QJsonObject result;
+	QList<QVariant> sg;
+	QAppImageUpdate updater;
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
+	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	QEventLoop loop;	
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
+
+
+	//// Search for all test files which supports torrent update and 
+	//// Update it with torrents.	
+	for(auto iter = m_Available.begin(),
+		 end = m_Available.end();
+		 iter != end;
+		 ++iter) { 	
+	updater.setAppImage(*iter);
+	qInfo().noquote() << "Update(" << *iter << ")";
+
+	updater.start(QAppImageUpdate::Action::CheckForUpdate);
+	loop.exec();
+
+        QCOMPARE(spyInfo.count(), 1);
+
+	sg = spyInfo.takeFirst();
+	result = sg.at(0).toJsonObject();
+	action = sg.at(1).toInt();
+
+	QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
+	QVERIFY(result.contains("UpdateAvailable"));
+
+	auto remoteSha1 = result["RemoteSha1Hash"].toString();
+
+	if(result["TorrentSupported"].toBool())  {
+		// Now Update With Torrent confirmation.	
+		updater.start(QAppImageUpdate::Action::UpdateWithTorrent);
+		loop.exec();
+
+		QCOMPARE(spyInfo.count(), 1);
+
+		sg = spyInfo.takeFirst();
+		result = sg.at(0).toJsonObject();
+		action = sg.at(1).toInt();
+
+		QVERIFY(action == QAppImageUpdate::Action::UpdateWithTorrent);
+		QCOMPARE(remoteSha1, result["NewVersionSha1Hash"].toString());
+		QCOMPARE(true, result["UsedTorrent"].toBool());
+
+		QFile::remove(result["NewVersionPath"].toString());
+	}	
+	}
     }
 
     //// This should not crash the test

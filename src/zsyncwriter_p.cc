@@ -761,6 +761,7 @@ void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {
 	m_TorrentDownloader->disconnect();
 	m_TorrentDownloader.reset(nullptr); // Delete the torrent downloader completely.
 
+	/// Reset everything to default.
 	b_TorrentAvail = false;
 
 	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
@@ -939,10 +940,6 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
 	return true;
     }
 
-    /// Disconnect all signals and slots connection of the target file
-    /// in case something was connected earlier.
-    p_TargetFile->disconnect();
-
     bool constructed = false;
     QString UnderConstructionFileSHA1;
     qint64 bufferSize = 0;
@@ -1016,9 +1013,11 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
     /*
      * Emit finished signal.
     */
+
     QJsonObject newVersionDetails {
         {"AbsolutePath", QFileInfo(p_TargetFile->fileName()).absoluteFilePath() },
-        {"Sha1Hash", UnderConstructionFileSHA1}
+        {"Sha1Hash", UnderConstructionFileSHA1},
+	{"UsedTorrent", b_TorrentAvail && b_AcceptRange}
     };
     b_Started = b_CancelRequested = false;
     emit finished(newVersionDetails, s_SourceFilePath);
