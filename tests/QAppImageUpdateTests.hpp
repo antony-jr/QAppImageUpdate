@@ -362,12 +362,8 @@ class QAppImageUpdateTests : public QObject {
 
 	updater.setAppImage(m_Available.at(0));
 	updater.start(QAppImageUpdate::Action::Update);
+	updater.cancel();
 	
-	/// Cancel after a little time to give time to start the updater 
-	QTimer::singleShot(1500, [&updater]() {
-		updater.cancel();
-	});
-
 	loop.exec();
 
 	/// We should only have the cancel signal emitted.
