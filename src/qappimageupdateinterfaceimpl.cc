@@ -82,9 +82,13 @@ int QAppImageUpdateInterfaceImpl::getConstant(const QString &constant) {
 			r = QAppImageUpdate::Action::CheckForUpdate;
 		}else if(constName == QString::fromUtf8("update")){
 			r = QAppImageUpdate::Action::Update;
-		}else if(constName == QString::fromUtf8("updatewithgui")){
-			r = QAppImageUpdate::Action::UpdateWithGUI;
-		}else{
+		}else if(constName == QString::fromUtf8("updatewithtorrent")) {
+                        r = QAppImageUpdate::Action::UpdateWithTorrent;
+                }else if(constName == QString::fromUtf8("updatewithgui")){
+                        r = QAppImageUpdate::Action::UpdateWithGUI;
+                }else if(constName == QString::fromUtf8("updatewithguiandtorrent")){
+                        r = QAppImageUpdate::Action::UpdateWithGUIAndTorrent;
+                } else {
 			r = 0;
 		}
 	}else if(type == QString::fromUtf8("guiflag")){

@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 project(QAppImageUpdate VERSION 2.0.0)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -118,7 +118,18 @@ target_include_directories(QAppImageUpdate INTERFACE "$<BUILD_INTERFACE:${PROJEC
 target_include_directories(QAppImageUpdate INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate>" )
 
 if(DECENTRALIZED_UPDATE_ENABLED)
-	target_link_libraries(QAppImageUpdate PUBLIC torrent-rasterbar boost_system pthread)
+	if(NOT STATIC_LINK_TORRENT_RASTERBAR)
+		target_link_libraries(QAppImageUpdate PUBLIC torrent-rasterbar boost_system pthread)
+	endif()
+
+	if(STATIC_LINK_TORRENT_RASTERBAR)
+		# Build LibTorrent Rasterbar with the following boost-build options to 
+		# use this option without errors.
+		# You should have installed boost system
+		# cd libtorrent-rasterbar/
+		# b2 cxxflags="-std=c++14" variant=release boost-link=static link=static fpic=on install
+		target_link_libraries(QAppImageUpdate PUBLIC torrent)
+	endif()	
 endif()
 
 if(NOT NO_GUI)

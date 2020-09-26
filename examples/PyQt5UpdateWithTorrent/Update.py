@@ -48,7 +48,7 @@ def handleFinishedSignal(result, action):
         if result['UpdateAvailable'].toBool():
             print("A new version of the AppImage is available.")
             print("Updating now... ")
-            obj.start(obj.getConstant("Action::Update"))
+            obj.start(obj.getConstant("Action::UpdateWithTorrent"))
         else:
             print("You have the latest AppImage!")
             app.quit()
