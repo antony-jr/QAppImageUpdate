@@ -175,7 +175,10 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
      * what we know. */
     if(!j_UpdateInformation.isEmpty()) {
         if(j_UpdateInformation == information) {
-            emit receiveControlFile();
+            if(!b_WithBT) { // Clear the torrent file link if it is not supposed to be supported.
+		    u_TorrentFile = QUrl(QString::fromUtf8(""));
+	    }
+	    emit receiveControlFile();
             return;
         }
     }
