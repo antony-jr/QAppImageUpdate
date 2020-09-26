@@ -53,9 +53,12 @@ class QAppImageUpdateTests : public QObject {
 
 	/// Direct zsync AppImage Update 	
 	urls << "https://releases.openclonk.org/snapshots/2020-08-08T17:14:06Z-master-dc43c2b72/OpenClonk-x86_64.AppImage";
-	
+
+	/// Gitlab zsync AppImage Update
+	urls << "https://gitlab.com/probono/QtQuickApp/-/jobs/73879740/artifacts/raw/QtQuickApp-x86_64.AppImage";
+
 	/// AppImage Update without range request support
-	/// Cannot find anything for now. 
+	/// Cannot find anything for now. Please add one if you find it.
 #endif // QUICK TEST
 
 	/// Download the required testing AppImages
@@ -217,6 +220,31 @@ class QAppImageUpdateTests : public QObject {
 	}
     }
 
+    void actionUpdate() {
+    	short action = 0;
+	QJsonObject result;
+	QList<QVariant> sg;
+	QAppImageUpdate updater;
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
+	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	QEventLoop loop;	
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
+
+	updater.setAppImage(m_Available.at(0));
+	updater.start(QAppImageUpdate::Action::Update);
+
+	loop.exec();
+	
+	QCOMPARE(spyInfo.count(), 1);
+
+	sg = spyInfo.takeFirst();
+	result = sg.at(0).toJsonObject();
+	action = sg.at(1).toInt();
+
+	QVERIFY(action == QAppImageUpdate::Action::Update);
+	QVERIFY(result.contains("NewVersionSha1Hash"));	
+    }
+
     // Test the default action sequence
     // CheckForUpdate -> Update
     // Make sure that exactly the required signals are 
@@ -265,6 +293,91 @@ class QAppImageUpdateTests : public QObject {
 	QVERIFY(action == QAppImageUpdate::Action::Update);
 	QCOMPARE(remoteSha1, result["NewVersionSha1Hash"].toString());
 	}
+    }
+
+    void actionCancelGetEmbeddedInfo() {
+	QAppImageUpdate updater;
+	updater.setAppImage(m_Available.at(0));
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
+	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	QSignalSpy cancelInfo(&updater, SIGNAL(canceled(short)));
+
+	updater.start(QAppImageUpdate::Action::GetEmbeddedInfo);
+	updater.cancel();
+
+	cancelInfo.wait(10 * 1000);
+
+	/// We should only have the cancel signal emitted.
+	QCOMPARE(spyInfo.count() , 0);
+	QCOMPARE(cancelInfo.count(), 1);
+
+        /* Get resultant QJsonObject and Compare. */
+        auto sg = cancelInfo.takeFirst();
+
+	short action = sg.at(0).toInt();
+	
+	QVERIFY(action == QAppImageUpdate::Action::GetEmbeddedInfo);
+        return;
+
+    }
+
+    void actionCancelCheckForUpdate() {
+        QAppImageUpdate updater;
+	updater.setAppImage(m_Available.at(0));
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
+
+	QEventLoop loop;	
+	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	QSignalSpy cancelInfo(&updater, SIGNAL(canceled(short)));
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
+	connect(&updater, &QAppImageUpdate::canceled, &loop, &QEventLoop::quit, Qt::QueuedConnection);
+
+	updater.start(QAppImageUpdate::Action::CheckForUpdate);
+	updater.cancel();
+
+	loop.exec();
+
+	/// We should only have the cancel signal emitted.
+	QCOMPARE(spyInfo.count() , 0);
+	QCOMPARE(cancelInfo.count(), 1);
+
+	auto sg = cancelInfo.takeFirst();
+	short action = sg.at(0).toInt();
+
+	QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
+    }
+
+    void actionCancelUpdate() {
+    	short action = 0;
+	QJsonObject result;
+	QList<QVariant> sg;
+	QAppImageUpdate updater;
+	connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
+	QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+	QSignalSpy cancelInfo(&updater, SIGNAL(canceled(short)));
+	
+	QEventLoop loop;	
+	connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
+	connect(&updater, &QAppImageUpdate::canceled, &loop, &QEventLoop::quit, Qt::QueuedConnection);
+
+	updater.setAppImage(m_Available.at(0));
+	updater.start(QAppImageUpdate::Action::Update);
+	
+	/// Cancel after a little time to give time to start the updater 
+	QTimer::singleShot(1500, [&updater]() {
+		updater.cancel();
+	});
+
+	loop.exec();
+
+	/// We should only have the cancel signal emitted.
+	QCOMPARE(spyInfo.count() , 0);
+	QCOMPARE(cancelInfo.count(), 1);
+
+	sg = cancelInfo.takeFirst();
+	action = sg.at(0).toInt();
+
+	QVERIFY(action == QAppImageUpdate::Action::Update);
     }
 
     /// I have no idea on how to test thread safety,

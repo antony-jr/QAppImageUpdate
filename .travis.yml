@@ -58,10 +58,16 @@ script:
   - mkdir build-cmake ; cd build-cmake
   - cmake -DLOGGING_DISABLED=ON -DNO_GUI=ON ..
   - make -j$(nproc)
-  - rm -rf build-cmake
   - cd ..
+  - rm -rf build-cmake
+  - mkdir build ; cd build
+  - cmake -DDECENTRALIZED_UPDATE_ENABLED=ON ..
+  - make -j$(nproc)
+  - sudo make install 
+  - cd ..
+  - rm -rf build
   - cd tests
-  - qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" . # Test if everything get passed with libtorrent linked 
+  - cmake -DDECENTRALIZED_UPDATE_ENABLED=ON .
   - make -j$(nproc)
   - Xvfb :100 -ac &
   - export DISPLAY=:100.0
