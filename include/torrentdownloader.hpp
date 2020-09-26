@@ -1,8 +1,8 @@
 #ifndef TORRENT_DOWNLOADER_HPP_INCLUDED
 #define TORRENT_DOWNLOADER_HPP_INCLUDED
 #ifdef DECENTRALIZED_UPDATE_ENABLED
-#include <libtorrent/version.hpp>
-#if LIBTORRENT_VERSION_NUM >= 10208
+//#include <libtorrent/version.hpp>
+//#if LIBTORRENT_VERSION_NUM >= 10208
 #include <QObject>
 #include <QSharedPointer>
 #include <QNetworkAccessManager>
@@ -33,6 +33,6 @@ Q_SIGNALS:
 	void logger(QString);
 	void progress(int, qint64, qint64, double, QString);
 };
-#endif // Version Check
+//#endif // Version Check
 #endif // DECENTRALIZED_UPDATE_ENABLED
 #endif // RANGE_DOWNLOADER_HPP_INCLUDED
