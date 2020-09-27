@@ -20,13 +20,13 @@
 // forward declare
 class SoftwareUpdateDialog;
 namespace Ui {
-	class AppImageUpdaterDialog;
+class AppImageUpdaterDialog;
 }
 #endif // NO_GUI
 
 class QAppImageUpdatePrivate : public QObject {
-	Q_OBJECT
-public:
+    Q_OBJECT
+  public:
     QAppImageUpdatePrivate(bool singleThreaded = true, QObject *parent = nullptr);
     QAppImageUpdatePrivate(const QString &AppImagePath, bool singleThreaded = true, QObject *parent = nullptr);
     QAppImageUpdatePrivate(QFile *AppImage, bool singleThreaded = true, QObject *parent = nullptr);
@@ -36,8 +36,8 @@ public:
     struct GuiFlag : public QAppImageUpdateCodes::GuiFlag { };
 
     static QString errorCodeToString(short);
-    static QString errorCodeToDescriptionString(short); 
-public Q_SLOTS:
+    static QString errorCodeToDescriptionString(short);
+  public Q_SLOTS:
     void setApplicationName(const QString&);
     void setIcon(QByteArray);
     void setGuiFlag(int);
@@ -47,14 +47,14 @@ public Q_SLOTS:
     void setOutputDirectory(const QString&);
     void setProxy(const QNetworkProxy&);
     void start(short action = Action::Update,
-	       int flags = GuiFlag::None, 
-	       QByteArray icon = QByteArray());
+               int flags = GuiFlag::None,
+               QByteArray icon = QByteArray());
     void cancel();
     void clear();
 
-private Q_SLOTS:
+  private Q_SLOTS:
     void setCurrentAppImagePath(QString);
-    void handleGetEmbeddedInfoError(short); 
+    void handleGetEmbeddedInfoError(short);
     void redirectEmbeddedInformation(QJsonObject);
     void handleCheckForUpdateError(short);
     void redirectUpdateCheck(QJsonObject);
@@ -81,24 +81,24 @@ private Q_SLOTS:
     void handleGUIUpdateError(short);
 #endif // NOT NO_GUI
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void started(short);
     void canceled(short);
     void finished(QJsonObject info, short);
     void progress(int, qint64, qint64, double, QString, short);
-    void logger(QString, QString); 
+    void logger(QString, QString);
     void error(short, short);
     void quit();
-private:
+  private:
     QByteArray m_Icon;
     int n_GuiFlag = GuiFlag::None;
     short n_CurrentAction = Action::None;
     bool b_Started = false,
-	 b_Finished = false,
-	 b_Canceled = false,
-	 b_Running = false,
-	 b_CancelRequested = false,
-	 b_GuiClassesConstructed = false;
+         b_Finished = false,
+         b_Canceled = false,
+         b_Running = false,
+         b_CancelRequested = false,
+         b_GuiClassesConstructed = false;
     QString m_CurrentAppImagePath;
     QString m_ApplicationName;
     QScopedPointer<AppImageUpdateInformationPrivate> m_UpdateInformation;

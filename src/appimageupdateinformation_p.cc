@@ -409,9 +409,9 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
     * that the user called getInfo() twice or more.
     */
     if(!m_Info.isEmpty()) {
-	QJsonObject fileInfo = m_Info.value("FileInformation").toObject();
-	emit(operatingAppImagePath(fileInfo.value("AppImageFilePath").toString()));
-	emit(info(m_Info));
+        QJsonObject fileInfo = m_Info.value("FileInformation").toObject();
+        emit(operatingAppImagePath(fileInfo.value("AppImageFilePath").toString()));
+        emit(info(m_Info));
         return;
     }
 
@@ -425,69 +425,69 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         setAppImage(QProcessEnvironment::systemEnvironment().value("APPIMAGE"));
         bc.lock();
 
-	// Check if it's a AppImageLauncher's path, if so then use the map file to 
-	// get the actual appimage path.
-	bool tryUsingProgramArguments = false;
-	bool checkForAIL = true;
-	
-	QRegExp rx(QString::fromUtf8("/run/user/*/appimagelauncherfs/*.AppImage"));
-	rx.setPatternSyntax(QRegExp::Wildcard);
+        // Check if it's a AppImageLauncher's path, if so then use the map file to
+        // get the actual appimage path.
+        bool tryUsingProgramArguments = false;
+        bool checkForAIL = true;
 
-	QString desktopIntegration;
-	if(QProcessEnvironment::systemEnvironment().contains("DESKTOPINTEGRATION")) {
-		desktopIntegration = QProcessEnvironment::systemEnvironment().value("DESKTOPINTEGRATION");
-		INFO_START " getInfo: Desktop integration detected" INFO_END;
-		if(desktopIntegration == QString::fromStdString("AppImageLauncher")) {
-			INFO_START " getInfo: Desktop integration seems to be AppImageLauncher." INFO_END;
-			QString progPath = QProcessEnvironment::systemEnvironment().value("ARGV0");
-			INFO_START " getInfo: ARGV0 = " LOGR progPath INFO_END;
-			if(!progPath.isEmpty()) {
-				bc.unlock();
-				setAppImage(progPath);
-				bc.lock();
-				checkForAIL = false;
-			}
-		}
-	}
+        QRegExp rx(QString::fromUtf8("/run/user/*/appimagelauncherfs/*.AppImage"));
+        rx.setPatternSyntax(QRegExp::Wildcard);
 
-	if(checkForAIL && rx.exactMatch(s_AppImagePath)) {
-		INFO_START " getInfo: Reading AppImageLauncher internal Map file to get the actual AppImage" INFO_END;
-		QFileInfo pathInfo(s_AppImagePath);
-		QString mapPath = pathInfo.absolutePath();
-		mapPath += QString::fromUtf8("/map");
+        QString desktopIntegration;
+        if(QProcessEnvironment::systemEnvironment().contains("DESKTOPINTEGRATION")) {
+            desktopIntegration = QProcessEnvironment::systemEnvironment().value("DESKTOPINTEGRATION");
+            INFO_START " getInfo: Desktop integration detected" INFO_END;
+            if(desktopIntegration == QString::fromStdString("AppImageLauncher")) {
+                INFO_START " getInfo: Desktop integration seems to be AppImageLauncher." INFO_END;
+                QString progPath = QProcessEnvironment::systemEnvironment().value("ARGV0");
+                INFO_START " getInfo: ARGV0 = " LOGR progPath INFO_END;
+                if(!progPath.isEmpty()) {
+                    bc.unlock();
+                    setAppImage(progPath);
+                    bc.lock();
+                    checkForAIL = false;
+                }
+            }
+        }
 
-		QString fileID = pathInfo.fileName();
+        if(checkForAIL && rx.exactMatch(s_AppImagePath)) {
+            INFO_START " getInfo: Reading AppImageLauncher internal Map file to get the actual AppImage" INFO_END;
+            QFileInfo pathInfo(s_AppImagePath);
+            QString mapPath = pathInfo.absolutePath();
+            mapPath += QString::fromUtf8("/map");
 
-		QFile mapFile(mapPath);
-		if(mapFile.open(QIODevice::ReadOnly | QIODevice::Text)){
-			while (!mapFile.atEnd()) {
-				QByteArray line = mapFile.readLine();
-				QString str(line);
-				auto parts = str.split(QString::fromUtf8(" -> "));
-				QString partID = parts.at(0).left(fileID.size());
-				if(fileID == partID){
-					// Remove trailling new line
-					QString parsedPath = parts.at(1).left(parts.at(1).size() - 1);
-					
-					bc.unlock();
-					setAppImage(parsedPath);
-					bc.lock();
-					break;
-				}
-				QCoreApplication::processEvents();
-			}
-			mapFile.close();
-		}else{
-			INFO_START " getInfo: Failed to get the actual AppImage path, trying to use program arguments." INFO_END;
-			tryUsingProgramArguments = true; // Try to parse from QCoreApplication.
-		}
+            QString fileID = pathInfo.fileName();
 
-	}
+            QFile mapFile(mapPath);
+            if(mapFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                while (!mapFile.atEnd()) {
+                    QByteArray line = mapFile.readLine();
+                    QString str(line);
+                    auto parts = str.split(QString::fromUtf8(" -> "));
+                    QString partID = parts.at(0).left(fileID.size());
+                    if(fileID == partID) {
+                        // Remove trailling new line
+                        QString parsedPath = parts.at(1).left(parts.at(1).size() - 1);
+
+                        bc.unlock();
+                        setAppImage(parsedPath);
+                        bc.lock();
+                        break;
+                    }
+                    QCoreApplication::processEvents();
+                }
+                mapFile.close();
+            } else {
+                INFO_START " getInfo: Failed to get the actual AppImage path, trying to use program arguments." INFO_END;
+                tryUsingProgramArguments = true; // Try to parse from QCoreApplication.
+            }
+
+        }
 
         /*
          * Lets try getting it from QCoreApplication arguments. */
         if(s_AppImagePath.isEmpty() || tryUsingProgramArguments) {
-	    INFO_START " getInfo: getting the AppImage path from program arguments, This might not work inside firejail." INFO_END;	
+            INFO_START " getInfo: getting the AppImage path from program arguments, This might not work inside firejail." INFO_END;
             auto arguments = QCoreApplication::arguments();
             if(!arguments.isEmpty()) {
                 bc.unlock();
@@ -498,21 +498,21 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
             }
 
             if(s_AppImagePath.isEmpty() || !QFileInfo::exists(s_AppImagePath)) {
-		emit(error(QAppImageUpdateEnums::Error::NoAppimagePathGiven));
+                emit(error(QAppImageUpdateEnums::Error::NoAppimagePathGiven));
                 return;
             }
         }
     }
 
-    emit(operatingAppImagePath(s_AppImagePath)); 
+    emit(operatingAppImagePath(s_AppImagePath));
 
     if(!p_AppImage) {
         /* Open appimage if the user only given the path. */
         try {
             p_AppImage = new QFile(this);
         } catch (...) {
-	        emit(error(QAppImageUpdateEnums::Error::NotEnoughMemory));
-		return;
+            emit(error(QAppImageUpdateEnums::Error::NotEnoughMemory));
+            return;
         }
 
         /*
@@ -561,7 +561,7 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
             p_AppImage = nullptr;
             FATAL_START  " setAppImage : cannot open AppImage for reading." FATAL_END;
             emit(error(QAppImageUpdateEnums::Error::CannotOpenAppimage));
-	    return;
+            return;
         }
         QCoreApplication::processEvents();
 
@@ -571,14 +571,14 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
         /* Check if exists */
         if(!p_AppImage->exists()) {
             FATAL_START  " setAppImage : cannot find the AppImage from given QFile , file does not exists." FATAL_END;
-            emit(error(QAppImageUpdateEnums::Error::AppimageNotFound)); 
+            emit(error(QAppImageUpdateEnums::Error::AppimageNotFound));
             return;
         }
 
         /* Check if readable. */
         if(!p_AppImage->isReadable()) {
-            FATAL_START  " setAppImage : invalid QFile given, not readable." FATAL_END; 
-	    emit(error(QAppImageUpdateEnums::Error::AppimageNotReadable));
+            FATAL_START  " setAppImage : invalid QFile given, not readable." FATAL_END;
+            emit(error(QAppImageUpdateEnums::Error::AppimageNotReadable));
             return;
         }
 
@@ -606,10 +606,10 @@ void AppImageUpdateInformationPrivate::getInfo(void) {
 
     auto magicBytes = read(p_AppImage, /*offset=*/8,/*maxchars=*/ 3);
     if (magicBytes[0] != 'A' || magicBytes[1] != 'I') {
-	/*
-         * If its not an AppImage then lets check if its a linux desktop file,
-	 * If so then parse the 'Exec' to find the actual AppImage.
-        */
+        /*
+             * If its not an AppImage then lets check if its a linux desktop file,
+         * If so then parse the 'Exec' to find the actual AppImage.
+            */
         magicBytes = read(p_AppImage, 0, 15);
         if(magicBytes == "[Desktop Entry]") {
             auto path = QString(getExecPathFromDesktopFile(p_AppImage));

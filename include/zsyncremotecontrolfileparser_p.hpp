@@ -98,7 +98,7 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
   private:
     bool b_AcceptRange = false,
          b_Busy = false,
-	 b_WithBT = false;
+         b_WithBT = false;
     QJsonObject j_UpdateInformation;
     QString s_ZsyncMakeVersion,
             s_ZsyncFileName, /* only used for github transport. */
@@ -122,7 +122,7 @@ class ZsyncRemoteControlFileParserPrivate : public QObject {
     qint64 n_CheckSumBlocksOffset = 0;
     QUrl u_TargetFileUrl,
          u_ControlFileUrl,
-	 u_TorrentFile;
+         u_TorrentFile;
 
 #ifndef LOGGING_DISABLED
     QScopedPointer<QDebug> p_Logger;

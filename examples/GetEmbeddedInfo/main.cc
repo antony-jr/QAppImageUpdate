@@ -26,9 +26,9 @@ int main(int ac, char **av) {
 
 
     QObject::connect(&updater, &QAppImageUpdate::finished, [&](QJsonObject info, short action) {
-	qInfo().noquote() << info;
+        qInfo().noquote() << info;
 
-	++it;
+        ++it;
         if(it >= parser.positionalArguments().count()) {
             app.quit();
         } else {

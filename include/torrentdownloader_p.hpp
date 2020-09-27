@@ -22,52 +22,52 @@
 
 
 class TorrentDownloaderPrivate : public QObject {
-	Q_OBJECT
-public:
-	TorrentDownloaderPrivate(QNetworkAccessManager*);
-	~TorrentDownloaderPrivate();
-public Q_SLOTS:
-	void setTargetFileDone(qint64);
-	void setTargetFileLength(qint64);
-	void setTargetFile(QTemporaryFile*);
-	void setTorrentFileUrl(const QUrl&);
-	void setTargetFileUrl(const QUrl&);
+    Q_OBJECT
+  public:
+    TorrentDownloaderPrivate(QNetworkAccessManager*);
+    ~TorrentDownloaderPrivate();
+  public Q_SLOTS:
+    void setTargetFileDone(qint64);
+    void setTargetFileLength(qint64);
+    void setTargetFile(QTemporaryFile*);
+    void setTorrentFileUrl(const QUrl&);
+    void setTargetFileUrl(const QUrl&);
 
-	void start();
-	void cancel();
+    void start();
+    void cancel();
 
-private Q_SLOTS:
-	void handleTorrentFileData(qint64, qint64);
-	void handleTorrentFileError(QNetworkReply::NetworkError);
-	void handleTorrentFileFinish();
-	void handleTimeout();
+  private Q_SLOTS:
+    void handleTorrentFileData(qint64, qint64);
+    void handleTorrentFileError(QNetworkReply::NetworkError);
+    void handleTorrentFileFinish();
+    void handleTimeout();
 
-	void torrentDownloadLoop();
+    void torrentDownloadLoop();
 
-Q_SIGNALS:
-	void started();
-	void canceled();
-	void finished();
-	void error(QNetworkReply::NetworkError);
+  Q_SIGNALS:
+    void started();
+    void canceled();
+    void finished();
+    void error(QNetworkReply::NetworkError);
 
-	void logger(QString);
-	void progress(int, qint64, qint64, double, QString);
-private:
-	bool b_Finished = false,
-	     b_Running = false,
-	     b_CancelRequested = false;
+    void logger(QString);
+    void progress(int, qint64, qint64, double, QString);
+  private:
+    bool b_Finished = false,
+         b_Running = false,
+         b_CancelRequested = false;
 
-	qint64 n_TargetFileLength,
-	       n_TargetFileDone;
-	QTimer m_Timer;
-	QTimer m_TimeoutTimer;
-	QUrl m_TorrentFileUrl,
-	     m_TargetFileUrl;
-	QTemporaryFile *m_File;
-	QNetworkAccessManager *m_Manager;
-	QScopedPointer<QByteArray> m_TorrentMeta;
-	QScopedPointer<lt::session> m_Session;
-	lt::torrent_handle m_Handle;
+    qint64 n_TargetFileLength,
+           n_TargetFileDone;
+    QTimer m_Timer;
+    QTimer m_TimeoutTimer;
+    QUrl m_TorrentFileUrl,
+         m_TargetFileUrl;
+    QTemporaryFile *m_File;
+    QNetworkAccessManager *m_Manager;
+    QScopedPointer<QByteArray> m_TorrentMeta;
+    QScopedPointer<lt::session> m_Session;
+    lt::torrent_handle m_Handle;
 };
 #endif // DECENTRALIZED_UPDATE_ENABLED
 #endif // TORRENT_DOWNLOADER_PRIVATE_HPP_INCLUDED

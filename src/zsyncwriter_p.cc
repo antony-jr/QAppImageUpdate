@@ -185,7 +185,7 @@ bool ZsyncWriterPrivate::getBlockRanges() {
     }
 
     INFO_START " getBlockRanges : getting required block ranges." INFO_END;
-    
+
     int i, n;
     int alloc_n = 100;
     zs_blockid from = 0, to = n_Blocks;
@@ -208,14 +208,12 @@ bool ZsyncWriterPrivate::getBlockRanges() {
         /* Okay, they intersect */
         if (n == 1 && p_Ranges[2 * i] <= from) {       /* Overlaps the start of our window */
             r[0] = p_Ranges[2 * i + 1] + 1;
-        }
-        else {
+        } else {
             /* If the last block that we still (which is the last window end -1, due
              * to half-openness) then this range just cuts the end of our window */
             if (p_Ranges[2 * i + 1] >= r[2 * n - 1] - 1) {
                 r[2 * n - 1] = p_Ranges[2 * i];
-            }
-            else {
+            } else {
                 /* In the middle of our range, split it */
                 r[2 * n] = p_Ranges[2 * i + 1] + 1;
                 r[2 * n + 1] = r[2 * n - 1];
@@ -235,24 +233,24 @@ bool ZsyncWriterPrivate::getBlockRanges() {
         }
     }
     r = (zs_blockid*)realloc(r, 2 * n * sizeof *r);
-    if (n == 1 && r[0] >= r[1]){
-	n = 0;
+    if (n == 1 && r[0] >= r[1]) {
+        n = 0;
     }
-   
+
     for(i = 0; i < n; ++i) {
-	// Note: to = to * blocksize - 1; As given by author.
-	auto to = r[2*i + 1];
-	auto from = r[2*i];
+        // Note: to = to * blocksize - 1; As given by author.
+        auto to = r[2*i + 1];
+        auto from = r[2*i];
 
 
         INFO_START " getBlockRanges : (" LOGR from LOGR " , " LOGR to LOGR ")." INFO_END;
 
-	m_RangeDownloader->appendRange(from, to);
+        m_RangeDownloader->appendRange(from, to);
         QCoreApplication::processEvents();
     }
 
     INFO_START " getBlockRanges : requesting " LOGR n LOGR " requests to server." INFO_END;
-    
+
     free((void*)r);
     return true;
 }
@@ -272,12 +270,12 @@ void ZsyncWriterPrivate::writeDataSequential(QByteArray *dataFragment, bool isLa
         */
         return;
     }
-    
+
     // Not to be confused with writeBlocks method
     // which updates n_BytesWritten by itself.
     n_BytesWritten += p_TargetFile->write(*(data.data()));
     if(isLast) {
-	    QTimer::singleShot(2500, this, &ZsyncWriterPrivate::verifyAndConstructTargetFile);
+        QTimer::singleShot(2500, this, &ZsyncWriterPrivate::verifyAndConstructTargetFile);
     }
     return;
 }
@@ -303,8 +301,8 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
     QScopedPointer<QBuffer> buffer(new QBuffer(downloadedData));
     buffer->open(QIODevice::ReadOnly);
 
-   
-    
+
+
     // In the original code the author uses the similar with the following equation,
     // bfrom = rangeFrom / blocksize
     // bto = bfrom + blocks - 1 .. (1)
@@ -323,49 +321,49 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
     // length
     //
     // length = bto - brom + 1 .. (4)
-    // 
+    //
     // Equating (3) in (4) we get,
     // length = bfrom + bto - bfrom - bfrom - 1 + 1
     //        = bto - bfrom
     //        = actual no. of blocks got.
     zs_blockid bfrom = fromBlock,
-	       bto = toBlock - 1;
-    
+               bto = toBlock - 1;
+
     for (zs_blockid x = bfrom; x <= bto; ++x) {
-            QByteArray blockData = buffer->read(n_BlockSize);
-       	    //// Fill with zeros if the block size is less than the required blocksize.
-	    if(blockData.size() != n_BlockSize){
-		    INFO_START " writeBlockRanges : padding block(" LOGR bfrom LOGR "," LOGR bto LOGR ")." INFO_END;
-		    QByteArray newBlockData;
-		    newBlockData.fill('\0', (n_BlockSize - blockData.size()));
-		    blockData.append(newBlockData);
-	    }
-	    calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);
-	    if(memcmp(&md4sum, &(p_BlockHashes[x].checksum[0]), n_StrongCheckSumBytes)) {
-                Md4ChecksumsMatched = false;
-                WARNING_START " writeBlockRanges : block(" LOGR bfrom LOGR "," LOGR bto LOGR ")." WARNING_END;
-		WARNING_START " writeBlockRanges : MD4 checksums mismatch." WARNING_END;
-               	WARNING_START " writeBlockRanges : MD4 Sum of Data : " LOGR 
-			QByteArray((const char *)(&md4sum[0])).toHex() WARNING_END;
-	    	WARNING_START " writeBlockRanges : MD4 Sum of Required :  " LOGR 
-			QByteArray((const char *)(&(p_BlockHashes[x].checksum[0]))).toHex() WARNING_END;
-		if (x > bfrom) {    /* Write any good blocks we did get */
-                    INFO_START " writeBlockRanges : only writting good blocks. " INFO_END;
-		    writeBlocks((const unsigned char*)downloaded->constData(), bfrom, x - 1);
-                }
-                break;
+        QByteArray blockData = buffer->read(n_BlockSize);
+        //// Fill with zeros if the block size is less than the required blocksize.
+        if(blockData.size() != n_BlockSize) {
+            INFO_START " writeBlockRanges : padding block(" LOGR bfrom LOGR "," LOGR bto LOGR ")." INFO_END;
+            QByteArray newBlockData;
+            newBlockData.fill('\0', (n_BlockSize - blockData.size()));
+            blockData.append(newBlockData);
+        }
+        calcMd4Checksum(&md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);
+        if(memcmp(&md4sum, &(p_BlockHashes[x].checksum[0]), n_StrongCheckSumBytes)) {
+            Md4ChecksumsMatched = false;
+            WARNING_START " writeBlockRanges : block(" LOGR bfrom LOGR "," LOGR bto LOGR ")." WARNING_END;
+            WARNING_START " writeBlockRanges : MD4 checksums mismatch." WARNING_END;
+            WARNING_START " writeBlockRanges : MD4 Sum of Data : " LOGR
+            QByteArray((const char *)(&md4sum[0])).toHex() WARNING_END;
+            WARNING_START " writeBlockRanges : MD4 Sum of Required :  " LOGR
+            QByteArray((const char *)(&(p_BlockHashes[x].checksum[0]))).toHex() WARNING_END;
+            if (x > bfrom) {    /* Write any good blocks we did get */
+                INFO_START " writeBlockRanges : only writting good blocks. " INFO_END;
+                writeBlocks((const unsigned char*)downloaded->constData(), bfrom, x - 1);
             }
-            QCoreApplication::processEvents();
+            break;
+        }
+        QCoreApplication::processEvents();
     }
 
 
     if(Md4ChecksumsMatched) {
-	writeBlocks((const unsigned char*)downloaded->constData(), bfrom, bto);
+        writeBlocks((const unsigned char*)downloaded->constData(), bfrom, bto);
     }
 
 
     if(isLast) {
-	    QTimer::singleShot(2500, this, &ZsyncWriterPrivate::verifyAndConstructTargetFile);
+        QTimer::singleShot(2500, this, &ZsyncWriterPrivate::verifyAndConstructTargetFile);
     }
 
     return;
@@ -379,7 +377,7 @@ void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByt
  * **IMPORTANT**: You should call this always before calling start.
  * Even if canceled. If you are going to call start again, You are instructed
  * to setConfiguration first and then start after getting finishedConfiguration signal.
- * 
+ *
  * This is because setConfiguration acts as clear and new config setter. Also
  * b_Configured is set to True in setConfiguration and set to False in start.
  *
@@ -397,7 +395,7 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
         QUrl targetFileUrl,
         QBuffer *targetFileCheckSumBlocks,
         bool rangeSupported,
-	QUrl torrentFileUrl) {
+        QUrl torrentFileUrl) {
     p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     n_Blocks = nblocks,
     n_BlockSize = blocksize,
@@ -473,27 +471,27 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
     */
     (void)p_TargetFile->fileName();
     INFO_START " setConfiguration : temporary file will temporarily reside at " LOGR p_TargetFile->fileName() LOGR "." INFO_END;
-    
+
     /// Create a range downloader or a Torrent Client to download the update
     /// in a decentralized way. Saves bandwidth for the server.
 
-#if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208  
+#if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
     if(b_TorrentAvail && b_AcceptRange) {
-    	INFO_START " setConfiguration : candidate suitable for decentralized update" INFO_END;
-	m_TorrentDownloader.reset(new TorrentDownloader(m_Manager));
-    }else{
-  	WARNING_START " setConfiguration : candidate not suitable for decentralized update" WARNING_END;	
-	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
+        INFO_START " setConfiguration : candidate suitable for decentralized update" INFO_END;
+        m_TorrentDownloader.reset(new TorrentDownloader(m_Manager));
+    } else {
+        WARNING_START " setConfiguration : candidate not suitable for decentralized update" WARNING_END;
+        m_RangeDownloader.reset(new RangeDownloader(m_Manager));
     }
 #else
     if(b_TorrentAvail && b_AcceptRange) {
-	    WARNING_START " setConfiguration : candidate suitable for decentralized update but this build has no capabilities"
-		    		WARNING_END;
+        WARNING_START " setConfiguration : candidate suitable for decentralized update but this build has no capabilities"
+        WARNING_END;
     }
     m_RangeDownloader.reset(new RangeDownloader(m_Manager));
 #endif // DECENTRALIZED_UPDATE_ENABLED
 
-    b_Configured = true;    
+    b_Configured = true;
     emit finishedConfiguring();
     return;
 }
@@ -502,23 +500,23 @@ void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,
 void ZsyncWriterPrivate::cancel() {
     INFO_START " cancel : cancel requested." INFO_END;
     if(!b_Started) {
-	    INFO_START " cancel : called before started!" INFO_END;
-	    return;
+        INFO_START " cancel : called before started!" INFO_END;
+        return;
     }
     b_CancelRequested = true;
 #if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
     if(!b_TorrentAvail) {
-    	if(!m_RangeDownloader.isNull()){
-		m_RangeDownloader->cancel();
-	}
-    }else {
-	if(!m_TorrentDownloader.isNull()){
-    		m_TorrentDownloader->cancel();
-	}
+        if(!m_RangeDownloader.isNull()) {
+            m_RangeDownloader->cancel();
+        }
+    } else {
+        if(!m_TorrentDownloader.isNull()) {
+            m_TorrentDownloader->cancel();
+        }
     }
 #else
     if(!m_RangeDownloader.isNull()) {
-	    m_RangeDownloader->cancel();
+        m_RangeDownloader->cancel();
     }
 #endif // DECENTRALIZED_UPDATE_ENABLED
     INFO_START " cancel : cancel requested " LOGR b_CancelRequested LOGR "." INFO_END;
@@ -582,58 +580,58 @@ void ZsyncWriterPrivate::start() {
                 }
 
 
-		int r = 0;
+                int r = 0;
                 if((r = submitSourceFile(targetFile)) < 0) {
                     delete targetFile;
-		    if(r == -2) {
-			    /// Cannot construst hash table.
-			    b_Started = b_CancelRequested = false;
-			    emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated); 
-		    }else if(r == -3) {
-			    /// Canceled the update
-			    b_Started = false;
-		    }
+                    if(r == -2) {
+                        /// Cannot construst hash table.
+                        b_Started = b_CancelRequested = false;
+                        emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated);
+                    } else if(r == -3) {
+                        /// Canceled the update
+                        b_Started = false;
+                    }
 
-		    if(r != -1) {
-		    	/// -1 cannot allocated memory. 
-			return;
-		    }
+                    if(r != -1) {
+                        /// -1 cannot allocated memory.
+                        return;
+                    }
                 }
                 delete targetFile;
             }
         }
 
-	if(n_BytesWritten < n_TargetFileLength) {
-        for(auto iter = foundGarbageFiles.constBegin(),
-                end  = foundGarbageFiles.constEnd();
-                iter != end && n_BytesWritten < n_TargetFileLength;
-                ++iter) {
-            QFile *sourceFile = nullptr;
-            if((errorCode = tryOpenSourceFile(*iter, &sourceFile)) > 0) {
-                emit error(errorCode);
-                return;
-            }
+        if(n_BytesWritten < n_TargetFileLength) {
+            for(auto iter = foundGarbageFiles.constBegin(),
+                    end  = foundGarbageFiles.constEnd();
+                    iter != end && n_BytesWritten < n_TargetFileLength;
+                    ++iter) {
+                QFile *sourceFile = nullptr;
+                if((errorCode = tryOpenSourceFile(*iter, &sourceFile)) > 0) {
+                    emit error(errorCode);
+                    return;
+                }
 
-	    int r = 0;
-            if((r = submitSourceFile(sourceFile)) < 0) {
+                int r = 0;
+                if((r = submitSourceFile(sourceFile)) < 0) {
+                    delete sourceFile;
+                    if(r == -2) {
+                        /// Cannot construst hash table.
+                        b_Started = b_CancelRequested = false;
+                        emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated);
+                    } else if(r == -3) {
+                        /// Canceled the update
+                        b_Started = false;
+                    }
+                    if(r != -1) {
+                        /// -1 cannot allocated memory.
+                        return;
+                    }
+                }
                 delete sourceFile;
-		if(r == -2) {
-			/// Cannot construst hash table.
-			b_Started = b_CancelRequested = false;
-			emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated); 
-		}else if(r == -3) {
-			/// Canceled the update
-			b_Started = false;
-		}
-		if(r != -1) {
-		    /// -1 cannot allocated memory. 
-		    return;
-		}
+                QFile::remove((*iter));
             }
-            delete sourceFile;
-            QFile::remove((*iter));
-	}
-	}
+        }
 
 
         if(n_BytesWritten < n_TargetFileLength) {
@@ -643,22 +641,22 @@ void ZsyncWriterPrivate::start() {
                 return;
             }
 
-	    int r = 0;
+            int r = 0;
             if((r = submitSourceFile(sourceFile)) < 0) {
                 delete sourceFile;
-		if(r == -1) {
-			/// Cannot allocate buffer memory
-			b_Started = b_CancelRequested = false;
-			emit error(QAppImageUpdateEnums::Error::NotEnoughMemory);
-		}else if(r == -2) {
-			/// Cannot construst hash table.
-			b_Started = b_CancelRequested = false;
-			emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated); 
-		}else if(r == -3) {
-			/// Canceled the update
-			b_Started = false;
-		}
-		b_Started = b_CancelRequested = false;	
+                if(r == -1) {
+                    /// Cannot allocate buffer memory
+                    b_Started = b_CancelRequested = false;
+                    emit error(QAppImageUpdateEnums::Error::NotEnoughMemory);
+                } else if(r == -2) {
+                    /// Cannot construst hash table.
+                    b_Started = b_CancelRequested = false;
+                    emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated);
+                } else if(r == -3) {
+                    /// Canceled the update
+                    b_Started = false;
+                }
+                b_Started = b_CancelRequested = false;
                 return;
             }
             delete sourceFile;
@@ -669,150 +667,150 @@ void ZsyncWriterPrivate::start() {
     p_TransferSpeed->start();
 
     if(n_BytesWritten >= n_TargetFileLength) {
-    	QCoreApplication::processEvents(); // Check if cancel requested.
-	if(b_CancelRequested) {
-		b_Started = b_CancelRequested = false;
-		emit canceled();
-		return;
-	}	
+        QCoreApplication::processEvents(); // Check if cancel requested.
+        if(b_CancelRequested) {
+            b_Started = b_CancelRequested = false;
+            emit canceled();
+            return;
+        }
         verifyAndConstructTargetFile();
     }
 #if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
-    /// See BEP 17 and BEP 19, Web seeds or url seeds needs a server which accepts 
+    /// See BEP 17 and BEP 19, Web seeds or url seeds needs a server which accepts
     /// range requests, It is possible for the torrent client to update if there are
-    /// ample amounts of peers seeding it but there is no assurance that the AppImage 
-    /// is being seeded. So if we try torrenting with a unsupported url seed then 
+    /// ample amounts of peers seeding it but there is no assurance that the AppImage
+    /// is being seeded. So if we try torrenting with a unsupported url seed then
     /// the update will just be quietly waiting for seeds forever.
     /// So the best way is to just do a dumb http download.
     else if(b_TorrentAvail && b_AcceptRange) {
-       m_TorrentDownloader->setTargetFileDone(n_BytesWritten);
-       m_TorrentDownloader->setTargetFileLength(n_TargetFileLength);
-       m_TorrentDownloader->setTorrentFileUrl(u_TorrentFileUrl);
-       m_TorrentDownloader->setTargetFile(p_TargetFile.data());
-       m_TorrentDownloader->setTargetFileUrl(u_TargetFileUrl);
+        m_TorrentDownloader->setTargetFileDone(n_BytesWritten);
+        m_TorrentDownloader->setTargetFileLength(n_TargetFileLength);
+        m_TorrentDownloader->setTorrentFileUrl(u_TorrentFileUrl);
+        m_TorrentDownloader->setTargetFile(p_TargetFile.data());
+        m_TorrentDownloader->setTargetFileUrl(u_TargetFileUrl);
 
-       connect(m_TorrentDownloader.data(), &TorrentDownloader::finished,
-		this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection);
-       connect(m_TorrentDownloader.data(), &TorrentDownloader::error,
-	       this, &ZsyncWriterPrivate::handleTorrentError, Qt::QueuedConnection); 
-       connect(m_TorrentDownloader.data(), &TorrentDownloader::canceled,
-	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
-       connect(m_TorrentDownloader.data(), &TorrentDownloader::logger,
-	       this, &ZsyncWriterPrivate::handleTorrentLogger);
-       
-       connect(m_TorrentDownloader.data(), &TorrentDownloader::progress,
-		this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
+        connect(m_TorrentDownloader.data(), &TorrentDownloader::finished,
+                this, &ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection);
+        connect(m_TorrentDownloader.data(), &TorrentDownloader::error,
+                this, &ZsyncWriterPrivate::handleTorrentError, Qt::QueuedConnection);
+        connect(m_TorrentDownloader.data(), &TorrentDownloader::canceled,
+                this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
+        connect(m_TorrentDownloader.data(), &TorrentDownloader::logger,
+                this, &ZsyncWriterPrivate::handleTorrentLogger);
 
-       m_TorrentDownloader->start();
+        connect(m_TorrentDownloader.data(), &TorrentDownloader::progress,
+                this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
+
+        m_TorrentDownloader->start();
     }
 #endif // DECENTRALIZED_UPDATE_ENABLED
-    else {     
-       m_RangeDownloader->setTargetFileLength(n_TargetFileLength);       
-       m_RangeDownloader->setBytesWritten(n_BytesWritten);
+    else {
+        m_RangeDownloader->setTargetFileLength(n_TargetFileLength);
+        m_RangeDownloader->setBytesWritten(n_BytesWritten);
 
-       if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
-       m_RangeDownloader->setFullDownload(true);
-       // Full Download
-       connect(m_RangeDownloader.data(), &RangeDownloader::data,
-		this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
-       }else {
-       // Partial Download
-       auto partial = getBlockRanges();
-       m_RangeDownloader->setFullDownload(!partial);
+        if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
+            m_RangeDownloader->setFullDownload(true);
+            // Full Download
+            connect(m_RangeDownloader.data(), &RangeDownloader::data,
+                    this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
+        } else {
+            // Partial Download
+            auto partial = getBlockRanges();
+            m_RangeDownloader->setFullDownload(!partial);
 
-       if(partial) {
-       	connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
-		       this, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
-       
-       }else{
-	connect(m_RangeDownloader.data(), &RangeDownloader::data,
-		this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
-      
-       }
-       }
+            if(partial) {
+                connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
+                        this, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
 
-       connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
-	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
+            } else {
+                connect(m_RangeDownloader.data(), &RangeDownloader::data,
+                        this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
 
-       connect(m_RangeDownloader.data(), &RangeDownloader::progress,
-	       this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
+            }
+        }
 
-       connect(m_RangeDownloader.data(), &RangeDownloader::error,
-	       this, &ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection);
+        connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
+                this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
 
-       m_RangeDownloader->setBlockSize(n_BlockSize);
-       m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
-       m_RangeDownloader->start();
+        connect(m_RangeDownloader.data(), &RangeDownloader::progress,
+                this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
+
+        connect(m_RangeDownloader.data(), &RangeDownloader::error,
+                this, &ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection);
+
+        m_RangeDownloader->setBlockSize(n_BlockSize);
+        m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
+        m_RangeDownloader->start();
     }
     return;
 }
 
 void ZsyncWriterPrivate::handleNetworkError(QNetworkReply::NetworkError code) {
-	b_Started = false;
-	FATAL_START " handleNetworkError : " LOGR code FATAL_END;
-	emit error(translateQNetworkReplyError(code));
+    b_Started = false;
+    FATAL_START " handleNetworkError : " LOGR code FATAL_END;
+    emit error(translateQNetworkReplyError(code));
 }
 
 #if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
 void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {
-	Q_UNUSED(code);
-	FATAL_START " handleTorrentError : " LOGR code FATAL_END;
-	INFO_START " handleTorrentError : Falling back to range download" INFO_END;
+    Q_UNUSED(code);
+    FATAL_START " handleTorrentError : " LOGR code FATAL_END;
+    INFO_START " handleTorrentError : Falling back to range download" INFO_END;
 
-	m_TorrentDownloader->disconnect();
-	m_TorrentDownloader.reset(nullptr); // Delete the torrent downloader completely.
+    m_TorrentDownloader->disconnect();
+    m_TorrentDownloader.reset(nullptr); // Delete the torrent downloader completely.
 
-	/// Reset everything to default.
-	b_TorrentAvail = false;
+    /// Reset everything to default.
+    b_TorrentAvail = false;
 
-	m_RangeDownloader.reset(new RangeDownloader(m_Manager));
-	m_RangeDownloader->setTargetFileLength(n_TargetFileLength);       
-	m_RangeDownloader->setBytesWritten(n_BytesWritten);
+    m_RangeDownloader.reset(new RangeDownloader(m_Manager));
+    m_RangeDownloader->setTargetFileLength(n_TargetFileLength);
+    m_RangeDownloader->setBytesWritten(n_BytesWritten);
 
-       	if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
-		m_RangeDownloader->setFullDownload(true);
-       		// Full Download
-       		connect(m_RangeDownloader.data(), &RangeDownloader::data,
-			 this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
-	}else {
-       		// Partial Download
-       		auto partial = getBlockRanges();
-       		m_RangeDownloader->setFullDownload(!partial);
+    if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {
+        m_RangeDownloader->setFullDownload(true);
+        // Full Download
+        connect(m_RangeDownloader.data(), &RangeDownloader::data,
+                this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
+    } else {
+        // Partial Download
+        auto partial = getBlockRanges();
+        m_RangeDownloader->setFullDownload(!partial);
 
-       		if(partial) {
-       			connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
-		       		this, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
-       
-      	 	}else{
-			connect(m_RangeDownloader.data(), &RangeDownloader::data,
-			 this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
-       		}
-       }
+        if(partial) {
+            connect(m_RangeDownloader.data(), &RangeDownloader::rangeData,
+                    this, &ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);
 
-       connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
-	       this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
+        } else {
+            connect(m_RangeDownloader.data(), &RangeDownloader::data,
+                    this, &ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);
+        }
+    }
 
-       connect(m_RangeDownloader.data(), &RangeDownloader::progress,
-	       this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
+    connect(m_RangeDownloader.data(), &RangeDownloader::canceled,
+            this, &ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);
 
-       connect(m_RangeDownloader.data(), &RangeDownloader::error,
-	       this, &ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection);
+    connect(m_RangeDownloader.data(), &RangeDownloader::progress,
+            this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
 
-       m_RangeDownloader->setBlockSize(n_BlockSize);
-       m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
-       m_RangeDownloader->start(); 
+    connect(m_RangeDownloader.data(), &RangeDownloader::error,
+            this, &ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection);
+
+    m_RangeDownloader->setBlockSize(n_BlockSize);
+    m_RangeDownloader->setTargetFileUrl(u_TargetFileUrl);
+    m_RangeDownloader->start();
 }
 
 void ZsyncWriterPrivate::handleTorrentLogger(QString msg) {
-	INFO_START msg INFO_END;
+    INFO_START msg INFO_END;
 }
 #endif // DECENTRALIZED_UPDATE_ENABLED
 
 void ZsyncWriterPrivate::handleCancel() {
-	b_CancelRequested = false;
-	b_Started = false;
-	INFO_START " handleCancel : canceled." INFO_END; 
-	emit canceled();
+    b_CancelRequested = false;
+    b_Started = false;
+    INFO_START " handleCancel : canceled." INFO_END;
+    emit canceled();
 }
 
 /*
@@ -937,8 +935,8 @@ short ZsyncWriterPrivate::tryOpenSourceFile(const QString &filePath, QFile **sou
  * Returns true if successfully constructed the target file.
 */
 bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
-    if(!p_TargetFile->isOpen() || !p_TargetFile->autoRemove()) { 
-	return true;
+    if(!p_TargetFile->isOpen() || !p_TargetFile->autoRemove()) {
+        return true;
     }
 
     bool constructed = false;
@@ -976,12 +974,12 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
         INFO_START " verifyAndConstructTargetFile : sha1 hash matches!" INFO_END;
         QString newTargetFileName;
         p_TargetFile->setAutoRemove(!(constructed = true));
-	/*
-         * Rename the new version with current time stamp.
-         * Do not touch anything else.
-         * Note: Since we checked for permissions earlier
-         * , We don't need to verify it again.
-         */
+        /*
+             * Rename the new version with current time stamp.
+             * Do not touch anything else.
+             * Note: Since we checked for permissions earlier
+             * , We don't need to verify it again.
+             */
         {
             QFileInfo sameFile(QFileInfo(p_TargetFile->fileName()).path() + "/" + s_TargetFileName);
             if(sameFile.exists()) {
@@ -1018,7 +1016,7 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
     QJsonObject newVersionDetails {
         {"AbsolutePath", QFileInfo(p_TargetFile->fileName()).absoluteFilePath() },
         {"Sha1Hash", UnderConstructionFileSHA1},
-	{"UsedTorrent", b_TorrentAvail && b_AcceptRange}
+        {"UsedTorrent", b_TorrentAvail && b_AcceptRange}
     };
     b_Started = b_CancelRequested = false;
     emit finished(newVersionDetails, s_SourceFilePath);
@@ -1275,7 +1273,7 @@ qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {
         return (error = -1);
 
     /* Build checksum hash tables ready to analyse the blocks we find */
-    if (!p_RsumHash){
+    if (!p_RsumHash) {
         if (!buildHash()) {
             free(buf);
             return (error = -2);
@@ -1571,7 +1569,7 @@ void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom
          * have received and stored the data for */
         int id;
         for (id = bfrom; id <= bto; id++) {
-	    removeBlockFromHash(id);
+            removeBlockFromHash(id);
             addToRanges(id);
             QCoreApplication::processEvents();
         }

@@ -19,8 +19,8 @@ int main(int ac, char **av) {
     int it = 0;
 
     QObject::connect(&updater, &QAppImageUpdate::progress,
-    [&](int percentage){
-    qInfo().noquote() << "Progress:: " << percentage;
+    [&](int percentage) {
+        qInfo().noquote() << "Progress:: " << percentage;
     });
 
     QObject::connect(&updater, &QAppImageUpdate::error, [&](short ecode, short action) {
@@ -31,9 +31,9 @@ int main(int ac, char **av) {
 
 
     QObject::connect(&updater, &QAppImageUpdate::finished, [&](QJsonObject info, short action) {
-	qInfo().noquote() << info;
+        qInfo().noquote() << info;
 
-	++it;
+        ++it;
         if(it >= parser.positionalArguments().count()) {
             app.quit();
         } else {

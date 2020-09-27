@@ -102,7 +102,7 @@ class ZsyncWriterPrivate : public QObject {
     void writeDataSequential(QByteArray*, bool);
     void handleNetworkError(QNetworkReply::NetworkError);
 #ifdef DECENTRALIZED_UPDATE_ENABLED
-#if LIBTORRENT_VERSION_NUM >= 10208 
+#if LIBTORRENT_VERSION_NUM >= 10208
     void handleTorrentError(QNetworkReply::NetworkError);
     void handleTorrentLogger(QString);
 #endif
@@ -120,10 +120,10 @@ class ZsyncWriterPrivate : public QObject {
     bool b_Started = false,
          b_CancelRequested = false,
          b_AcceptRange = true,
-	 b_Configured = false,
-	 b_TorrentAvail = false;
+         b_Configured = false,
+         b_TorrentAvail = false;
     QUrl u_TargetFileUrl,
-	 u_TorrentFileUrl;
+         u_TorrentFileUrl;
     QPair<rsum, rsum> p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));
     qint64 n_BytesWritten = 0;
     qint32 n_Blocks = 0,

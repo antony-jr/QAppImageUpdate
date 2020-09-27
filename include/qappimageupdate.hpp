@@ -15,23 +15,23 @@
 /// ----
 
 /// Forward declare private class.
-class QAppImageUpdatePrivate; 
+class QAppImageUpdatePrivate;
 
 class QAppImageUpdate : public QObject {
-	Q_OBJECT
-public:
+    Q_OBJECT
+  public:
     QAppImageUpdate(bool singleThreaded = true, QObject *parent = nullptr);
     QAppImageUpdate(const QString &AppImagePath, bool singleThreaded = true, QObject *parent = nullptr);
-    QAppImageUpdate(QFile *AppImage, bool singleThreaded = true, QObject *parent = nullptr); 
+    QAppImageUpdate(QFile *AppImage, bool singleThreaded = true, QObject *parent = nullptr);
     ~QAppImageUpdate();
-    
+
     struct Action : public QAppImageUpdateCodes::Action { };
     struct GuiFlag : public QAppImageUpdateCodes::GuiFlag { };
     struct Error : public QAppImageUpdateEnums::Error { };
 
     static QString errorCodeToString(short);
-    static QString errorCodeToDescriptionString(short); 
-public Q_SLOTS:
+    static QString errorCodeToDescriptionString(short);
+  public Q_SLOTS:
     void setIcon(QByteArray);
     void setGuiFlag(int);
     void setAppImage(const QString&);
@@ -40,21 +40,21 @@ public Q_SLOTS:
     void setOutputDirectory(const QString&);
     void setProxy(const QNetworkProxy&);
     void start(short action = Action::Update,
-	       int flags = GuiFlag::Default, 
-	       QByteArray icon = QByteArray());
+               int flags = GuiFlag::Default,
+               QByteArray icon = QByteArray());
     void cancel();
     void clear();
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void started(short);
     void canceled(short);
     void finished(QJsonObject info, short);
     void progress(int, qint64, qint64, double, QString, short);
-    void logger(QString, QString); 
+    void logger(QString, QString);
     void error(short, short);
     void quit();
 
-private:
+  private:
     QSharedPointer<QAppImageUpdatePrivate> m_Private;
 };
 

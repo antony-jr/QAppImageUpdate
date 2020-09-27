@@ -169,16 +169,16 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
     if(information["IsEmpty"].toBool()) {
         return;
     }
-    
+
     /*
      * Check if we are given the same information consecutively , If so then return
      * what we know. */
     if(!j_UpdateInformation.isEmpty()) {
         if(j_UpdateInformation == information) {
             if(!b_WithBT) { // Clear the torrent file link if it is not supposed to be supported.
-		    u_TorrentFile = QUrl(QString::fromUtf8(""));
-	    }
-	    emit receiveControlFile();
+                u_TorrentFile = QUrl(QString::fromUtf8(""));
+            }
+            emit receiveControlFile();
             return;
         }
     }
@@ -194,7 +194,7 @@ void ZsyncRemoteControlFileParserPrivate::setControlFileUrl(QJsonObject informat
         INFO_START " setControlFileUrl : using direct zsync transport." INFO_END;
         setControlFileUrl(QUrl(information["zsyncUrl"].toString()));
 
-	getControlFile();
+        getControlFile();
     } else if(information["transport"].toString() == "gh-releases-zsync") {
         INFO_START " setControlFileUrl : using github releases zsync transport." INFO_END;
         QUrl apiLink = QUrl("https://api.github.com/repos/" + information["username"].toString() +
@@ -302,7 +302,7 @@ void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void) {
         { "EmbededUpdateInformation", j_UpdateInformation},
         { "RemoteTargetFileSHA1Hash", s_TargetFileSHA1 },
         { "ReleaseNotes", s_ReleaseNotes },
-	{ "TorrentSupported" , u_TorrentFile.isValid() },
+        { "TorrentSupported", u_TorrentFile.isValid() },
     };
 
     emit updateCheckInformation(result);
@@ -375,7 +375,7 @@ void ZsyncRemoteControlFileParserPrivate::handleBintrayRedirection(const QUrl &u
 
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleBintrayRedirection : http response code(" LOGR responseCode LOGR ")." INFO_END;
-    
+
     /* cut all ties. */
     disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
@@ -399,9 +399,9 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed(void) {
     if(!senderReply)
         return;
 
-    if(senderReply->error() != QNetworkReply::NoError){
-	    senderReply->deleteLater();
-	    return;
+    if(senderReply->error() != QNetworkReply::NoError) {
+        senderReply->deleteLater();
+        return;
     }
 
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -427,14 +427,14 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
     if(!senderReply)
         return;
 
-    if(senderReply->error() != QNetworkReply::NoError){
-	    senderReply->deleteLater();
-	    return;
+    if(senderReply->error() != QNetworkReply::NoError) {
+        senderReply->deleteLater();
+        return;
     }
 
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     INFO_START LOGR " handleGithubAPIResponse : http response code(" LOGR responseCode LOGR ")." INFO_END;
-    
+
     /* Cut all ties. */
     disconnect(senderReply, SIGNAL(error(QNetworkReply::NetworkError)),
                this, SLOT(handleNetworkError(QNetworkReply::NetworkError)));
@@ -464,44 +464,44 @@ void ZsyncRemoteControlFileParserPrivate::handleGithubAPIResponse(void) {
     INFO_START " handleGithubAPIResponse : asset required is " LOGR s_ZsyncFileName INFO_END;
 
     foreach (const QJsonValue &value, assetsArray) {
-	    auto asset = value.toObject();
-	    if(rx.exactMatch(asset["name"].toString())) {
-            	requiredAssetUrl = asset["browser_download_url"].toString();
-	    }
-	    if(b_WithBT) { 
-	    	if(rx_torrent.exactMatch(asset["name"].toString())) {
-			u_TorrentFile = QUrl(asset["browser_download_url"].toString());
-	    	}
-	    }
-	    QCoreApplication::processEvents();
+        auto asset = value.toObject();
+        if(rx.exactMatch(asset["name"].toString())) {
+            requiredAssetUrl = asset["browser_download_url"].toString();
+        }
+        if(b_WithBT) {
+            if(rx_torrent.exactMatch(asset["name"].toString())) {
+                u_TorrentFile = QUrl(asset["browser_download_url"].toString());
+            }
+        }
+        QCoreApplication::processEvents();
     }
 
 
 
-    if(requiredAssetUrl.isEmpty()){
-    	emit error(QAppImageUpdateEnums::Error::ZsyncControlFileNotFound);
-    	return;
+    if(requiredAssetUrl.isEmpty()) {
+        emit error(QAppImageUpdateEnums::Error::ZsyncControlFileNotFound);
+        return;
     }
 
-      setControlFileUrl(QUrl(requiredAssetUrl));
-            /* Convert Github flavored Markdown to HTML using their own API.
-            * And then call getControlFile(); */
-            QNetworkRequest request;
-            request.setUrl(QString::fromUtf8("https://api.github.com/markdown/raw"));
-            request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
-            request.setRawHeader("Content-Type", "text/plain");
+    setControlFileUrl(QUrl(requiredAssetUrl));
+    /* Convert Github flavored Markdown to HTML using their own API.
+    * And then call getControlFile(); */
+    QNetworkRequest request;
+    request.setUrl(QString::fromUtf8("https://api.github.com/markdown/raw"));
+    request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+    request.setRawHeader("Content-Type", "text/plain");
 
-            QByteArray md = (jsonObject["body"].toString()).toLocal8Bit();
-            QNetworkReply *reply = p_NManager->post(request, md);
-            connect(reply,
-                    SIGNAL(error(QNetworkReply::NetworkError)),
-                    this,
-                    SLOT(handleNetworkError(QNetworkReply::NetworkError)),
-                    Qt::UniqueConnection);
-            connect(reply, &QNetworkReply::finished,
-                    this,
-                    &ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed,
-                    Qt::UniqueConnection); 
+    QByteArray md = (jsonObject["body"].toString()).toLocal8Bit();
+    QNetworkReply *reply = p_NManager->post(request, md);
+    connect(reply,
+            SIGNAL(error(QNetworkReply::NetworkError)),
+            this,
+            SLOT(handleNetworkError(QNetworkReply::NetworkError)),
+            Qt::UniqueConnection);
+    connect(reply, &QNetworkReply::finished,
+            this,
+            &ZsyncRemoteControlFileParserPrivate::handleGithubMarkdownParsed,
+            Qt::UniqueConnection);
     return;
 }
 
@@ -513,8 +513,8 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void) {
         return;
 
     if(senderReply->error() != QNetworkReply::NoError) {
-	    senderReply->deleteLater();
-	    return;
+        senderReply->deleteLater();
+        return;
     }
 
     int responseCode = senderReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -730,11 +730,11 @@ void ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl(qint64 bytesRec
 
     disconnect(reply, &QNetworkReply::downloadProgress,
                this, &ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl);
-  
+
     if(reply->error() != QNetworkReply::NoError) {
-	    reply->abort();
-	    reply->deleteLater();
-	    return;
+        reply->abort();
+        reply->deleteLater();
+        return;
     }
 
     auto replyCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -746,10 +746,10 @@ void ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl(qint64 bytesRec
     }
     reply->abort();
     reply->deleteLater();
-    
+
     if(!b_AcceptRange) {
-	u_TorrentFile.clear();
-    } 
+        u_TorrentFile.clear();
+    }
     emit receiveControlFile();
     return;
 }

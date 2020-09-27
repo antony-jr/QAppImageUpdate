@@ -21,21 +21,21 @@ int main(int ac, char **av) {
     QObject::connect(&updater, &QAppImageUpdate::error, [&](short ecode, short action) {
         qCritical().noquote() << "error:: " << QAppImageUpdate::errorCodeToString(ecode);
         app.quit();
-	return;
+        return;
     });
 
-    QObject::connect(&updater, &QAppImageUpdate::progress, 
+    QObject::connect(&updater, &QAppImageUpdate::progress,
     [&](int percentage, qint64 rc, qint64 total, double speed, QString units) {
-    	qInfo().noquote() << "Updating " << percentage << "%: Revised " << rc << "/" << total 
-	           << " bytes at " << speed << units << "... ";
+        qInfo().noquote() << "Updating " << percentage << "%: Revised " << rc << "/" << total
+                          << " bytes at " << speed << units << "... ";
     });
 
     QObject::connect(&updater, &QAppImageUpdate::finished, [&](QJsonObject info, short action) {
-	qInfo().noquote() << info;
+        qInfo().noquote() << info;
 
-	++it;
+        ++it;
         if(it >= parser.positionalArguments().count()) {
-	    app.quit();
+            app.quit();
         } else {
             QString path(args[it]);
             updater.setAppImage(path);

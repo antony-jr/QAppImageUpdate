@@ -19,24 +19,24 @@ int main(int ac, char **av) {
     int it = 0;
 
     QObject::connect(&updater, &QAppImageUpdate::canceled, [&](short action) {
-	Q_UNUSED(action);
-	app.quit();
+        Q_UNUSED(action);
+        app.quit();
     });
 
     QObject::connect(&updater, &QAppImageUpdate::error, [&](short ecode, short action) {
         Q_UNUSED(action);
-	qCritical().noquote() << "error:: " << QAppImageUpdate::errorCodeToString(ecode);
+        qCritical().noquote() << "error:: " << QAppImageUpdate::errorCodeToString(ecode);
         app.quit();
-	return;
+        return;
     });
 
     QObject::connect(&updater, &QAppImageUpdate::finished, [&](QJsonObject info, short action) {
-	Q_UNUSED(action);
-	qInfo().noquote() << info;
+        Q_UNUSED(action);
+        qInfo().noquote() << info;
 
-	++it;
+        ++it;
         if(it >= parser.positionalArguments().count()) {
-	    app.quit();
+            app.quit();
         } else {
             QString path(args[it]);
             updater.setAppImage(path);
