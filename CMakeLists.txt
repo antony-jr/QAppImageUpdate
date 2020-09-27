@@ -125,7 +125,7 @@ if(DECENTRALIZED_UPDATE_ENABLED)
 		# You should have static version of OpenSSL installed.
 		# cd libtorrent-rasterbar/
 # b2 cxxflags="-std=c++14" variant=release boost-link=static link=static fpic=on crypto=openssl runtime-link=static install -j4
-	target_link_libraries(QAppImageUpdate PUBLIC torrent)
+	target_link_libraries(QAppImageUpdate PUBLIC torrent pthread)
 	endif()	
 endif()
 
