@@ -126,9 +126,10 @@ if(DECENTRALIZED_UPDATE_ENABLED)
 		# Build LibTorrent Rasterbar with the following boost-build options to 
 		# use this option without errors.
 		# You should have installed boost system
+		# You should have static version of OpenSSL installed.
 		# cd libtorrent-rasterbar/
-		# b2 cxxflags="-std=c++14" variant=release boost-link=static link=static fpic=on install
-		target_link_libraries(QAppImageUpdate PUBLIC torrent)
+# b2 cxxflags="-std=c++14" variant=release boost-link=static link=static fpic=on crypto=openssl runtime-link=static install -j4
+	target_link_libraries(QAppImageUpdate PUBLIC torrent)
 	endif()	
 endif()
 

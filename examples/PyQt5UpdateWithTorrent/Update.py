@@ -33,6 +33,9 @@ def handleError(code, action):
     print("ERROR: {}".format(obj.errorCodeToDescriptionString(code)))
     app.quit()
 
+def handleProgress(percentage):
+    print("Done: {}".format(percentage))
+
 def handleFinishedSignal(result, action):
     if action == obj.getConstant("Action::UpdateWithTorrent"):
         for i in result:
@@ -54,6 +57,7 @@ def handleFinishedSignal(result, action):
             app.quit()
 
 obj.finished.connect(handleFinishedSignal)
+obj.progress.connect(handleProgress)
 obj.error.connect(handleError)
 
 obj.setAppImagePath(appimage_path)

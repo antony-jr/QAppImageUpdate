@@ -1,0 +1,20 @@
+download openssl
+cd openssl
+./config no-shared
+make -j$(nproc)
+sudo make install
+
+download boost
+cd boost
+./bootstrap.sh
+sudo cp b2 /usr/bin/
+echo "using gcc ;" > ~/user-config.jam
+b2 cxxflags="-std=c++14" -j4 install --with-system
+
+cd ..
+download libtorrent-rasterbar
+cd libtorrent-rasterbar
+export BOOST_ROOT=/home/user/boost/
+export BOOST_BUILD_PATH=/home/user/boost/tools/build/
+b2 cxxflags="-std=c++14" variant=release boost-link=static link=static fpic=on crypto=openssl runtime-link=static install -j4
+# Now static version of libtorrent should been installed.
