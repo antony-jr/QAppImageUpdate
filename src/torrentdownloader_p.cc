@@ -9,7 +9,7 @@
 
 TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manager) 
 	: QObject() {
-	n_TargetFileLength = 0;
+	n_TargetFileLength = n_TargetFileDone = 0;
 	lt::session_params p = lt::session_params();
   	p.settings.set_int(lt::settings_pack::alert_mask, 
 			lt::alert_category::status | 
@@ -19,14 +19,27 @@ TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manage
 	m_Session.reset(new lt::session(p));
 	m_TorrentMeta.reset(new QByteArray);
 
+	m_TimeoutTimer.setSingleShot(true);
+	m_TimeoutTimer.setInterval(100 * 1000); // 100 seconds
+	
 	connect(&m_Timer, &QTimer::timeout, 
 		 this, &TorrentDownloaderPrivate::torrentDownloadLoop,
 		 Qt::QueuedConnection);
 
-
+	connect(&m_TimeoutTimer, &QTimer::timeout, 
+		 this, &TorrentDownloaderPrivate::handleTimeout,
+		 Qt::QueuedConnection);
 }
 TorrentDownloaderPrivate::~TorrentDownloaderPrivate() {
 
+}
+
+void TorrentDownloaderPrivate::setTargetFileDone(qint64 done) {
+	if(b_Running) {
+		return;
+	}
+
+	n_TargetFileDone = done;
 }
 
 void TorrentDownloaderPrivate::setTargetFileLength(qint64 n) {
@@ -169,7 +182,22 @@ void TorrentDownloaderPrivate::handleTorrentFileFinish() {
 
 	m_Timer.setSingleShot(false);
 	m_Timer.setInterval(200);
-	m_Timer.start();	
+	m_Timer.start();
+
+	m_TimeoutTimer.start();	
+}
+
+void TorrentDownloaderPrivate::handleTimeout() {
+	m_Timer.stop();
+	m_TimeoutTimer.stop();
+
+	emit logger(QString::fromStdString(" handleTimeout: Torrent Downloader Timeout, falling back to range downloader."));	
+	m_File->setAutoRemove(true);
+	m_File->open();
+	m_Session->abort();
+	b_Running = false;
+	b_Finished = false;
+	emit error(QNetworkReply::ProtocolFailure);
 }
 
 void TorrentDownloaderPrivate::torrentDownloadLoop() {
@@ -189,11 +217,18 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 	}
 	auto status = m_Handle.status();
 
-	if(status.is_finished) {
+	if(status.state == lt::torrent_status::seeding) {
+		emit progress((int)(status.progress * 100),
+			      (qint64)(status.total_done), 
+			      n_TargetFileLength, 
+			      (double)(status.download_payload_rate/1024),
+			      QString::fromUtf8(" KB/s "));
+
 		m_Session->abort();
 		m_File->setAutoRemove(true);
 		m_File->open();
 		m_Timer.stop();
+		m_TimeoutTimer.stop();
 		b_Running = false;
 		b_Finished = true;
 		emit finished();
@@ -201,11 +236,15 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 	
 	}
 	
-	emit progress((int)(status.progress * 100),
-		(qint64)(status.total_done), 
-		 n_TargetFileLength, 
-		 (double)(status.download_payload_rate/1024),
-		 QString::fromUtf8(" KB/s "));
+	if(status.state == lt::torrent_status::downloading) {	
+		m_TimeoutTimer.start(); // Reset timeout timer on every progress in download.
+
+		emit progress((int)(status.progress * 100),
+			      (qint64)(status.total_done), 
+		 	      n_TargetFileLength, 
+		 	      (double)(status.download_payload_rate/1024),
+		 	      QString::fromUtf8(" KB/s "));
+	}
 
 	std::vector<lt::alert*> alerts;
 	m_Session->pop_alerts(&alerts);
@@ -215,7 +254,8 @@ void TorrentDownloaderPrivate::torrentDownloadLoop() {
 			m_File->setAutoRemove(true);
 			m_File->open();
 			m_Timer.stop();
-	       		m_Session->abort();
+	       		m_TimeoutTimer.stop();
+			m_Session->abort();
 			b_Running = false;
 			b_Finished = false;
 			emit error(QNetworkReply::ProtocolFailure);

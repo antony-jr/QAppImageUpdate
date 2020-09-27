@@ -33,6 +33,15 @@ TorrentDownloader::TorrentDownloader(QNetworkAccessManager *manager, QObject *pa
 			 Qt::DirectConnection);
 }
 
+void TorrentDownloader::setTargetFileDone(qint64 n) {
+    getMethod(m_Private.data(), "setTargetFileDone(qint64)")
+	    .invoke(m_Private.data(),
+                    Qt::QueuedConnection,
+                    Q_ARG(qint64,n));
+
+}
+
+
 void TorrentDownloader::setTargetFileLength(qint64 n) {
     getMethod(m_Private.data(), "setTargetFileLength(qint64)")
 	    .invoke(m_Private.data(),

@@ -27,6 +27,7 @@ public:
 	TorrentDownloaderPrivate(QNetworkAccessManager*);
 	~TorrentDownloaderPrivate();
 public Q_SLOTS:
+	void setTargetFileDone(qint64);
 	void setTargetFileLength(qint64);
 	void setTargetFile(QTemporaryFile*);
 	void setTorrentFileUrl(const QUrl&);
@@ -39,6 +40,7 @@ private Q_SLOTS:
 	void handleTorrentFileData(qint64, qint64);
 	void handleTorrentFileError(QNetworkReply::NetworkError);
 	void handleTorrentFileFinish();
+	void handleTimeout();
 
 	void torrentDownloadLoop();
 
@@ -55,8 +57,10 @@ private:
 	     b_Running = false,
 	     b_CancelRequested = false;
 
-	qint64 n_TargetFileLength;
+	qint64 n_TargetFileLength,
+	       n_TargetFileDone;
 	QTimer m_Timer;
+	QTimer m_TimeoutTimer;
 	QUrl m_TorrentFileUrl,
 	     m_TargetFileUrl;
 	QTemporaryFile *m_File;

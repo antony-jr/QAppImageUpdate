@@ -15,6 +15,7 @@ class TorrentDownloader : public QObject {
 public:
 	TorrentDownloader(QNetworkAccessManager*, QObject *parent = nullptr);
 public Q_SLOTS:
+	void setTargetFileDone(qint64);
 	void setTargetFileLength(qint64);
 	void setTargetFile(QTemporaryFile*);
 	void setTorrentFileUrl(const QUrl&);

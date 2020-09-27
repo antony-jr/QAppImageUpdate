@@ -685,6 +685,7 @@ void ZsyncWriterPrivate::start() {
     /// the update will just be quietly waiting for seeds forever.
     /// So the best way is to just do a dumb http download.
     else if(b_TorrentAvail && b_AcceptRange) {
+       m_TorrentDownloader->setTargetFileDone(n_BytesWritten);
        m_TorrentDownloader->setTargetFileLength(n_TargetFileLength);
        m_TorrentDownloader->setTorrentFileUrl(u_TorrentFileUrl);
        m_TorrentDownloader->setTargetFile(p_TargetFile.data());
