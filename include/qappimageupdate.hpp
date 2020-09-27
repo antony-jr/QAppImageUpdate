@@ -32,6 +32,7 @@ class QAppImageUpdate : public QObject {
     static QString errorCodeToString(short);
     static QString errorCodeToDescriptionString(short);
   public Q_SLOTS:
+    void setApplicationName(const QString&);
     void setIcon(QByteArray);
     void setGuiFlag(int);
     void setAppImage(const QString&);

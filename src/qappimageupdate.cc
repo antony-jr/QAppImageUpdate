@@ -39,7 +39,12 @@ QAppImageUpdate::QAppImageUpdate(QFile *AppImage, bool singleThreaded, QObject *
 
 QAppImageUpdate::~QAppImageUpdate() { }
 
-
+void QAppImageUpdate::setApplicationName(const QString &applicationName) {
+    getMethod(m_Private.data(), "setApplicationName(const QString&)")
+    .invoke(m_Private.data(),
+            Qt::QueuedConnection,
+            Q_ARG(QString, applicationName));
+}
 
 void QAppImageUpdate::setIcon(QByteArray icon) {
     getMethod(m_Private.data(), "setIcon(QByteArray)")
