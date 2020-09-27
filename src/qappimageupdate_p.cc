@@ -382,8 +382,15 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 
             m_Ui = QSharedPointer<Ui::AppImageUpdaterDialog>(new Ui::AppImageUpdaterDialog);
             m_Ui->setupUi(m_UpdaterDialog.data());
+	    
+	    /*
+	     * Default program logic.
+	     */
 
-            b_GuiClassesConstructed = true;
+	    connect((m_Ui->updateCancelBtn), &QPushButton::clicked, this, &QAppImageUpdatePrivate::cancel, Qt::QueuedConnection);
+	    connect(m_UpdaterDialog.data(), &QDialog::rejected, this, &QAppImageUpdatePrivate::cancel, Qt::QueuedConnection);
+            
+	    b_GuiClassesConstructed = true;
         }
 
         QPixmap icon;
@@ -822,9 +829,6 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheck(QJsonObject info) {
     connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::accepted,
             this, &QAppImageUpdatePrivate::handleGUIConfirmationAccepted, Qt::QueuedConnection);
 
-    /// Connect cancel button of updater dialog
-    
-
 
 
     if(b_CancelRequested) {
@@ -983,11 +987,9 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheckError(short ecode) {
     return;
 }
 
-void QAppImageUpdatePrivate::handleGUIUpdateCheckProgress(int percentage,
-        qint64 bytesReceived,
-        qint64 bytesTotal,
-        double speed,
-        QString units) {
+void QAppImageUpdatePrivate::handleGUIUpdateCheckProgress(int percentage) {
+
+
 }
 
 
