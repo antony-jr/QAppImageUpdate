@@ -814,10 +814,18 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheck(QJsonObject info) {
                this, SLOT(handleGUIUpdateCheckError(short)));
     disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
                this, SLOT(handleGUIUpdateCheckError(short)));
+    
+
+    /// Connect confirmation buttons 
     connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::rejected,
             this, &QAppImageUpdatePrivate::handleGUIConfirmationRejected, Qt::QueuedConnection);
     connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::accepted,
             this, &QAppImageUpdatePrivate::handleGUIConfirmationAccepted, Qt::QueuedConnection);
+
+    /// Connect cancel button of updater dialog
+    
+
+
 
     if(b_CancelRequested) {
         b_Started = b_Running = b_Finished = false;
