@@ -22,10 +22,11 @@ enum {
         ShowUpdateConfirmationDialog = 0x4,
         ShowFinishedDialog = 0x8,
         ShowErrorDialog = 0x10,
-        AlertWhenAuthorizationIsRequired = 0x20,
-        NotifyWhenNoUpdateIsAvailable = 0x40,
+	NoShowErrorDialogOnPermissionErrors = 0x20,
+	NotifyWhenNoUpdateIsAvailable = 0x40,
         NoRemindMeLaterButton = 0x80,
         NoSkipThisVersionButton = 0x100,
+	NoConfirmTorrentUsage = 0x200,
         Default = ShowBeforeProgress |
                   ShowProgressDialog |
                   ShowUpdateConfirmationDialog |

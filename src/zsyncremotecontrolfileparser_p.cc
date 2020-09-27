@@ -746,6 +746,10 @@ void ZsyncRemoteControlFileParserPrivate::checkHeadTargetFileUrl(qint64 bytesRec
     }
     reply->abort();
     reply->deleteLater();
+    
+    if(!b_AcceptRange) {
+	u_TorrentFile.clear();
+    } 
     emit receiveControlFile();
     return;
 }

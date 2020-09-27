@@ -118,7 +118,11 @@ enum : short {
     CannotOpenSourceFile,
     NoPermissionToReadWriteTargetFile,
     CannotOpenTargetFile,
-    TargetFileSha1HashMismatch
+    TargetFileSha1HashMismatch,
+
+    /* Library errors. */
+    UnsupportedActionForBuild = 200,
+    InvalidAction
 };
 };
 };

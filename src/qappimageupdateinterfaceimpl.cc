@@ -103,8 +103,10 @@ int QAppImageUpdateInterfaceImpl::getConstant(const QString &constant) {
 			r = QAppImageUpdate::GuiFlag::ShowFinishedDialog;
 		} else if(constName == QString::fromUtf8("showerrordialog")){
 			r = QAppImageUpdate::GuiFlag::ShowErrorDialog;
-		} else if(constName == QString::fromUtf8("alertwhenauthorizationisrequired")){
-			r = QAppImageUpdate::GuiFlag::AlertWhenAuthorizationIsRequired;
+		} else if(constName == QString::fromUtf8("noshowerrordialogonpermissionerrors")){
+			r = QAppImageUpdate::GuiFlag::NoShowErrorDialogOnPermissionErrors;
+		} else if(constName == QString::fromUtf8("noconfirmtorrentusage")) {
+			r = QAppImageUpdate::GuiFlag::NoConfirmTorrentUsage;
 		} else if(constName == QString::fromUtf8("notifywhennoupdateisavailable")){
 			r = QAppImageUpdate::GuiFlag::NotifyWhenNoUpdateIsAvailable;
 		} else if(constName == QString::fromUtf8("noremindmelaterbutton")) {

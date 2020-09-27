@@ -1,5 +1,5 @@
 INCLUDEPATH += $$PWD $$PWD/include
-QT += core network
+QT += core network widgets
 CONFIG += staticlib
 HEADERS += \
     $$PWD/include/appimageupdateinformation_p.hpp \
@@ -29,20 +29,19 @@ SOURCES += \
     $$PWD/src/helpers_p.cc
 
 
-# FORMS += $$PWD/src/AppImageUpdaterDialog.ui \
-#         $$PWD/include/SoftwareUpdateDialog.ui
+FORMS += $$PWD/src/AppImageUpdaterDialog.ui \
+         $$PWD/include/SoftwareUpdateDialog.ui
 
-#NO_GUI {
-#	message(QAppImageUpdate widgets will be disabled for this build.)
-#	QT -= widgets
-#	HEADERS -= $$PWD/include/appimageupdaterdialog_p.hpp
-#       HEADERS -= $$PWD/include/softwareupdatedialog_p.hpp
-#	SOURCES -= $$PWD/src/appimageupdaterdialog_p.cc
-#	SOURCES -= $$PWD/src/softwareupdatedialog_p.cc
-#
-#       FORMS -= $$PWD/src/AppImageUpdaterDialog.ui \
-#                $$PWD/include/SoftwareUpdateDialog.ui
-#}
+NO_GUI {
+	message(QAppImageUpdate widgets will be disabled for this build.)
+	QT -= widgets
+        DEFINES += NO_GUI
+	HEADERS -= $$PWD/include/softwareupdatedialog_p.hpp
+	SOURCES -= $$PWD/src/softwareupdatedialog_p.cc
+
+        FORMS -= $$PWD/src/AppImageUpdaterDialog.ui \
+                $$PWD/include/SoftwareUpdateDialog.ui
+}
 
 LOGGING_DISABLED {
 	message(Logging will be disabled for this build.)

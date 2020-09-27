@@ -52,6 +52,8 @@ Q_SIGNALS:
     void progress(int, qint64, qint64, double, QString, short);
     void logger(QString, QString); 
     void error(short, short);
+    void quit();
+
 private:
     QSharedPointer<QAppImageUpdatePrivate> m_Private;
 };
