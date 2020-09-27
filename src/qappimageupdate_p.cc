@@ -382,15 +382,15 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 
             m_Ui = QSharedPointer<Ui::AppImageUpdaterDialog>(new Ui::AppImageUpdaterDialog);
             m_Ui->setupUi(m_UpdaterDialog.data());
-	    
-	    /*
-	     * Default program logic.
-	     */
 
-	    connect((m_Ui->updateCancelBtn), &QPushButton::clicked, this, &QAppImageUpdatePrivate::cancel, Qt::QueuedConnection);
-	    connect(m_UpdaterDialog.data(), &QDialog::rejected, this, &QAppImageUpdatePrivate::cancel, Qt::QueuedConnection);
-            
-	    b_GuiClassesConstructed = true;
+            /*
+             * Default program logic.
+             */
+
+            connect((m_Ui->updateCancelBtn), &QPushButton::clicked, this, &QAppImageUpdatePrivate::cancel, Qt::QueuedConnection);
+            connect(m_UpdaterDialog.data(), &QDialog::rejected, this, &QAppImageUpdatePrivate::cancel, Qt::QueuedConnection);
+
+            b_GuiClassesConstructed = true;
         }
 
         QPixmap icon;
@@ -819,9 +819,9 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheck(QJsonObject info) {
                this, SLOT(handleGUIUpdateCheckError(short)));
     disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
                this, SLOT(handleGUIUpdateCheckError(short)));
-    
 
-    /// Connect confirmation buttons 
+
+    /// Connect confirmation buttons
     connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::rejected,
             this, &QAppImageUpdatePrivate::handleGUIConfirmationRejected, Qt::QueuedConnection);
     connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::accepted,
@@ -998,8 +998,8 @@ void QAppImageUpdatePrivate::handleGUIUpdateProgress(int percentage,
         QString units) {
     //// Show that we are canceling if cancel was requested.
     if(b_CancelRequested) {
-	    (m_Ui->updateSpeedLbl)->setText(QString::fromUtf8("Rolling back changes, Please wait... "));
-	    return;
+        (m_Ui->updateSpeedLbl)->setText(QString::fromUtf8("Rolling back changes, Please wait... "));
+        return;
     }
 
     (m_Ui->progressBar)->setValue(percentage);

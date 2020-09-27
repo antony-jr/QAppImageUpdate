@@ -13,54 +13,54 @@
 
 // Sync Downloader
 class SimpleDownload {
-	QScopedPointer<QNetworkAccessManager> m_Manager;
-public:
-	SimpleDownload() {
-		m_Manager.reset(new QNetworkAccessManager);
-	}
-	
-	int download(const QUrl &url, const QString &destination) {
-		QScopedPointer<QNetworkReply> reply;
-		QScopedPointer<QFile> file;
-		QString fileName = QFileInfo(destination).fileName();
+    QScopedPointer<QNetworkAccessManager> m_Manager;
+  public:
+    SimpleDownload() {
+        m_Manager.reset(new QNetworkAccessManager);
+    }
 
-		QNetworkRequest req;
-		req.setUrl(url);
-    		req.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
-	
+    int download(const QUrl &url, const QString &destination) {
+        QScopedPointer<QNetworkReply> reply;
+        QScopedPointer<QFile> file;
+        QString fileName = QFileInfo(destination).fileName();
 
-		file.reset(new QFile);
-		file->setFileName(destination);
-		if(!file->open(QIODevice::WriteOnly)){
-			return -1;
-		}
+        QNetworkRequest req;
+        req.setUrl(url);
+        req.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
-		reply.reset(m_Manager->get(req));
 
-		QElapsedTimer elapsed;
-		elapsed.start();
+        file.reset(new QFile);
+        file->setFileName(destination);
+        if(!file->open(QIODevice::WriteOnly)) {
+            return -1;
+        }
 
-		qInfo().noquote() << "Downloading " << fileName;
+        reply.reset(m_Manager->get(req));
 
-		while(!reply->isFinished()) {
-			if(reply->error() != QNetworkReply::NoError){
-				reply->deleteLater();
-				qCritical().noquote() << "Download Failed " << fileName << " : " << reply->error();
-				return -1;
-			}
-			if(reply->isReadable()){
-				file->write(reply->readAll());
-			}
-			QCoreApplication::processEvents();
-		}
+        QElapsedTimer elapsed;
+        elapsed.start();
 
-		file->write(reply->readAll());
-		file->close();
-		qInfo().noquote() << "Downloaded  " << fileName;
-		return 0;
-	}
+        qInfo().noquote() << "Downloading " << fileName;
 
-	~SimpleDownload() { }
+        while(!reply->isFinished()) {
+            if(reply->error() != QNetworkReply::NoError) {
+                reply->deleteLater();
+                qCritical().noquote() << "Download Failed " << fileName << " : " << reply->error();
+                return -1;
+            }
+            if(reply->isReadable()) {
+                file->write(reply->readAll());
+            }
+            QCoreApplication::processEvents();
+        }
+
+        file->write(reply->readAll());
+        file->close();
+        qInfo().noquote() << "Downloaded  " << fileName;
+        return 0;
+    }
+
+    ~SimpleDownload() { }
 };
 
 #endif

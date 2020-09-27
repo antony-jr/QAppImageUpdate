@@ -104,10 +104,10 @@ void RangeDownloaderPrivate::cancel() {
             end = m_ActiveRequests.end();
             iter != end;
             ++iter) {
-	if(*iter) {
-        	(*iter)->cancel();
-		QCoreApplication::processEvents();
-	}
+        if(*iter) {
+            (*iter)->cancel();
+            QCoreApplication::processEvents();
+        }
     }
 }
 
