@@ -14,7 +14,8 @@ HEADERS += \
     $$PWD/include/qappimageupdatecodes.hpp \
     $$PWD/include/qappimageupdate_p.hpp \
     $$PWD/include/qappimageupdate.hpp \
-    $$PWD/include/helpers_p.hpp
+    $$PWD/include/helpers_p.hpp \
+    $$PWD/include/softwareupdatedialog_p.hpp 
 
 SOURCES += \
     $$PWD/src/appimageupdateinformation_p.cc \
@@ -26,7 +27,8 @@ SOURCES += \
     $$PWD/src/rangedownloader.cc \
     $$PWD/src/qappimageupdate_p.cc \
     $$PWD/src/qappimageupdate.cc \
-    $$PWD/src/helpers_p.cc
+    $$PWD/src/helpers_p.cc \
+    $$PWD/src/softwareupdatedialog_p.cc
 
 
 FORMS += $$PWD/src/AppImageUpdaterDialog.ui \

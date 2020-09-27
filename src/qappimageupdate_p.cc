@@ -249,6 +249,7 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
     if(flags == GuiFlag::None) {
 	    flags = (n_GuiFlag != GuiFlag::None) ? n_GuiFlag : GuiFlag::Default;
     }
+    n_GuiFlag = flags;
 
     if(icon.isEmpty() && !m_Icon.isEmpty()){
 	    icon = m_Icon;
@@ -375,7 +376,7 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
 	    }
 	    
 	    // Setup GUI if not constructed before
-	    if(b_GuiClassesConstructed) {
+	    if(!b_GuiClassesConstructed) {
     		m_UpdaterDialog.reset(new QDialog);
     		m_UpdaterDialog->setObjectName(QString::fromUtf8("AppImageUpdaterDialog"));
 
@@ -444,7 +445,7 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
                      (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));	 
 	    
 	    connect(m_ControlFileParser.data(), SIGNAL(progress(int)),
-		     this, SLOT(handleGUIUpdateCheckProgress(int)),
+		     this, SLOT(handleGUIUpdateCheckProgress(int, qint64, qin64, double, QString)),
 		      (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));	 
 	    
 	    connect(m_ControlFileParser.data(), SIGNAL(error(short)),
@@ -752,11 +753,6 @@ void QAppImageUpdatePrivate::handleGUIConfirmationAccepted() {
 }
 
 void QAppImageUpdatePrivate::doGUIUpdate() {
- 	   connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::rejected,
-		    this, &QAppImageUpdatePrivate::handleGUIConfirmationRejected, Qt::QueuedConnection);
-    	   connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::accepted, 
-		    this, &QAppImageUpdatePrivate::handleGUIConfirmationAccepted, Qt::QueuedConnection);
-	
 	   connect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
 		     m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
 		     (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
@@ -797,6 +793,10 @@ void QAppImageUpdatePrivate::doGUIUpdate() {
 		    this, &QAppImageUpdatePrivate::handleGUIUpdateCancel,
 		    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
 
+	    getMethod(m_UpdateInformation.data(), "getInfo(void)")
+		    .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
+
+
 	    showWidget();
 }
 
@@ -814,15 +814,19 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheck(QJsonObject info) {
 		     this, SLOT(handleGUIUpdateCheckError(short)));
   disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
 		     this, SLOT(handleGUIUpdateCheckError(short)));
-
-    	    if(b_CancelRequested) {
-		b_Started = b_Running = b_Finished = false;
-   	    	b_Canceled = false; 
-		b_CancelRequested = false;
-		b_Canceled = true;
-		emit canceled(n_CurrentAction);
-		return;
-    	    }
+  connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::rejected,
+	  this, &QAppImageUpdatePrivate::handleGUIConfirmationRejected, Qt::QueuedConnection);
+  connect(m_ConfirmationDialog.data(), &SoftwareUpdateDialog::accepted, 
+           this, &QAppImageUpdatePrivate::handleGUIConfirmationAccepted, Qt::QueuedConnection);
+	
+   if(b_CancelRequested) {
+	b_Started = b_Running = b_Finished = false;
+   	b_Canceled = false; 
+	b_CancelRequested = false;
+	b_Canceled = true;
+	emit canceled(n_CurrentAction);
+	return;
+    }
 
  
 
