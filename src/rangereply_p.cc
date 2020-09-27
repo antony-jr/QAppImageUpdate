@@ -131,6 +131,11 @@ void RangeReplyPrivate::restart() {
 
 void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
     Q_UNUSED(bytesTotal);
+    if(b_CancelRequested) {
+	    m_Reply->abort();
+	    return;
+    } 
+
     qint64 actualBytesRec = bytesRec - n_BytesRecieved;
     n_BytesRecieved = bytesRec;
 

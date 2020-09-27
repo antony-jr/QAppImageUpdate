@@ -71,7 +71,7 @@ class QAppImageUpdatePrivate : public QObject {
     void handleGUIConfirmationAccepted();
 
     void doGUIUpdate();
-    void handleGUIUpdateCheckProgress(int, qint64, qint64, double, QString);
+    void handleGUIUpdateCheckProgress(int);
     void handleGUIUpdateCheck(QJsonObject);
     void handleGUIUpdateCheckError(short);
     void handleGUIUpdateProgress(int, qint64, qint64, double, QString);

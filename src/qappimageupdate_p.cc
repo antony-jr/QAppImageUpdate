@@ -452,7 +452,7 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
                 (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
 
         connect(m_ControlFileParser.data(), SIGNAL(progress(int)),
-                this, SLOT(handleGUIUpdateCheckProgress(int, qint64, qin64, double, QString)),
+                this, SLOT(handleGUIUpdateCheckProgress(int)),
                 (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
 
         connect(m_ControlFileParser.data(), SIGNAL(error(short)),
@@ -734,10 +734,8 @@ void QAppImageUpdatePrivate::handleUpdateFinished(QJsonObject info, QString oldV
 }
 
 
-//// ==============================================
-////  GUI Update routines.
-////
-////
+/// GUI Update routines.
+
 #ifndef NO_GUI
 void QAppImageUpdatePrivate::showWidget() {
     if(m_Ui.isNull() || m_UpdaterDialog.isNull()) {
@@ -998,6 +996,12 @@ void QAppImageUpdatePrivate::handleGUIUpdateProgress(int percentage,
         qint64 bytesTotal,
         double speed,
         QString units) {
+    //// Show that we are canceling if cancel was requested.
+    if(b_CancelRequested) {
+	    (m_Ui->updateSpeedLbl)->setText(QString::fromUtf8("Rolling back changes, Please wait... "));
+	    return;
+    }
+
     (m_Ui->progressBar)->setValue(percentage);
     double MegaBytesReceived = bytesReceived / 1048576;
     double MegaBytesTotal = bytesTotal / 1048576;

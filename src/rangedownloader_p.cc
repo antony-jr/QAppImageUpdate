@@ -104,8 +104,10 @@ void RangeDownloaderPrivate::cancel() {
             end = m_ActiveRequests.end();
             iter != end;
             ++iter) {
-        (*iter)->cancel();
-        QCoreApplication::processEvents();
+	if(*iter) {
+        	(*iter)->cancel();
+		QCoreApplication::processEvents();
+	}
     }
 }
 
@@ -377,6 +379,7 @@ void RangeDownloaderPrivate::handleRangeReplyFinished(qint32 from, qint32 to, QB
 
 void RangeDownloaderPrivate::handleRangeReplyProgress(qint64 bytesRc, int index) {
     Q_UNUSED(index);
+
     n_RecievedBytes += bytesRc;
     qint64 totalBytesRecieved = n_BytesWritten + n_RecievedBytes;
 

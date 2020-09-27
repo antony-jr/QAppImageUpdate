@@ -42,7 +42,7 @@ class TorrentDownloaderPrivate : public QObject {
     void handleTorrentFileFinish();
     void handleTimeout();
 
-    void torrentDownloadLoop();
+    void torrentLoop();
 
   Q_SIGNALS:
     void started();

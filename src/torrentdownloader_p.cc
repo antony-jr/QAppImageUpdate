@@ -1,6 +1,7 @@
 #ifdef DECENTRALIZED_UPDATE_ENABLED
 #include <QFileInfo>
 #include <QDebug>
+#include <QThread>
 #include <QCoreApplication>
 #include <vector>
 #include <iostream>
@@ -22,13 +23,15 @@ TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manage
     m_TimeoutTimer.setSingleShot(true);
     m_TimeoutTimer.setInterval(100 * 1000); // 100 seconds
 
-    connect(&m_Timer, &QTimer::timeout,
-            this, &TorrentDownloaderPrivate::torrentDownloadLoop,
-            Qt::QueuedConnection);
-
     connect(&m_TimeoutTimer, &QTimer::timeout,
             this, &TorrentDownloaderPrivate::handleTimeout,
             Qt::QueuedConnection);
+
+    m_Timer.setSingleShot(false);
+    m_Timer.setInterval(100); // 1ms?
+    connect(&m_Timer, &QTimer::timeout,
+	    this, &TorrentDownloaderPrivate::torrentLoop,
+	    Qt::QueuedConnection);
 }
 TorrentDownloaderPrivate::~TorrentDownloaderPrivate() {
 
@@ -181,14 +184,13 @@ void TorrentDownloaderPrivate::handleTorrentFileFinish() {
     }
 
     m_Timer.setSingleShot(false);
-    m_Timer.setInterval(200);
+    m_Timer.setInterval(100);
     m_Timer.start();
-
     m_TimeoutTimer.start();
+    return;
 }
 
 void TorrentDownloaderPrivate::handleTimeout() {
-    m_Timer.stop();
     m_TimeoutTimer.stop();
 
     emit logger(QString::fromStdString(" handleTimeout: Torrent Downloader Timeout, falling back to range downloader."));
@@ -200,68 +202,69 @@ void TorrentDownloaderPrivate::handleTimeout() {
     emit error(QNetworkReply::ProtocolFailure);
 }
 
-void TorrentDownloaderPrivate::torrentDownloadLoop() {
-    if(b_Finished) {
-        m_Timer.stop();
-        return;
-    }
-    if(b_CancelRequested) {
-        m_File->setAutoRemove(true);
-        m_File->open();
-        m_Timer.stop();
-        m_Session->abort();
-        b_CancelRequested = false;
-        b_Running = b_Finished = false;
-        emit canceled();
-        return;
-    }
-    auto status = m_Handle.status();
-
-    if(status.state == lt::torrent_status::seeding) {
-        emit progress((int)(status.progress * 100),
+void TorrentDownloaderPrivate::torrentLoop() {
+	if(!b_Running) {
+		/// To avoid queued calls from being called
+		return;
+	}
+    	if(b_CancelRequested) {
+		m_TimeoutTimer.stop();
+        	m_Timer.stop();
+		m_File->setAutoRemove(true);
+        	m_File->open();
+		m_Session->abort();
+        	b_CancelRequested = false;
+        	b_Running = b_Finished = false;
+        	emit canceled();
+        	return;
+    	}
+    	auto status = m_Handle.status();
+	
+	if(status.state == lt::torrent_status::seeding) {
+        	emit progress((int)(status.progress * 100),
                       (qint64)(status.total_done),
                       n_TargetFileLength,
                       (double)(status.download_payload_rate/1024),
                       QString::fromUtf8(" KB/s "));
+		m_Timer.stop();
+         	m_TimeoutTimer.stop(); 
+        	m_Session->abort();
+       		m_File->setAutoRemove(true);
+        	m_File->open();
+        	b_Running = false;
+        	b_Finished = true;
+        	emit finished();
+        	return;
 
-        m_Session->abort();
-        m_File->setAutoRemove(true);
-        m_File->open();
-        m_Timer.stop();
-        m_TimeoutTimer.stop();
-        b_Running = false;
-        b_Finished = true;
-        emit finished();
-        return;
+    	}
 
-    }
+    	if(status.state == lt::torrent_status::downloading) {
+        	m_TimeoutTimer.start(); // Reset timeout timer on every progress in download.
 
-    if(status.state == lt::torrent_status::downloading) {
-        m_TimeoutTimer.start(); // Reset timeout timer on every progress in download.
-
-        emit progress((int)(status.progress * 100),
+        	emit progress((int)(status.progress * 100),
                       (qint64)(status.total_done),
                       n_TargetFileLength,
                       (double)(status.download_payload_rate/1024),
                       QString::fromUtf8(" KB/s "));
-    }
+    	}
 
-    std::vector<lt::alert*> alerts;
-    m_Session->pop_alerts(&alerts);
-    for (lt::alert const* a : alerts) {
-        if (lt::alert_cast<lt::torrent_error_alert>(a)) {
-            emit logger(QString::fromStdString(a->message()));
-            m_File->setAutoRemove(true);
-            m_File->open();
-            m_Timer.stop();
-            m_TimeoutTimer.stop();
-            m_Session->abort();
-            b_Running = false;
-            b_Finished = false;
-            emit error(QNetworkReply::ProtocolFailure);
-            return;
-        }
-        QCoreApplication::processEvents();
-    }
+    	std::vector<lt::alert*> alerts;
+    	m_Session->pop_alerts(&alerts);
+    	for (lt::alert const* a : alerts) {
+        	if (lt::alert_cast<lt::torrent_error_alert>(a)) {
+            		emit logger(QString::fromStdString(a->message()));
+            		m_Timer.stop();
+			m_TimeoutTimer.stop();
+			m_File->setAutoRemove(true);
+            		m_File->open();
+			m_Session->abort();
+            		b_Running = false;
+            		b_Finished = false;
+            		emit error(QNetworkReply::ProtocolFailure);
+            		return;
+        	}
+        	QCoreApplication::processEvents();
+    	}
 }
+
 #endif // DECENTRALIZED_UPDATE_ENABLED
