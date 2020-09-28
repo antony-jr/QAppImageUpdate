@@ -106,7 +106,13 @@ if(BUILD_AS_PLUGIN)
 		      src/qappimageupdateinterfaceimpl.cc)
    add_library(QAppImageUpdate SHARED ${source})
 else()
-   add_library(QAppImageUpdate ${source})
+   if(BUILD_AS_SHARED_LIB)
+   	add_library(QAppImageUpdate SHARED ${source})
+   endif()
+
+   if(NOT BUILD_AS_SHARED_LIB)
+	add_library(QAppImageUpdate ${source})
+   endif()
 endif()
 
 target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network)
@@ -125,7 +131,7 @@ if(DECENTRALIZED_UPDATE_ENABLED)
 		# You should have static version of OpenSSL installed.
 		# cd libtorrent-rasterbar/
 # b2 cxxflags="-std=c++14" variant=release boost-link=static link=static fpic=on crypto=openssl runtime-link=static install -j4
-	target_link_libraries(QAppImageUpdate PUBLIC torrent pthread)
+	target_link_libraries(QAppImageUpdate PUBLIC torrent)
 	endif()	
 endif()
 
