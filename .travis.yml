@@ -29,7 +29,7 @@ script:
   - export DISPLAY=:100.0
   - mkdir build
   - cd build
-  - cmake -DDECENTRALIZED_UPDATE_ENABLED=ON -DBUILD_TEST=ON.. 
+  - cmake -DDECENTRALIZED_UPDATE_ENABLED=ON -DBUILD_TEST=ON .. 
   - make -j$(nproc)
   - cd tests
   - ./QAppImageUpdateTests
