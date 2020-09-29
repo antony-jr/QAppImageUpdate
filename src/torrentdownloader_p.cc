@@ -237,9 +237,14 @@ void TorrentDownloaderPrivate::torrentLoop() {
     if(b_CancelRequested) {
         m_TimeoutTimer.stop();
         m_Timer.stop();
-        m_File->setAutoRemove(true);
+        {
+	// The destruction of session proxy 
+	// assures that all call writes and everything
+	// is finished. This is sync.
+	auto sess_proxy = m_Session->abort();
+	}  
+	m_File->setAutoRemove(true);
         m_File->open();
-        m_Session->abort();
         b_CancelRequested = false;
         b_Running = b_Finished = false;
         emit canceled();
@@ -255,8 +260,13 @@ void TorrentDownloaderPrivate::torrentLoop() {
                       QString::fromUtf8(" KB/s "));
         m_Timer.stop();
         m_TimeoutTimer.stop();
-        m_Session->abort();
-        m_File->setAutoRemove(true);
+        {
+	// The destruction of session proxy 
+	// assures that all call writes and everything
+	// is finished. This is sync.
+	auto sess_proxy = m_Session->abort();
+	}  
+	m_File->setAutoRemove(true);
         m_File->open();
         b_Running = false;
         b_Finished = true;
@@ -282,9 +292,14 @@ void TorrentDownloaderPrivate::torrentLoop() {
             emit logger(QString::fromStdString(a->message()));
             m_Timer.stop();
             m_TimeoutTimer.stop();
-            m_File->setAutoRemove(true);
-            m_File->open();
-            m_Session->abort();
+	    {
+		// The destruction of session proxy 
+		// assures that all call writes and everything
+		// is finished. This is sync.
+	    	auto sess_proxy = m_Session->abort();
+	    }
+       	    m_File->setAutoRemove(true);
+            m_File->open();	
             b_Running = false;
             b_Finished = false;
             emit error(QNetworkReply::ProtocolFailure);
