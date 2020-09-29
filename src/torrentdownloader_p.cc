@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QThread>
 #include <QCoreApplication>
+#include <QNetworkProxy>
 #include <vector>
 #include <iostream>
 
@@ -16,6 +17,32 @@ TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manage
                        lt::alert_category::status |
                        lt::alert_category::error |
                        lt::alert_category::storage);
+    
+    //// Set proxy for libtorrent.
+    auto proxy = manager->proxy();
+    if(proxy.type() != QNetworkProxy::NoProxy) {
+	emit logger("Using proxy for torrent download");
+	p.settings.set_str(lt::settings_pack::proxy_hostname,
+			   proxy.hostName().toStdString());
+	p.settings.set_int(lt::settings_pack::proxy_port,
+			   (int)proxy.port());
+	p.settings.set_str(lt::settings_pack::proxy_username,
+			   proxy.user().toStdString());
+	p.settings.set_str(lt::settings_pack::proxy_password,
+			   proxy.password().toStdString());
+	
+	/// Set Proxy type.
+	if(proxy.type() == QNetworkProxy::Socks5Proxy) {
+		p.settings.set_int(lt::settings_pack::proxy_type,
+				   lt::settings_pack::socks5_pw);
+	}else if(proxy.type() == QNetworkProxy::HttpProxy) {
+		p.settings.set_int(lt::settings_pack::proxy_type,
+				   lt::settings_pack::http_pw);
+	}else{
+		emit logger("Cannot find proxy type. You have been warned");
+	}
+    }
+
     m_Manager = manager;
     m_Session.reset(new lt::session(p));
     m_TorrentMeta.reset(new QByteArray);
