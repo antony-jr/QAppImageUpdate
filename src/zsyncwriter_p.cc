@@ -505,13 +505,14 @@ void ZsyncWriterPrivate::cancel() {
     }
     b_CancelRequested = true;
 #if defined(DECENTRALIZED_UPDATE_ENABLED) && LIBTORRENT_VERSION_NUM >= 10208
-    if(!b_TorrentAvail) {
-        if(!m_RangeDownloader.isNull()) {
-            m_RangeDownloader->cancel();
-        }
-    } else {
+    if(b_TorrentAvail && b_AcceptRange) {
         if(!m_TorrentDownloader.isNull()) {
             m_TorrentDownloader->cancel();
+        }
+    } else {
+        if(!m_RangeDownloader.isNull()) {
+            INFO_START " cancel : cancel requested to Range Downloader." INFO_END;
+	    m_RangeDownloader->cancel();
         }
     }
 #else

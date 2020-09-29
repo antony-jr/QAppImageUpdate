@@ -36,7 +36,7 @@ class RangeReplyPrivate : public QObject {
     void finished(qint32,qint32,QByteArray*, int);
     void canceled(int);
   private:
-    bool b_Running = false,
+    bool b_Running = true, /* When constructed, the reply will be running. */
          b_Finished = false,
          b_Canceled = false,
          b_CancelRequested = false,

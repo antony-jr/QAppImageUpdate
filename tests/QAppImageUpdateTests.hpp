@@ -310,6 +310,65 @@ class QAppImageUpdateTests : public QObject {
         }
     }
 
+    // Same asa actionSequenceAll but with non single 
+    // threaded mode.
+    void actionSequenceAllNonSingleThreaded() {
+        short action = 0;
+        QJsonObject result;
+        QList<QVariant> sg;
+        QAppImageUpdate updater(/*singleThreaded=*/false);
+        connect(&updater, &QAppImageUpdate::error, this, &QAppImageUpdateTests::defaultErrorHandler);
+        QSignalSpy spyInfo(&updater, SIGNAL(finished(QJsonObject, short)));
+        QEventLoop loop;
+        connect(&updater, &QAppImageUpdate::finished, &loop, &QEventLoop::quit, Qt::QueuedConnection);
+
+        for(auto iter = m_Available.begin(),
+                end = m_Available.end();
+                iter != end;
+                ++iter) {
+            updater.setAppImage(*iter);
+            qInfo().noquote() << "Update(" << *iter << ")";
+
+            updater.start(QAppImageUpdate::Action::CheckForUpdate);
+            loop.exec();
+
+            QCOMPARE(spyInfo.count(), 1);
+
+            sg = spyInfo.takeFirst();
+            result = sg.at(0).toJsonObject();
+            action = sg.at(1).toInt();
+
+            QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);
+            QVERIFY(result.contains("UpdateAvailable"));
+
+            bool torrentSupported = result["TorrentSupported"].toBool();
+            auto remoteSha1 = result["RemoteSha1Hash"].toString();
+
+            // Now Update
+            updater.start();
+            loop.exec();
+
+            QCOMPARE(spyInfo.count(), 1);
+
+            sg = spyInfo.takeFirst();
+            result = sg.at(0).toJsonObject();
+            action = sg.at(1).toInt();
+
+            QVERIFY(action == QAppImageUpdate::Action::Update);
+            QCOMPARE(remoteSha1, result["NewVersionSha1Hash"].toString());
+
+            /// Should not use torrent if it supports it.
+            if(torrentSupported ) {
+                QCOMPARE(false, result["UsedTorrent"].toBool());
+            }
+
+            /// Remove all appimage if its updated.
+            QFile::remove(result["NewVersionPath"].toString());
+        }
+    }
+
+
+
     void actionCancelGetEmbeddedInfo() {
         QAppImageUpdate updater;
         updater.setAppImage(m_Available.at(0));

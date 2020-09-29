@@ -10,7 +10,9 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-find_package(QAppImageUpdate)
+if(NOT BUILD_EXAMPLES)
+	find_package(QAppImageUpdate)
+endif()
 
 # Include Directories.
 include_directories(.)

@@ -41,6 +41,16 @@ if(BUILD_TESTS)
 	add_subdirectory(tests)
 endif()
 
+if(BUILD_EXAMPLES)
+	add_subdirectory(examples/CheckForUpdate)
+	add_subdirectory(examples/GetEmbeddedInfo)
+	add_subdirectory(examples/ProxyUpdate)
+	add_subdirectory(examples/Update)
+	add_subdirectory(examples/UpdateWithTorrent)
+	add_subdirectory(examples/UpdateWithGUI)
+	add_subdirectory(examples/UpdateWithGUIAndTorrent)
+endif()
+
 SET(source)
 list(APPEND source
     src/qappimageupdate.cc

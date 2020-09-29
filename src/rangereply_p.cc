@@ -51,11 +51,17 @@ RangeReplyPrivate::~RangeReplyPrivate() {
 // =========================
 
 void RangeReplyPrivate::destroy() {
+    if(b_Halted) {
+	    return;
+    }
+
     if(b_Retrying) {
         m_Timer.stop();
     } else if(b_Running) {
-        m_Reply->disconnect();
-        m_Reply->abort();
+        if(!m_Reply.isNull()) {
+		m_Reply->disconnect();
+		m_Reply->abort();
+	}
     }
 
     resetInternalFlags();
@@ -92,6 +98,15 @@ void RangeReplyPrivate::cancel() {
             b_Finished ||
             b_CancelRequested) {
         return;
+    }
+
+    if(!m_Reply->isOpen() || !m_Reply->isReadable()) {
+	    m_Reply->disconnect();
+	    m_Reply->abort();
+	    resetInternalFlags();
+	    b_Canceled = true;
+	    emit canceled(n_Index);
+	    return;
     }
 
     b_CancelRequested = true;
@@ -131,9 +146,10 @@ void RangeReplyPrivate::restart() {
 
 void RangeReplyPrivate::handleData(qint64 bytesRec, qint64 bytesTotal) {
     Q_UNUSED(bytesTotal);
-    if(b_CancelRequested) {
-        m_Reply->abort();
-        return;
+
+
+    if(b_CancelRequested || b_Canceled || b_Halted) {
+	    return;
     }
 
     qint64 actualBytesRec = bytesRec - n_BytesRecieved;
@@ -188,7 +204,7 @@ void RangeReplyPrivate::handleError(QNetworkReply::NetworkError code) {
 }
 
 void RangeReplyPrivate::handleFinish() {
-    if(b_Halted) {
+    if(b_Halted || b_Canceled) {
         return;
     }
 

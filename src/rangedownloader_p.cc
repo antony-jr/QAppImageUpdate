@@ -106,8 +106,8 @@ void RangeDownloaderPrivate::cancel() {
             ++iter) {
         if(*iter) {
             (*iter)->cancel();
-            QCoreApplication::processEvents();
         }
+	QCoreApplication::processEvents();
     }
 }
 

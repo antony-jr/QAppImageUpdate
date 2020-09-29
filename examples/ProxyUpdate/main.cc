@@ -1,16 +1,49 @@
 #include <QCoreApplication>
-#include <QDebug>
-#include <AppImageUpdaterBridge>
+#include <QCommandLineParser>
+#include <QAppImageUpdate>
+#include <QNetworkProxy>
 
 int main(int ac, char **av) {
-    if(ac == 1) {
-        qInfo() << "Usage: " << av[0] << "[APPIMAGE PATH]";
-        return 0;
-    }
-    using AppImageUpdaterBridge::AppImageDeltaRevisioner;
-    using AppImageUpdaterBridge::errorCodeToDescriptionString;
+    qInfo().noquote() << "ProxyUpdate, Update AppImages Through Proxy.";
+    qInfo().noquote() << "Copyright (C) 2020, Antony Jr.";
+
     QCoreApplication app(ac, av);
-    QString AppImagePath(av[1]);
+    QAppImageUpdate updater;
+
+    QCommandLineParser parser;
+    parser.process(app);
+    auto args = parser.positionalArguments();
+    if(args.count() == 0) {
+        qInfo().noquote() << "\nUsage: " << app.arguments().at(0) << " [APPIMAGE PATH].";
+        return -1;
+    }
+    int it = 0;
+
+    QObject::connect(&updater, &QAppImageUpdate::error, [&](short ecode, short action) {
+        qCritical().noquote() << "error:: " << QAppImageUpdate::errorCodeToString(ecode);
+        app.quit();
+        return;
+    });
+
+    QObject::connect(&updater, &QAppImageUpdate::progress,
+    [&](int percentage, qint64 rc, qint64 total, double speed, QString units) {
+        qInfo().noquote() << "Updating " << percentage << "%: Revised " << rc << "/" << total
+                          << " bytes at " << speed << units << "... ";
+    });
+
+    QObject::connect(&updater, &QAppImageUpdate::finished, [&](QJsonObject info, short action) {
+        qInfo().noquote() << info;
+
+        ++it;
+        if(it >= parser.positionalArguments().count()) {
+            app.quit();
+        } else {
+            QString path(args[it]);
+            updater.setAppImage(path);
+            updater.start(QAppImageUpdate::Action::Update);
+        }
+        return;
+    });
 
     /* set proxy settings */
     QNetworkProxy proxy;
@@ -18,27 +51,12 @@ int main(int ac, char **av) {
     proxy.setHostName("127.0.0.1");
     proxy.setPort(9050);
 
-    AppImageDeltaRevisioner Revisioner(AppImagePath);
 
-    QObject::connect(&Revisioner, &AppImageDeltaRevisioner::error,
-    [&](short code) {
-        qCritical() << "Could not continue the update because , "
-                    <<  errorCodeToDescriptionString(code);
-        app.quit();
-        return;
-    });
 
-    QObject::connect(&Revisioner, &AppImageDeltaRevisioner::finished,
-    [&](QJsonObject newVersion, QString oldVersionPath) {
-        (void)newVersion;
-        (void)oldVersionPath;
-        qInfo() << "Update Completed!";
-        app.quit();
-        return;
-    });
-    Revisioner.setShowLog(true);
-    Revisioner.setProxy(proxy);
-    Revisioner.start();
+    QString path(args[it]);
+    updater.setAppImage(path);
+    updater.setProxy(proxy);
+    updater.setShowLog(true);
+    updater.start(QAppImageUpdate::Action::Update);
     return app.exec();
 }
-

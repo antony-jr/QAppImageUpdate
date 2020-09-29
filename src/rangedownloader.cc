@@ -85,13 +85,13 @@ void RangeDownloader::appendRange(qint32 from, qint32 to) {
 }
 
 void RangeDownloader::start() {
-    getMethod(m_Private.data(), "start(void)")
+    getMethod(m_Private.data(), "start()")
     .invoke(m_Private.data(),
             Qt::QueuedConnection);
 }
 
 void RangeDownloader::cancel() {
-    getMethod(m_Private.data(), "cancel(void)")
+    getMethod(m_Private.data(), "cancel()")
     .invoke(m_Private.data(),
             Qt::QueuedConnection);
 }

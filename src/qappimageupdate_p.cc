@@ -1231,13 +1231,13 @@ void QAppImageUpdatePrivate::handleGUIUpdateFinished(QJsonObject info, QString o
         }
 
 
-        //// The delay is set to 10 seconds
+        //// The delay is set to 5 seconds
         QProcess::startDetached("sh",
                                 QStringList()
                                 << "-c"
                                 << (
                                     QString::fromUtf8("sleep ") +
-                                    QString::number(10) +
+                                    QString::number(5) +
                                     QString::fromUtf8("; ") +
                                     result["NewVersionPath"].toString()
                                 ));
