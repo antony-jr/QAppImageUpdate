@@ -50,5 +50,4 @@ void RangeReply::retry(int timeout) {
 void RangeReply::cancel() {
     getMethod(m_Private.data(), "cancel()")
     .invoke(m_Private.data(), Qt::QueuedConnection);
-
 }

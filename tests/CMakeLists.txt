@@ -10,7 +10,9 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-find_package(QAppImageUpdate)
+if(NOT BUILD_TESTS)
+	find_package(QAppImageUpdate)
+endif()
 find_package(Qt5Test)
 find_package(Qt5Concurrent)
 

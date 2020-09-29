@@ -37,6 +37,10 @@ include_directories(.)
 include_directories(include)
 include_directories(${CMAKE_BINARY_DIR})
 
+if(BUILD_TESTS)
+	add_subdirectory(tests)
+endif()
+
 SET(source)
 list(APPEND source
     src/qappimageupdate.cc
