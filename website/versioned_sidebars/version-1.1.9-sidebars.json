@@ -1,0 +1,22 @@
+{
+  "version-1.1.9-docs": {
+    "Getting Started": [
+      "version-1.1.9-Installation",
+      "version-1.1.9-AddingAppImageUpdaterBridge",
+      "version-1.1.9-UsingPlugin"
+    ],
+    "Guides": [
+      "version-1.1.9-AppImageDeltaRevisionerExample",
+      "version-1.1.9-AppImageDeltaRevisionerProxyExample",
+      "version-1.1.9-AppImageUpdaterDialogExample",
+      "version-1.1.9-PyQt5PluginExample"
+    ],
+    "API": [
+      "version-1.1.9-AppImageUpdaterBridgeErrorCodes",
+      "version-1.1.9-AppImageUpdaterBridgeStatusCodes",
+      "version-1.1.9-ClassAppImageDeltaRevisioner",
+      "version-1.1.9-ClassAppImageUpdaterDialog",
+      "version-1.1.9-PluginInterface"
+    ]
+  }
+}
