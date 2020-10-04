@@ -1,10 +1,10 @@
 ---
 id: UsingPlugin
-title: Build AppImage Updater Bridge as Qt Plugin
+title: Build QAppImageUpdate as Qt Plugin
 sidebar_label: Building as Qt Plugin.
 ---
 
-AppImage Updater Bridge can compiled as a **Qt Plugin**. When it is built as a Qt Plugin, AppImage Updater Bridge can be used from any programming language that supports Qt.
+QAppImageUpdate can compiled as a **Qt Plugin**. When it is built as a Qt Plugin, QAppImageUpdate can be used from any programming language that supports Qt.
 
 Qt plugins thus makes us to maintain a single code base instead of maintaining a lot of ports. This makes less bug in the code base and there is no time wasted in making bindings.
 
@@ -33,7 +33,7 @@ You just need to enable the ```BUILD_AS_PLUGIN``` flag in your config.
   $ qmake "CONFIG+=BUILD_AS_PLUGIN" [ProjectFolder]
 ```
 
-Now you should have ```libAppImageUpdaterBridge.so``` file which is your plugin. Now use this file
+Now you should have ```libQAppImageUpdate.so``` file which is your plugin. Now use this file
 with ```QPluginLoader``` provided by your Qt bindings for your specific programming language.
 
 See the guides on examples on how this is done.
@@ -46,7 +46,7 @@ Same as in QMake, you just need to enable ```BUILD_AS_PLUGIN``` flag,
  $ cmake -DBUILD_AS_PLUGIN=ON [ProjectFolder]
 ```
 
-Now you should have ```libAppImageUpdaterBridge.so``` file which is your plugin. Now use this file
+Now you should have ```libQAppImageUpdate.so``` file which is your plugin. Now use this file
 with ```QPluginLoader``` provided by your Qt bindings for your specific programming language.
 
 See the guides on examples on how this is done.

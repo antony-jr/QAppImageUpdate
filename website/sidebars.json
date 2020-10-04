@@ -2,20 +2,18 @@
   "docs": {
     "Getting Started": [ 
 	   "Installation",
-	   "AddingAppImageUpdaterBridge",
+	   "AddingQAppImageUpdate",
 	   "UsingPlugin"
     ],
     "Guides" : [
-	   "AppImageDeltaRevisionerExample",
-	   "AppImageDeltaRevisionerProxyExample",
-	   "AppImageUpdaterDialogExample",
+	   "SimpleExample",
+	   "ProxyExample",
+	   "GUIExample",
 	   "PyQt5PluginExample"
     ],
     "API" : [
-	   "AppImageUpdaterBridgeErrorCodes",
-	   "AppImageUpdaterBridgeStatusCodes",
-	   "ClassAppImageDeltaRevisioner",
-	   "ClassAppImageUpdaterDialog",
+	   "ErrorCodes",
+	   "ClassQAppImageUpdate",
 	   "PluginInterface"
     ]
   }

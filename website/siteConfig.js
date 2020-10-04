@@ -10,30 +10,30 @@
 const users = [
   {	
     caption: 'AppImageUpdater',
-    image: '/AppImageUpdaterBridge/img/AppImageUpdater.png',
+    image: '/QAppImageUpdate/img/AppImageUpdater.png',
     infoLink: 'https://github.com/antony-jr/AppImageUpdater',
     pinned: true,
   },
   {
     caption: 'e2designer',
-    image: '/AppImageUpdaterBridge/img/e2designer.png',
+    image: '/QAppImageUpdate/img/e2designer.png',
     infoLink: 'https://gitlab.com/technic93/e2designer',
     pinned: true,
   },
   {
     caption: 'Update Deploy Qt',
-    image: '/AppImageUpdaterBridge/img/updatedeployqt.png',
+    image: '/QAppImageUpdate/img/updatedeployqt.png',
     infoLink: 'https://github.com/TheFutureShell/updatedeployqt',
     pinned: true,
   },
 ];
 
 const siteConfig = {
-  title: 'AppImage Updater Bridge' /* title for your website */,
-  tagline: 'A Powerfull Bridge to AppImage Update Mechanism.',
+  title: 'QAppImageUpdate' /* title for your website */,
+  tagline: 'Qt Library and Plugin to AppImage Update Mechanism.',
   url: 'https://antony-jr.github.io' /* your website url */,
-  baseUrl: '/AppImageUpdaterBridge/' /* base url for your project */,
-  projectName: 'AppImageUpdaterBridge',
+  baseUrl: '/QAppImageUpdate/' /* base url for your project */,
+  projectName: 'QAppImageUpdate',
   headerLinks: [
     {doc: 'Installation', label: 'Docs'},
     {page: 'help', label: 'Help'},
@@ -61,7 +61,7 @@ const siteConfig = {
   },
   scripts: ['https://buttons.github.io/buttons.js'],
   // You may provide arbitrary config keys to be used as needed by your template.
-  repoUrl: 'https://github.com/antony-jr/AppImageUpdaterBridge',
+  repoUrl: 'https://github.com/antony-jr/QAppImageUpdate',
 };
 
 module.exports = siteConfig;

@@ -3,53 +3,93 @@
   "localized-strings": {
     "next": "Next",
     "previous": "Previous",
-    "tagline": "A Powerfull Bridge to AppImage Update Mechanism.",
+    "tagline": "Qt Library and Plugin to AppImage Update Mechanism.",
     "docs": {
-      "AddingAppImageUpdaterBridge": {
-        "title": "Add AppImage Updater Bridge to your Project",
+      "AddingQAppImageUpdate": {
+        "title": "Add QAppImageUpdate to your Project",
         "sidebar_label": "Adding to your Project."
       },
-      "AppImageDeltaRevisionerExample": {
-        "title": "Updating an AppImage",
-        "sidebar_label": "Updating an AppImage"
+      "ClassQAppImageUpdate": {
+        "title": "Class QAppImageUpdate",
+        "sidebar_label": "Class QAppImageUpdate"
       },
-      "AppImageDeltaRevisionerProxyExample": {
-        "title": "Updating an AppImage using Proxy",
-        "sidebar_label": "Updating an AppImage using Proxy"
-      },
-      "AppImageUpdaterBridgeErrorCodes": {
-        "title": "Handling Errors from AppImageUpdaterBridge",
+      "ErrorCodes": {
+        "title": "QAppImageUpdate Error Codes",
         "sidebar_label": "Error Codes"
       },
-      "AppImageUpdaterBridgeStatusCodes": {
-        "title": "Handling Status from AppImageUpdaterBridge",
-        "sidebar_label": "Status Codes"
-      },
-      "AppImageUpdaterDialogExample": {
+      "GUIExample": {
         "title": "Updating an AppImage with GUI",
         "sidebar_label": "Updating an AppImage with GUI"
       },
-      "ClassAppImageDeltaRevisioner": {
-        "title": "Class AppImageDeltaRevisioner",
-        "sidebar_label": "Class AppImageDeltaRevisioner"
-      },
-      "ClassAppImageUpdaterDialog": {
-        "title": "Class AppImageUpdaterDialog",
-        "sidebar_label": "Class AppImageUpdaterDialog"
-      },
       "Installation": {
-        "title": "Installing AppImage Updater Bridge to your Project.",
+        "title": "Installing QAppImageUpdate to your Project.",
         "sidebar_label": "Installation"
       },
       "PluginInterface": {
+        "title": "QAppImageUpdate Plugin Interface",
+        "sidebar_label": "Qt Plugin Interface"
+      },
+      "ProxyExample": {
+        "title": "Updating an AppImage using Proxy",
+        "sidebar_label": "Updating an AppImage using Proxy"
+      },
+      "PyQt5PluginExample": {
+        "title": "Using QAppImageUpdate Plugin in PyQt5",
+        "sidebar_label": "Using Plugin in PyQt5"
+      },
+      "SimpleExample": {
+        "title": "Updating an AppImage",
+        "sidebar_label": "Updating an AppImage"
+      },
+      "UsingPlugin": {
+        "title": "Build QAppImageUpdate as Qt Plugin",
+        "sidebar_label": "Building as Qt Plugin."
+      },
+      "version-1.1.9/version-1.1.9-AddingAppImageUpdaterBridge": {
+        "title": "Add AppImage Updater Bridge to your Project",
+        "sidebar_label": "Adding to your Project."
+      },
+      "version-1.1.9/version-1.1.9-AppImageDeltaRevisionerExample": {
+        "title": "Updating an AppImage",
+        "sidebar_label": "Updating an AppImage"
+      },
+      "version-1.1.9/version-1.1.9-AppImageDeltaRevisionerProxyExample": {
+        "title": "Updating an AppImage using Proxy",
+        "sidebar_label": "Updating an AppImage using Proxy"
+      },
+      "version-1.1.9/version-1.1.9-AppImageUpdaterBridgeErrorCodes": {
+        "title": "Handling Errors from AppImageUpdaterBridge",
+        "sidebar_label": "Error Codes"
+      },
+      "version-1.1.9/version-1.1.9-AppImageUpdaterBridgeStatusCodes": {
+        "title": "Handling Status from AppImageUpdaterBridge",
+        "sidebar_label": "Status Codes"
+      },
+      "version-1.1.9/version-1.1.9-AppImageUpdaterDialogExample": {
+        "title": "Updating an AppImage with GUI",
+        "sidebar_label": "Updating an AppImage with GUI"
+      },
+      "version-1.1.9/version-1.1.9-ClassAppImageDeltaRevisioner": {
+        "title": "Class AppImageDeltaRevisioner",
+        "sidebar_label": "Class AppImageDeltaRevisioner"
+      },
+      "version-1.1.9/version-1.1.9-ClassAppImageUpdaterDialog": {
+        "title": "Class AppImageUpdaterDialog",
+        "sidebar_label": "Class AppImageUpdaterDialog"
+      },
+      "version-1.1.9/version-1.1.9-Installation": {
+        "title": "Installing AppImage Updater Bridge to your Project.",
+        "sidebar_label": "Installation"
+      },
+      "version-1.1.9/version-1.1.9-PluginInterface": {
         "title": "AppImage Updater Bridge Plugin Interface",
         "sidebar_label": "Qt Plugin Interface"
       },
-      "PyQt5PluginExample": {
+      "version-1.1.9/version-1.1.9-PyQt5PluginExample": {
         "title": "Using AppImage Updater Bridge Plugin in PyQt5",
         "sidebar_label": "Using Plugin in PyQt5"
       },
-      "UsingPlugin": {
+      "version-1.1.9/version-1.1.9-UsingPlugin": {
         "title": "Build AppImage Updater Bridge as Qt Plugin",
         "sidebar_label": "Building as Qt Plugin."
       }

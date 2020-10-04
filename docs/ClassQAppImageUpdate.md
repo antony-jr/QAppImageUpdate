@@ -1,69 +1,60 @@
 ---
-id: ClassAppImageDeltaRevisioner
-title: Class AppImageDeltaRevisioner
-sidebar_label: Class AppImageDeltaRevisioner
+id: ClassQAppImageUpdate
+title: Class QAppImageUpdate
+sidebar_label: Class QAppImageUpdate
 ---
 
 |	    |	        	                                       |		
 |-----------|----------------------------------------------------------|
-|  Header:  | #include < AppImageUpdaterBridge >                         |
-|   qmake:  | include(AppImageUpdaterBridge/AppImageUpdaterBridge.pri) |
+|  Header:  | #include < QAppImageUpdate >                             |
+|   qmake:  | include(QAppImageUpdate/QAppImageUpdate.pri)             |
 |Inherits:  | [QObject](http://doc.qt.io/qt-5/qobject.html)            |
-|Namespace: | **AppImageUpdaterBridge**
 
 
-> **Important**: AppImageDeltaRevisioner is under AppImageUpdaterBridge namespace , Make sure to include it.
-
-
-AppImageDeltaRevisioner is the main class which *Reads Embeded Update Information* , *Checks for Updates* , *Writes the Delta* ,
+QAppImageUpdate is the main class which *Reads Embeded Update Information*, *Checks for Updates*, *Writes the Delta*,
 *Downloads The Remaining Blocks* and  finally *Verifies the Checksums.*
 
-In each stage , You can connect with specific signals to listen to each stage of the revision process(You can also control them).
+In each stage, You can connect with specific signals to listen to each stage of the revision process(You can also control them).
 Thus all you need is this class to do the entire update.
 
-Internally this class purely uses **signals and slots** to communicate to private classes which are single thread and non-blocking(Optionally runs in a seperate thread). This class only holds a pointer to the private implementation (*PIMPL*).
-For most of the time , This class does not leak memory but if it does please report it on github.
+Internally this class purely uses **signals and slots** to communicate to private classes which are single thread and non-blocking(Optionally runs in a separate thread). This class only holds a pointer to the private implementation (*PIMPL*).
+For most of the time, This class does not leak memory but if it does please report it on github.
 
 All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentrancy.html) and thread safe.
-
-Eventhough all methods are reentrant , This class does not use **mutex** thanks to **Qt's signals and slots everything is cyclic and thus no mutex is needed.**
 
 ## Public Functions
 
 | Return Type  | Name |
 |--------------|------------------------------------------------------------------------------------------------|
-|  | [AppImageDeltaRevisioner(bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerbool-singlethreaded-true-qobject-parent-nullptr) |
-|  | [AppImageDeltaRevisioner(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerconst-qstring-bool-singlethreaded-true-qobject-parent-nullptr) |
-|  | [AppImageDeltaRevisioner(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerqfile-bool-singlethreaded-true-qobject-parent-nullptr) |
+|  | [QAppImageUpdate(bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerbool-singlethreaded-true-qobject-parent-nullptr) |
+|  | [QAppImageUpdate(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerconst-qstring-bool-singlethreaded-true-qobject-parent-nullptr) |
+|  | [QAppImageUpdate(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerqfile-bool-singlethreaded-true-qobject-parent-nullptr) |
 
 
 ## Slots
 
 | Return Type  | Name |
 |------------------------------|-------------------------------------------|
-| **void** | [start(void)](#void-startvoid) |
-| **void** | [cancel(void)](#void-cancelvoid) |
+| **void** | [start(short)](#void-startvoid) |
+| **void** | [cancel(short)](#void-cancelvoid) |
 | **void** | [setAppImage(const QString&)](#void-setappimageconst-qstring) |
 | **void** | [setAppImage(QFile \*)](#void-setappimageqfile) |
 | **void** | [setShowLog(bool)](#void-setshowlogbool) |
 | **void** | [setOutputDirectory(const QString&)](#void-setoutputdirectoryconst-qstring) |
 | **void** | [setProxy(const QNetworkProxy&)](#void-setproxyconst-qnetworkproxy-https-docqtio-qt-5-qnetworkproxyhtml) |
-| **void** | [getAppImageEmbededInformation(void)](#void-getappimageembededinformationvoid) |
-| **void** | [checkForUpdate(void)](#void-checkforupdatevoid) |
+| **void** | [setGUIFlag(int)]() |
+| **void** | [setIcon(QByteArray)]() | 
 | **void** | [clear(void)](#void-clearvoid) |
 
 ## Signals
 
 | Return Type  | Name |
 |--------------|------------------------------------------------|
-| void | [started(void)](#void-startedvoid) |
-| void | [canceled(void)](#void-canceledvoid) |
-| void | [finished(QJsonObject , QString)](#void-finishedqjsonobject-qstring) |
-| void | [embededInformation(QJsonObject)](#void-embededinformationqjsonobject) |
-| void | [updateAvailable(bool, QJsonObject)](#void-updateavailablebool-qjsonobject) |
-| void | [statusChanged(short)](#void-statuschangedshort) |
-| void | [error(short)](#void-errorshort) |
-| void | [progress(int, qint64, qint64, double, QString)](#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits) |
+| void | [started(short)](#void-startedvoid) |
+| void | [canceled(short)](#void-canceledvoid) |
+| void | [finished(QJsonObject , short)](#void-finishedqjsonobject-qstring) |
+| void | [error(short, short)](#void-errorshort) |
+| void | [progress(int, qint64, qint64, double, QString, short)](#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits) |
 | void | [logger(QString, QString)](#void-loggerqstring-qstring) |
 
 

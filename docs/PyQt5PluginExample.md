@@ -1,26 +1,26 @@
 ---
 id: PyQt5PluginExample
-title: Using AppImage Updater Bridge Plugin in PyQt5
+title: Using QAppImageUpdate Plugin in PyQt5
 sidebar_label: Using Plugin in PyQt5
 ---
 
-This guide Demonstrates how to use the *AppImageUpdaterBridge* plugin to update a single AppImage file.
+This guide Demonstrates how to use the *QAppImageUpdate* plugin to update a single AppImage file.
 This example assumes you are using PyQt5 as your python binding to Qt framework.
 
 > Note that if the plugin is placed in the predefined Qt Plugin path, then you don't need the
-> absolute path of the plugin. Simply set the file name to 'libAppImageUpdaterBridge'.
+> absolute path of the plugin. Simply set the file name to 'libQAppImageUpdate'.
 
 
 ## Building the Plugin
 
 ```
- $ git clone https://github.com/antony-jr/AppImageUpdaterBridge
- $ cd AppImageUpdaterBridge 
+ $ git clone https://github.com/antony-jr/QAppImageUpdate
+ $ cd QAppImageUpdate
  $ mkdir build
  $ cd build 
  $ cmake -DBUILD_AS_PLUGIN ..
  $ make -j$(nproc)
- $ export PLUGIN_PATH=$(pwd)/libAppImageUpdaterBridge.so
+ $ export PLUGIN_PATH=$(pwd)/libQAppImageUpdate.so
 ```
 
 ## Update.py
@@ -41,7 +41,7 @@ app = QCoreApplication(sys.argv)
 # Try to load the plugin from predefined 
 # Qt Plugin paths.
 loader = QPluginLoader()
-loader.setFileName('libAppImageUpdaterBridge')
+loader.setFileName('libQAppImageUpdate')
 if not loader.load():
     try:
         plugin_path = os.eviron['PLUGIN_PATH']
@@ -57,31 +57,27 @@ if not loader.load():
 appimage_path = sys.argv[1]
 obj = loader.instance()
 
-def handleFinish(info, old_appimge_path):
-    print(info)
-    app.quit()
-
+def handleFinish(info, action):
+    if action == obj.getConstant("Action::CheckForUpdate"):
+	if info["UpdateAvailable"].toBool():
+            print("A new version of the AppImage is available.")
+            print("Updating now... ")
+            obj.start(obj.getConstant("Action::Update"))
+    elif action == obj.getConstant("Action::Update"):
+    	print(info)
+    	app.quit()
+   
 def handleError(code):
-    print("A error occured, error code: {}".format(code))
+    print("ERROR: {}".format(obj.errorCodeToDescriptionString(code)))
     app.quit()
 
-def handleUpdate(avail):
-    if avail:
-        print("A new version of the AppImage is available.")
-        print("Updating now... ")
-        obj.start()
-    else:
-        print("You have the latest AppImage!")
-        app.quit()
-
-obj.updateAvailable.connect(handleUpdate)
 obj.finished.connect(handleFinish)
 obj.error.connect(handleError)
 
-obj.setAppImage(appimage_path)
+obj.setAppImagePath(appimage_path)
 
 print("Checking for Update... ")
-obj.checkForUpdate()
+obj.start(obj.getContant("Action::CheckForUpdate"))
 sys.exit(app.exec_())
 ```
 

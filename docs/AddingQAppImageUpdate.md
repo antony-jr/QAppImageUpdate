@@ -1,11 +1,11 @@
 ---
-id: AddingAppImageUpdaterBridge
-title: Add AppImage Updater Bridge to your Project
+id: AddingQAppImageUpdate
+title: Add QAppImageUpdate to your Project
 sidebar_label: Adding to your Project.
 ---
 
-AppImage Updater Bridge can compiled with both *QMake* and *CMake* , I recommend you to use *QMake* if you are
-building your application statically with Qt. Use *CMake* for normal compilation and other stuff , This is because *CMake* is 
+QAppImage can compiled with both *QMake* and *CMake* , I recommend you to use *QMake* if you are
+building your application statically with Qt. Use *CMake* for normal compilation and other stuff, This is because *CMake* is 
 easy to use than *QMake* when compiling with shared libraries of Qt. But *CMake* is very hard to work with when using a static 
 version of Qt , So to save some madness be a good boy/girl and use *QMake* instead.
 
@@ -15,16 +15,16 @@ version of Qt , So to save some madness be a good boy/girl and use *QMake* inste
 ## The Simple Way for Single Application.
 
 * Go to your project folder.
-* Install AppImageUpdaterBridge as a git submodule or just clone it.
+* Install QAppImageUpdate as a git submodule or just clone it.
 
 * Add this line to your project file.
 ```
-include(AppImageUpdaterBridge/AppImageUpdaterBridge.pri)
+include(QAppImageUpdate/QAppImageUpdate.pri)
 ```
 
-* Add AppImageUpdaterBridge headers to your source file.
+* Add QAppImageUpdate headers to your source file.
 ```
-#include <AppImageUpdaterBridge>
+#include <QAppImageUpdate>
 ```
 
 * Finally , Just Compile.
@@ -40,7 +40,7 @@ hierarchy , The structure is show below.
 ```
  -MyCoolApplication
   --libs
-     ---AppImageUpdaterBridge
+     ---QAppImageUpdate
      ---libs.pro
   --src
      ---main.cpp
@@ -53,7 +53,7 @@ hierarchy , The structure is show below.
 
 ### The Library Subdir Project file (libs.pro)
 
-This is where you keep all third party libraries including **AppImageUpdaterBridge**.
+This is where you keep all third party libraries including **QAppImageUpdate**.
 Just add a **git submodule** or execute the steps mentioned in the **Installation**   
 in the **libs** directory of your project folder.
 
@@ -74,10 +74,10 @@ TARGET = ../MyCoolApplication
 QT += core gui # Modules thats needed by your app.
 
 # Put your dynamic libs after AppImageUpdaterBridge. 
-LIBS += ../libs/AppImageUpdaterBridge/libAppImageUpdaterBridge.a 
+LIBS += ../libs/QAppImageUpdate/libQAppImageUpdate.a 
 
 INCLUDEPATH += . .. \
-               ../libs/AppImageUpdaterBridge/ # This is important
+               ../libs/QAppImageUpdate/ # This is important
 
 SOURCES += main.cpp mainwindow.cpp # All your source files.
 HEADERS += mainwindow.hpp # All your header files.
@@ -93,16 +93,16 @@ SUBDIRS = libs \ # Always use this order
 ```
 
 
-### Including AppImageUpdaterBridge in your Source
+### Including QAppImageUpdate in your Source
 
-Whenever you want to use **AppImageUpdaterBridge** , you just need to include it!
+Whenever you want to use **QAppImageUpdate**, you just need to include it!
 
 ```
-#include <AppImageUpdaterBridge>
+#include <QAppImageUpdate>
 ```
 
 
-Thats it , All you have to do is to build your project with **qmake**.   
+Thats it, All you have to do is to build your project with **qmake**.   
 
 ```
  $ mkdir build; cd build ; qmake .. ; make -j$(nproc) 
@@ -137,10 +137,10 @@ include_directories(AppImageUpdaterBridge)
 include_directories(AppImageUpdaterBridge/include)
 
 # include subdirectories 
-add_subdirectory(AppImageUpdaterBridge)
+add_subdirectory(QAppImageUpdate)
 
 add_executable(MyCoolApplication MyMain.cpp)
-target_link_libraries(MyCoolApplication AppImageUpdaterBridge 
+target_link_libraries(MyCoolApplication QAppImageUpdate
 					Qt5::Core 
 					Qt5::Network
 					Qt5::Widgets)
@@ -170,11 +170,9 @@ In CMake like this ,
 Compiling without logger support can reduce your binary by approx. 100 KiB and 
 also saves some runtime overhead and memory usage.
 
-# Disable building AppImageUpdaterDialog
+# Disable GUI Support
 
-AppImageUpdaterDialog is a class provided by the library for an easy use of the updater 
-through a nice graphical modal dialog which can be handy at times.
-But if you want to disable this for some reason then you can do so by doing like this ,
+QAppImageUpdate gives a basic gui implementation, if you don't want it use this.
 
 In QMake ,
 
@@ -188,4 +186,26 @@ In CMake ,
 
 ```
  $ cmake -DNO_GUI=ON [ProjectFolder]
+```
+
+
+# Enable Torrent Update Feature
+
+As of v2.0 QAppImageUpdate supports updating AppImages via Bittorrent protocol.
+
+**But you should have torrent rasterbar installed, At least v1.2.8 is needed for QAppImageUpdate.**
+
+
+In QMake ,
+
+```
+ $ qmake "CONFIG+=DECENTRALIZED_UPDATE_ENABLED" [ProjectFolder]
+```
+
+and 
+
+In CMake ,
+
+```
+ $ cmake -DDECENTRALIZED_UPDATE_ENABLED=ON [ProjectFolder]
 ```
