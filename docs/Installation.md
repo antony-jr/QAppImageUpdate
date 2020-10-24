@@ -17,6 +17,10 @@ and only that, Nothing more and nothing less.
 * [Torrent Rasterbar](https://libtorrent.org)
 
 
+Using the torrent feature is strictly for brave hearts because it's a bit hard 
+to get everything linked and compiled correctly. Please don't use try this if don't
+know what your doing.
+
 ## Installing the latest release from github
 
 **Just execute this command on your project folder and everything will be done for you!**   

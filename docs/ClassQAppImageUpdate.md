@@ -26,61 +26,82 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
 
 | Return Type  | Name |
 |--------------|------------------------------------------------------------------------------------------------|
-|  | [QAppImageUpdate(bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerbool-singlethreaded-true-qobject-parent-nullptr) |
-|  | [QAppImageUpdate(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerconst-qstring-bool-singlethreaded-true-qobject-parent-nullptr) |
-|  | [QAppImageUpdate(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)](#appimagedeltarevisionerqfile-bool-singlethreaded-true-qobject-parent-nullptr) |
+|  | [QAppImageUpdate(bool singleThreaded = true, QObject \*parent = nullptr)](#) |
+|  | [QAppImageUpdate(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)](#) |
+|  | [QAppImageUpdate(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)](#) |
 
 
 ## Slots
 
 | Return Type  | Name |
 |------------------------------|-------------------------------------------|
-| **void** | [start(short)](#void-startvoid) |
-| **void** | [cancel(short)](#void-cancelvoid) |
-| **void** | [setAppImage(const QString&)](#void-setappimageconst-qstring) |
-| **void** | [setAppImage(QFile \*)](#void-setappimageqfile) |
-| **void** | [setShowLog(bool)](#void-setshowlogbool) |
-| **void** | [setOutputDirectory(const QString&)](#void-setoutputdirectoryconst-qstring) |
+| **void** | [start(short)](#) |
+| **void** | [cancel()](#) |
+| **void** | [setAppImage(const QString&)](#) |
+| **void** | [setAppImage(QFile \*)](#) |
+| **void** | [setShowLog(bool)](#) |
+| **void** | [setOutputDirectory(const QString&)](#) |
 | **void** | [setProxy(const QNetworkProxy&)](#void-setproxyconst-qnetworkproxy-https-docqtio-qt-5-qnetworkproxyhtml) |
-| **void** | [setGUIFlag(int)]() |
+| **void** | [setGuiFlag(int)]() |
 | **void** | [setIcon(QByteArray)]() | 
-| **void** | [clear(void)](#void-clearvoid) |
+| **void** | [clear()](#) |
 
 ## Signals
 
 | Return Type  | Name |
 |--------------|------------------------------------------------|
-| void | [started(short)](#void-startedvoid) |
-| void | [canceled(short)](#void-canceledvoid) |
-| void | [finished(QJsonObject , short)](#void-finishedqjsonobject-qstring) |
-| void | [error(short, short)](#void-errorshort) |
-| void | [progress(int, qint64, qint64, double, QString, short)](#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits) |
+| void | [started(short)](#) |
+| void | [canceled(short)](#) |
+| void | [finished(QJsonObject , short)](#) |
+| void | [error(short, short)](#) |
+| void | [progress(int, qint64, qint64, double, QString, short)](#) |
 | void | [logger(QString, QString)](#void-loggerqstring-qstring) |
+
+
+## Actions
+
+| Variable Name                                    | Value |
+|--------------------------------------------------|------ |
+| QAppImageUpdate::Action::GetEmbeddedInfo         |   0   |
+| QAppImageUpdate::Action::CheckForUpdate          |   1   |
+| QAppImageUpdate::Action::Update                  |   2   |
+| QAppImageUpdate::Action::UpdateWithTorrent       |   3   |
+| QAppImageUpdate::Action::UpdateWithGUI           |   4   |
+| QAppImageUpdate::Action::UpdateWithGUIAndTorrent |   5   |
+
+
+
+```
+   QAppImageUpdate updater;
+   updater.start(QAppImageUpdate::Action::CheckForUpdate); // Checks for update.
+```
+
 
 
 ## Member Functions Documentation
 
-### AppImageDeltaRevisioner(bool singleThreaded = true, QObject \*parent = nullptr)
+### QAppImageUpdate(bool singleThreaded = true, QObject \*parent = nullptr)
 
-Default Constructor , Constructs the Updater with a assumed AppImage Path which is most likely the 
-AppImage which is running this updater. The assumed AppImage Path will only be correct if and only if
+Default Constructor, Constructs the Updater with a assumed AppImage Path 
+which is most likely the AppImage which is running this updater. 
+The assumed AppImage Path will only be correct if and only if 
 this updater is running from a AppImage.
 
-The default value for **singleThreaded** is **true** but you can set it to **false** to run all the 
-resource of the updater in a seperate thread excluding **this class**.
+The default value for **singleThreaded** is **true** but you can set it 
+to **false** to run all the  resource of the updater in a seperate 
+thread excluding **this class**.
 
 You can set a **QObject parent** to make use of **Qt's Parent to Children deallocation.**
 
 ```
-using namespace AppImageUpdaterBridge;
-AppImageDeltaRevisioner DRevisioner;
+QAppImageUpdate updater;
 ```
 
-### AppImageDeltaRevisioner(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)
+### QAppImageUpdate(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)
 
-This is an overloaded constructor , Constructs the Updater with the given QString as the AppImage Path.
+This is an overloaded constructor, Constructs the Updater with the given QString as the AppImage Path.
 If the given QString is not a valid AppImage Path, Then the updater will automatically
-guess the AppImage Path , The guessed AppImage Path will be accurate only if the updater is running from 
+guess the AppImage Path, The guessed AppImage Path will be accurate only if the updater is running from 
 an AppImage.
 
 The default value for **singleThreaded** is **true** but you can set it to **false** to run all the 
@@ -88,31 +109,24 @@ resource of the updater in a seperate thread excluding **this class**.
 
 You can set a **QObject parent** to make use of **Qt's Parent to Children deallocation.**
 
-### AppImageDeltaRevisioner(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)
+### QAppImageUpdate(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)
 
-This is an overloaded constructor , Constructs the Updater with the given QFile as the AppImage itself.
-If the pointer is invalid or has other sort of read errors , The updater will emit error but when 
-forced to start , Again the updater guesses the AppImage Path in order to continue with the extraction.
+This is an overloaded constructor, Constructs the Updater with the given QFile as the AppImage itself.
+If the pointer is invalid or has other sort of read errors, The updater will emit error but when 
+forced to start, Again the updater guesses the AppImage Path in order to continue with the extraction.
 If the guessed AppImage Path is not an AppImage but a normal elf file then this result in a invalid magic
-byte error. See [error codes](AppImageDeltaRevisionerErrorCodes.html) for more information.
+byte error. See [error codes](ErrorCodes.html) for more information.
 
 The default value for **singleThreaded** is **true** but you can set it to **false** to run all the 
 resource of the updater in a seperate thread excluding **this class**.
 
 You can set a **QObject parent** to make use of **Qt's Parent to Children deallocation.**
 
-### void start(void)
-<p align="right"> <b>[SLOT]</b> </p>
+### void start(short action)
+<p align="right"> <code>[SLOT]</code> </p>
 
-Starts the updater.
-Emits **started()** signal when starts.
-
-
-> Minor Note: You don't have to worry about anything if you called checkForUpdate or getAppImageEmbededInformation 
-slots before start , Don't worry about overheads too , Since when you call checkForUpdate slot , The information
-is cached and when start slot is called again , it will be faster than normal. 
-
-> Important Note: You should also call clear and set the settings again if you want to clear the cache.
+Starts a specific action as given in the argument of the start slot. 
+Valid actions are put up in the Actions table.
 
 ### void cancel(void)
 <p align="right"> <b>[SLOT]</b> </p>
@@ -166,84 +180,26 @@ to use for all network communication for the updater.
 ```
 
 
-### void getAppImageEmbededInformation(void)
-<p align="right"> <b>[SLOT]</b> </p>
-
-Requests the updater for the embeded information of the current operating AppImage.
-Emits **embededInformation(QJsonObject)** in which the *QJsonObject* will be the embeded information 
-of the AppImage in the below format with respect to Json.
-
-    { "IsEmpty" : false ,
-      "FileInformation" :   { "AppImageFilePath" : The given AppImage Path ,
-                              "AppImageSHA1Hash" : The given AppImage's SHA1 Hash ,
-                            },
-      "UpdateInformation":  {
-                              "transport" : gh-releases-zsync / bintray-zsync / zsync,
-                               Depending on the transport the values down below will varry.
-                            }
-    }
-
-**gh-releases-zsync** , 
-
-    {
-    "transport" : "gh-releases-zsync",
-    "username"  : Username of the author ,
-     "repo"     : Name of the repo ,
-     "tag"      : continuous / latest / other,
-     "filename" : Latest AppImage filename with wild card
-    }
-
-**bintray-zsync** , 
-
-    {
-        "transport" : "bintray-zsync" ,
-        "username"  :  Username of the author ,
-        "repo"      :  Name of the repo ,
-        "packageName" : Name of the package in bintray ,
-        "filename" : Name of the latest AppImage fileanme
-    }
-
-**zsync**,
-
-    {
-        "transport" : "zsync",
-        "zsyncUrl" : Url of the Zsync Control File
-    }
-
-
-> Important: If the AppImage is not given then calling this method will guess the AppImage 
-Path and so if the returned AppImage is not a valid , Then it emits an error signal.
-
-
-### void checkForUpdate(void)
-<p align="right"> <b>[SLOT]</b> </p>
-
-Checks update for the current operating AppImage.
-emits **updateAvailable(bool , QJsonObject)** , Where the *bool*  will be **true** if the AppImage
-needs update. The QJsonObject in the signal will have the details of the current operating
-AppImage.
-
-
-### void clear(void)
+### void clear()
 <p align="right"> <b>[SLOT]</b> </p>
 
 Clears all internal **cache**.
 
 
-### void started(void)
+### void started(short action)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when the updater is started successfully.
 
-### void canceled(void)
+### void canceled(short action)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
 Emitted when the update is canceled successfully.
 
-### void finished(QJsonObject , QString)
+### void finished(QJsonObject info, short action)
 <p align="right"> <b>[SIGNAL]</b> </p>
 
-Emitted when the update is finished successfully. The given *QJsonObject* has the details of the new version
+Emitted when a action is finished successfully. The given *QJsonObject* has the details of the new version
 of the AppImage and the given *QString* has the absolute path to the old versioin of the AppImage.
 
 The *QJsonObject* will follow the folloing format with respect to json ,

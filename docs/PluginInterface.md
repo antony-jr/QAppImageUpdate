@@ -104,8 +104,9 @@ actions.
 ## Documentation
 
 
-### setGUIFlag(int flag)
-<p align="right"> <b>[SLOT]</b> </p>
+### setGuiFlag(int flag)
+
+<p align="right"> <code>[SLOT]</code> </p>
 
 Set the given integer as the flag for GUI update if used.
 
