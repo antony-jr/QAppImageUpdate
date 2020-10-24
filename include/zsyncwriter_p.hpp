@@ -110,6 +110,8 @@ class ZsyncWriterPrivate : public QObject {
 
   Q_SIGNALS:
     void finishedConfiguring();
+    void torrentClientStarted();
+    void torrentStatus(int,int);
     void started();
     void canceled();
     void finished(QJsonObject, QString);

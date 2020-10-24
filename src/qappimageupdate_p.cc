@@ -100,6 +100,14 @@ QAppImageUpdatePrivate::QAppImageUpdatePrivate(bool singleThreaded, QObject *par
     connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::started,
             this, &QAppImageUpdatePrivate::handleUpdateStart,
             (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+
+    // Torrent Downloader Specific
+    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::torrentClientStarted,
+            this, &QAppImageUpdatePrivate::torrentClientStarted ,
+            (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
+    connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::torrentStatus,
+            this, &QAppImageUpdatePrivate::torrentStatus,
+            (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
 }
 
 QAppImageUpdatePrivate::QAppImageUpdatePrivate(const QString &AppImagePath, bool singleThreaded, QObject *parent)
@@ -986,8 +994,7 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheckError(short ecode) {
 }
 
 void QAppImageUpdatePrivate::handleGUIUpdateCheckProgress(int percentage) {
-
-
+	Q_UNUSED(percentage);
 }
 
 

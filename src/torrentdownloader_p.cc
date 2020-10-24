@@ -252,6 +252,7 @@ void TorrentDownloaderPrivate::torrentLoop() {
     }
     auto status = m_Handle.status();
 
+    emit torrentStatus(status.num_seeds, status.num_peers);
     if(status.state == lt::torrent_status::seeding) {
         emit progress((int)(status.progress * 100),
                       (qint64)(status.total_done),

@@ -31,6 +31,10 @@ TorrentDownloader::TorrentDownloader(QNetworkAccessManager *manager, QObject *pa
     connect(obj, &TorrentDownloaderPrivate::progress,
             this, &TorrentDownloader::progress,
             Qt::DirectConnection);
+    
+    connect(obj, &TorrentDownloaderPrivate::torrentStatus,
+            this, &TorrentDownloader::torrentStatus,
+            Qt::DirectConnection);
 }
 
 void TorrentDownloader::setTargetFileDone(qint64 n) {

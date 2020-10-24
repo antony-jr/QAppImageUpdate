@@ -31,6 +31,7 @@ class TorrentDownloader : public QObject {
 
     void logger(QString);
     void progress(int, qint64, qint64, double, QString);
+    void torrentStatus(int,int);
 };
 #endif // DECENTRALIZED_UPDATE_ENABLED
 #endif // RANGE_DOWNLOADER_HPP_INCLUDED

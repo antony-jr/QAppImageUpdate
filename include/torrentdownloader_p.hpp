@@ -52,6 +52,7 @@ class TorrentDownloaderPrivate : public QObject {
 
     void logger(QString);
     void progress(int, qint64, qint64, double, QString);
+    void torrentStatus(int,int);
   private:
     bool b_Finished = false,
          b_Running = false,

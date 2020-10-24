@@ -702,6 +702,13 @@ void ZsyncWriterPrivate::start() {
         connect(m_TorrentDownloader.data(), &TorrentDownloader::progress,
                 this, &ZsyncWriterPrivate::progress, Qt::DirectConnection);
 
+    	connect(m_TorrentDownloader.data(), &TorrentDownloader::started,
+                this, &ZsyncWriterPrivate::torrentClientStarted, 
+		Qt::DirectConnection);
+     	connect(m_TorrentDownloader.data(), &TorrentDownloader::torrentStatus,
+                this, &ZsyncWriterPrivate::torrentStatus, 
+		Qt::DirectConnection);
+
         m_TorrentDownloader->start();
     }
 #endif // DECENTRALIZED_UPDATE_ENABLED
