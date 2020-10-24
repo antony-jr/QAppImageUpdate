@@ -1,7 +1,7 @@
 ---
 id: UsingPlugin
 title: Build QAppImageUpdate as Qt Plugin
-sidebar_label: Building as Qt Plugin.
+sidebar_label: Building as Qt Plugin
 ---
 
 QAppImageUpdate can compiled as a **Qt Plugin**. When it is built as a Qt Plugin, QAppImageUpdate can be used from any programming language that supports Qt.

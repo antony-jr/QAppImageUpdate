@@ -7,7 +7,11 @@
     "docs": {
       "AddingQAppImageUpdate": {
         "title": "Add QAppImageUpdate to your Project",
-        "sidebar_label": "Adding to your Project."
+        "sidebar_label": "Adding to your Project"
+      },
+      "BuildingTests": {
+        "title": "Building QAppImageUpdate Unit Tests",
+        "sidebar_label": "Building  Tests"
       },
       "ClassQAppImageUpdate": {
         "title": "Class QAppImageUpdate",
@@ -43,7 +47,7 @@
       },
       "UsingPlugin": {
         "title": "Build QAppImageUpdate as Qt Plugin",
-        "sidebar_label": "Building as Qt Plugin."
+        "sidebar_label": "Building as Qt Plugin"
       },
       "version-1.1.9/version-1.1.9-AddingAppImageUpdaterBridge": {
         "title": "Add AppImage Updater Bridge to your Project",

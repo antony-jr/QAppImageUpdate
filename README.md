@@ -1,8 +1,8 @@
-# QAppImageUpdate [![GitHub issues](https://img.shields.io/github/issues/antony-jr/QAppImageUpdate.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/issues) [![GitHub stars](https://img.shields.io/github/stars/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/stargazers) [![GitHub license](https://img.shields.io/github/license/antony-jr/AppImageUpdaterBridge.svg?style=flat-square)](https://github.com/antony-jr/AppImageUpdaterBridge/blob/master/LICENSE) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8ec8eac35a304883829b785d298b6fa6)](https://www.codacy.com/app/antony-jr/AppImageUpdaterBridge?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=antony-jr/AppImageUpdaterBridge&amp;utm_campaign=Badge_Grade) [![Travis Build Status](https://api.travis-ci.org/antony-jr/AppImageUpdaterBridge.svg?branch=master)](https://travis-ci.org/antony-jr/AppImageUpdaterBridge)
+# QAppImageUpdate [![GitHub issues](https://img.shields.io/github/issues/antony-jr/QAppImageUpdate.svg?style=flat-square)](https://github.com/antony-jr/QAppImageUpdate/issues) [![GitHub stars](https://img.shields.io/github/stars/antony-jr/QAppImageUpdate.svg?style=flat-square)](https://github.com/antony-jr/QAppImageUpdate/stargazers) [![GitHub license](https://img.shields.io/github/license/antony-jr/QAppImageUpdate.svg?style=flat-square)](https://github.com/antony-jr/QAppImageUpdate/blob/master/LICENSE) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8ec8eac35a304883829b785d298b6fa6)](https://www.codacy.com/app/antony-jr/QAppImageUpdate?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=antony-jr/QAppImageUpdate&amp;utm_campaign=Badge_Grade) [![Travis Build Status](https://api.travis-ci.org/antony-jr/QAppImageUpdate.svg?branch=master)](https://travis-ci.org/antony-jr/QAppImageUpdate)
 
 
 **Note**: QAppImageUpdate was formerly known as *"AppImage Updater Bridge"*. As of v2.0.0 of the project, it is now known as QAppImageUpdate with
-breaking changes to everything. So if you want to use v1.x, you can use the git tag **v1.1.8** which is latest version of v1.x
+breaking changes to everything. So if you want to use v1.x, you can use the git tag **v1.1.9** which is latest version of v1.x
 
 
 
@@ -10,7 +10,7 @@ QAppImageUpdate is a **delta updater** based on the *zsync algorithm* for the *A
 delta update any AppImage file, That is, Only download the binary data which you need to get the latest version, 
 Therefore saving your time and internet.
 
-QAppImageUpdate is not the **official library** to do this stuff , The official library is [here](https://github.com/AppImage/AppImageUpdate) which is also written in **C++** but with no real **Qt support** , Thats why this library is built.
+QAppImageUpdate is not the **official library** to do this stuff, The official library is [here](https://github.com/AppImage/AppImageUpdate) which is also written in **C++** but with no real **Qt support** , Thats why this library is built.
 
 This library gives absolute support for *Qt*, Infact, All you need is the minimal installation of *Qt*(i.e, base).
 
@@ -41,7 +41,8 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
     QAppImageUpdate updater;
 
-    QObject::connect(&updater, &QAppImageUpdate::finished, &app, &QCoreApplication::quit);
+    QObject::connect(&updater, &QAppImageUpdate::finished, 
+		      &app, &QCoreApplication::quit);
     
     updater.setShowLog(true);
     updater.start();
@@ -58,9 +59,9 @@ See this library in **action** at this [repo](https://github.com/antony-jr/AppIm
 
 # Getting Started
 
-Please refer the official [documentation](https://antony-jr.github.io/QAppImageUpdate).
+Please refer the official [Documentation](https://antony-jr.github.io/QAppImageUpdate).
 
-# Contributors [![AIUB Contributors](https://img.shields.io/github/contributors/antony-jr/QAppImageUpdate.svg)](https://github.com/antony-jr/QAppImageUpdate/graphs/contributors)
+# Contributors [![Contributors](https://img.shields.io/github/contributors/antony-jr/QAppImageUpdate.svg)](https://github.com/antony-jr/QAppImageUpdate/graphs/contributors)
 
 
 
@@ -123,7 +124,7 @@ Please refer the official [documentation](https://antony-jr.github.io/QAppImageU
 * [Qt](https://github.com/qt) - And Everything else.
 
 
-# Support [![Twitter](https://img.shields.io/twitter/url/https/github.com/antony-jr/QAppImageUpdate.svg?style=social)](https://twitter.com/intent/tweet?text=Checkout%20%23AppImage%20Updater%20Bridge%20at%20https%3A%2F%2Fgithub.com%2Fantony-jr%2FAppImageUpdaterBridge)
+# Support [![Twitter](https://img.shields.io/twitter/url/https/github.com/antony-jr/QAppImageUpdate.svg?style=social)](https://twitter.com/intent/tweet?text=Checkout%20%23QAppImageUpdate%20at%20https%3A%2F%2Fgithub.com%2Fantony-jr%2FQAppImageUpdate)
 
 If you think that this project is **cool** then you can give it a :star: or :fork_and_knife: it if you want to improve it with me. I really :heart: stars though!   
 

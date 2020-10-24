@@ -1,7 +1,7 @@
 ---
 id: AddingQAppImageUpdate
 title: Add QAppImageUpdate to your Project
-sidebar_label: Adding to your Project.
+sidebar_label: Adding to your Project
 ---
 
 QAppImage can compiled with both *QMake* and *CMake* , I recommend you to use *QMake* if you are
@@ -62,7 +62,7 @@ in the **libs** directory of your project folder.
 ```
 TEMPLATE = subdirs
 CONFIG += ordered
-SUBDIRS = AppImageUpdaterBridge
+SUBDIRS = QAppImageUpdate
 ```
 
 ### Your Source's Project file (src.pro)
@@ -73,7 +73,7 @@ TARGET = ../MyCoolApplication
 
 QT += core gui # Modules thats needed by your app.
 
-# Put your dynamic libs after AppImageUpdaterBridge. 
+# Put your dynamic libs after QAppImageUpdate. 
 LIBS += ../libs/QAppImageUpdate/libQAppImageUpdate.a 
 
 INCLUDEPATH += . .. \
@@ -112,7 +112,7 @@ Thats it, All you have to do is to build your project with **qmake**.
 # Using CMake 
 
 It is recommended for you to keep your source files at the top level and then add
-AppImageUpdaterBridge as a subdirectory in your CMakeList.txt
+QAppImageUpdate as a subdirectory in your CMakeList.txt
 
 Here is a small example on how it is done!
 
@@ -133,8 +133,7 @@ find_package(Qt5Widgets)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}) # just in case!
 # Add include directory
-include_directories(AppImageUpdaterBridge)
-include_directories(AppImageUpdaterBridge/include)
+include_directories(QAppImageUpdate)
 
 # include subdirectories 
 add_subdirectory(QAppImageUpdate)

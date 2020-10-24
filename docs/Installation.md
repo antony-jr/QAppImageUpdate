@@ -18,8 +18,9 @@ and only that, Nothing more and nothing less.
 
 
 Using the torrent feature is strictly for brave hearts because it's a bit hard 
-to get everything linked and compiled correctly. Please don't use try this if don't
-know what your doing.
+to get everything linked and compiled correctly. Please don't try this if don't
+know what you are doing. For reference you can see how [AppImage Updater](https://github.com/antony-jr/AppImageUpdater)
+ compiles it.
 
 ## Installing the latest release from github
 

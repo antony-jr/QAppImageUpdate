@@ -25,31 +25,31 @@ I'm not sure about other Qt bindings, So help is much welcomed.
 
 | Name                          | Description                     |
 |-------------------------------|---------------------------------|
-| [setGuiFlag(int)](#setguiflag-int) | Set GUI Flag.              |
-| [setIcon(QByteArray)](#seticon-qbytearray) | Set Icon for GUI Update. |
-| [start(short)](#start-short)  | Starts the given action.        |
+| [setGuiFlag(int)](#setguiflagint-flag) | Set GUI Flag.              |
+| [setIcon(QByteArray)](#seticonqbytearray-icon) | Set Icon for GUI Update. |
+| [start(short)](#startshort-action)  | Starts the given action.        |
 | [cancel()](#cancel)           | Cancels current update process. |
-| [setAppImagePath(QString)](#setappimage-qstring) | Assume the given string as path to AppImage to update. |
-| [setAppImageFile(QFile\*)](#setappimage-qfile)   | Assum the given QFile as the AppImage to update. |
+| [setAppImagePath(QString)](#setappimagepathqstring) | Assume the given string as path to AppImage to update. |
+| [setAppImageFile(QFile\*)](#setappimagefileqfile)   | Assume the given QFile as the AppImage to update. |
 | [setShowLog(bool)](#setshowlogbool) | If the given boolean is true then prints log. |
-| [setOutputDirectory(QString)](#setoutputdirectory-qstring) | Set the output directory as given string. | 
-| [setProxy(QNetworkProxy)](#setproxyconst-qnetworkproxy-https-docqtio-qt-5-qnetworkproxyhtml) | Use proxy as given in QNetworkProxy object. |
-| [getConstant(QString)](#getconstant-qstring) | Get the constant with respect to the string. |
-| [getObject()](#getobject) | Get QObject to slots to connect to this plugin. |
+| [setOutputDirectory(QString)](#setoutputdirectoryqstring) | Set the output directory as given string. | 
+| [setProxy(QNetworkProxy)](#setproxyqnetworkproxyhttpsdocqtioqt-5qnetworkproxyhtml) | Use proxy as given in QNetworkProxy object. |
+| [getConstant(QString)](#int-getconstantconst-qstring) | Get the constant with respect to the string. |
+| [getObject()](#qobject-getobject) | Get QObject to slots to connect to this plugin. |
 | [clear()](#clear) | Clears internal cache and stores. | 
-| [errorCodeToString(short)](#errorcodetostring-shortt) | Convert the given error code to string. |
-| [errorCodeToDescriptionString(short)](#errorcodetodescriptionstring-short) | Convert the given error code to description. |
+| [errorCodeToString(short)](#qstring-errorcodetostringshort-errorcode) | Convert the given error code to string. |
+| [errorCodeToDescriptionString(short)](#qstring-errorcodetodescriptionstringshort-errorcode) | Convert the given error code to description. |
 
 ## Signals
 
 | Name                              | Description                                  | 
 |-----------------------------------|----------------------------------------------|
-| [started(short)](#started-short)  | Emitted when a action is started.            |
-| [canceled(short)](#canceled-short)| Emitted when a action is canceled.           |
-| [finished(QJsonObject , short)](#finishedqjsonobject-qstring-short) | Emitted when a action is finished. |
-| [error(short, short)](#error-short-short) | Emitted when some error occurs in an action. |
-| [progress(int, qint64, qint64, double, QString, short)](#progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits) | Emitted on progress of a action. |
-| [logger(QString, QString)](#loggerqstring-qstring) | See here for more information. |
+| [started(short)](#startedshort)   | Emitted when a action is started.            |
+| [canceled(short)](#canceledshort) | Emitted when a action is canceled.           |
+| [finished(QJsonObject , short)](#finishedqjsonobject--short) | Emitted when a action is finished. |
+| [error(short, short)](#errorshort-errorcode-short-action) | Emitted when some error occurs in an action. |
+| [progress(int, qint64, qint64, double, QString, short)](#progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits-short-action) | Emitted on progress of a action. |
+| [logger(QString, QString)](#loggerqstring--qstring) | See here for more information. |
 
 
 ## Actions
@@ -111,26 +111,30 @@ actions.
 Set the given integer as the flag for GUI update if used.
 
 ### setIcon(QByteArray icon)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Set the given icon which is saved as QByteArray. You have to save your ```QPixmap``` as a QByteArray, see [the official docs](https://doc.qt.io/qt-5/qpixmap.html#save-1).
 
 ```
  /// C++ Ref for saving QPixmap as QByteArray
  QPixmap pixmap;
- QByteArray bytes;
- QBuffer buffer(&bytes);
+ QByteArray icon;
+ QBuffer buffer(&icon);
  buffer.open(QIODevice::WriteOnly);
  pixmap.save(&buffer, "PNG"); // writes pixmap into bytes in PNG format
+
+
+ QAppImageUpdater updater;
+ updater.setIcon(icon);
 ```
 
 ### start(short action)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Starts the given action in the argument.
 Emits **started(short action)** signal when starts.
 
-The short integer should be one of the possible actions as given in the Actions table.
+The short integer should be one of the possible actions as given in the [Actions table](#actions).
 One has to use **getConstant(QString)** method to get a constant.
 
 
@@ -159,19 +163,25 @@ One has to use **getConstant(QString)** method to get a constant.
 
 
 ### cancel()
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Cancels the current action.
 Emits **canceled(short)** signal when cancel for a action was successfull.
 
 ### setAppImagePath(QString)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Sets the AppImage Path as the given **QString**.
 
 
+### setAppImageFile(QFile\*)
+<p align="right"> <code>[SLOT]</code> </p>
+
+Sets the given QFile as the AppImage itself.
+
+
 ### setShowLog(bool)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Turns on and off the log printer.
 
@@ -180,38 +190,39 @@ setShowLog will not affect this activity at all, But setShowLog will print these
 if set to true.
 
 ### setOutputDirectory(QString)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Writes the new version of the AppImage to the given Output directory , Assuming the given QString a directory path.
 The default is the old version AppImage's directory.
 
 
 ### setProxy([QNetworkProxy](https://doc.qt.io/qt-5/qnetworkproxy.html))
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Sets the given [QNetworkProxy](https://doc.qt.io/qt-5/qnetworkproxy.html) as the proxy
 
 > WARNING: when using torrent support, only HTTP and SOCKS5 proxy is supported.
 
+
 ### clear()
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Clears all internal **cache** and stores.
 
 
 ### started(short)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 Emitted when a action is started, with the argument denoting the action which is started.
 
 ### canceled(short)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 Emitted when a action is canceled, with the argument denoting the action which is canceled.
 
 
 ### finished(QJsonObject , short)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 Emitted when a action is finished successfully. The given *QJsonObject* is variable and it is dependent 
 on different actions.
@@ -283,15 +294,14 @@ The *QJsonObject* will follow the following format with respect to json for ```A
         "UsedTorrent": <Boolean, True if torrent was used to update
     } 
 
-### error(short, short)
-<p align="right"> <b>[SIGNAL]</b> </p>
+### error(short errorCode, short action)
+<p align="right"> <code>[SIGNAL]</code> </p>
 
-Emitted when the updater is errored. The given short integer is the error code.
-See [error codes](AppImageUpdaterBridgeErrorCodes.html).
+Emitted when the updater is errored. See [error codes](AppImageUpdaterBridgeErrorCodes.html).
 
 
 ### progress(int percentage , qint64 bytesReceived , qint64 bytesTotal , double speed , QString speedUnits, short action)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 The updater's progress is emitted through this unified signal.
 
@@ -307,8 +317,23 @@ The updater's progress is emitted through this unified signal.
 | action         | The action this progress refers to.                              |
 
 ### logger(QString , QString)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 Emitted when the updater issues a log message with the *first QString* as the log message and
 the *second QString* as the path to the respective AppImage.
 
+### QObject\* getObject()
+
+Returns the QObject pointer. Useful when using this plugin in C++.
+
+### int getConstant(const QString&)
+
+Returns the constant value as per values in [Action table](#actions) and [GUI Flags](#gui-flags).
+
+### QString errorCodeToString(short errorCode)
+
+Returns the error as a string denoting the error code.
+
+### QString errorCodeToDescriptionString(short errorCode)
+
+Returns a human readable error string for the given error code.

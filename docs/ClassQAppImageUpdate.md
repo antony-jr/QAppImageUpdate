@@ -26,36 +26,45 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
 
 | Return Type  | Name |
 |--------------|------------------------------------------------------------------------------------------------|
-|  | [QAppImageUpdate(bool singleThreaded = true, QObject \*parent = nullptr)](#) |
-|  | [QAppImageUpdate(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)](#) |
-|  | [QAppImageUpdate(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)](#) |
+|  | [QAppImageUpdate(bool singleThreaded = true, QObject \*parent = nullptr)](#qappimageupdatebool-singlethreaded--true-qobject-parent--nullptr) |
+|  | [QAppImageUpdate(const QString&, bool singleThreaded = true, QObject \*parent = nullptr)](#qappimageupdateconst-qstring-bool-singlethreaded--true-qobject-parent--nullptr) |
+|  | [QAppImageUpdate(QFile \*, bool singleThreaded = true, QObject \*parent = nullptr)](#qappimageupdateqfile--bool-singlethreaded--true-qobject-parent--nullptr) |
 
 
 ## Slots
 
 | Return Type  | Name |
 |------------------------------|-------------------------------------------|
-| **void** | [start(short)](#) |
-| **void** | [cancel()](#) |
-| **void** | [setAppImage(const QString&)](#) |
-| **void** | [setAppImage(QFile \*)](#) |
-| **void** | [setShowLog(bool)](#) |
-| **void** | [setOutputDirectory(const QString&)](#) |
-| **void** | [setProxy(const QNetworkProxy&)](#void-setproxyconst-qnetworkproxy-https-docqtio-qt-5-qnetworkproxyhtml) |
-| **void** | [setGuiFlag(int)]() |
-| **void** | [setIcon(QByteArray)]() | 
-| **void** | [clear()](#) |
+| **void** | [setGuiFlag(int)](#void-setguiflagint-flag) |
+| **void** | [setIcon(QByteArray)](#void-seticonqbytearray-icon) |
+| **void** | [start(short)](#void-startshort-action) |
+| **void** | [cancel()](#void-cancel) |
+| **void** | [setAppImage(const QString&)](#void-setappimageconst-qstring) |
+| **void** | [setAppImage(QFile \*)](#void-setappimageqfile-) |
+| **void** | [setShowLog(bool)](#void-setshowlogbool) |
+| **void** | [setOutputDirectory(const QString&)](#void-setoutputdirectoryconst-qstring) |
+| **void** | [setProxy(const QNetworkProxy&)](#void-setproxyconst-qnetworkproxyhttpsdocqtioqt-5qnetworkproxyhtml) |
+| **void** | [clear()](#void-clear) |
 
 ## Signals
 
 | Return Type  | Name |
 |--------------|------------------------------------------------|
-| void | [started(short)](#) |
-| void | [canceled(short)](#) |
-| void | [finished(QJsonObject , short)](#) |
-| void | [error(short, short)](#) |
-| void | [progress(int, qint64, qint64, double, QString, short)](#) |
-| void | [logger(QString, QString)](#void-loggerqstring-qstring) |
+| void | [started(short)](#void-startedshort-action) |
+| void | [canceled(short)](#void-canceledshort-action) |
+| void | [finished(QJsonObject , short)](#void-finishedqjsonobject-info-short-action) |
+| void | [error(short, short)](#void-errorshort-errorcode-short-action) |
+| void | [progress(int, qint64, qint64, double, QString, short)](#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits-short-action) |
+| void | [logger(QString, QString)](#void-loggerqstring--qstring) |
+
+
+## Static Public Members
+
+| Return Type  | Name                                                 |
+|--------------|------------------------------------------------------|
+| QString      | [errorCodeToString(short)](#qstring-errorcodetostringshort-errorcode)|
+| QString      | [errorCodeToDescriptionString(short)](#qstring-errorcodetodescriptionstringshort-errorcode) |
+
 
 
 ## Actions
@@ -75,6 +84,28 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
    QAppImageUpdate updater;
    updater.start(QAppImageUpdate::Action::CheckForUpdate); // Checks for update.
 ```
+
+## GUI Flags
+
+| Variable Name                                  |  Meaning                                                        | Value |
+|------------------------------------------------|-----------------------------------------------------------------|-------|
+| GuiFlag::ShowProgressDialog                    |  Show the progress dialog during update.                        |  0x1  |
+| GuiFlag::ShowBeforeProgress                    |  Show the progress dialog before the update starts.             |  0x2  |
+| GuiFlag::ShowUpdateConfirmationDialog          |  Show a update confirmation dialog.                             |  0x4  |
+| GuiFlag::ShowFinishedDialog                    |  Show a message box when update is finished.                    |  0x8  |
+| GuiFlag::ShowErrorDialog                       |  Show a error message box when update is errored.               |  0x10 |
+| GuiFlag::NoShowErrorDialogOnPermissionErrors   |  Do not show error dialog on permission errors. Only emit error.|  0x20 |
+| GuiFlag::NotifyWhenNoUpdateIsAvailable         |  Show a message box when there was no update.                   |  0x40 |
+| GuiFlag::NoRemindMeLaterButton                 |  Do not show 'Remind me later' in the confirmation dialog.      |  0x80 |
+| GuiFlag::NoSkipThisVersionButton               |  Do not show 'Skip This Version' in the confirmatino dialog.    |  0x100|
+| GuiFlag::NoConfirmTorrentUsage                 |  Do not confirm when torrent update is used.                    |  0x200|
+| GuiFlag::Default                               |  Give the default combination of flags                          |  0x1df|
+
+
+
+> The Default flag enables ShowProgressDialog, ShowBeforeProgress, ShowUpdateConfirmationDialog, ShowFinishedDialog,
+> ShowErrorDialog, NotifyWhenNoUpdateIsAvailable, NoRemindMeLaterButton, NoSkipThisVersionButton
+
 
 
 
@@ -122,48 +153,83 @@ resource of the updater in a seperate thread excluding **this class**.
 
 You can set a **QObject parent** to make use of **Qt's Parent to Children deallocation.**
 
+
+### void setGuiFlag(int flag)
+
+<p align="right"> <code>[SLOT]</code> </p>
+
+Set the given integer as the flag for GUI update if used. See the [GUI Flags](#gui-flags).
+
+### void setIcon(QByteArray icon)
+<p align="right"> <code>[SLOT]</code> </p>
+
+Set the given icon which is saved as QByteArray. You have to save your ```QPixmap``` as a QByteArray, see [the official docs](https://doc.qt.io/qt-5/qpixmap.html#save-1).
+
+```
+ /// C++ Ref for saving QPixmap as QByteArray
+ QPixmap pixmap;
+ QByteArray icon;
+ QBuffer buffer(&icon);
+ buffer.open(QIODevice::WriteOnly);
+ pixmap.save(&buffer, "PNG"); // writes pixmap into bytes in PNG format
+
+ 
+ QAppImageUpdater updater;
+ updater.setIcon(icon);
+```
+
 ### void start(short action)
 <p align="right"> <code>[SLOT]</code> </p>
 
 Starts a specific action as given in the argument of the start slot. 
-Valid actions are put up in the Actions table.
+Valid actions are put up in the [Actions table](#actions).
 
-### void cancel(void)
-<p align="right"> <b>[SLOT]</b> </p>
+```
+QAppImageUpdater updater;
+updater.start(QAppImageUpdate::Action::CheckForUpdate);
+```
+
+### void cancel()
+<p align="right"> <code>[SLOT]</code> </p>
 
 Cancels the update.
-Emits **canceled()** signal when cancel was successfull.
+Emits **canceled(short action)** signal when cancel was successfull.
 
 
 ### void setAppImage(const QString&)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Sets the AppImage Path as the given **QString**.
 
+> WARNING: If you set the AppImage yourself, Then any guessing will not be done and all
+> errors relating to find the correct path to AppImage should be handled by the programmer.
+> This is seen in the case of AppImageLauncher where the actuall AppImage can be guessed 
+> by the Updater if do not set the path yourself.
+
 
 ### void setAppImage(QFile \*)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Sets the given **QFile** as the AppImage itself.
 
 ### void setShowLog(bool)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Turns on and off the log printer.
 
 > Note: logger signal will be emitted all the time if the library is compiled with LOGGING_DISABLED undefined ,
-setShowLog will not affect this activity at all , But setShowLog will print these log messages
+setShowLog will not affect this activity at all, But setShowLog will print these log messages
 if set to true.
 
 ### void setOutputDirectory(const QString&)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
-Writes the new version of the AppImage to the given Output directory , Assuming the given QString a directory path.
+Writes the new version of the AppImage to the given Output directory, Assuming the given QString a directory path.
 The default is the old version AppImage's directory.
 
 
 ### void setProxy(const [QNetworkProxy](https://doc.qt.io/qt-5/qnetworkproxy.html)&)
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Sets the given [QNetworkProxy](https://doc.qt.io/qt-5/qnetworkproxy.html) as the proxy
 to use for all network communication for the updater.
@@ -180,78 +246,109 @@ to use for all network communication for the updater.
 ```
 
 
+> WARNING: when using torrent support, only HTTP and SOCKS5 proxy is supported.
+
+
 ### void clear()
-<p align="right"> <b>[SLOT]</b> </p>
+<p align="right"> <code>[SLOT]</code> </p>
 
 Clears all internal **cache**.
 
 
 ### void started(short action)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
-Emitted when the updater is started successfully.
+Emitted when a action is started successfully.
 
 ### void canceled(short action)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 Emitted when the update is canceled successfully.
 
 ### void finished(QJsonObject info, short action)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
-Emitted when a action is finished successfully. The given *QJsonObject* has the details of the new version
-of the AppImage and the given *QString* has the absolute path to the old versioin of the AppImage.
+Emitted when a action is finished successfully. The given *QJsonObject* is variable and it is dependent 
+on different actions.
 
-The *QJsonObject* will follow the folloing format with respect to json ,
-	
+
+The *QJsonObject* will follow the following format with respect to json for ```Action::GetEmbeddedInfo``` action,
+    
     {
-        "AbsolutePath" : "Absolute path of the new version of the AppImage" ,
-        "Sha1Hash"     : "Sha1 hash of the new version of the AppImage"
+        "IsEmpty": <True if the update information is empty>,
+        "FileInformation": {
+        	"AppImageFilePath": <Local AppImage Absolute Path>,
+                "AppImageSHA1Hash":<Sha1 hash of the local AppImage>
+	},
+        "UpdateInformation": {
+                "transport" : <zsync/gh-releases-zsync/bintray-zsync>,
+                <Based on the transport this part changes>
+	}
     }
 
-> Note: If the absolute path of the new version of the AppImage is same as the old version then
-it could mean that there were no updates needed , You can however listen to the *updateAvailable*
-signal to know the exact state of updates. You should call *checkForUpdate* and then call *start*
-if updates were really available.
+**gh-releases-zsync** , 
 
-
-### void embededInformation(QJsonObject)
-<p align="right"> <b>[SIGNAL]</b> </p>
-
-Emitted when *[getAppImageEmbededInformation(void)](#void-getappimageembededinformationvoid)* is called.
-
-### void updateAvailable(bool , QJsonObject)
-<p align="right"> <b>[SIGNAL]</b> </p>
-
-Emitted when *[checkForUpdate(void)](#void-checkforupdatevoid)* is called.
-The given *bool* states if the operating AppImage needs update and the *QJsonObject* gives the details of 
-the current operating AppImage.
-
-The *QJsonObject* will follow the following format with respect to json , 
-	
     {
-        "AbsolutePath" : "The absolute path of the current operating AppImage" ,
-        "Sha1Hash"     : "The Sha1 hash of the current operating AppImage" ,
-        "RemoteSha1Hash" : "The Sha1 hash of the lastest AppImage" ,
-        "ReleaseNotes" : "Release notes if available"
+     "transport" : "gh-releases-zsync",
+     "username"  : <Username of the author>,
+     "repo"      : <Name of the repo>,
+     "tag"       : <continuous / latest / other>,
+     "filename"  : <Latest AppImage Zsync filename with wild card>
     }
 
-### void statusChanged(short)
-<p align="right"> <b>[SIGNAL]</b> </p>
+**bintray-zsync** , 
 
-Emitted when the updater status is changed , The given short integer is the status code.
-See [status codes](AppImageUpdaterBridgeStatusCodes.html).
+    {
+        "transport" : "bintray-zsync" ,
+        "username"  : <Username of the author>,
+        "repo"      : <Name of the repo>,
+        "packageName" : <Name of the package in bintray>,
+        "filename" : <Name of the latest AppImage Zsync file>
+    }
+
+**zsync**,
+
+    {
+        "transport" : "zsync",
+        "zsyncUrl" : <Url of the Zsync Control File>
+    }
 
 
-### void error(short)
-<p align="right"> <b>[SIGNAL]</b> </p>
+
+
+The *QJsonObject* will follow the following format with respect to json for ```Action::CheckForUpdate``` action,
+
+    {
+        "UpdateAvailable": <Boolean, True if update is available>,
+        "AbsolutePath" : <Absolute path to local AppImage>,
+        "LocalSha1Hash" : <Sha1 Hash of local AppImage>,
+        "RemoteSha1Hash" : <Sha1 Hash of Remote AppImage>,
+        "ReleaseNotes": <Release notes of the latest release if found>,
+        "TorrentSupported": <Boolean, True if torrent update is supported>
+    }     
+
+
+
+
+The *QJsonObject* will follow the following format with respect to json for ```Action::Update``` action(And all other update action variants),
+    
+    {
+        "OldVersionPath": <Absolute Path to the old version>,
+        "NewVersionPath": <Absolute Path to the new version>,
+        "UsedTorrent": <Boolean, True if torrent was used to update
+    } 
+
+
+
+### void error(short errorCode, short action)
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 Emitted when the updater is errored. The given short integer is the error code.
-See [error codes](AppImageUpdaterBridgeErrorCodes.html).
+See [error codes](ErrorCodes.html).
 
 
-### void progress(int percentage , qint64 bytesReceived , qint64 bytesTotal , double speed , QString speedUnits)
-<p align="right"> <b>[SIGNAL]</b> </p>
+### void progress(int percentage , qint64 bytesReceived , qint64 bytesTotal , double speed , QString speedUnits, short action)
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 The updater's progress is emitted through this unified signal.
 
@@ -264,12 +361,22 @@ The updater's progress is emitted through this unified signal.
 | bytesTotal     | The total bytes of the latest AppImage.                          |
 | speed          | The transfer speed value.                                        |
 | speedUnit      | The transfer speed unit(e.g. KiB/s , etc... ) for **speed**.     |
+| action         | The action this progress refers to.                              |
 
 
 ### void logger(QString , QString)
-<p align="right"> <b>[SIGNAL]</b> </p>
+<p align="right"> <code>[SIGNAL]</code> </p>
 
 Emitted when the updater issues a log message with the *first QString* as the log message and
 the *second QString* as the path to the respective AppImage.
 
 
+## QString errorCodeToString(short errorCode)
+<p align="right"> <code>[STATIC]</code> </p>
+
+Returns the error as a string denoting the error code.
+
+### QString errorCodeToDescriptionString(short errorCode)
+<p align="right"> <code>[STATIC]</code> </p>
+
+Returns a human readable error string for the given error code.

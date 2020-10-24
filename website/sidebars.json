@@ -3,6 +3,7 @@
     "Getting Started": [ 
 	   "Installation",
 	   "AddingQAppImageUpdate",
+	   "BuildingTests",
 	   "UsingPlugin"
     ],
     "Guides" : [
