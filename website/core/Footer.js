@@ -29,12 +29,12 @@ class Footer extends React.Component {
               Getting Started
             </a>
             <a
-              href={`${this.props.config.baseUrl}docs/UpdatingFromAppImageInformation.html`}
+              href={`${this.props.config.baseUrl}docs/SimpleExample.html`}
 	    >
               Guides
             </a>
             <a
-              href={`${this.props.config.baseUrl}docs/AppImageUpdaterBridgeErrorCodes.html`}
+              href={this.props.config.baseUrl + "docs/ErrorCodes.html"}
 	    >
               API Reference
             </a>

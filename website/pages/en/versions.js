@@ -76,7 +76,7 @@ function Versions(props) {
                       </th>
                       <td>
                         <a
-                          href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${props.language}/${version}/Installation.html`}>
+                          href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${version}/Installation.html`}>
                           Documentation
                         </a>
                       </td>

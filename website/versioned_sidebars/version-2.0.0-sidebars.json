@@ -1,0 +1,22 @@
+{
+  "version-2.0.0-docs": {
+    "Getting Started": [
+      "version-2.0.0-Installation",
+      "version-2.0.0-AddingQAppImageUpdate",
+      "version-2.0.0-BuildingTests",
+      "version-2.0.0-UsingPlugin"
+    ],
+    "Guides": [
+      "version-2.0.0-SimpleExample",
+      "version-2.0.0-ProxyExample",
+      "version-2.0.0-GUIExample",
+      "version-2.0.0-PyQt5PluginExample",
+      "version-2.0.0-TorrentExample"
+    ],
+    "API": [
+      "version-2.0.0-ErrorCodes",
+      "version-2.0.0-ClassQAppImageUpdate",
+      "version-2.0.0-PluginInterface"
+    ]
+  }
+}
