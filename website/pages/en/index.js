@@ -101,22 +101,15 @@ class Index extends React.Component {
               align="center"
               contents={[
                 {
-                  content: 'AppImage Updater Bridge fully supports Qt Projects by flowing with its event loop and'+
-			   ' thus you will have no problem integrating AppImage Updater Bridge with your Qt Project.',
+                  content: 'Fully supports Qt Projects by flowing with its event loop and'+
+			   ' thus you will have no problem integrating with your Qt Project.',
                   image: siteConfig.baseUrl + 'img/qt.png',
                   imageAlign: 'top',
                   title: 'Supports Qt\'s Event Loop.',
                 },
                 {
-                  content: 'Read Update Information Directly from your AppImage with a very clean API.'+
-                            'Does not require anything other than Qt to do this.' ,
-                  image: siteConfig.baseUrl + 'img/bin.png',
-                  imageAlign: 'top',
-                  title: 'Get Update Information Directly from your AppImage!',
-                },
-                {
-                  content: 'Since this library is built just for Qt , Using this library with the Qt framework will never '
-			   + 'Cost you more than 620 KiB and if optimized , Only 486 KiB , Therefore you don\'t have to '
+                  content: 'Since this library is built just for Qt, Using this library with the Qt framework will never '
+			   + 'Cost you more than 620 KiB and if optimized, Only 486 KiB, Therefore you don\'t have to '
 			   + 'worry about any overheads as long as you use Qt for your main program.',
                    image: siteConfig.baseUrl + 'img/light.png',
                    imageAlign: 'top',
@@ -132,7 +125,7 @@ class Index extends React.Component {
                 },
 
               ]}
-              layout="fourColumn"
+              layout="threeColumn"
             />
           </Container>
 
@@ -140,8 +133,8 @@ class Index extends React.Component {
             <GridBlock
               contents={[
                 {
-			content: 'AppImage Updater Bridge is a delta updater based on the zsync algorithm for the AppImage format , Using this library you can delta update any AppImage file , That is , Only download the binary data which you need to get the latest version , Therefore saving your time and internet.' + ' AppImage Updater Bridge is not the official library to do this stuff , The official library is here(https://github.com/AppImage/AppImageUpdate) which is also written in C++ but with no real Qt support , Thats why this library is built. ' + ' This library gives absolute support for Qt , Infact , All you need is the minimal installation of Qt(i.e, base ). '  , 
-                  title: 'What is AppImage Updater Bridge ?',
+			content: 'QAppImageUpdate formerly known as AppImage Updater Bridge is a delta updater based on the zsync algorithm for the AppImage format, Using this library you can delta update any AppImage file, That is, Only download the binary data which you need to get the latest version, Therefore saving your time and internet.' + ' This library gives absolute support for Qt, Infact, All you need is the minimal installation of Qt(i.e, base ).'  , 
+                  title: 'What is this?',
                 },
               ]}
             />

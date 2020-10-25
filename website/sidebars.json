@@ -10,7 +10,8 @@
 	   "SimpleExample",
 	   "ProxyExample",
 	   "GUIExample",
-	   "PyQt5PluginExample"
+	   "PyQt5PluginExample",
+	   "TorrentExample"
     ],
     "API" : [
 	   "ErrorCodes",

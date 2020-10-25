@@ -38,6 +38,8 @@ class QAppImageUpdateInterfaceImpl : public QObject, QAppImageUpdateInterface {
     QString errorCodeToString(short);
     QString errorCodeToDescriptionString(short);
   Q_SIGNALS:
+    void torrentClientStarted();
+    void torrentStatus(int,int);
     void started(short);
     void canceled(short);
     void finished(QJsonObject info, short);

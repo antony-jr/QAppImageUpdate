@@ -50,8 +50,10 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
 
 | Return Type  | Name |
 |--------------|------------------------------------------------|
-| void | [started(short)](#void-startedshort-action) |
-| void | [canceled(short)](#void-canceledshort-action) |
+| void | [torrentClientStarted()](#void-torrentclientstarted)   |
+| void | [torrentStatus(int,int)](#void-torrentstatusint-num_seeders-int-num_peers)|
+| void | [started(short)](#void-startedshort-action)            |
+| void | [canceled(short)](#void-canceledshort-action)          |
 | void | [finished(QJsonObject , short)](#void-finishedqjsonobject-info-short-action) |
 | void | [error(short, short)](#void-errorshort-errorcode-short-action) |
 | void | [progress(int, qint64, qint64, double, QString, short)](#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits-short-action) |
@@ -253,6 +255,22 @@ to use for all network communication for the updater.
 <p align="right"> <code>[SLOT]</code> </p>
 
 Clears all internal **cache**.
+
+### void torrentClientStarted()
+<p align="right"> <code>[SIGNAL]</code> </p>
+
+Emitted when torrent client is started.
+
+> NOTE: In builds without torrent support, this signal is never emitted.
+
+
+### void torrentStatus(int num\_seeders, int num\_peers)
+<p align="right"> <code>[SIGNAL]</code> </p>
+
+Emitted on every progress of torrent download if BitTorrent is used for
+update.
+
+> NOTE: In builds without torrent support, this signal is never emitted.
 
 
 ### void started(short action)

@@ -26,6 +26,8 @@ class QAppImageUpdateInterface {
     virtual QString errorCodeToString(short) = 0;
     virtual QString errorCodeToDescriptionString(short) = 0;
   Q_SIGNALS:
+    virtual void torrentClientStarted() = 0;
+    virtual void torrentStatus(int,int) = 0;
     virtual void started(short) = 0;
     virtual void canceled(short) = 0;
     virtual void finished(QJsonObject info, short) = 0;

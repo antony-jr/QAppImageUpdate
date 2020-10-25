@@ -45,6 +45,10 @@
         "title": "Updating an AppImage",
         "sidebar_label": "Updating an AppImage"
       },
+      "TorrentExample": {
+        "title": "Updating an AppImage with BitTorrent",
+        "sidebar_label": "Updating an AppImage with BitTorrent"
+      },
       "UsingPlugin": {
         "title": "Build QAppImageUpdate as Qt Plugin",
         "sidebar_label": "Building as Qt Plugin"

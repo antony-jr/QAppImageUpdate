@@ -7,6 +7,12 @@ QAppImageUpdateInterfaceImpl::QAppImageUpdateInterfaceImpl(QObject *parent)
 
     auto s = m_Private.data();
 
+    connect(s, &QAppImageUpdate::torrentClientStarted,
+            this, &QAppImageUpdateInterfaceImpl::torrentClientStarted, 
+	    Qt::DirectConnection);
+    connect(s, &QAppImageUpdate::torrentStatus,
+            this, &QAppImageUpdateInterfaceImpl::torrentStatus, 
+	    Qt::DirectConnection);
     connect(s, &QAppImageUpdate::started,
             this, &QAppImageUpdateInterfaceImpl::started, Qt::DirectConnection);
     connect(s, &QAppImageUpdate::canceled,

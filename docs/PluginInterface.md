@@ -44,6 +44,8 @@ I'm not sure about other Qt bindings, So help is much welcomed.
 
 | Name                              | Description                                  | 
 |-----------------------------------|----------------------------------------------|
+| [torrentClientStarted()](#void-torrentclientstarted)| Emitted when torrent client is started.      |
+| [torrentStatus(int,int)](#void-torrentstatusint-num_seeders-int-num_peers)| Emitted on every progress of download.       |
 | [started(short)](#startedshort)   | Emitted when a action is started.            |
 | [canceled(short)](#canceledshort) | Emitted when a action is canceled.           |
 | [finished(QJsonObject , short)](#finishedqjsonobject--short) | Emitted when a action is finished. |
@@ -208,6 +210,23 @@ Sets the given [QNetworkProxy](https://doc.qt.io/qt-5/qnetworkproxy.html) as the
 <p align="right"> <code>[SLOT]</code> </p>
 
 Clears all internal **cache** and stores.
+
+
+### void torrentClientStarted()
+<p align="right"> <code>[SIGNAL]</code> </p>
+
+Emitted when torrent client is started.
+
+> NOTE: In builds without torrent support, this signal is never emitted.
+
+
+### void torrentStatus(int num\_seeders, int num\_peers)
+<p align="right"> <code>[SIGNAL]</code> </p>
+
+Emitted on every progress of torrent download if BitTorrent is used for
+update.
+
+> NOTE: In builds without torrent support, this signal is never emitted.
 
 
 ### started(short)
