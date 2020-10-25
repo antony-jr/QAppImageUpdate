@@ -126,3 +126,7 @@ QString QAppImageUpdate::errorCodeToString(short errorCode) {
 QString QAppImageUpdate::errorCodeToDescriptionString(short errorCode) {
     return QAppImageUpdatePrivate::errorCodeToDescriptionString(errorCode);
 }
+
+QString QAppImageUpdate::versionString() {
+    return QAppImageUpdatePrivate::versionString();
+}

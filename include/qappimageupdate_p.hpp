@@ -37,6 +37,7 @@ class QAppImageUpdatePrivate : public QObject {
 
     static QString errorCodeToString(short);
     static QString errorCodeToDescriptionString(short);
+    static QString versionString();
   public Q_SLOTS:
     void setApplicationName(const QString&);
     void setIcon(QByteArray);
