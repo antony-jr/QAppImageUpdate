@@ -1,0 +1,377 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Class QAppImageUpdate · QAppImageUpdate</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="|	    |	        	                                       |		"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Class QAppImageUpdate · QAppImageUpdate"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/QAppImageUpdate/index.html"/><meta property="og:description" content="|	    |	        	                                       |		"/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/QAppImageUpdate/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/QAppImageUpdate/js/scrollSpy.js"></script><link rel="stylesheet" href="/QAppImageUpdate/css/main.css"/><script src="/QAppImageUpdate/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/QAppImageUpdate/"><img class="logo" src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate"/><h2 class="headerTitleWithLogo">QAppImageUpdate</h2></a><a href="/QAppImageUpdate/versions.html"><h3>next</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/QAppImageUpdate/docs/next/Installation.html" target="_self">Docs</a></li><li class=""><a href="/QAppImageUpdate/help.html" target="_self">Help</a></li><li class=""><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>API</span></h2></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/Installation.html">Installation</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/AddingQAppImageUpdate.html">Adding to your Project</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/BuildingTests.html">Building  Tests</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/UsingPlugin.html">Building as Qt Plugin</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Guides</h3><ul class=""><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/SimpleExample.html">Updating an AppImage</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/ProxyExample.html">Updating an AppImage using Proxy</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/GUIExample.html">Updating an AppImage with GUI</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/PyQt5PluginExample.html">Using Plugin in PyQt5</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/TorrentExample.html">Updating an AppImage with BitTorrent</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">API</h3><ul class=""><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/ErrorCodes.html">Error Codes</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/QAppImageUpdate/docs/next/ClassQAppImageUpdate.html">Class QAppImageUpdate</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/next/PluginInterface.html">Qt Plugin Interface</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Class QAppImageUpdate</h1></header><article><div><span><table>
+<thead>
+<tr><th></th><th></th></tr>
+</thead>
+<tbody>
+<tr><td>Header:</td><td>#include &lt; QAppImageUpdate &gt;</td></tr>
+<tr><td>qmake:</td><td>include(QAppImageUpdate/QAppImageUpdate.pri)</td></tr>
+<tr><td>Inherits:</td><td><a href="http://doc.qt.io/qt-5/qobject.html">QObject</a></td></tr>
+</tbody>
+</table>
+<p>QAppImageUpdate is the main class which <em>Reads Embeded Update Information</em>, <em>Checks for Updates</em>, <em>Writes the Delta</em>,
+<em>Downloads The Remaining Blocks</em> and  finally <em>Verifies the Checksums.</em></p>
+<p>In each stage, You can connect with specific signals to listen to each stage of the revision process(You can also control them).
+Thus all you need is this class to do the entire update.</p>
+<p>Internally this class purely uses <strong>signals and slots</strong> to communicate to private classes which are single thread and non-blocking(Optionally runs in a separate thread). This class only holds a pointer to the private implementation (<em>PIMPL</em>).
+For most of the time, This class does not leak memory but if it does please report it on github.</p>
+<p>All methods in this class is <a href="https://doc.qt.io/qt-5/threads-reentrancy.html">reentrant</a> and thread safe.</p>
+<h2><a class="anchor" aria-hidden="true" id="public-functions"></a><a href="#public-functions" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Public Functions</h2>
+<table>
+<thead>
+<tr><th>Return Type</th><th>Name</th></tr>
+</thead>
+<tbody>
+<tr><td></td><td><a href="#qappimageupdatebool-singlethreaded--true-qobject-parent--nullptr">QAppImageUpdate(bool singleThreaded = true, QObject *parent = nullptr)</a></td></tr>
+<tr><td></td><td><a href="#qappimageupdateconst-qstring-bool-singlethreaded--true-qobject-parent--nullptr">QAppImageUpdate(const QString&amp;, bool singleThreaded = true, QObject *parent = nullptr)</a></td></tr>
+<tr><td></td><td><a href="#qappimageupdateqfile--bool-singlethreaded--true-qobject-parent--nullptr">QAppImageUpdate(QFile *, bool singleThreaded = true, QObject *parent = nullptr)</a></td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="slots"></a><a href="#slots" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Slots</h2>
+<table>
+<thead>
+<tr><th>Return Type</th><th>Name</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>void</strong></td><td><a href="#void-setguiflagint-flag">setGuiFlag(int)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-seticonqbytearray-icon">setIcon(QByteArray)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-startshort-action">start(short)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-cancel">cancel()</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setappimageconst-qstring">setAppImage(const QString&amp;)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setappimageqfile-">setAppImage(QFile *)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setshowlogbool">setShowLog(bool)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setoutputdirectoryconst-qstring">setOutputDirectory(const QString&amp;)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setproxyconst-qnetworkproxyhttpsdocqtioqt-5qnetworkproxyhtml">setProxy(const QNetworkProxy&amp;)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-clear">clear()</a></td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="signals"></a><a href="#signals" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Signals</h2>
+<table>
+<thead>
+<tr><th>Return Type</th><th>Name</th></tr>
+</thead>
+<tbody>
+<tr><td>void</td><td><a href="#void-torrentclientstarted">torrentClientStarted()</a></td></tr>
+<tr><td>void</td><td><a href="#void-torrentstatusint-num_seeders-int-num_peers">torrentStatus(int,int)</a></td></tr>
+<tr><td>void</td><td><a href="#void-startedshort-action">started(short)</a></td></tr>
+<tr><td>void</td><td><a href="#void-canceledshort-action">canceled(short)</a></td></tr>
+<tr><td>void</td><td><a href="#void-finishedqjsonobject-info-short-action">finished(QJsonObject , short)</a></td></tr>
+<tr><td>void</td><td><a href="#void-errorshort-errorcode-short-action">error(short, short)</a></td></tr>
+<tr><td>void</td><td><a href="#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits-short-action">progress(int, qint64, qint64, double, QString, short)</a></td></tr>
+<tr><td>void</td><td><a href="#void-loggerqstring--qstring">logger(QString, QString)</a></td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="static-public-members"></a><a href="#static-public-members" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Static Public Members</h2>
+<table>
+<thead>
+<tr><th>Return Type</th><th>Name</th></tr>
+</thead>
+<tbody>
+<tr><td>QString</td><td><a href="#qstring-errorcodetostringshort-errorcode">errorCodeToString(short)</a></td></tr>
+<tr><td>QString</td><td><a href="#qstring-errorcodetodescriptionstringshort-errorcode">errorCodeToDescriptionString(short)</a></td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="actions"></a><a href="#actions" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Actions</h2>
+<table>
+<thead>
+<tr><th>Variable Name</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td>QAppImageUpdate::Action::GetEmbeddedInfo</td><td>0</td></tr>
+<tr><td>QAppImageUpdate::Action::CheckForUpdate</td><td>1</td></tr>
+<tr><td>QAppImageUpdate::Action::Update</td><td>2</td></tr>
+<tr><td>QAppImageUpdate::Action::UpdateWithTorrent</td><td>3</td></tr>
+<tr><td>QAppImageUpdate::Action::UpdateWithGUI</td><td>4</td></tr>
+<tr><td>QAppImageUpdate::Action::UpdateWithGUIAndTorrent</td><td>5</td></tr>
+</tbody>
+</table>
+<pre><code class="hljs">   <span class="hljs-selector-tag">QAppImageUpdate</span> <span class="hljs-selector-tag">updater</span>;
+   <span class="hljs-selector-tag">updater</span><span class="hljs-selector-class">.start</span>(<span class="hljs-attribute">QAppImageUpdate</span>::<span class="hljs-attribute">Action</span>::CheckForUpdate); <span class="hljs-comment">// Checks for update.</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="gui-flags"></a><a href="#gui-flags" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>GUI Flags</h2>
+<table>
+<thead>
+<tr><th>Variable Name</th><th>Meaning</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td>GuiFlag::ShowProgressDialog</td><td>Show the progress dialog during update.</td><td>0x1</td></tr>
+<tr><td>GuiFlag::ShowBeforeProgress</td><td>Show the progress dialog before the update starts.</td><td>0x2</td></tr>
+<tr><td>GuiFlag::ShowUpdateConfirmationDialog</td><td>Show a update confirmation dialog.</td><td>0x4</td></tr>
+<tr><td>GuiFlag::ShowFinishedDialog</td><td>Show a message box when update is finished.</td><td>0x8</td></tr>
+<tr><td>GuiFlag::ShowErrorDialog</td><td>Show a error message box when update is errored.</td><td>0x10</td></tr>
+<tr><td>GuiFlag::NoShowErrorDialogOnPermissionErrors</td><td>Do not show error dialog on permission errors. Only emit error.</td><td>0x20</td></tr>
+<tr><td>GuiFlag::NotifyWhenNoUpdateIsAvailable</td><td>Show a message box when there was no update.</td><td>0x40</td></tr>
+<tr><td>GuiFlag::NoRemindMeLaterButton</td><td>Do not show 'Remind me later' in the confirmation dialog.</td><td>0x80</td></tr>
+<tr><td>GuiFlag::NoSkipThisVersionButton</td><td>Do not show 'Skip This Version' in the confirmatino dialog.</td><td>0x100</td></tr>
+<tr><td>GuiFlag::NoConfirmTorrentUsage</td><td>Do not confirm when torrent update is used.</td><td>0x200</td></tr>
+<tr><td>GuiFlag::Default</td><td>Give the default combination of flags</td><td>0x1df</td></tr>
+</tbody>
+</table>
+<blockquote>
+<p>The Default flag enables ShowProgressDialog, ShowBeforeProgress, ShowUpdateConfirmationDialog, ShowFinishedDialog,
+ShowErrorDialog, NotifyWhenNoUpdateIsAvailable, NoRemindMeLaterButton, NoSkipThisVersionButton</p>
+</blockquote>
+<h2><a class="anchor" aria-hidden="true" id="member-functions-documentation"></a><a href="#member-functions-documentation" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Member Functions Documentation</h2>
+<h3><a class="anchor" aria-hidden="true" id="qappimageupdatebool-singlethreaded--true-qobject-parent--nullptr"></a><a href="#qappimageupdatebool-singlethreaded--true-qobject-parent--nullptr" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>QAppImageUpdate(bool singleThreaded = true, QObject *parent = nullptr)</h3>
+<p>Default Constructor, Constructs the Updater with a assumed AppImage Path
+which is most likely the AppImage which is running this updater.
+The assumed AppImage Path will only be correct if and only if
+this updater is running from a AppImage.</p>
+<p>The default value for <strong>singleThreaded</strong> is <strong>true</strong> but you can set it
+to <strong>false</strong> to run all the  resource of the updater in a seperate
+thread excluding <strong>this class</strong>.</p>
+<p>You can set a <strong>QObject parent</strong> to make use of <strong>Qt's Parent to Children deallocation.</strong></p>
+<pre><code class="hljs">QAppImageUpdate updater<span class="hljs-comment">;</span>
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="qappimageupdateconst-qstring-bool-singlethreaded--true-qobject-parent--nullptr"></a><a href="#qappimageupdateconst-qstring-bool-singlethreaded--true-qobject-parent--nullptr" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>QAppImageUpdate(const QString&amp;, bool singleThreaded = true, QObject *parent = nullptr)</h3>
+<p>This is an overloaded constructor, Constructs the Updater with the given QString as the AppImage Path.
+If the given QString is not a valid AppImage Path, Then the updater will automatically
+guess the AppImage Path, The guessed AppImage Path will be accurate only if the updater is running from
+an AppImage.</p>
+<p>The default value for <strong>singleThreaded</strong> is <strong>true</strong> but you can set it to <strong>false</strong> to run all the
+resource of the updater in a seperate thread excluding <strong>this class</strong>.</p>
+<p>You can set a <strong>QObject parent</strong> to make use of <strong>Qt's Parent to Children deallocation.</strong></p>
+<h3><a class="anchor" aria-hidden="true" id="qappimageupdateqfile--bool-singlethreaded--true-qobject-parent--nullptr"></a><a href="#qappimageupdateqfile--bool-singlethreaded--true-qobject-parent--nullptr" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>QAppImageUpdate(QFile *, bool singleThreaded = true, QObject *parent = nullptr)</h3>
+<p>This is an overloaded constructor, Constructs the Updater with the given QFile as the AppImage itself.
+If the pointer is invalid or has other sort of read errors, The updater will emit error but when
+forced to start, Again the updater guesses the AppImage Path in order to continue with the extraction.
+If the guessed AppImage Path is not an AppImage but a normal elf file then this result in a invalid magic
+byte error. See <a href="ErrorCodes.html">error codes</a> for more information.</p>
+<p>The default value for <strong>singleThreaded</strong> is <strong>true</strong> but you can set it to <strong>false</strong> to run all the
+resource of the updater in a seperate thread excluding <strong>this class</strong>.</p>
+<p>You can set a <strong>QObject parent</strong> to make use of <strong>Qt's Parent to Children deallocation.</strong></p>
+<h3><a class="anchor" aria-hidden="true" id="void-setguiflagint-flag"></a><a href="#void-setguiflagint-flag" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setGuiFlag(int flag)</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Set the given integer as the flag for GUI update if used. See the <a href="#gui-flags">GUI Flags</a>.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-seticonqbytearray-icon"></a><a href="#void-seticonqbytearray-icon" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setIcon(QByteArray icon)</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Set the given icon which is saved as QByteArray. You have to save your <code>QPixmap</code> as a QByteArray, see <a href="https://doc.qt.io/qt-5/qpixmap.html#save-1">the official docs</a>.</p>
+<pre><code class="hljs"> <span class="hljs-comment">/// C++ Ref for saving QPixmap as QByteArray</span>
+ <span class="hljs-selector-tag">QPixmap</span> <span class="hljs-selector-tag">pixmap</span>;
+ <span class="hljs-selector-tag">QByteArray</span> <span class="hljs-selector-tag">icon</span>;
+ <span class="hljs-selector-tag">QBuffer</span> <span class="hljs-selector-tag">buffer</span>(&amp;icon);
+ <span class="hljs-selector-tag">buffer</span><span class="hljs-selector-class">.open</span>(<span class="hljs-attribute">QIODevice</span>::WriteOnly);
+ <span class="hljs-selector-tag">pixmap</span><span class="hljs-selector-class">.save</span>(&amp;buffer, <span class="hljs-string">"PNG"</span>); <span class="hljs-comment">// writes pixmap into bytes in PNG format</span>
+
+ 
+ <span class="hljs-selector-tag">QAppImageUpdater</span> <span class="hljs-selector-tag">updater</span>;
+ <span class="hljs-selector-tag">updater</span><span class="hljs-selector-class">.setIcon</span>(icon);
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="void-startshort-action"></a><a href="#void-startshort-action" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void start(short action)</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Starts a specific action as given in the argument of the start slot.
+Valid actions are put up in the <a href="#actions">Actions table</a>.</p>
+<pre><code class="hljs"><span class="hljs-selector-tag">QAppImageUpdater</span> <span class="hljs-selector-tag">updater</span>;
+<span class="hljs-selector-tag">updater</span><span class="hljs-selector-class">.start</span>(<span class="hljs-selector-tag">QAppImageUpdate</span><span class="hljs-selector-pseudo">::Action</span><span class="hljs-selector-pseudo">::CheckForUpdate)</span>;
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="void-cancel"></a><a href="#void-cancel" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void cancel()</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Cancels the update.
+Emits <strong>canceled(short action)</strong> signal when cancel was successfull.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-setappimageconst-qstring"></a><a href="#void-setappimageconst-qstring" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setAppImage(const QString&amp;)</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Sets the AppImage Path as the given <strong>QString</strong>.</p>
+<blockquote>
+<p>WARNING: If you set the AppImage yourself, Then any guessing will not be done and all
+errors relating to find the correct path to AppImage should be handled by the programmer.
+This is seen in the case of AppImageLauncher where the actuall AppImage can be guessed
+by the Updater if do not set the path yourself.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-setappimageqfile-"></a><a href="#void-setappimageqfile-" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setAppImage(QFile *)</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Sets the given <strong>QFile</strong> as the AppImage itself.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-setshowlogbool"></a><a href="#void-setshowlogbool" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setShowLog(bool)</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Turns on and off the log printer.</p>
+<blockquote>
+<p>Note: logger signal will be emitted all the time if the library is compiled with LOGGING_DISABLED undefined ,
+setShowLog will not affect this activity at all, But setShowLog will print these log messages
+if set to true.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-setoutputdirectoryconst-qstring"></a><a href="#void-setoutputdirectoryconst-qstring" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setOutputDirectory(const QString&amp;)</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Writes the new version of the AppImage to the given Output directory, Assuming the given QString a directory path.
+The default is the old version AppImage's directory.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-setproxyconst-qnetworkproxyhttpsdocqtioqt-5qnetworkproxyhtml"></a><a href="#void-setproxyconst-qnetworkproxyhttpsdocqtioqt-5qnetworkproxyhtml" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setProxy(const <a href="https://doc.qt.io/qt-5/qnetworkproxy.html">QNetworkProxy</a>&amp;)</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Sets the given <a href="https://doc.qt.io/qt-5/qnetworkproxy.html">QNetworkProxy</a> as the proxy
+to use for all network communication for the updater.</p>
+<pre><code class="hljs">   QNetworkProxy proxy;
+   proxy.set<span class="hljs-constructor">Type(QNetworkProxy::Socks5Proxy)</span>;
+   proxy.set<span class="hljs-constructor">HostName(<span class="hljs-string">"127.0.0.1"</span>)</span>;
+   proxy.set<span class="hljs-constructor">Port(9050)</span>;
+
+   AppImageDeltaRevisioner <span class="hljs-constructor">Revisioner(<span class="hljs-string">"Ein.AppImage"</span>)</span>;
+   <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Revisioner</span>.</span></span>set<span class="hljs-constructor">Proxy(<span class="hljs-params">proxy</span>)</span>;
+   <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Revisioner</span>.</span></span>start<span class="hljs-literal">()</span>; <span class="hljs-comment">/* Start the updater */</span>
+</code></pre>
+<blockquote>
+<p>WARNING: when using torrent support, only HTTP and SOCKS5 proxy is supported.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-clear"></a><a href="#void-clear" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void clear()</h3>
+<p align="right"> <code>[SLOT]</code> </p>
+<p>Clears all internal <strong>cache</strong>.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-torrentclientstarted"></a><a href="#void-torrentclientstarted" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void torrentClientStarted()</h3>
+<p align="right"> <code>[SIGNAL]</code> </p>
+<p>Emitted when torrent client is started.</p>
+<blockquote>
+<p>NOTE: In builds without torrent support, this signal is never emitted.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-torrentstatusint-num_seeders-int-num_peers"></a><a href="#void-torrentstatusint-num_seeders-int-num_peers" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void torrentStatus(int num_seeders, int num_peers)</h3>
+<p align="right"> <code>[SIGNAL]</code> </p>
+<p>Emitted on every progress of torrent download if BitTorrent is used for
+update.</p>
+<blockquote>
+<p>NOTE: In builds without torrent support, this signal is never emitted.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-startedshort-action"></a><a href="#void-startedshort-action" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void started(short action)</h3>
+<p align="right"> <code>[SIGNAL]</code> </p>
+<p>Emitted when a action is started successfully.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-canceledshort-action"></a><a href="#void-canceledshort-action" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void canceled(short action)</h3>
+<p align="right"> <code>[SIGNAL]</code> </p>
+<p>Emitted when the update is canceled successfully.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-finishedqjsonobject-info-short-action"></a><a href="#void-finishedqjsonobject-info-short-action" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void finished(QJsonObject info, short action)</h3>
+<p align="right"> <code>[SIGNAL]</code> </p>
+<p>Emitted when a action is finished successfully. The given <em>QJsonObject</em> is variable and it is dependent
+on different actions.</p>
+<p>The <em>QJsonObject</em> will follow the following format with respect to json for <code>Action::GetEmbeddedInfo</code> action,</p>
+<pre><code class="hljs">{
+    &quot;IsEmpty&quot;: &lt;True if the update information is empty&gt;,
+    &quot;FileInformation&quot;: {
+        &quot;AppImageFilePath&quot;: &lt;Local AppImage Absolute Path&gt;,
+            &quot;AppImageSHA1Hash&quot;:&lt;Sha1 hash of the local AppImage&gt;
+},
+    &quot;UpdateInformation&quot;: {
+            &quot;transport&quot; : &lt;zsync/gh-releases-zsync/bintray-zsync&gt;,
+            &lt;Based on the transport this part changes&gt;
+}
+}
+</code></pre>
+<p><strong>gh-releases-zsync</strong> ,</p>
+<pre><code class="hljs">{
+ &quot;transport&quot; : &quot;gh-releases-zsync&quot;,
+ &quot;username&quot;  : &lt;Username of the author&gt;,
+ &quot;repo&quot;      : &lt;Name of the repo&gt;,
+ &quot;tag&quot;       : &lt;continuous / latest / other&gt;,
+ &quot;filename&quot;  : &lt;Latest AppImage Zsync filename with wild card&gt;
+}
+</code></pre>
+<p><strong>bintray-zsync</strong> ,</p>
+<pre><code class="hljs">{
+    &quot;transport&quot; : &quot;bintray-zsync&quot; ,
+    &quot;username&quot;  : &lt;Username of the author&gt;,
+    &quot;repo&quot;      : &lt;Name of the repo&gt;,
+    &quot;packageName&quot; : &lt;Name of the package in bintray&gt;,
+    &quot;filename&quot; : &lt;Name of the latest AppImage Zsync file&gt;
+}
+</code></pre>
+<p><strong>zsync</strong>,</p>
+<pre><code class="hljs">{
+    &quot;transport&quot; : &quot;zsync&quot;,
+    &quot;zsyncUrl&quot; : &lt;Url of the Zsync Control File&gt;
+}
+</code></pre>
+<p>The <em>QJsonObject</em> will follow the following format with respect to json for <code>Action::CheckForUpdate</code> action,</p>
+<pre><code class="hljs">{
+    &quot;UpdateAvailable&quot;: &lt;Boolean, True if update is available&gt;,
+    &quot;AbsolutePath&quot; : &lt;Absolute path to local AppImage&gt;,
+    &quot;LocalSha1Hash&quot; : &lt;Sha1 Hash of local AppImage&gt;,
+    &quot;RemoteSha1Hash&quot; : &lt;Sha1 Hash of Remote AppImage&gt;,
+    &quot;ReleaseNotes&quot;: &lt;Release notes of the latest release if found&gt;,
+    &quot;TorrentSupported&quot;: &lt;Boolean, True if torrent update is supported&gt;
+}     
+</code></pre>
+<p>The <em>QJsonObject</em> will follow the following format with respect to json for <code>Action::Update</code> action(And all other update action variants),</p>
+<pre><code class="hljs">{
+    &quot;OldVersionPath&quot;: &lt;Absolute Path to the old version&gt;,
+    &quot;NewVersionPath&quot;: &lt;Absolute Path to the new version&gt;,
+    &quot;UsedTorrent&quot;: &lt;Boolean, True if torrent was used to update
+} 
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="void-errorshort-errorcode-short-action"></a><a href="#void-errorshort-errorcode-short-action" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void error(short errorCode, short action)</h3>
+<p align="right"> <code>[SIGNAL]</code> </p>
+<p>Emitted when the updater is errored. The given short integer is the error code.
+See <a href="ErrorCodes.html">error codes</a>.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits-short-action"></a><a href="#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits-short-action" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void progress(int percentage , qint64 bytesReceived , qint64 bytesTotal , double speed , QString speedUnits, short action)</h3>
+<p align="right"> <code>[SIGNAL]</code> </p>
+<p>The updater's progress is emitted through this unified signal.</p>
+<p><strong>Where</strong> ,</p>
+<table>
+<thead>
+<tr><th>Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>percentage</td><td>% Finished revising the latest AppImage.</td></tr>
+<tr><td>bytesReceived</td><td>The received bytes of the latest AppImage.</td></tr>
+<tr><td>bytesTotal</td><td>The total bytes of the latest AppImage.</td></tr>
+<tr><td>speed</td><td>The transfer speed value.</td></tr>
+<tr><td>speedUnit</td><td>The transfer speed unit(e.g. KiB/s , etc... ) for <strong>speed</strong>.</td></tr>
+<tr><td>action</td><td>The action this progress refers to.</td></tr>
+</tbody>
+</table>
+<h3><a class="anchor" aria-hidden="true" id="void-loggerqstring--qstring"></a><a href="#void-loggerqstring--qstring" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void logger(QString , QString)</h3>
+<p align="right"> <code>[SIGNAL]</code> </p>
+<p>Emitted when the updater issues a log message with the <em>first QString</em> as the log message and
+the <em>second QString</em> as the path to the respective AppImage.</p>
+<h2><a class="anchor" aria-hidden="true" id="qstring-errorcodetostringshort-errorcode"></a><a href="#qstring-errorcodetostringshort-errorcode" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>QString errorCodeToString(short errorCode)</h2>
+<p align="right"> <code>[STATIC]</code> </p>
+<p>Returns the error as a string denoting the error code.</p>
+<h3><a class="anchor" aria-hidden="true" id="qstring-errorcodetodescriptionstringshort-errorcode"></a><a href="#qstring-errorcodetodescriptionstringshort-errorcode" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>QString errorCodeToDescriptionString(short errorCode)</h3>
+<p align="right"> <code>[STATIC]</code> </p>
+<p>Returns a human readable error string for the given error code.</p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/QAppImageUpdate/docs/next/ErrorCodes.html"><span class="arrow-prev">← </span><span>Error Codes</span></a><a class="docs-next button" href="/QAppImageUpdate/docs/next/PluginInterface.html"><span>Qt Plugin Interface</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/QAppImageUpdate/" class="nav-home"><img src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate" width="66" height="58"/></a><div><h5>Docs</h5><a href="/QAppImageUpdate/docs/Installation.html">Getting Started</a><a href="/QAppImageUpdate/docs/SimpleExample.html">Guides</a><a href="/QAppImageUpdate/docs/ErrorCodes.html">API Reference</a></div><div><h5>Community</h5><a href="/QAppImageUpdate/en/users.html">User Showcase</a><a href="http://stackoverflow.com/questions/tagged/AppImage/" target="_blank">Stack Overflow</a><a href="https://discordapp.com/">Project Chat</a><a href="https://twitter.com/antonyjr0" target="_blank">Twitter</a></div><div><h5>More</h5><a href="/QAppImageUpdate/blog">Blog</a><a href="https://github.com/antony-jr/AppImageUpdaterBridge">GitHub</a><a class="github-button" href="https://github.com/antony-jr/QAppImageUpdate" data-icon="octicon-star" data-count-href="/antony-jr/AppImageUpdaterBridge/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Antony Jr.</section></footer></div></body></html>

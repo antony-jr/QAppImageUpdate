@@ -1,0 +1,141 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>QAppImageUpdate Error Codes · QAppImageUpdate</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Using static function ```QAppImageUpdate::errorCodeToString(short)``` you can get the error code name as "/><meta name="docsearch:version" content="2.0.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="QAppImageUpdate Error Codes · QAppImageUpdate"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/QAppImageUpdate/index.html"/><meta property="og:description" content="Using static function ```QAppImageUpdate::errorCodeToString(short)``` you can get the error code name as "/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/QAppImageUpdate/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/QAppImageUpdate/js/scrollSpy.js"></script><link rel="stylesheet" href="/QAppImageUpdate/css/main.css"/><script src="/QAppImageUpdate/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/QAppImageUpdate/"><img class="logo" src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate"/><h2 class="headerTitleWithLogo">QAppImageUpdate</h2></a><a href="/QAppImageUpdate/versions.html"><h3>2.0.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/QAppImageUpdate/docs/Installation.html" target="_self">Docs</a></li><li class=""><a href="/QAppImageUpdate/help.html" target="_self">Help</a></li><li class=""><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>API</span></h2></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/Installation.html">Installation</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/AddingQAppImageUpdate.html">Adding to your Project</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/BuildingTests.html">Building  Tests</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/UsingPlugin.html">Building as Qt Plugin</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Guides</h3><ul class=""><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/SimpleExample.html">Updating an AppImage</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/ProxyExample.html">Updating an AppImage using Proxy</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/GUIExample.html">Updating an AppImage with GUI</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/PyQt5PluginExample.html">Using Plugin in PyQt5</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/TorrentExample.html">Updating an AppImage with BitTorrent</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">API</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/QAppImageUpdate/docs/ErrorCodes.html">Error Codes</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/ClassQAppImageUpdate.html">Class QAppImageUpdate</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/PluginInterface.html">Qt Plugin Interface</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">QAppImageUpdate Error Codes</h1></header><article><div><span><p>Using static function <code>QAppImageUpdate::errorCodeToString(short)</code> you can get the error code name as
+a QString, The below table tabulates all error codes with respect to their error name.</p>
+<table>
+<thead>
+<tr><th>Error Code</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td>QAppImageUpdate::Error::NoError</td><td>0</td></tr>
+<tr><td>QAppImageUpdate::Error::NoAppimagePathGiven</td><td>1</td></tr>
+<tr><td>QAppImageUpdate::Error::AppimageNotReadable</td><td>2</td></tr>
+<tr><td>QAppImageUpdate::Error::NoReadPermission</td><td>3</td></tr>
+<tr><td>QAppImageUpdate::Error::AppimageNotFound</td><td>4</td></tr>
+<tr><td>QAppImageUpdate::Error::CannotOpenAppimage</td><td>5</td></tr>
+<tr><td>QAppImageUpdate::Error::EmptyUpdateInformation</td><td>6</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidAppimageType</td><td>7</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidMagicBytes</td><td>8</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidUpdateInformation</td><td>9</td></tr>
+<tr><td>QAppImageUpdate::Error::NotEnoughMemory</td><td>10</td></tr>
+<tr><td>QAppImageUpdate::Error::SectionHeaderNotFound</td><td>11</td></tr>
+<tr><td>QAppImageUpdate::Error::UnsupportedElfFormat</td><td>12</td></tr>
+<tr><td>QAppImageUpdate::Error::UnsupportedTransport</td><td>13</td></tr>
+<tr><td>QAppImageUpdate::Error::IoReadError</td><td>50</td></tr>
+<tr><td>QAppImageUpdate::Error::ErrorResponseCode</td><td>51</td></tr>
+<tr><td>QAppImageUpdate::Error::GithubApiRateLimitReached</td><td>52</td></tr>
+<tr><td>QAppImageUpdate::Error::NoMarkerFoundInControlFile</td><td>53</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidZsyncHeadersNumber</td><td>54</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidZsyncMakeVersion</td><td>55</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidZsyncTargetFilename</td><td>56</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidZsyncMtime</td><td>57</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidZsyncBlocksize</td><td>58</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidTargetFileLength</td><td>59</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidHashLengthLine</td><td>60</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidHashLengths</td><td>61</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidTargetFileUrl</td><td>62</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidTargetFileSha1</td><td>63</td></tr>
+<tr><td>QAppImageUpdate::Error::ConnectionRefusedError</td><td>64</td></tr>
+<tr><td>QAppImageUpdate::Error::RemoteHostClosedError</td><td>65</td></tr>
+<tr><td>QAppImageUpdate::Error::HostNotFoundError</td><td>66</td></tr>
+<tr><td>QAppImageUpdate::Error::TimeoutError</td><td>67</td></tr>
+<tr><td>QAppImageUpdate::Error::OperationCanceledError</td><td>68</td></tr>
+<tr><td>QAppImageUpdate::Error::SslHandshakeFailedError</td><td>69</td></tr>
+<tr><td>QAppImageUpdate::Error::TemporaryNetworkFailureError</td><td>70</td></tr>
+<tr><td>QAppImageUpdate::Error::NetworkSessionFailedError</td><td>71</td></tr>
+<tr><td>QAppImageUpdate::Error::BackgroundRequestNotAllowedError</td><td>72</td></tr>
+<tr><td>QAppImageUpdate::Error::TooManyRedirectsError</td><td>73</td></tr>
+<tr><td>QAppImageUpdate::Error::InsecureRedirectError</td><td>74</td></tr>
+<tr><td>QAppImageUpdate::Error::ProxyConnectionRefusedError</td><td>75</td></tr>
+<tr><td>QAppImageUpdate::Error::ProxyConnectionClosedError</td><td>76</td></tr>
+<tr><td>QAppImageUpdate::Error::ProxyNotFoundError</td><td>77</td></tr>
+<tr><td>QAppImageUpdate::Error::ProxyTimeoutError</td><td>78</td></tr>
+<tr><td>QAppImageUpdate::Error::ProxyAuthenticationRequiredError</td><td>79</td></tr>
+<tr><td>QAppImageUpdate::Error::ContentAccessDenied</td><td>80</td></tr>
+<tr><td>QAppImageUpdate::Error::ContentOperationNotPermittedError</td><td>81</td></tr>
+<tr><td>QAppImageUpdate::Error::ContentNotFoundError</td><td>82</td></tr>
+<tr><td>QAppImageUpdate::Error::AuthenticationRequiredError</td><td>83</td></tr>
+<tr><td>QAppImageUpdate::Error::ContentReSendError</td><td>84</td></tr>
+<tr><td>QAppImageUpdate::Error::ContentConflictError</td><td>85</td></tr>
+<tr><td>QAppImageUpdate::Error::ContentGoneError</td><td>86</td></tr>
+<tr><td>QAppImageUpdate::Error::InternalServerError</td><td>87</td></tr>
+<tr><td>QAppImageUpdate::Error::OperationNotImplementedError</td><td>88</td></tr>
+<tr><td>QAppImageUpdate::Error::ServiceUnavailableError</td><td>89</td></tr>
+<tr><td>QAppImageUpdate::Error::ProtocolUnknownError</td><td>90</td></tr>
+<tr><td>QAppImageUpdate::Error::ProtocolInvalidOperationError</td><td>91</td></tr>
+<tr><td>QAppImageUpdate::Error::UnknownNetworkError</td><td>92</td></tr>
+<tr><td>QAppImageUpdate::Error::UnknownProxyError</td><td>93</td></tr>
+<tr><td>QAppImageUpdate::Error::UnknownContentError</td><td>94</td></tr>
+<tr><td>QAppImageUpdate::Error::ProtocolFailure</td><td>95</td></tr>
+<tr><td>QAppImageUpdate::Error::UnknownServerError</td><td>96</td></tr>
+<tr><td>QAppImageUpdate::Error::ZsyncControlFileNotFound</td><td>97</td></tr>
+<tr><td>QAppImageUpdate::Error::HashTableNotAllocated</td><td>100</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidTargetFileChecksumBlocks</td><td>101</td></tr>
+<tr><td>QAppImageUpdate::Error::CannotOpenTargetFileChecksumBlocks</td><td>102</td></tr>
+<tr><td>QAppImageUpdate::Error::CannotConstructHashTable</td><td>103</td></tr>
+<tr><td>QAppImageUpdate::Error::QbufferIoReadError</td><td>104</td></tr>
+<tr><td>QAppImageUpdate::Error::SourceFileNotFound</td><td>105</td></tr>
+<tr><td>QAppImageUpdate::Error::NoPermissionToReadSourceFile</td><td>106</td></tr>
+<tr><td>QAppImageUpdate::Error::CannotOpenSourceFile</td><td>107</td></tr>
+<tr><td>QAppImageUpdate::Error::NoPermissionToReadWriteTargetFile</td><td>108</td></tr>
+<tr><td>QAppImageUpdate::Error::CannotOpenTargetFile</td><td>109</td></tr>
+<tr><td>QAppImageUpdate::Error::TargetFileSha1HashMismatch</td><td>110</td></tr>
+<tr><td>QAppImageUpdate::Error::UnsupportedActionForBuild</td><td>200</td></tr>
+<tr><td>QAppImageUpdate::Error::InvalidAction</td><td>201</td></tr>
+</tbody>
+</table>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/QAppImageUpdate/docs/TorrentExample.html"><span class="arrow-prev">← </span><span class="function-name-prevnext">Updating an AppImage with BitTorrent</span></a><a class="docs-next button" href="/QAppImageUpdate/docs/ClassQAppImageUpdate.html"><span class="function-name-prevnext">Class QAppImageUpdate</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/QAppImageUpdate/" class="nav-home"><img src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate" width="66" height="58"/></a><div><h5>Docs</h5><a href="/QAppImageUpdate/docs/Installation.html">Getting Started</a><a href="/QAppImageUpdate/docs/SimpleExample.html">Guides</a><a href="/QAppImageUpdate/docs/ErrorCodes.html">API Reference</a></div><div><h5>Community</h5><a href="/QAppImageUpdate/en/users.html">User Showcase</a><a href="http://stackoverflow.com/questions/tagged/AppImage/" target="_blank">Stack Overflow</a><a href="https://discordapp.com/">Project Chat</a><a href="https://twitter.com/antonyjr0" target="_blank">Twitter</a></div><div><h5>More</h5><a href="/QAppImageUpdate/blog">Blog</a><a href="https://github.com/antony-jr/AppImageUpdaterBridge">GitHub</a><a class="github-button" href="https://github.com/antony-jr/QAppImageUpdate" data-icon="octicon-star" data-count-href="/antony-jr/AppImageUpdaterBridge/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Antony Jr.</section></footer></div></body></html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Class AppImageDeltaRevisioner · QAppImageUpdate</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="|	    |	        	                                       |		"/><meta name="docsearch:version" content="2.0.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Class AppImageDeltaRevisioner · QAppImageUpdate"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/QAppImageUpdate/index.html"/><meta property="og:description" content="|	    |	        	                                       |		"/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/QAppImageUpdate/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/QAppImageUpdate/js/scrollSpy.js"></script><link rel="stylesheet" href="/QAppImageUpdate/css/main.css"/><script src="/QAppImageUpdate/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/QAppImageUpdate/"><img class="logo" src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate"/><h2 class="headerTitleWithLogo">QAppImageUpdate</h2></a><a href="/QAppImageUpdate/versions.html"><h3>2.0.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/QAppImageUpdate/docs/Installation.html" target="_self">Docs</a></li><li class=""><a href="/QAppImageUpdate/help.html" target="_self">Help</a></li><li class=""><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Class AppImageDeltaRevisioner</h1></header><article><div><span><table>
+<thead>
+<tr><th></th><th></th></tr>
+</thead>
+<tbody>
+<tr><td>Header:</td><td>#include &lt; AppImageUpdaterBridge &gt;</td></tr>
+<tr><td>qmake:</td><td>include(AppImageUpdaterBridge/AppImageUpdaterBridge.pri)</td></tr>
+<tr><td>Inherits:</td><td><a href="http://doc.qt.io/qt-5/qobject.html">QObject</a></td></tr>
+<tr><td>Namespace:</td><td><strong>AppImageUpdaterBridge</strong></td></tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Important</strong>: AppImageDeltaRevisioner is under AppImageUpdaterBridge namespace , Make sure to include it.</p>
+</blockquote>
+<p>AppImageDeltaRevisioner is the main class which <em>Reads Embeded Update Information</em> , <em>Checks for Updates</em> , <em>Writes the Delta</em> ,
+<em>Downloads The Remaining Blocks</em> and  finally <em>Verifies the Checksums.</em></p>
+<p>In each stage , You can connect with specific signals to listen to each stage of the revision process(You can also control them).
+Thus all you need is this class to do the entire update.</p>
+<p>Internally this class purely uses <strong>signals and slots</strong> to communicate to private classes which are single thread and non-blocking(Optionally runs in a seperate thread). This class only holds a pointer to the private implementation (<em>PIMPL</em>).
+For most of the time , This class does not leak memory but if it does please report it on github.</p>
+<p>All methods in this class is <a href="https://doc.qt.io/qt-5/threads-reentrancy.html">reentrant</a> and thread safe.</p>
+<p>Eventhough all methods are reentrant , This class does not use <strong>mutex</strong> thanks to <strong>Qt's signals and slots everything is cyclic and thus no mutex is needed.</strong></p>
+<h2><a class="anchor" aria-hidden="true" id="public-functions"></a><a href="#public-functions" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Public Functions</h2>
+<table>
+<thead>
+<tr><th>Return Type</th><th>Name</th></tr>
+</thead>
+<tbody>
+<tr><td></td><td><a href="#appimagedeltarevisionerbool-singlethreaded-true-qobject-parent-nullptr">AppImageDeltaRevisioner(bool singleThreaded = true, QObject *parent = nullptr)</a></td></tr>
+<tr><td></td><td><a href="#appimagedeltarevisionerconst-qstring-bool-singlethreaded-true-qobject-parent-nullptr">AppImageDeltaRevisioner(const QString&amp;, bool singleThreaded = true, QObject *parent = nullptr)</a></td></tr>
+<tr><td></td><td><a href="#appimagedeltarevisionerqfile-bool-singlethreaded-true-qobject-parent-nullptr">AppImageDeltaRevisioner(QFile *, bool singleThreaded = true, QObject *parent = nullptr)</a></td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="slots"></a><a href="#slots" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Slots</h2>
+<table>
+<thead>
+<tr><th>Return Type</th><th>Name</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>void</strong></td><td><a href="#void-startvoid">start(void)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-cancelvoid">cancel(void)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setappimageconst-qstring">setAppImage(const QString&amp;)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setappimageqfile">setAppImage(QFile *)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setshowlogbool">setShowLog(bool)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setoutputdirectoryconst-qstring">setOutputDirectory(const QString&amp;)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-setproxyconst-qnetworkproxy-https-docqtio-qt-5-qnetworkproxyhtml">setProxy(const QNetworkProxy&amp;)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-getappimageembededinformationvoid">getAppImageEmbededInformation(void)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-checkforupdatevoid">checkForUpdate(void)</a></td></tr>
+<tr><td><strong>void</strong></td><td><a href="#void-clearvoid">clear(void)</a></td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="signals"></a><a href="#signals" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Signals</h2>
+<table>
+<thead>
+<tr><th>Return Type</th><th>Name</th></tr>
+</thead>
+<tbody>
+<tr><td>void</td><td><a href="#void-startedvoid">started(void)</a></td></tr>
+<tr><td>void</td><td><a href="#void-canceledvoid">canceled(void)</a></td></tr>
+<tr><td>void</td><td><a href="#void-finishedqjsonobject-qstring">finished(QJsonObject , QString)</a></td></tr>
+<tr><td>void</td><td><a href="#void-embededinformationqjsonobject">embededInformation(QJsonObject)</a></td></tr>
+<tr><td>void</td><td><a href="#void-updateavailablebool-qjsonobject">updateAvailable(bool, QJsonObject)</a></td></tr>
+<tr><td>void</td><td><a href="#void-statuschangedshort">statusChanged(short)</a></td></tr>
+<tr><td>void</td><td><a href="#void-errorshort">error(short)</a></td></tr>
+<tr><td>void</td><td><a href="#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits">progress(int, qint64, qint64, double, QString)</a></td></tr>
+<tr><td>void</td><td><a href="#void-loggerqstring-qstring">logger(QString, QString)</a></td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="member-functions-documentation"></a><a href="#member-functions-documentation" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Member Functions Documentation</h2>
+<h3><a class="anchor" aria-hidden="true" id="appimagedeltarevisionerbool-singlethreaded--true-qobject-parent--nullptr"></a><a href="#appimagedeltarevisionerbool-singlethreaded--true-qobject-parent--nullptr" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>AppImageDeltaRevisioner(bool singleThreaded = true, QObject *parent = nullptr)</h3>
+<p>Default Constructor , Constructs the Updater with a assumed AppImage Path which is most likely the
+AppImage which is running this updater. The assumed AppImage Path will only be correct if and only if
+this updater is running from a AppImage.</p>
+<p>The default value for <strong>singleThreaded</strong> is <strong>true</strong> but you can set it to <strong>false</strong> to run all the
+resource of the updater in a seperate thread excluding <strong>this class</strong>.</p>
+<p>You can set a <strong>QObject parent</strong> to make use of <strong>Qt's Parent to Children deallocation.</strong></p>
+<pre><code class="hljs"><span class="hljs-keyword">using</span> <span class="hljs-keyword">namespace</span> <span class="hljs-title">AppImageUpdaterBridge</span>;
+AppImageDeltaRevisioner DRevisioner;
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="appimagedeltarevisionerconst-qstring-bool-singlethreaded--true-qobject-parent--nullptr"></a><a href="#appimagedeltarevisionerconst-qstring-bool-singlethreaded--true-qobject-parent--nullptr" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>AppImageDeltaRevisioner(const QString&amp;, bool singleThreaded = true, QObject *parent = nullptr)</h3>
+<p>This is an overloaded constructor , Constructs the Updater with the given QString as the AppImage Path.
+If the given QString is not a valid AppImage Path, Then the updater will automatically
+guess the AppImage Path , The guessed AppImage Path will be accurate only if the updater is running from
+an AppImage.</p>
+<p>The default value for <strong>singleThreaded</strong> is <strong>true</strong> but you can set it to <strong>false</strong> to run all the
+resource of the updater in a seperate thread excluding <strong>this class</strong>.</p>
+<p>You can set a <strong>QObject parent</strong> to make use of <strong>Qt's Parent to Children deallocation.</strong></p>
+<h3><a class="anchor" aria-hidden="true" id="appimagedeltarevisionerqfile--bool-singlethreaded--true-qobject-parent--nullptr"></a><a href="#appimagedeltarevisionerqfile--bool-singlethreaded--true-qobject-parent--nullptr" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>AppImageDeltaRevisioner(QFile *, bool singleThreaded = true, QObject *parent = nullptr)</h3>
+<p>This is an overloaded constructor , Constructs the Updater with the given QFile as the AppImage itself.
+If the pointer is invalid or has other sort of read errors , The updater will emit error but when
+forced to start , Again the updater guesses the AppImage Path in order to continue with the extraction.
+If the guessed AppImage Path is not an AppImage but a normal elf file then this result in a invalid magic
+byte error. See <a href="AppImageDeltaRevisionerErrorCodes.html">error codes</a> for more information.</p>
+<p>The default value for <strong>singleThreaded</strong> is <strong>true</strong> but you can set it to <strong>false</strong> to run all the
+resource of the updater in a seperate thread excluding <strong>this class</strong>.</p>
+<p>You can set a <strong>QObject parent</strong> to make use of <strong>Qt's Parent to Children deallocation.</strong></p>
+<h3><a class="anchor" aria-hidden="true" id="void-startvoid"></a><a href="#void-startvoid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void start(void)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Starts the updater.
+Emits <strong>started()</strong> signal when starts.</p>
+<blockquote>
+<p>Minor Note: You don't have to worry about anything if you called checkForUpdate or getAppImageEmbededInformation
+slots before start , Don't worry about overheads too , Since when you call checkForUpdate slot , The information
+is cached and when start slot is called again , it will be faster than normal.</p>
+</blockquote>
+<blockquote>
+<p>Important Note: You should also call clear and set the settings again if you want to clear the cache.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-cancelvoid"></a><a href="#void-cancelvoid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void cancel(void)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Cancels the update.
+Emits <strong>canceled()</strong> signal when cancel was successfull.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-setappimageconst-qstring"></a><a href="#void-setappimageconst-qstring" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setAppImage(const QString&amp;)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Sets the AppImage Path as the given <strong>QString</strong>.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-setappimageqfile-"></a><a href="#void-setappimageqfile-" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setAppImage(QFile *)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Sets the given <strong>QFile</strong> as the AppImage itself.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-setshowlogbool"></a><a href="#void-setshowlogbool" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setShowLog(bool)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Turns on and off the log printer.</p>
+<blockquote>
+<p>Note: logger signal will be emitted all the time if the library is compiled with LOGGING_DISABLED undefined ,
+setShowLog will not affect this activity at all , But setShowLog will print these log messages
+if set to true.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-setoutputdirectoryconst-qstring"></a><a href="#void-setoutputdirectoryconst-qstring" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setOutputDirectory(const QString&amp;)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Writes the new version of the AppImage to the given Output directory , Assuming the given QString a directory path.
+The default is the old version AppImage's directory.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-setproxyconst-qnetworkproxyhttpsdocqtioqt-5qnetworkproxyhtml"></a><a href="#void-setproxyconst-qnetworkproxyhttpsdocqtioqt-5qnetworkproxyhtml" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void setProxy(const <a href="https://doc.qt.io/qt-5/qnetworkproxy.html">QNetworkProxy</a>&amp;)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Sets the given <a href="https://doc.qt.io/qt-5/qnetworkproxy.html">QNetworkProxy</a> as the proxy
+to use for all network communication for the updater.</p>
+<pre><code class="hljs">   QNetworkProxy proxy;
+   proxy.set<span class="hljs-constructor">Type(QNetworkProxy::Socks5Proxy)</span>;
+   proxy.set<span class="hljs-constructor">HostName(<span class="hljs-string">"127.0.0.1"</span>)</span>;
+   proxy.set<span class="hljs-constructor">Port(9050)</span>;
+
+   AppImageDeltaRevisioner <span class="hljs-constructor">Revisioner(<span class="hljs-string">"Ein.AppImage"</span>)</span>;
+   <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Revisioner</span>.</span></span>set<span class="hljs-constructor">Proxy(<span class="hljs-params">proxy</span>)</span>;
+   <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Revisioner</span>.</span></span>start<span class="hljs-literal">()</span>; <span class="hljs-comment">/* Start the updater */</span>
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="void-getappimageembededinformationvoid"></a><a href="#void-getappimageembededinformationvoid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void getAppImageEmbededInformation(void)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Requests the updater for the embeded information of the current operating AppImage.
+Emits <strong>embededInformation(QJsonObject)</strong> in which the <em>QJsonObject</em> will be the embeded information
+of the AppImage in the below format with respect to Json.</p>
+<pre><code class="hljs">{ &quot;IsEmpty&quot; : false ,
+  &quot;FileInformation&quot; :   { &quot;AppImageFilePath&quot; : The given AppImage Path ,
+                          &quot;AppImageSHA1Hash&quot; : The given AppImage's SHA1 Hash ,
+                        },
+  &quot;UpdateInformation&quot;:  {
+                          &quot;transport&quot; : gh-releases-zsync / bintray-zsync / zsync,
+                           Depending on the transport the values down below will varry.
+                        }
+}
+</code></pre>
+<p><strong>gh-releases-zsync</strong> ,</p>
+<pre><code class="hljs">{
+&quot;transport&quot; : &quot;gh-releases-zsync&quot;,
+&quot;username&quot;  : Username of the author ,
+ &quot;repo&quot;     : Name of the repo ,
+ &quot;tag&quot;      : continuous / latest / other,
+ &quot;filename&quot; : Latest AppImage filename with wild card
+}
+</code></pre>
+<p><strong>bintray-zsync</strong> ,</p>
+<pre><code class="hljs">{
+    &quot;transport&quot; : &quot;bintray-zsync&quot; ,
+    &quot;username&quot;  :  Username of the author ,
+    &quot;repo&quot;      :  Name of the repo ,
+    &quot;packageName&quot; : Name of the package in bintray ,
+    &quot;filename&quot; : Name of the latest AppImage fileanme
+}
+</code></pre>
+<p><strong>zsync</strong>,</p>
+<pre><code class="hljs">{
+    &quot;transport&quot; : &quot;zsync&quot;,
+    &quot;zsyncUrl&quot; : Url of the Zsync Control File
+}
+</code></pre>
+<blockquote>
+<p>Important: If the AppImage is not given then calling this method will guess the AppImage
+Path and so if the returned AppImage is not a valid , Then it emits an error signal.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-checkforupdatevoid"></a><a href="#void-checkforupdatevoid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void checkForUpdate(void)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Checks update for the current operating AppImage.
+emits <strong>updateAvailable(bool , QJsonObject)</strong> , Where the <em>bool</em>  will be <strong>true</strong> if the AppImage
+needs update. The QJsonObject in the signal will have the details of the current operating
+AppImage.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-clearvoid"></a><a href="#void-clearvoid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void clear(void)</h3>
+<p align="right"> <b>[SLOT]</b> </p>
+<p>Clears all internal <strong>cache</strong>.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-startedvoid"></a><a href="#void-startedvoid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void started(void)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>Emitted when the updater is started successfully.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-canceledvoid"></a><a href="#void-canceledvoid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void canceled(void)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>Emitted when the update is canceled successfully.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-finishedqjsonobject--qstring"></a><a href="#void-finishedqjsonobject--qstring" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void finished(QJsonObject , QString)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>Emitted when the update is finished successfully. The given <em>QJsonObject</em> has the details of the new version
+of the AppImage and the given <em>QString</em> has the absolute path to the old versioin of the AppImage.</p>
+<p>The <em>QJsonObject</em> will follow the folloing format with respect to json ,</p>
+<pre><code class="hljs">{
+    &quot;AbsolutePath&quot; : &quot;Absolute path of the new version of the AppImage&quot; ,
+    &quot;Sha1Hash&quot;     : &quot;Sha1 hash of the new version of the AppImage&quot;
+}
+</code></pre>
+<blockquote>
+<p>Note: If the absolute path of the new version of the AppImage is same as the old version then
+it could mean that there were no updates needed , You can however listen to the <em>updateAvailable</em>
+signal to know the exact state of updates. You should call <em>checkForUpdate</em> and then call <em>start</em>
+if updates were really available.</p>
+</blockquote>
+<h3><a class="anchor" aria-hidden="true" id="void-embededinformationqjsonobject"></a><a href="#void-embededinformationqjsonobject" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void embededInformation(QJsonObject)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>Emitted when <em><a href="#void-getappimageembededinformationvoid">getAppImageEmbededInformation(void)</a></em> is called.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-updateavailablebool--qjsonobject"></a><a href="#void-updateavailablebool--qjsonobject" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void updateAvailable(bool , QJsonObject)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>Emitted when <em><a href="#void-checkforupdatevoid">checkForUpdate(void)</a></em> is called.
+The given <em>bool</em> states if the operating AppImage needs update and the <em>QJsonObject</em> gives the details of
+the current operating AppImage.</p>
+<p>The <em>QJsonObject</em> will follow the following format with respect to json ,</p>
+<pre><code class="hljs">{
+    &quot;AbsolutePath&quot; : &quot;The absolute path of the current operating AppImage&quot; ,
+    &quot;Sha1Hash&quot;     : &quot;The Sha1 hash of the current operating AppImage&quot; ,
+    &quot;RemoteSha1Hash&quot; : &quot;The Sha1 hash of the lastest AppImage&quot; ,
+    &quot;ReleaseNotes&quot; : &quot;Release notes if available&quot;
+}
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="void-statuschangedshort"></a><a href="#void-statuschangedshort" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void statusChanged(short)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>Emitted when the updater status is changed , The given short integer is the status code.
+See <a href="AppImageUpdaterBridgeStatusCodes.html">status codes</a>.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-errorshort"></a><a href="#void-errorshort" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void error(short)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>Emitted when the updater is errored. The given short integer is the error code.
+See <a href="AppImageUpdaterBridgeErrorCodes.html">error codes</a>.</p>
+<h3><a class="anchor" aria-hidden="true" id="void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits"></a><a href="#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void progress(int percentage , qint64 bytesReceived , qint64 bytesTotal , double speed , QString speedUnits)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>The updater's progress is emitted through this unified signal.</p>
+<p><strong>Where</strong> ,</p>
+<table>
+<thead>
+<tr><th>Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>percentage</td><td>% Finished revising the latest AppImage.</td></tr>
+<tr><td>bytesReceived</td><td>The received bytes of the latest AppImage.</td></tr>
+<tr><td>bytesTotal</td><td>The total bytes of the latest AppImage.</td></tr>
+<tr><td>speed</td><td>The transfer speed value.</td></tr>
+<tr><td>speedUnit</td><td>The transfer speed unit(e.g. KiB/s , etc... ) for <strong>speed</strong>.</td></tr>
+</tbody>
+</table>
+<h3><a class="anchor" aria-hidden="true" id="void-loggerqstring--qstring"></a><a href="#void-loggerqstring--qstring" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>void logger(QString , QString)</h3>
+<p align="right"> <b>[SIGNAL]</b> </p>
+<p>Emitted when the updater issues a log message with the <em>first QString</em> as the log message and
+the <em>second QString</em> as the path to the respective AppImage.</p>
+</span></div></article></div><div class="docs-prevnext"></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/QAppImageUpdate/" class="nav-home"><img src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate" width="66" height="58"/></a><div><h5>Docs</h5><a href="/QAppImageUpdate/docs/Installation.html">Getting Started</a><a href="/QAppImageUpdate/docs/SimpleExample.html">Guides</a><a href="/QAppImageUpdate/docs/ErrorCodes.html">API Reference</a></div><div><h5>Community</h5><a href="/QAppImageUpdate/en/users.html">User Showcase</a><a href="http://stackoverflow.com/questions/tagged/AppImage/" target="_blank">Stack Overflow</a><a href="https://discordapp.com/">Project Chat</a><a href="https://twitter.com/antonyjr0" target="_blank">Twitter</a></div><div><h5>More</h5><a href="/QAppImageUpdate/blog">Blog</a><a href="https://github.com/antony-jr/AppImageUpdaterBridge">GitHub</a><a class="github-button" href="https://github.com/antony-jr/QAppImageUpdate" data-icon="octicon-star" data-count-href="/antony-jr/AppImageUpdaterBridge/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Antony Jr.</section></footer></div></body></html>

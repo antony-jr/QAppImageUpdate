@@ -1,0 +1,85 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Build QAppImageUpdate as Qt Plugin · QAppImageUpdate</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="QAppImageUpdate can compiled as a **Qt Plugin**. When it is built as a Qt Plugin, QAppImageUpdate can be used from any programming language that supports Qt."/><meta name="docsearch:version" content="2.0.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Build QAppImageUpdate as Qt Plugin · QAppImageUpdate"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/QAppImageUpdate/index.html"/><meta property="og:description" content="QAppImageUpdate can compiled as a **Qt Plugin**. When it is built as a Qt Plugin, QAppImageUpdate can be used from any programming language that supports Qt."/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/QAppImageUpdate/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/QAppImageUpdate/js/scrollSpy.js"></script><link rel="stylesheet" href="/QAppImageUpdate/css/main.css"/><script src="/QAppImageUpdate/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/QAppImageUpdate/"><img class="logo" src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate"/><h2 class="headerTitleWithLogo">QAppImageUpdate</h2></a><a href="/QAppImageUpdate/versions.html"><h3>2.0.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/QAppImageUpdate/docs/Installation.html" target="_self">Docs</a></li><li class=""><a href="/QAppImageUpdate/help.html" target="_self">Help</a></li><li class=""><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Getting Started</span></h2></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/Installation.html">Installation</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/AddingQAppImageUpdate.html">Adding to your Project</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/BuildingTests.html">Building  Tests</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/QAppImageUpdate/docs/UsingPlugin.html">Building as Qt Plugin</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Guides</h3><ul class=""><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/SimpleExample.html">Updating an AppImage</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/ProxyExample.html">Updating an AppImage using Proxy</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/GUIExample.html">Updating an AppImage with GUI</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/PyQt5PluginExample.html">Using Plugin in PyQt5</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/TorrentExample.html">Updating an AppImage with BitTorrent</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">API</h3><ul class=""><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/ErrorCodes.html">Error Codes</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/ClassQAppImageUpdate.html">Class QAppImageUpdate</a></li><li class="navListItem"><a class="navItem" href="/QAppImageUpdate/docs/PluginInterface.html">Qt Plugin Interface</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Build QAppImageUpdate as Qt Plugin</h1></header><article><div><span><p>QAppImageUpdate can compiled as a <strong>Qt Plugin</strong>. When it is built as a Qt Plugin, QAppImageUpdate can be used from any programming language that supports Qt.</p>
+<p>Qt plugins thus makes us to maintain a single code base instead of maintaining a lot of ports. This makes less bug in the code base and there is no time wasted in making bindings.</p>
+<p>You can see the plugin interface <a href="PluginInterface.html">here</a>.</p>
+<p>To read more about Qt plugins, Please refer the official documentation.</p>
+<h1><a class="anchor" aria-hidden="true" id="rules-in-plugin-usage"></a><a href="#rules-in-plugin-usage" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Rules in Plugin Usage</h1>
+<p>There are specific rules on how plugins are handled by Qt. The following are the key rules in plugin usage.</p>
+<ul>
+<li><p>A Qt framework whose major version is higher or equal to the Qt framework
+used to build the plugin should work fine with no errors.</p></li>
+<li><p>If you build against Qt Framework 5.6.0 then all Qt Framework above and equal to
+5.6.0 can use the plugin without re-compiling.</p></li>
+<li><p>You cannot use the plugin in Qt Framework having lower major version than the
+Qt Framework used to build the plugin.</p></li>
+</ul>
+<h1><a class="anchor" aria-hidden="true" id="using-qmake"></a><a href="#using-qmake" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using QMake.</h1>
+<p>You just need to enable the <code>BUILD_AS_PLUGIN</code> flag in your config.</p>
+<pre><code class="hljs">  <span class="hljs-variable">$ </span>qmake <span class="hljs-string">"CONFIG+=BUILD_AS_PLUGIN"</span> [ProjectFolder]
+</code></pre>
+<p>Now you should have <code>libQAppImageUpdate.so</code> file which is your plugin. Now use this file
+with <code>QPluginLoader</code> provided by your Qt bindings for your specific programming language.</p>
+<p>See the guides on examples on how this is done.</p>
+<h1><a class="anchor" aria-hidden="true" id="using-cmake"></a><a href="#using-cmake" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using CMake</h1>
+<p>Same as in QMake, you just need to enable <code>BUILD_AS_PLUGIN</code> flag,</p>
+<pre><code class="hljs"> $ cmake <span class="hljs-attribute">-DBUILD_AS_PLUGIN</span>=ON [ProjectFolder]
+</code></pre>
+<p>Now you should have <code>libQAppImageUpdate.so</code> file which is your plugin. Now use this file
+with <code>QPluginLoader</code> provided by your Qt bindings for your specific programming language.</p>
+<p>See the guides on examples on how this is done.</p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/QAppImageUpdate/docs/BuildingTests.html"><span class="arrow-prev">← </span><span>Building  Tests</span></a><a class="docs-next button" href="/QAppImageUpdate/docs/SimpleExample.html"><span class="function-name-prevnext">Updating an AppImage</span><span class="arrow-next"> →</span></a></div></div></div></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/QAppImageUpdate/" class="nav-home"><img src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate" width="66" height="58"/></a><div><h5>Docs</h5><a href="/QAppImageUpdate/docs/Installation.html">Getting Started</a><a href="/QAppImageUpdate/docs/SimpleExample.html">Guides</a><a href="/QAppImageUpdate/docs/ErrorCodes.html">API Reference</a></div><div><h5>Community</h5><a href="/QAppImageUpdate/en/users.html">User Showcase</a><a href="http://stackoverflow.com/questions/tagged/AppImage/" target="_blank">Stack Overflow</a><a href="https://discordapp.com/">Project Chat</a><a href="https://twitter.com/antonyjr0" target="_blank">Twitter</a></div><div><h5>More</h5><a href="/QAppImageUpdate/blog">Blog</a><a href="https://github.com/antony-jr/AppImageUpdaterBridge">GitHub</a><a class="github-button" href="https://github.com/antony-jr/QAppImageUpdate" data-icon="octicon-star" data-count-href="/antony-jr/AppImageUpdaterBridge/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Antony Jr.</section></footer></div></body></html>
