@@ -29,6 +29,7 @@ This library gives absolute support for *Qt*, Infact, All you need is the minima
 
 * *Drink the Qt Kool-aid* - In a positive way.
 
+* *Optional Decentralized Update with BitTorrent Protocol* - Reduce load on server.
 
 **Witness it with your own eyes,**
 
@@ -58,6 +59,8 @@ See this library in **action** at this [repo](https://github.com/antony-jr/AppIm
 
 
 # Getting Started
+
+For Documentation on old versions, See [Documentation Versions](https://antonyjr.in/QAppImageUpdate/versions.html).
 
 Please refer the official [Documentation](https://antony-jr.github.io/QAppImageUpdate).
 
