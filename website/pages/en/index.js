@@ -58,10 +58,10 @@ class HomeSplash extends React.Component {
                     <Button
                       href={
                         siteConfig.baseUrl +
-                        'docs/' +
-                        'AppImageUpdaterBridgeErrorCodes.html'
+                        'PVSStudioAnalysis/' +
+                        'index.html'
                       }>
-                      API Reference
+                      PVS Studio Report
                     </Button>
 	            <Button href={'https://github.com/antony-jr/AppImageUpdaterBridge'}>
 	    	      View on Github
