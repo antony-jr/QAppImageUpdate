@@ -63,8 +63,24 @@ jobs:
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=On ..
           make -j$(nproc)
           pvs-studio-analyzer credentials "$PVS_LIC_NAME" "$PVS_LIC_KEY" -o pvs.lic
-          pvs-studio-analyzer analyze -l pvs.lic -o project.log -j$(nproc) 
-          plog-converter -a GA:1,2 -t fullhtml -o ../website/build/QAppImageUpdate/PVSStudioAnalysis project.log
+          pvs-studio-analyzer analyze -l pvs.lic \
+              -e \*QString\* \
+              -e \*QGlobal\* \
+              -e \*QObject\* \
+              -e \*QMap\* \
+              -e \*QRegExp\* \
+              -e \*QSharedPointer\* \
+              -e \*QVariant\* \
+              -e \*QStringList\* \
+              -e \*QVector\* \
+              -e \*QNetworkAccessManager\* \
+              -e \*QNetworkReply\* \
+              -e \*QNetworkRequest\* \
+              -e \*QDateTime\* \
+              -e \*moc_\* \
+              -o project.log -j$(nproc) 
+          plog-converter -a GA:1,2 -t fullhtml \
+              -o ../website/build/QAppImageUpdate/PVSStudioAnalysis project.log
           cd ..
           rm -rf build
           cd website
