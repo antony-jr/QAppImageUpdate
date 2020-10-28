@@ -1,0 +1,1052 @@
+
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII" />
+  <title>qsharedpointer_impl.h</title>
+
+  <link rel="stylesheet" href="../style.css"/>
+  <script src="../jquery-3.5.1.min.js"></script>
+</head>
+<body>
+
+<pre><code class = "cpp">
+<a name="ln1">/****************************************************************************</a>
+<a name="ln2">**</a>
+<a name="ln3">** Copyright (C) 2016 The Qt Company Ltd.</a>
+<a name="ln4">** Copyright (C) 2016 Intel Corporation.</a>
+<a name="ln5">** Contact: https://www.qt.io/licensing/</a>
+<a name="ln6">**</a>
+<a name="ln7">** This file is part of the QtCore module of the Qt Toolkit.</a>
+<a name="ln8">**</a>
+<a name="ln9">** $QT_BEGIN_LICENSE:LGPL$</a>
+<a name="ln10">** Commercial License Usage</a>
+<a name="ln11">** Licensees holding valid commercial Qt licenses may use this file in</a>
+<a name="ln12">** accordance with the commercial license agreement provided with the</a>
+<a name="ln13">** Software or, alternatively, in accordance with the terms contained in</a>
+<a name="ln14">** a written agreement between you and The Qt Company. For licensing terms</a>
+<a name="ln15">** and conditions see https://www.qt.io/terms-conditions. For further</a>
+<a name="ln16">** information use the contact form at https://www.qt.io/contact-us.</a>
+<a name="ln17">**</a>
+<a name="ln18">** GNU Lesser General Public License Usage</a>
+<a name="ln19">** Alternatively, this file may be used under the terms of the GNU Lesser</a>
+<a name="ln20">** General Public License version 3 as published by the Free Software</a>
+<a name="ln21">** Foundation and appearing in the file LICENSE.LGPL3 included in the</a>
+<a name="ln22">** packaging of this file. Please review the following information to</a>
+<a name="ln23">** ensure the GNU Lesser General Public License version 3 requirements</a>
+<a name="ln24">** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.</a>
+<a name="ln25">**</a>
+<a name="ln26">** GNU General Public License Usage</a>
+<a name="ln27">** Alternatively, this file may be used under the terms of the GNU</a>
+<a name="ln28">** General Public License version 2.0 or (at your option) the GNU General</a>
+<a name="ln29">** Public license version 3 or any later version approved by the KDE Free</a>
+<a name="ln30">** Qt Foundation. The licenses are as published by the Free Software</a>
+<a name="ln31">** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3</a>
+<a name="ln32">** included in the packaging of this file. Please review the following</a>
+<a name="ln33">** information to ensure the GNU General Public License requirements will</a>
+<a name="ln34">** be met: https://www.gnu.org/licenses/gpl-2.0.html and</a>
+<a name="ln35">** https://www.gnu.org/licenses/gpl-3.0.html.</a>
+<a name="ln36">**</a>
+<a name="ln37">** $QT_END_LICENSE$</a>
+<a name="ln38">**</a>
+<a name="ln39">****************************************************************************/</a>
+<a name="ln40"> </a>
+<a name="ln41">#ifndef Q_QDOC</a>
+<a name="ln42"> </a>
+<a name="ln43">#ifndef QSHAREDPOINTER_H</a>
+<a name="ln44">#error Do not include qsharedpointer_impl.h directly</a>
+<a name="ln45">#endif</a>
+<a name="ln46"> </a>
+<a name="ln47">#if 0</a>
+<a name="ln48">#pragma qt_sync_skip_header_check</a>
+<a name="ln49">#pragma qt_sync_stop_processing</a>
+<a name="ln50">#endif</a>
+<a name="ln51"> </a>
+<a name="ln52">#if 0</a>
+<a name="ln53">// These macros are duplicated here to make syncqt not complain a about</a>
+<a name="ln54">// this header, as we have a &quot;qt_sync_stop_processing&quot; below, which in turn</a>
+<a name="ln55">// is here because this file contains a template mess and duplicates the</a>
+<a name="ln56">// classes found in qsharedpointer.h</a>
+<a name="ln57">QT_BEGIN_NAMESPACE</a>
+<a name="ln58">QT_END_NAMESPACE</a>
+<a name="ln59">#pragma qt_sync_stop_processing</a>
+<a name="ln60">#endif</a>
+<a name="ln61"> </a>
+<a name="ln62">#include &lt;new&gt;</a>
+<a name="ln63">#include &lt;QtCore/qatomic.h&gt;</a>
+<a name="ln64">#include &lt;QtCore/qobject.h&gt;    // for qobject_cast</a>
+<a name="ln65">#if QT_DEPRECATED_SINCE(5, 6)</a>
+<a name="ln66">#include &lt;QtCore/qhash.h&gt;</a>
+<a name="ln67">#endif</a>
+<a name="ln68">#include &lt;QtCore/qhashfunctions.h&gt;</a>
+<a name="ln69"> </a>
+<a name="ln70">QT_BEGIN_NAMESPACE</a>
+<a name="ln71"> </a>
+<a name="ln72"> </a>
+<a name="ln73">// Macro QSHAREDPOINTER_VERIFY_AUTO_CAST</a>
+<a name="ln74">//  generates a compiler error if the following construct isn't valid:</a>
+<a name="ln75">//    T *ptr1;</a>
+<a name="ln76">//    X *ptr2 = ptr1;</a>
+<a name="ln77">//</a>
+<a name="ln78">#ifdef QT_NO_DEBUG</a>
+<a name="ln79"># define QSHAREDPOINTER_VERIFY_AUTO_CAST(T, X)          qt_noop()</a>
+<a name="ln80">#else</a>
+<a name="ln81"> </a>
+<a name="ln82">template&lt;typename T&gt; inline void qt_sharedpointer_cast_check(T *) { }</a>
+<a name="ln83"># define QSHAREDPOINTER_VERIFY_AUTO_CAST(T, X)          \</a>
+<a name="ln84">    qt_sharedpointer_cast_check&lt;T&gt;(static_cast&lt;X *&gt;(0))</a>
+<a name="ln85">#endif</a>
+<a name="ln86"> </a>
+<a name="ln87">//</a>
+<a name="ln88">// forward declarations</a>
+<a name="ln89">//</a>
+<a name="ln90">template &lt;class T&gt; class QWeakPointer;</a>
+<a name="ln91">template &lt;class T&gt; class QSharedPointer;</a>
+<a name="ln92">template &lt;class T&gt; class QEnableSharedFromThis;</a>
+<a name="ln93"> </a>
+<a name="ln94">class QVariant;</a>
+<a name="ln95"> </a>
+<a name="ln96">template &lt;class X, class T&gt;</a>
+<a name="ln97">QSharedPointer&lt;X&gt; qSharedPointerCast(const QSharedPointer&lt;T&gt; &amp;ptr);</a>
+<a name="ln98">template &lt;class X, class T&gt;</a>
+<a name="ln99">QSharedPointer&lt;X&gt; qSharedPointerDynamicCast(const QSharedPointer&lt;T&gt; &amp;ptr);</a>
+<a name="ln100">template &lt;class X, class T&gt;</a>
+<a name="ln101">QSharedPointer&lt;X&gt; qSharedPointerConstCast(const QSharedPointer&lt;T&gt; &amp;ptr);</a>
+<a name="ln102"> </a>
+<a name="ln103">#ifndef QT_NO_QOBJECT</a>
+<a name="ln104">template &lt;class X, class T&gt;</a>
+<a name="ln105">QSharedPointer&lt;X&gt; qSharedPointerObjectCast(const QSharedPointer&lt;T&gt; &amp;ptr);</a>
+<a name="ln106">#endif</a>
+<a name="ln107"> </a>
+<a name="ln108">namespace QtSharedPointer {</a>
+<a name="ln109">    template &lt;class T&gt; class ExternalRefCount;</a>
+<a name="ln110"> </a>
+<a name="ln111">    template &lt;class X, class Y&gt; QSharedPointer&lt;X&gt; copyAndSetPointer(X * ptr, const QSharedPointer&lt;Y&gt; &amp;src);</a>
+<a name="ln112"> </a>
+<a name="ln113">    // used in debug mode to verify the reuse of pointers</a>
+<a name="ln114">    Q_CORE_EXPORT void internalSafetyCheckAdd(const void *, const volatile void *);</a>
+<a name="ln115">    Q_CORE_EXPORT void internalSafetyCheckRemove(const void *);</a>
+<a name="ln116"> </a>
+<a name="ln117">    template &lt;class T, typename Klass, typename RetVal&gt;</a>
+<a name="ln118">    inline void executeDeleter(T *t, RetVal (Klass:: *memberDeleter)())</a>
+<a name="ln119">    { (t-&gt;*memberDeleter)(); }</a>
+<a name="ln120">    template &lt;class T, typename Deleter&gt;</a>
+<a name="ln121">    inline void executeDeleter(T *t, Deleter d)</a>
+<a name="ln122">    { d(t); }</a>
+<a name="ln123">    struct NormalDeleter {};</a>
+<a name="ln124"> </a>
+<a name="ln125">    // this uses partial template specialization</a>
+<a name="ln126">    template &lt;class T&gt; struct RemovePointer;</a>
+<a name="ln127">    template &lt;class T&gt; struct RemovePointer&lt;T *&gt; { typedef T Type; };</a>
+<a name="ln128">    template &lt;class T&gt; struct RemovePointer&lt;QSharedPointer&lt;T&gt; &gt; { typedef T Type; };</a>
+<a name="ln129">    template &lt;class T&gt; struct RemovePointer&lt;QWeakPointer&lt;T&gt; &gt; { typedef T Type; };</a>
+<a name="ln130"> </a>
+<a name="ln131">    // This class is the d-pointer of QSharedPointer and QWeakPointer.</a>
+<a name="ln132">    //</a>
+<a name="ln133">    // It is a reference-counted reference counter. &quot;strongref&quot; is the inner</a>
+<a name="ln134">    // reference counter, and it tracks the lifetime of the pointer itself.</a>
+<a name="ln135">    // &quot;weakref&quot; is the outer reference counter and it tracks the lifetime of</a>
+<a name="ln136">    // the ExternalRefCountData object.</a>
+<a name="ln137">    //</a>
+<a name="ln138">    // The deleter is stored in the destroyer member and is always a pointer to</a>
+<a name="ln139">    // a static function in ExternalRefCountWithCustomDeleter or in</a>
+<a name="ln140">    // ExternalRefCountWithContiguousData</a>
+<a name="ln141">    struct ExternalRefCountData</a>
+<a name="ln142">    {</a>
+<a name="ln143">        typedef void (*DestroyerFn)(ExternalRefCountData *);</a>
+<a name="ln144">        QBasicAtomicInt weakref;</a>
+<a name="ln145">        QBasicAtomicInt strongref;</a>
+<a name="ln146">        DestroyerFn destroyer;</a>
+<a name="ln147"> </a>
+<a name="ln148">        inline ExternalRefCountData(DestroyerFn d)</a>
+<a name="ln149">            : destroyer(d)</a>
+<a name="ln150">        {</a>
+<a name="ln151">            strongref.store(1);</a>
+<a name="ln152">            weakref.store(1);</a>
+<a name="ln153">        }</a>
+<a name="ln154">        inline ExternalRefCountData(Qt::Initialization) { }</a>
+<a name="ln155">        ~ExternalRefCountData() { Q_ASSERT(!weakref.load()); Q_ASSERT(strongref.load() &lt;= 0); }</a>
+<a name="ln156"> </a>
+<a name="ln157">        void destroy() { destroyer(this); }</a>
+<a name="ln158"> </a>
+<a name="ln159">#ifndef QT_NO_QOBJECT</a>
+<a name="ln160">        Q_CORE_EXPORT static ExternalRefCountData *getAndRef(const QObject *);</a>
+<a name="ln161">        Q_CORE_EXPORT void setQObjectShared(const QObject *, bool enable);</a>
+<a name="ln162">        Q_CORE_EXPORT void checkQObjectShared(const QObject *);</a>
+<a name="ln163">#endif</a>
+<a name="ln164">        inline void checkQObjectShared(...) { }</a>
+<a name="ln165">        inline void setQObjectShared(...) { }</a>
+<a name="ln166"> </a>
+<a name="ln167">        inline void operator delete(void *ptr) { ::operator delete(ptr); }</a>
+<a name="ln168">        inline void operator delete(void *, void *) { }</a>
+<a name="ln169">    };</a>
+<a name="ln170">    // sizeof(ExternalRefCountData) = 12 (32-bit) / 16 (64-bit)</a>
+<a name="ln171"> </a>
+<a name="ln172">    template &lt;class T, typename Deleter&gt;</a>
+<a name="ln173">    struct CustomDeleter</a>
+<a name="ln174">    {</a>
+<a name="ln175">        Deleter deleter;</a>
+<a name="ln176">        T *ptr;</a>
+<a name="ln177"> </a>
+<a name="ln178">        CustomDeleter(T *p, Deleter d) : deleter(d), ptr(p) {}</a>
+<a name="ln179">        void execute() { executeDeleter(ptr, deleter); }</a>
+<a name="ln180">    };</a>
+<a name="ln181">    // sizeof(CustomDeleter) = sizeof(Deleter) + sizeof(void*) + padding</a>
+<a name="ln182">    // for Deleter = stateless functor: 8 (32-bit) / 16 (64-bit) due to padding</a>
+<a name="ln183">    // for Deleter = function pointer:  8 (32-bit) / 16 (64-bit)</a>
+<a name="ln184">    // for Deleter = PMF: 12 (32-bit) / 24 (64-bit)  (GCC)</a>
+<a name="ln185"> </a>
+<a name="ln186">    // This specialization of CustomDeleter for a deleter of type NormalDeleter</a>
+<a name="ln187">    // is an optimization: instead of storing a pointer to a function that does</a>
+<a name="ln188">    // the deleting, we simply delete the pointer ourselves.</a>
+<a name="ln189">    template &lt;class T&gt;</a>
+<a name="ln190">    struct CustomDeleter&lt;T, NormalDeleter&gt;</a>
+<a name="ln191">    {</a>
+<a name="ln192">        T *ptr;</a>
+<a name="ln193"> </a>
+<a name="ln194">        CustomDeleter(T *p, NormalDeleter) : ptr(p) {}</a>
+<a name="ln195">        void execute() { delete ptr; }</a>
+<a name="ln196">    };</a>
+<a name="ln197">    // sizeof(CustomDeleter specialization) = sizeof(void*)</a>
+<a name="ln198"> </a>
+<a name="ln199">    // This class extends ExternalRefCountData and implements</a>
+<a name="ln200">    // the static function that deletes the object. The pointer and the</a>
+<a name="ln201">    // custom deleter are kept in the &quot;extra&quot; member so we can construct</a>
+<a name="ln202">    // and destruct it independently of the full structure.</a>
+<a name="ln203">    template &lt;class T, typename Deleter&gt;</a>
+<a name="ln204">    struct ExternalRefCountWithCustomDeleter: public ExternalRefCountData</a>
+<a name="ln205">    {</a>
+<a name="ln206">        typedef ExternalRefCountWithCustomDeleter Self;</a>
+<a name="ln207">        typedef ExternalRefCountData BaseClass;</a>
+<a name="ln208">        CustomDeleter&lt;T, Deleter&gt; extra;</a>
+<a name="ln209"> </a>
+<a name="ln210">        static inline void deleter(ExternalRefCountData *self)</a>
+<a name="ln211">        {</a>
+<a name="ln212">            Self *realself = static_cast&lt;Self *&gt;(self);</a>
+<a name="ln213">            realself-&gt;extra.execute();</a>
+<a name="ln214"> </a>
+<a name="ln215">            // delete the deleter too</a>
+<a name="ln216">            realself-&gt;extra.~CustomDeleter&lt;T, Deleter&gt;();</a>
+<a name="ln217">        }</a>
+<a name="ln218">        static void safetyCheckDeleter(ExternalRefCountData *self)</a>
+<a name="ln219">        {</a>
+<a name="ln220">            internalSafetyCheckRemove(self);</a>
+<a name="ln221">            deleter(self);</a>
+<a name="ln222">        }</a>
+<a name="ln223"> </a>
+<a name="ln224">        static inline Self *create(T *ptr, Deleter userDeleter, DestroyerFn actualDeleter)</a>
+<a name="ln225">        {</a>
+<a name="ln226">            Self *d = static_cast&lt;Self *&gt;(::operator new(sizeof(Self)));</a>
+<a name="ln227"> </a>
+<a name="ln228">            // initialize the two sub-objects</a>
+<a name="ln229">            new (&amp;d-&gt;extra) CustomDeleter&lt;T, Deleter&gt;(ptr, userDeleter);</a>
+<a name="ln230">            new (d) BaseClass(actualDeleter); // can't throw</a>
+<a name="ln231"> </a>
+<a name="ln232">            return d;</a>
+<a name="ln233">        }</a>
+<a name="ln234">    private:</a>
+<a name="ln235">        // prevent construction</a>
+<a name="ln236">        ExternalRefCountWithCustomDeleter() Q_DECL_EQ_DELETE;</a>
+<a name="ln237">        ~ExternalRefCountWithCustomDeleter() Q_DECL_EQ_DELETE;</a>
+<a name="ln238">        Q_DISABLE_COPY(ExternalRefCountWithCustomDeleter)</a>
+<a name="ln239">    };</a>
+<a name="ln240"> </a>
+<a name="ln241">    // This class extends ExternalRefCountData and adds a &quot;T&quot;</a>
+<a name="ln242">    // member. That way, when the create() function is called, we allocate</a>
+<a name="ln243">    // memory for both QSharedPointer's d-pointer and the actual object being</a>
+<a name="ln244">    // tracked.</a>
+<a name="ln245">    template &lt;class T&gt;</a>
+<a name="ln246">    struct ExternalRefCountWithContiguousData: public ExternalRefCountData</a>
+<a name="ln247">    {</a>
+<a name="ln248">        typedef ExternalRefCountData Parent;</a>
+<a name="ln249">        T data;</a>
+<a name="ln250"> </a>
+<a name="ln251">        static void deleter(ExternalRefCountData *self)</a>
+<a name="ln252">        {</a>
+<a name="ln253">            ExternalRefCountWithContiguousData *that =</a>
+<a name="ln254">                    static_cast&lt;ExternalRefCountWithContiguousData *&gt;(self);</a>
+<a name="ln255">            that-&gt;data.~T();</a>
+<a name="ln256">            Q_UNUSED(that); // MSVC warns if T has a trivial destructor</a>
+<a name="ln257">        }</a>
+<a name="ln258">        static void safetyCheckDeleter(ExternalRefCountData *self)</a>
+<a name="ln259">        {</a>
+<a name="ln260">            internalSafetyCheckRemove(self);</a>
+<a name="ln261">            deleter(self);</a>
+<a name="ln262">        }</a>
+<a name="ln263">        static void noDeleter(ExternalRefCountData *) { }</a>
+<a name="ln264"> </a>
+<a name="ln265">        static inline ExternalRefCountData *create(T **ptr, DestroyerFn destroy)</a>
+<a name="ln266">        {</a>
+<a name="ln267">            ExternalRefCountWithContiguousData *d =</a>
+<a name="ln268">                static_cast&lt;ExternalRefCountWithContiguousData *&gt;(::operator new(sizeof(ExternalRefCountWithContiguousData)));</a>
+<a name="ln269"> </a>
+<a name="ln270">            // initialize the d-pointer sub-object</a>
+<a name="ln271">            // leave d-&gt;data uninitialized</a>
+<a name="ln272">            new (d) Parent(destroy); // can't throw</a>
+<a name="ln273"> </a>
+<a name="ln274">            *ptr = &amp;d-&gt;data;</a>
+<a name="ln275">            return d;</a>
+<a name="ln276">        }</a>
+<a name="ln277"> </a>
+<a name="ln278">    private:</a>
+<a name="ln279">        // prevent construction</a>
+<a name="ln280">        ExternalRefCountWithContiguousData() Q_DECL_EQ_DELETE;</a>
+<a name="ln281">        ~ExternalRefCountWithContiguousData() Q_DECL_EQ_DELETE;</a>
+<a name="ln282">        Q_DISABLE_COPY(ExternalRefCountWithContiguousData)</a>
+<a name="ln283">    };</a>
+<a name="ln284"> </a>
+<a name="ln285">#ifndef QT_NO_QOBJECT</a>
+<a name="ln286">    Q_CORE_EXPORT QWeakPointer&lt;QObject&gt; weakPointerFromVariant_internal(const QVariant &amp;variant);</a>
+<a name="ln287">    Q_CORE_EXPORT QSharedPointer&lt;QObject&gt; sharedPointerFromVariant_internal(const QVariant &amp;variant);</a>
+<a name="ln288">#endif</a>
+<a name="ln289">} // namespace QtSharedPointer</a>
+<a name="ln290"> </a>
+<a name="ln291">template &lt;class T&gt; class QSharedPointer</a>
+<a name="ln292">{</a>
+<a name="ln293">    typedef T *QSharedPointer:: *RestrictedBool;</a>
+<a name="ln294">    typedef QtSharedPointer::ExternalRefCountData Data;</a>
+<a name="ln295">public:</a>
+<a name="ln296">    typedef T Type;</a>
+<a name="ln297">    typedef T element_type;</a>
+<a name="ln298">    typedef T value_type;</a>
+<a name="ln299">    typedef value_type *pointer;</a>
+<a name="ln300">    typedef const value_type *const_pointer;</a>
+<a name="ln301">    typedef value_type &amp;reference;</a>
+<a name="ln302">    typedef const value_type &amp;const_reference;</a>
+<a name="ln303">    typedef qptrdiff difference_type;</a>
+<a name="ln304"> </a>
+<a name="ln305">    T *data() const Q_DECL_NOTHROW { return value; }</a>
+<a name="ln306">    T *get() const Q_DECL_NOTHROW { return value; }</a>
+<a name="ln307">    bool isNull() const Q_DECL_NOTHROW { return !data(); }</a>
+<a name="ln308">    operator RestrictedBool() const Q_DECL_NOTHROW { return isNull() ? nullptr : &amp;QSharedPointer::value; }</a>
+<a name="ln309">    bool operator !() const Q_DECL_NOTHROW { return isNull(); }</a>
+<a name="ln310">    T &amp;operator*() const { return *data(); }</a>
+<a name="ln311">    T *operator-&gt;() const Q_DECL_NOTHROW { return data(); }</a>
+<a name="ln312"> </a>
+<a name="ln313">    Q_DECL_CONSTEXPR QSharedPointer() Q_DECL_NOTHROW : value(nullptr), d(nullptr) { }</a>
+<a name="ln314">    ~QSharedPointer() { deref(); }</a>
+<a name="ln315"> </a>
+<a name="ln316">    Q_DECL_CONSTEXPR QSharedPointer(std::nullptr_t) Q_DECL_NOTHROW : value(nullptr), d(nullptr) { }</a>
+<a name="ln317"> </a>
+<a name="ln318">    template &lt;class X&gt;</a>
+<a name="ln319">    inline explicit QSharedPointer(X *ptr) : value(ptr) // noexcept</a>
+<a name="ln320">    { internalConstruct(ptr, QtSharedPointer::NormalDeleter()); }</a>
+<a name="ln321"> </a>
+<a name="ln322">    template &lt;class X, typename Deleter&gt;</a>
+<a name="ln323">    inline QSharedPointer(X *ptr, Deleter deleter) : value(ptr) // throws</a>
+<a name="ln324">    { internalConstruct(ptr, deleter); }</a>
+<a name="ln325"> </a>
+<a name="ln326">    template &lt;typename Deleter&gt;</a>
+<a name="ln327">    QSharedPointer(std::nullptr_t, Deleter) : value(nullptr), d(nullptr) { }</a>
+<a name="ln328"> </a>
+<a name="ln329">    QSharedPointer(const QSharedPointer &amp;other) Q_DECL_NOTHROW : value(other.value), d(other.d)</a>
+<a name="ln330">    { if (d) ref(); }</a>
+<a name="ln331">    QSharedPointer &amp;operator=(const QSharedPointer &amp;other) Q_DECL_NOTHROW</a>
+<a name="ln332">    {</a>
+<a name="ln333">        QSharedPointer copy(other);</a>
+<a name="ln334">        swap(copy);</a>
+<a name="ln335">        return *this;</a>
+<a name="ln336">    }</a>
+<a name="ln337">#ifdef Q_COMPILER_RVALUE_REFS</a>
+<a name="ln338">    QSharedPointer(QSharedPointer &amp;&amp;other) Q_DECL_NOTHROW</a>
+<a name="ln339">        : value(other.value), d(other.d)</a>
+<a name="ln340">    {</a>
+<a name="ln341">        other.d = nullptr;</a>
+<a name="ln342">        other.value = nullptr;</a>
+<a name="ln343">    }</a>
+<a name="ln344">    QSharedPointer &amp;operator=(QSharedPointer &amp;&amp;other) Q_DECL_NOTHROW</a>
+<a name="ln345">    {</a>
+<a name="ln346">        QSharedPointer moved(std::move(other));</a>
+<a name="ln347">        swap(moved);</a>
+<a name="ln348">        return *this;</a>
+<a name="ln349">    }</a>
+<a name="ln350"> </a>
+<a name="ln351">    template &lt;class X&gt;</a>
+<a name="ln352">    QSharedPointer(QSharedPointer&lt;X&gt; &amp;&amp;other) Q_DECL_NOTHROW</a>
+<a name="ln353">        : value(other.value), d(other.d)</a>
+<a name="ln354">    {</a>
+<a name="ln355">        other.d = nullptr;</a>
+<a name="ln356">        other.value = nullptr;</a>
+<a name="ln357">    }</a>
+<a name="ln358"> </a>
+<a name="ln359">    template &lt;class X&gt;</a>
+<a name="ln360">    QSharedPointer &amp;operator=(QSharedPointer&lt;X&gt; &amp;&amp;other) Q_DECL_NOTHROW</a>
+<a name="ln361">    {</a>
+<a name="ln362">        QSharedPointer moved(std::move(other));</a>
+<a name="ln363">        swap(moved);</a>
+<a name="ln364">        return *this;</a>
+<a name="ln365">    }</a>
+<a name="ln366"> </a>
+<a name="ln367">#endif</a>
+<a name="ln368"> </a>
+<a name="ln369">    template &lt;class X&gt;</a>
+<a name="ln370">    QSharedPointer(const QSharedPointer&lt;X&gt; &amp;other) Q_DECL_NOTHROW : value(other.value), d(other.d)</a>
+<a name="ln371">    { if (d) ref(); }</a>
+<a name="ln372"> </a>
+<a name="ln373">    template &lt;class X&gt;</a>
+<a name="ln374">    inline QSharedPointer &amp;operator=(const QSharedPointer&lt;X&gt; &amp;other)</a>
+<a name="ln375">    {</a>
+<a name="ln376">        QSharedPointer copy(other);</a>
+<a name="ln377">        swap(copy);</a>
+<a name="ln378">        return *this;</a>
+<a name="ln379">    }</a>
+<a name="ln380"> </a>
+<a name="ln381">    template &lt;class X&gt;</a>
+<a name="ln382">    inline QSharedPointer(const QWeakPointer&lt;X&gt; &amp;other) : value(nullptr), d(nullptr)</a>
+<a name="ln383">    { *this = other; }</a>
+<a name="ln384"> </a>
+<a name="ln385">    template &lt;class X&gt;</a>
+<a name="ln386">    inline QSharedPointer&lt;T&gt; &amp;operator=(const QWeakPointer&lt;X&gt; &amp;other)</a>
+<a name="ln387">    { internalSet(other.d, other.value); return *this; }</a>
+<a name="ln388"> </a>
+<a name="ln389">    inline void swap(QSharedPointer &amp;other)</a>
+<a name="ln390">    { this-&gt;internalSwap(other); }</a>
+<a name="ln391"> </a>
+<a name="ln392">    inline void reset() { clear(); }</a>
+<a name="ln393">    inline void reset(T *t)</a>
+<a name="ln394">    { QSharedPointer copy(t); swap(copy); }</a>
+<a name="ln395">    template &lt;typename Deleter&gt;</a>
+<a name="ln396">    inline void reset(T *t, Deleter deleter)</a>
+<a name="ln397">    { QSharedPointer copy(t, deleter); swap(copy); }</a>
+<a name="ln398"> </a>
+<a name="ln399">    template &lt;class X&gt;</a>
+<a name="ln400">    QSharedPointer&lt;X&gt; staticCast() const</a>
+<a name="ln401">    {</a>
+<a name="ln402">        return qSharedPointerCast&lt;X, T&gt;(*this);</a>
+<a name="ln403">    }</a>
+<a name="ln404"> </a>
+<a name="ln405">    template &lt;class X&gt;</a>
+<a name="ln406">    QSharedPointer&lt;X&gt; dynamicCast() const</a>
+<a name="ln407">    {</a>
+<a name="ln408">        return qSharedPointerDynamicCast&lt;X, T&gt;(*this);</a>
+<a name="ln409">    }</a>
+<a name="ln410"> </a>
+<a name="ln411">    template &lt;class X&gt;</a>
+<a name="ln412">    QSharedPointer&lt;X&gt; constCast() const</a>
+<a name="ln413">    {</a>
+<a name="ln414">        return qSharedPointerConstCast&lt;X, T&gt;(*this);</a>
+<a name="ln415">    }</a>
+<a name="ln416"> </a>
+<a name="ln417">#ifndef QT_NO_QOBJECT</a>
+<a name="ln418">    template &lt;class X&gt;</a>
+<a name="ln419">    QSharedPointer&lt;X&gt; objectCast() const</a>
+<a name="ln420">    {</a>
+<a name="ln421">        return qSharedPointerObjectCast&lt;X, T&gt;(*this);</a>
+<a name="ln422">    }</a>
+<a name="ln423">#endif</a>
+<a name="ln424"> </a>
+<a name="ln425">    inline void clear() { QSharedPointer copy; swap(copy); }</a>
+<a name="ln426"> </a>
+<a name="ln427">    QWeakPointer&lt;T&gt; toWeakRef() const;</a>
+<a name="ln428"> </a>
+<a name="ln429">    template &lt;typename... Args&gt;</a>
+<a name="ln430">    static QSharedPointer create(Args &amp;&amp; ...arguments)</a>
+<a name="ln431">    {</a>
+<a name="ln432">        typedef QtSharedPointer::ExternalRefCountWithContiguousData&lt;T&gt; Private;</a>
+<a name="ln433"># ifdef QT_SHAREDPOINTER_TRACK_POINTERS</a>
+<a name="ln434">        typename Private::DestroyerFn destroy = &amp;Private::safetyCheckDeleter;</a>
+<a name="ln435"># else</a>
+<a name="ln436">        typename Private::DestroyerFn destroy = &amp;Private::deleter;</a>
+<a name="ln437"># endif</a>
+<a name="ln438">        typename Private::DestroyerFn noDestroy = &amp;Private::noDeleter;</a>
+<a name="ln439">        QSharedPointer result(Qt::Uninitialized);</a>
+<a name="ln440">        result.d = Private::create(&amp;result.value, noDestroy);</a>
+<a name="ln441"> </a>
+<a name="ln442">        // now initialize the data</a>
+<a name="ln443">        new (result.data()) T(std::forward&lt;Args&gt;(arguments)...);</a>
+<a name="ln444">        result.d-&gt;destroyer = destroy;</a>
+<a name="ln445">        result.d-&gt;setQObjectShared(result.value, true);</a>
+<a name="ln446"># ifdef QT_SHAREDPOINTER_TRACK_POINTERS</a>
+<a name="ln447">        internalSafetyCheckAdd(result.d, result.value);</a>
+<a name="ln448"># endif</a>
+<a name="ln449">        result.enableSharedFromThis(result.data());</a>
+<a name="ln450">        return result;</a>
+<a name="ln451">    }</a>
+<a name="ln452"> </a>
+<a name="ln453">private:</a>
+<a name="ln454">    explicit QSharedPointer(Qt::Initialization) {}</a>
+<a name="ln455"> </a>
+<a name="ln456">    void deref() Q_DECL_NOTHROW</a>
+<a name="ln457">    { deref(d); }</a>
+<a name="ln458">    static void deref(Data *dd) Q_DECL_NOTHROW</a>
+<a name="ln459">    {</a>
+<a name="ln460">        if (!dd) return;</a>
+<a name="ln461">        if (!dd-&gt;strongref.deref()) {</a>
+<a name="ln462">            dd-&gt;destroy();</a>
+<a name="ln463">        }</a>
+<a name="ln464">        if (!dd-&gt;weakref.deref())</a>
+<a name="ln465">            delete dd;</a>
+<a name="ln466">    }</a>
+<a name="ln467"> </a>
+<a name="ln468">    template &lt;class X&gt;</a>
+<a name="ln469">    inline void enableSharedFromThis(const QEnableSharedFromThis&lt;X&gt; *ptr)</a>
+<a name="ln470">    {</a>
+<a name="ln471">        ptr-&gt;initializeFromSharedPointer(constCast&lt;typename std::remove_cv&lt;T&gt;::type&gt;());</a>
+<a name="ln472">    }</a>
+<a name="ln473"> </a>
+<a name="ln474">    inline void enableSharedFromThis(...) {}</a>
+<a name="ln475"> </a>
+<a name="ln476">    template &lt;typename X, typename Deleter&gt;</a>
+<a name="ln477">    inline void internalConstruct(X *ptr, Deleter deleter)</a>
+<a name="ln478">    {</a>
+<a name="ln479">        if (!ptr) {</a>
+<a name="ln480">            d = nullptr;</a>
+<a name="ln481">            return;</a>
+<a name="ln482">        }</a>
+<a name="ln483"> </a>
+<a name="ln484">        typedef QtSharedPointer::ExternalRefCountWithCustomDeleter&lt;X, Deleter&gt; Private;</a>
+<a name="ln485"># ifdef QT_SHAREDPOINTER_TRACK_POINTERS</a>
+<a name="ln486">        typename Private::DestroyerFn actualDeleter = &amp;Private::safetyCheckDeleter;</a>
+<a name="ln487"># else</a>
+<a name="ln488">        typename Private::DestroyerFn actualDeleter = &amp;Private::deleter;</a>
+<a name="ln489"># endif</a>
+<a name="ln490">        d = Private::create(ptr, deleter, actualDeleter);</a>
+<a name="ln491"> </a>
+<a name="ln492">#ifdef QT_SHAREDPOINTER_TRACK_POINTERS</a>
+<a name="ln493">        internalSafetyCheckAdd(d, ptr);</a>
+<a name="ln494">#endif</a>
+<a name="ln495">        d-&gt;setQObjectShared(ptr, true);</a>
+<a name="ln496">        enableSharedFromThis(ptr);</a>
+<a name="ln497">    }</a>
+<a name="ln498"> </a>
+<a name="ln499">    void internalSwap(QSharedPointer &amp;other) Q_DECL_NOTHROW</a>
+<a name="ln500">    {</a>
+<a name="ln501">        qSwap(d, other.d);</a>
+<a name="ln502">        qSwap(this-&gt;value, other.value);</a>
+<a name="ln503">    }</a>
+<a name="ln504"> </a>
+<a name="ln505">#if defined(Q_NO_TEMPLATE_FRIENDS)</a>
+<a name="ln506">public:</a>
+<a name="ln507">#else</a>
+<a name="ln508">    template &lt;class X&gt; friend class QSharedPointer;</a>
+<a name="ln509">    template &lt;class X&gt; friend class QWeakPointer;</a>
+<a name="ln510">    template &lt;class X, class Y&gt; friend QSharedPointer&lt;X&gt; QtSharedPointer::copyAndSetPointer(X * ptr, const QSharedPointer&lt;Y&gt; &amp;src);</a>
+<a name="ln511">#endif</a>
+<a name="ln512">    void ref() const Q_DECL_NOTHROW { d-&gt;weakref.ref(); d-&gt;strongref.ref(); }</a>
+<a name="ln513"> </a>
+<a name="ln514">    inline void internalSet(Data *o, T *actual)</a>
+<a name="ln515">    {</a>
+<a name="ln516">        if (o) {</a>
+<a name="ln517">            // increase the strongref, but never up from zero</a>
+<a name="ln518">            // or less (-1 is used by QWeakPointer on untracked QObject)</a>
+<a name="ln519">            int tmp = o-&gt;strongref.load();</a>
+<a name="ln520">            while (tmp &gt; 0) {</a>
+<a name="ln521">                // try to increment from &quot;tmp&quot; to &quot;tmp + 1&quot;</a>
+<a name="ln522">                if (o-&gt;strongref.testAndSetRelaxed(tmp, tmp + 1))</a>
+<a name="ln523">                    break;   // succeeded</a>
+<a name="ln524">                tmp = o-&gt;strongref.load();  // failed, try again</a>
+<a name="ln525">            }</a>
+<a name="ln526"> </a>
+<a name="ln527">            if (tmp &gt; 0) {</a>
+<a name="ln528">                o-&gt;weakref.ref();</a>
+<a name="ln529">            } else {</a>
+<a name="ln530">                o-&gt;checkQObjectShared(actual);</a>
+<a name="ln531">                o = nullptr;</a>
+<a name="ln532">            }</a>
+<a name="ln533">        }</a>
+<a name="ln534"> </a>
+<a name="ln535">        qSwap(d, o);</a>
+<a name="ln536">        qSwap(this-&gt;value, actual);</a>
+<a name="ln537">        if (!d || d-&gt;strongref.load() == 0)</a>
+<a name="ln538">            this-&gt;value = nullptr;</a>
+<a name="ln539"> </a>
+<a name="ln540">        // dereference saved data</a>
+<a name="ln541">        deref(o);</a>
+<a name="ln542">    }</a>
+<a name="ln543"> </a>
+<a name="ln544">    Type *value;</a>
+<a name="ln545">    Data *d;</a>
+<a name="ln546">};</a>
+<a name="ln547"> </a>
+<a name="ln548">template &lt;class T&gt;</a>
+<a name="ln549">class QWeakPointer</a>
+<a name="ln550">{</a>
+<a name="ln551">    typedef T *QWeakPointer:: *RestrictedBool;</a>
+<a name="ln552">    typedef QtSharedPointer::ExternalRefCountData Data;</a>
+<a name="ln553"> </a>
+<a name="ln554">public:</a>
+<a name="ln555">    typedef T element_type;</a>
+<a name="ln556">    typedef T value_type;</a>
+<a name="ln557">    typedef value_type *pointer;</a>
+<a name="ln558">    typedef const value_type *const_pointer;</a>
+<a name="ln559">    typedef value_type &amp;reference;</a>
+<a name="ln560">    typedef const value_type &amp;const_reference;</a>
+<a name="ln561">    typedef qptrdiff difference_type;</a>
+<a name="ln562"> </a>
+<a name="ln563">    bool isNull() const Q_DECL_NOTHROW { return d == nullptr || d-&gt;strongref.load() == 0 || value == nullptr; }</a>
+<a name="ln564">    operator RestrictedBool() const Q_DECL_NOTHROW { return isNull() ? nullptr : &amp;QWeakPointer::value; }</a>
+<a name="ln565">    bool operator !() const Q_DECL_NOTHROW { return isNull(); }</a>
+<a name="ln566">    T *data() const Q_DECL_NOTHROW { return d == nullptr || d-&gt;strongref.load() == 0 ? nullptr : value; }</a>
+<a name="ln567"> </a>
+<a name="ln568">    inline QWeakPointer() Q_DECL_NOTHROW : d(nullptr), value(nullptr) { }</a>
+<a name="ln569">    inline ~QWeakPointer() { if (d &amp;&amp; !d-&gt;weakref.deref()) delete d; }</a>
+<a name="ln570"> </a>
+<a name="ln571">#ifndef QT_NO_QOBJECT</a>
+<a name="ln572">    // special constructor that is enabled only if X derives from QObject</a>
+<a name="ln573">#if QT_DEPRECATED_SINCE(5, 0)</a>
+<a name="ln574">    template &lt;class X&gt;</a>
+<a name="ln575">    QT_DEPRECATED inline QWeakPointer(X *ptr) : d(ptr ? Data::getAndRef(ptr) : nullptr), value(ptr)</a>
+<a name="ln576">    { }</a>
+<a name="ln577">#endif</a>
+<a name="ln578">#endif</a>
+<a name="ln579"> </a>
+<a name="ln580">#if QT_DEPRECATED_SINCE(5, 0)</a>
+<a name="ln581">    template &lt;class X&gt;</a>
+<a name="ln582">    QT_DEPRECATED inline QWeakPointer &amp;operator=(X *ptr)</a>
+<a name="ln583">    { return *this = QWeakPointer(ptr); }</a>
+<a name="ln584">#endif</a>
+<a name="ln585"> </a>
+<a name="ln586">    QWeakPointer(const QWeakPointer &amp;other) Q_DECL_NOTHROW : d(other.d), value(other.value)</a>
+<a name="ln587">    { if (d) d-&gt;weakref.ref(); }</a>
+<a name="ln588">#ifdef Q_COMPILER_RVALUE_REFS</a>
+<a name="ln589">    QWeakPointer(QWeakPointer &amp;&amp;other) Q_DECL_NOTHROW</a>
+<a name="ln590">        : d(other.d), value(other.value)</a>
+<a name="ln591">    {</a>
+<a name="ln592">        other.d = nullptr;</a>
+<a name="ln593">        other.value = nullptr;</a>
+<a name="ln594">    }</a>
+<a name="ln595">    QWeakPointer &amp;operator=(QWeakPointer &amp;&amp;other) Q_DECL_NOTHROW</a>
+<a name="ln596">    { QWeakPointer moved(std::move(other)); swap(moved); return *this; }</a>
+<a name="ln597">#endif</a>
+<a name="ln598">    QWeakPointer &amp;operator=(const QWeakPointer &amp;other) Q_DECL_NOTHROW</a>
+<a name="ln599">    {</a>
+<a name="ln600">        QWeakPointer copy(other);</a>
+<a name="ln601">        swap(copy);</a>
+<a name="ln602">        return *this;</a>
+<a name="ln603">    }</a>
+<a name="ln604"> </a>
+<a name="ln605">    void swap(QWeakPointer &amp;other) Q_DECL_NOTHROW</a>
+<a name="ln606">    {</a>
+<a name="ln607">        qSwap(this-&gt;d, other.d);</a>
+<a name="ln608">        qSwap(this-&gt;value, other.value);</a>
+<a name="ln609">    }</a>
+<a name="ln610"> </a>
+<a name="ln611">    inline QWeakPointer(const QSharedPointer&lt;T&gt; &amp;o) : d(o.d), value(o.data())</a>
+<a name="ln612">    { if (d) d-&gt;weakref.ref();}</a>
+<a name="ln613">    inline QWeakPointer &amp;operator=(const QSharedPointer&lt;T&gt; &amp;o)</a>
+<a name="ln614">    {</a>
+<a name="ln615">        internalSet(o.d, o.value);</a>
+<a name="ln616">        return *this;</a>
+<a name="ln617">    }</a>
+<a name="ln618"> </a>
+<a name="ln619">    template &lt;class X&gt;</a>
+<a name="ln620">    inline QWeakPointer(const QWeakPointer&lt;X&gt; &amp;o) : d(nullptr), value(nullptr)</a>
+<a name="ln621">    { *this = o; }</a>
+<a name="ln622"> </a>
+<a name="ln623">    template &lt;class X&gt;</a>
+<a name="ln624">    inline QWeakPointer &amp;operator=(const QWeakPointer&lt;X&gt; &amp;o)</a>
+<a name="ln625">    {</a>
+<a name="ln626">        // conversion between X and T could require access to the virtual table</a>
+<a name="ln627">        // so force the operation to go through QSharedPointer</a>
+<a name="ln628">        *this = o.toStrongRef();</a>
+<a name="ln629">        return *this;</a>
+<a name="ln630">    }</a>
+<a name="ln631"> </a>
+<a name="ln632">    template &lt;class X&gt;</a>
+<a name="ln633">    bool operator==(const QWeakPointer&lt;X&gt; &amp;o) const Q_DECL_NOTHROW</a>
+<a name="ln634">    { return d == o.d &amp;&amp; value == static_cast&lt;const T *&gt;(o.value); }</a>
+<a name="ln635"> </a>
+<a name="ln636">    template &lt;class X&gt;</a>
+<a name="ln637">    bool operator!=(const QWeakPointer&lt;X&gt; &amp;o) const Q_DECL_NOTHROW</a>
+<a name="ln638">    { return !(*this == o); }</a>
+<a name="ln639"> </a>
+<a name="ln640">    template &lt;class X&gt;</a>
+<a name="ln641">    inline QWeakPointer(const QSharedPointer&lt;X&gt; &amp;o) : d(nullptr), value(nullptr)</a>
+<a name="ln642">    { *this = o; }</a>
+<a name="ln643"> </a>
+<a name="ln644">    template &lt;class X&gt;</a>
+<a name="ln645">    inline QWeakPointer &amp;operator=(const QSharedPointer&lt;X&gt; &amp;o)</a>
+<a name="ln646">    {</a>
+<a name="ln647">        QSHAREDPOINTER_VERIFY_AUTO_CAST(T, X); // if you get an error in this line, the cast is invalid</a>
+<a name="ln648">        internalSet(o.d, o.data());</a>
+<a name="ln649">        return *this;</a>
+<a name="ln650">    }</a>
+<a name="ln651"> </a>
+<a name="ln652">    template &lt;class X&gt;</a>
+<a name="ln653">    bool operator==(const QSharedPointer&lt;X&gt; &amp;o) const Q_DECL_NOTHROW</a>
+<a name="ln654">    { return d == o.d; }</a>
+<a name="ln655"> </a>
+<a name="ln656">    template &lt;class X&gt;</a>
+<a name="ln657">    bool operator!=(const QSharedPointer&lt;X&gt; &amp;o) const Q_DECL_NOTHROW</a>
+<a name="ln658">    { return !(*this == o); }</a>
+<a name="ln659"> </a>
+<a name="ln660">    inline void clear() { *this = QWeakPointer(); }</a>
+<a name="ln661"> </a>
+<a name="ln662">    inline QSharedPointer&lt;T&gt; toStrongRef() const { return QSharedPointer&lt;T&gt;(*this); }</a>
+<a name="ln663">    // std::weak_ptr compatibility:</a>
+<a name="ln664">    inline QSharedPointer&lt;T&gt; lock() const { return toStrongRef(); }</a>
+<a name="ln665"> </a>
+<a name="ln666">#if defined(QWEAKPOINTER_ENABLE_ARROW)</a>
+<a name="ln667">    inline T *operator-&gt;() const { return data(); }</a>
+<a name="ln668">#endif</a>
+<a name="ln669"> </a>
+<a name="ln670">private:</a>
+<a name="ln671"> </a>
+<a name="ln672">#if defined(Q_NO_TEMPLATE_FRIENDS)</a>
+<a name="ln673">public:</a>
+<a name="ln674">#else</a>
+<a name="ln675">    template &lt;class X&gt; friend class QSharedPointer;</a>
+<a name="ln676">    template &lt;class X&gt; friend class QPointer;</a>
+<a name="ln677">#endif</a>
+<a name="ln678"> </a>
+<a name="ln679">    template &lt;class X&gt;</a>
+<a name="ln680">    inline QWeakPointer &amp;assign(X *ptr)</a>
+<a name="ln681">    { return *this = QWeakPointer&lt;X&gt;(ptr, true); }</a>
+<a name="ln682"> </a>
+<a name="ln683">#ifndef QT_NO_QOBJECT</a>
+<a name="ln684">    template &lt;class X&gt;</a>
+<a name="ln685">    inline QWeakPointer(X *ptr, bool) : d(ptr ? Data::getAndRef(ptr) : nullptr), value(ptr)</a>
+<a name="ln686">    { }</a>
+<a name="ln687">#endif</a>
+<a name="ln688"> </a>
+<a name="ln689">    inline void internalSet(Data *o, T *actual)</a>
+<a name="ln690">    {</a>
+<a name="ln691">        if (d == o) return;</a>
+<a name="ln692">        if (o)</a>
+<a name="ln693">            o-&gt;weakref.ref();</a>
+<a name="ln694">        if (d &amp;&amp; !d-&gt;weakref.deref())</a>
+<a name="ln695">            delete d;</a>
+<a name="ln696">        d = o;</a>
+<a name="ln697">        value = actual;</a>
+<a name="ln698">    }</a>
+<a name="ln699"> </a>
+<a name="ln700">    Data *d;</a>
+<a name="ln701">    T *value;</a>
+<a name="ln702">};</a>
+<a name="ln703"> </a>
+<a name="ln704">template &lt;class T&gt;</a>
+<a name="ln705">class QEnableSharedFromThis</a>
+<a name="ln706">{</a>
+<a name="ln707">protected:</a>
+<a name="ln708">#ifdef Q_COMPILER_DEFAULT_MEMBERS</a>
+<a name="ln709">    QEnableSharedFromThis() = default;</a>
+<a name="ln710">#else</a>
+<a name="ln711">    Q_DECL_CONSTEXPR QEnableSharedFromThis() {}</a>
+<a name="ln712">#endif</a>
+<a name="ln713">    QEnableSharedFromThis(const QEnableSharedFromThis &amp;) {}</a>
+<a name="ln714">    QEnableSharedFromThis &amp;operator=(const QEnableSharedFromThis &amp;) { return *this; }</a>
+<a name="ln715"> </a>
+<a name="ln716">public:</a>
+<a name="ln717">    inline QSharedPointer&lt;T&gt; sharedFromThis() { return QSharedPointer&lt;T&gt;(weakPointer); }</a>
+<a name="ln718">    inline QSharedPointer&lt;const T&gt; sharedFromThis() const { return QSharedPointer&lt;const T&gt;(weakPointer); }</a>
+<a name="ln719"> </a>
+<a name="ln720">#ifndef Q_NO_TEMPLATE_FRIENDS</a>
+<a name="ln721">private:</a>
+<a name="ln722">    template &lt;class X&gt; friend class QSharedPointer;</a>
+<a name="ln723">#else</a>
+<a name="ln724">public:</a>
+<a name="ln725">#endif</a>
+<a name="ln726">    template &lt;class X&gt;</a>
+<a name="ln727">    inline void initializeFromSharedPointer(const QSharedPointer&lt;X&gt; &amp;ptr) const</a>
+<a name="ln728">    {</a>
+<a name="ln729">        weakPointer = ptr;</a>
+<a name="ln730">    }</a>
+<a name="ln731"> </a>
+<a name="ln732">    mutable QWeakPointer&lt;T&gt; weakPointer;</a>
+<a name="ln733">};</a>
+<a name="ln734"> </a>
+<a name="ln735">//</a>
+<a name="ln736">// operator== and operator!=</a>
+<a name="ln737">//</a>
+<a name="ln738">template &lt;class T, class X&gt;</a>
+<a name="ln739">bool operator==(const QSharedPointer&lt;T&gt; &amp;ptr1, const QSharedPointer&lt;X&gt; &amp;ptr2) Q_DECL_NOTHROW</a>
+<a name="ln740">{</a>
+<a name="ln741">    return ptr1.data() == ptr2.data();</a>
+<a name="ln742">}</a>
+<a name="ln743">template &lt;class T, class X&gt;</a>
+<a name="ln744">bool operator!=(const QSharedPointer&lt;T&gt; &amp;ptr1, const QSharedPointer&lt;X&gt; &amp;ptr2) Q_DECL_NOTHROW</a>
+<a name="ln745">{</a>
+<a name="ln746">    return ptr1.data() != ptr2.data();</a>
+<a name="ln747">}</a>
+<a name="ln748"> </a>
+<a name="ln749">template &lt;class T, class X&gt;</a>
+<a name="ln750">bool operator==(const QSharedPointer&lt;T&gt; &amp;ptr1, const X *ptr2) Q_DECL_NOTHROW</a>
+<a name="ln751">{</a>
+<a name="ln752">    return ptr1.data() == ptr2;</a>
+<a name="ln753">}</a>
+<a name="ln754">template &lt;class T, class X&gt;</a>
+<a name="ln755">bool operator==(const T *ptr1, const QSharedPointer&lt;X&gt; &amp;ptr2) Q_DECL_NOTHROW</a>
+<a name="ln756">{</a>
+<a name="ln757">    return ptr1 == ptr2.data();</a>
+<a name="ln758">}</a>
+<a name="ln759">template &lt;class T, class X&gt;</a>
+<a name="ln760">bool operator!=(const QSharedPointer&lt;T&gt; &amp;ptr1, const X *ptr2) Q_DECL_NOTHROW</a>
+<a name="ln761">{</a>
+<a name="ln762">    return !(ptr1 == ptr2);</a>
+<a name="ln763">}</a>
+<a name="ln764">template &lt;class T, class X&gt;</a>
+<a name="ln765">bool operator!=(const T *ptr1, const QSharedPointer&lt;X&gt; &amp;ptr2) Q_DECL_NOTHROW</a>
+<a name="ln766">{</a>
+<a name="ln767">    return !(ptr2 == ptr1);</a>
+<a name="ln768">}</a>
+<a name="ln769"> </a>
+<a name="ln770">template &lt;class T, class X&gt;</a>
+<a name="ln771">bool operator==(const QSharedPointer&lt;T&gt; &amp;ptr1, const QWeakPointer&lt;X&gt; &amp;ptr2) Q_DECL_NOTHROW</a>
+<a name="ln772">{</a>
+<a name="ln773">    return ptr2 == ptr1;</a>
+<a name="ln774">}</a>
+<a name="ln775">template &lt;class T, class X&gt;</a>
+<a name="ln776">bool operator!=(const QSharedPointer&lt;T&gt; &amp;ptr1, const QWeakPointer&lt;X&gt; &amp;ptr2) Q_DECL_NOTHROW</a>
+<a name="ln777">{</a>
+<a name="ln778">    return ptr2 != ptr1;</a>
+<a name="ln779">}</a>
+<a name="ln780"> </a>
+<a name="ln781">template&lt;class T&gt;</a>
+<a name="ln782">inline bool operator==(const QSharedPointer&lt;T&gt; &amp;lhs, std::nullptr_t) Q_DECL_NOTHROW</a>
+<a name="ln783">{</a>
+<a name="ln784">    return lhs.isNull();</a>
+<a name="ln785">}</a>
+<a name="ln786"> </a>
+<a name="ln787">template&lt;class T&gt;</a>
+<a name="ln788">inline bool operator!=(const QSharedPointer&lt;T&gt; &amp;lhs, std::nullptr_t) Q_DECL_NOTHROW</a>
+<a name="ln789">{</a>
+<a name="ln790">    return !lhs.isNull();</a>
+<a name="ln791">}</a>
+<a name="ln792"> </a>
+<a name="ln793">template&lt;class T&gt;</a>
+<a name="ln794">inline bool operator==(std::nullptr_t, const QSharedPointer&lt;T&gt; &amp;rhs) Q_DECL_NOTHROW</a>
+<a name="ln795">{</a>
+<a name="ln796">    return rhs.isNull();</a>
+<a name="ln797">}</a>
+<a name="ln798"> </a>
+<a name="ln799">template&lt;class T&gt;</a>
+<a name="ln800">inline bool operator!=(std::nullptr_t, const QSharedPointer&lt;T&gt; &amp;rhs) Q_DECL_NOTHROW</a>
+<a name="ln801">{</a>
+<a name="ln802">    return !rhs.isNull();</a>
+<a name="ln803">}</a>
+<a name="ln804"> </a>
+<a name="ln805">template&lt;class T&gt;</a>
+<a name="ln806">inline bool operator==(const QWeakPointer&lt;T&gt; &amp;lhs, std::nullptr_t) Q_DECL_NOTHROW</a>
+<a name="ln807">{</a>
+<a name="ln808">    return lhs.isNull();</a>
+<a name="ln809">}</a>
+<a name="ln810"> </a>
+<a name="ln811">template&lt;class T&gt;</a>
+<a name="ln812">inline bool operator!=(const QWeakPointer&lt;T&gt; &amp;lhs, std::nullptr_t) Q_DECL_NOTHROW</a>
+<a name="ln813">{</a>
+<a name="ln814">    return !lhs.isNull();</a>
+<a name="ln815">}</a>
+<a name="ln816"> </a>
+<a name="ln817">template&lt;class T&gt;</a>
+<a name="ln818">inline bool operator==(std::nullptr_t, const QWeakPointer&lt;T&gt; &amp;rhs) Q_DECL_NOTHROW</a>
+<a name="ln819">{</a>
+<a name="ln820">    return rhs.isNull();</a>
+<a name="ln821">}</a>
+<a name="ln822"> </a>
+<a name="ln823">template&lt;class T&gt;</a>
+<a name="ln824">inline bool operator!=(std::nullptr_t, const QWeakPointer&lt;T&gt; &amp;rhs) Q_DECL_NOTHROW</a>
+<a name="ln825">{</a>
+<a name="ln826">    return !rhs.isNull();</a>
+<a name="ln827">}</a>
+<a name="ln828"> </a>
+<a name="ln829">//</a>
+<a name="ln830">// operator-</a>
+<a name="ln831">//</a>
+<a name="ln832">template &lt;class T, class X&gt;</a>
+<a name="ln833">Q_INLINE_TEMPLATE typename QSharedPointer&lt;T&gt;::difference_type operator-(const QSharedPointer&lt;T&gt; &amp;ptr1, const QSharedPointer&lt;X&gt; &amp;ptr2)</a>
+<a name="ln834">{</a>
+<a name="ln835">    return ptr1.data() - ptr2.data();</a>
+<a name="ln836">}</a>
+<a name="ln837">template &lt;class T, class X&gt;</a>
+<a name="ln838">Q_INLINE_TEMPLATE typename QSharedPointer&lt;T&gt;::difference_type operator-(const QSharedPointer&lt;T&gt; &amp;ptr1, X *ptr2)</a>
+<a name="ln839">{</a>
+<a name="ln840">    return ptr1.data() - ptr2;</a>
+<a name="ln841">}</a>
+<a name="ln842">template &lt;class T, class X&gt;</a>
+<a name="ln843">Q_INLINE_TEMPLATE typename QSharedPointer&lt;X&gt;::difference_type operator-(T *ptr1, const QSharedPointer&lt;X&gt; &amp;ptr2)</a>
+<a name="ln844">{</a>
+<a name="ln845">    return ptr1 - ptr2.data();</a>
+<a name="ln846">}</a>
+<a name="ln847"> </a>
+<a name="ln848">//</a>
+<a name="ln849">// operator&lt;</a>
+<a name="ln850">//</a>
+<a name="ln851">template &lt;class T, class X&gt;</a>
+<a name="ln852">Q_INLINE_TEMPLATE bool operator&lt;(const QSharedPointer&lt;T&gt; &amp;ptr1, const QSharedPointer&lt;X&gt; &amp;ptr2)</a>
+<a name="ln853">{</a>
+<a name="ln854">    using CT = typename std::common_type&lt;T *, X *&gt;::type;</a>
+<a name="ln855">    return std::less&lt;CT&gt;()(ptr1.data(), ptr2.data());</a>
+<a name="ln856">}</a>
+<a name="ln857">template &lt;class T, class X&gt;</a>
+<a name="ln858">Q_INLINE_TEMPLATE bool operator&lt;(const QSharedPointer&lt;T&gt; &amp;ptr1, X *ptr2)</a>
+<a name="ln859">{</a>
+<a name="ln860">    using CT = typename std::common_type&lt;T *, X *&gt;::type;</a>
+<a name="ln861">    return std::less&lt;CT&gt;()(ptr1.data(), ptr2);</a>
+<a name="ln862">}</a>
+<a name="ln863">template &lt;class T, class X&gt;</a>
+<a name="ln864">Q_INLINE_TEMPLATE bool operator&lt;(T *ptr1, const QSharedPointer&lt;X&gt; &amp;ptr2)</a>
+<a name="ln865">{</a>
+<a name="ln866">    using CT = typename std::common_type&lt;T *, X *&gt;::type;</a>
+<a name="ln867">    return std::less&lt;CT&gt;()(ptr1, ptr2.data());</a>
+<a name="ln868">}</a>
+<a name="ln869"> </a>
+<a name="ln870">//</a>
+<a name="ln871">// qHash</a>
+<a name="ln872">//</a>
+<a name="ln873">template &lt;class T&gt;</a>
+<a name="ln874">Q_INLINE_TEMPLATE uint qHash(const QSharedPointer&lt;T&gt; &amp;ptr, uint seed = 0)</a>
+<a name="ln875">{</a>
+<a name="ln876">    return QT_PREPEND_NAMESPACE(qHash)(ptr.data(), seed);</a>
+<a name="ln877">}</a>
+<a name="ln878"> </a>
+<a name="ln879"> </a>
+<a name="ln880">template &lt;class T&gt;</a>
+<a name="ln881">Q_INLINE_TEMPLATE QWeakPointer&lt;T&gt; QSharedPointer&lt;T&gt;::toWeakRef() const</a>
+<a name="ln882">{</a>
+<a name="ln883">    return QWeakPointer&lt;T&gt;(*this);</a>
+<a name="ln884">}</a>
+<a name="ln885"> </a>
+<a name="ln886">template &lt;class T&gt;</a>
+<a name="ln887">inline void qSwap(QSharedPointer&lt;T&gt; &amp;p1, QSharedPointer&lt;T&gt; &amp;p2)</a>
+<a name="ln888">{</a>
+<a name="ln889">    p1.swap(p2);</a>
+<a name="ln890">}</a>
+<a name="ln891"> </a>
+<a name="ln892">QT_END_NAMESPACE</a>
+<a name="ln893">namespace std {</a>
+<a name="ln894">    template &lt;class T&gt;</a>
+<a name="ln895">    inline void swap(QT_PREPEND_NAMESPACE(QSharedPointer)&lt;T&gt; &amp;p1, QT_PREPEND_NAMESPACE(QSharedPointer)&lt;T&gt; &amp;p2)</a>
+<a name="ln896">    { p1.swap(p2); }</a>
+<a name="ln897">}</a>
+<a name="ln898">QT_BEGIN_NAMESPACE</a>
+<a name="ln899"> </a>
+<a name="ln900">namespace QtSharedPointer {</a>
+<a name="ln901">// helper functions:</a>
+<a name="ln902">    template &lt;class X, class T&gt;</a>
+<a name="ln903">    Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; copyAndSetPointer(X *ptr, const QSharedPointer&lt;T&gt; &amp;src)</a>
+<a name="ln904">    {</a>
+<a name="ln905">        QSharedPointer&lt;X&gt; result;</a>
+<a name="ln906">        result.internalSet(src.d, ptr);</a>
+<a name="ln907">        return result;</a>
+<a name="ln908">    }</a>
+<a name="ln909">}</a>
+<a name="ln910"> </a>
+<a name="ln911">// cast operators</a>
+<a name="ln912">template &lt;class X, class T&gt;</a>
+<a name="ln913">Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; qSharedPointerCast(const QSharedPointer&lt;T&gt; &amp;src)</a>
+<a name="ln914">{</a>
+<a name="ln915">    X *ptr = static_cast&lt;X *&gt;(src.data()); // if you get an error in this line, the cast is invalid</a>
+<a name="ln916">    return QtSharedPointer::copyAndSetPointer(ptr, src);</a>
+<a name="ln917">}</a>
+<a name="ln918">template &lt;class X, class T&gt;</a>
+<a name="ln919">Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; qSharedPointerCast(const QWeakPointer&lt;T&gt; &amp;src)</a>
+<a name="ln920">{</a>
+<a name="ln921">    return qSharedPointerCast&lt;X, T&gt;(src.toStrongRef());</a>
+<a name="ln922">}</a>
+<a name="ln923"> </a>
+<a name="ln924">template &lt;class X, class T&gt;</a>
+<a name="ln925">Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; qSharedPointerDynamicCast(const QSharedPointer&lt;T&gt; &amp;src)</a>
+<a name="ln926">{</a>
+<a name="ln927">    X *ptr = dynamic_cast&lt;X *&gt;(src.data()); // if you get an error in this line, the cast is invalid</a>
+<a name="ln928">    if (!ptr)</a>
+<a name="ln929">        return QSharedPointer&lt;X&gt;();</a>
+<a name="ln930">    return QtSharedPointer::copyAndSetPointer(ptr, src);</a>
+<a name="ln931">}</a>
+<a name="ln932">template &lt;class X, class T&gt;</a>
+<a name="ln933">Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; qSharedPointerDynamicCast(const QWeakPointer&lt;T&gt; &amp;src)</a>
+<a name="ln934">{</a>
+<a name="ln935">    return qSharedPointerDynamicCast&lt;X, T&gt;(src.toStrongRef());</a>
+<a name="ln936">}</a>
+<a name="ln937"> </a>
+<a name="ln938">template &lt;class X, class T&gt;</a>
+<a name="ln939">Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; qSharedPointerConstCast(const QSharedPointer&lt;T&gt; &amp;src)</a>
+<a name="ln940">{</a>
+<a name="ln941">    X *ptr = const_cast&lt;X *&gt;(src.data()); // if you get an error in this line, the cast is invalid</a>
+<a name="ln942">    return QtSharedPointer::copyAndSetPointer(ptr, src);</a>
+<a name="ln943">}</a>
+<a name="ln944">template &lt;class X, class T&gt;</a>
+<a name="ln945">Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; qSharedPointerConstCast(const QWeakPointer&lt;T&gt; &amp;src)</a>
+<a name="ln946">{</a>
+<a name="ln947">    return qSharedPointerConstCast&lt;X, T&gt;(src.toStrongRef());</a>
+<a name="ln948">}</a>
+<a name="ln949"> </a>
+<a name="ln950">template &lt;class X, class T&gt;</a>
+<a name="ln951">Q_INLINE_TEMPLATE</a>
+<a name="ln952">QWeakPointer&lt;X&gt; qWeakPointerCast(const QSharedPointer&lt;T&gt; &amp;src)</a>
+<a name="ln953">{</a>
+<a name="ln954">    return qSharedPointerCast&lt;X, T&gt;(src).toWeakRef();</a>
+<a name="ln955">}</a>
+<a name="ln956"> </a>
+<a name="ln957">#ifndef QT_NO_QOBJECT</a>
+<a name="ln958">template &lt;class X, class T&gt;</a>
+<a name="ln959">Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; qSharedPointerObjectCast(const QSharedPointer&lt;T&gt; &amp;src)</a>
+<a name="ln960">{</a>
+<a name="ln961">    X *ptr = qobject_cast&lt;X *&gt;(src.data());</a>
+<a name="ln962">    return QtSharedPointer::copyAndSetPointer(ptr, src);</a>
+<a name="ln963">}</a>
+<a name="ln964">template &lt;class X, class T&gt;</a>
+<a name="ln965">Q_INLINE_TEMPLATE QSharedPointer&lt;X&gt; qSharedPointerObjectCast(const QWeakPointer&lt;T&gt; &amp;src)</a>
+<a name="ln966">{</a>
+<a name="ln967">    return qSharedPointerObjectCast&lt;X&gt;(src.toStrongRef());</a>
+<a name="ln968">}</a>
+<a name="ln969"> </a>
+<a name="ln970">template &lt;class X, class T&gt;</a>
+<a name="ln971">inline QSharedPointer&lt;typename QtSharedPointer::RemovePointer&lt;X&gt;::Type&gt;</a>
+<a name="ln972">qobject_cast(const QSharedPointer&lt;T&gt; &amp;src)</a>
+<a name="ln973">{</a>
+<a name="ln974">    return qSharedPointerObjectCast&lt;typename QtSharedPointer::RemovePointer&lt;X&gt;::Type, T&gt;(src);</a>
+<a name="ln975">}</a>
+<a name="ln976">template &lt;class X, class T&gt;</a>
+<a name="ln977">inline QSharedPointer&lt;typename QtSharedPointer::RemovePointer&lt;X&gt;::Type&gt;</a>
+<a name="ln978">qobject_cast(const QWeakPointer&lt;T&gt; &amp;src)</a>
+<a name="ln979">{</a>
+<a name="ln980">    return qSharedPointerObjectCast&lt;typename QtSharedPointer::RemovePointer&lt;X&gt;::Type, T&gt;(src);</a>
+<a name="ln981">}</a>
+<a name="ln982"> </a>
+<a name="ln983">template&lt;typename T&gt;</a>
+<a name="ln984">QWeakPointer&lt;typename std::enable_if&lt;QtPrivate::IsPointerToTypeDerivedFromQObject&lt;T*&gt;::Value, T&gt;::type&gt;</a>
+<a name="ln985">qWeakPointerFromVariant(const QVariant &amp;variant)</a>
+<a name="ln986">{</a>
+<a name="ln987">    return QWeakPointer&lt;T&gt;(qobject_cast&lt;T*&gt;(QtSharedPointer::weakPointerFromVariant_internal(variant).data()));</a>
+<a name="ln988">}</a>
+<a name="ln989">template&lt;typename T&gt;</a>
+<a name="ln990">QSharedPointer&lt;typename std::enable_if&lt;QtPrivate::IsPointerToTypeDerivedFromQObject&lt;T*&gt;::Value, T&gt;::type&gt;</a>
+<a name="ln991">qSharedPointerFromVariant(const QVariant &amp;variant)</a>
+<a name="ln992">{</a>
+<a name="ln993">    return qSharedPointerObjectCast&lt;T&gt;(QtSharedPointer::sharedPointerFromVariant_internal(variant));</a>
+<a name="ln994">}</a>
+<a name="ln995"> </a>
+<a name="ln996">#endif</a>
+<a name="ln997"> </a>
+<a name="ln998">template&lt;typename T&gt; Q_DECLARE_TYPEINFO_BODY(QWeakPointer&lt;T&gt;, Q_MOVABLE_TYPE);</a>
+<a name="ln999">template&lt;typename T&gt; Q_DECLARE_TYPEINFO_BODY(QSharedPointer&lt;T&gt;, Q_MOVABLE_TYPE);</a>
+<a name="ln1000"> </a>
+<a name="ln1001"> </a>
+<a name="ln1002">QT_END_NAMESPACE</a>
+<a name="ln1003"> </a>
+<a name="ln1004">#endif</a>
+
+</code></pre>
+<div class="balloon" rel="141"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1062/" target="_blank">V1062</a> The 'ExternalRefCountData' class defines a custom 'delete' operator. The 'new' operator must also be defined.</p></div>
+<div class="balloon" rel="893"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1061/" target="_blank">V1061</a> Extending the 'std' namespace may result in undefined behavior.</p></div>
+<div class="balloon" rel="154"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v730/" target="_blank">V730</a> Not all members of a class are initialized inside the constructor. Consider inspecting: destroyer.</p></div>
+
+<link rel="stylesheet" href="highlight.css">
+<script src="highlight.pack.js"></script>
+<script src="highlightjs-line-numbers.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script>hljs.initLineNumbersOnLoad();</script>
+<script>
+  $(document).ready(function() {
+      $('.balloon').each(function () {
+          var bl = $(this);
+          var line = bl.attr('rel');
+          var text = $('a[name="ln'+line+'"]').text();
+
+          var space_count = 0;
+          for(var i = 0; i<text.length; i++){
+              var char = text[i];
+              if((char !== ' ')&&(char !== '\t'))break;
+              if(char === '\t')space_count++;
+              space_count++;
+          }
+
+          bl.css('margin-left', space_count*8);
+          $('a[name="ln'+line+'"]').after(bl);
+      });
+
+      window.location = window.location;
+  });
+</script>
+</body>
+</html>

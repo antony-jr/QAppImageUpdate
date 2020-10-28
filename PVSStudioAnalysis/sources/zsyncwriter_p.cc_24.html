@@ -1,0 +1,1649 @@
+
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII" />
+  <title>zsyncwriter_p.cc</title>
+
+  <link rel="stylesheet" href="../style.css"/>
+  <script src="../jquery-3.5.1.min.js"></script>
+</head>
+<body>
+
+<pre><code class = "cpp">
+<a name="ln1">/*</a>
+<a name="ln2"> * BSD 3-Clause License</a>
+<a name="ln3"> *</a>
+<a name="ln4"> * Copyright (c) 2018-2019, Antony jr</a>
+<a name="ln5"> * All rights reserved.</a>
+<a name="ln6"> *</a>
+<a name="ln7"> * Redistribution and use in source and binary forms, with or without</a>
+<a name="ln8"> * modification, are permitted provided that the following conditions are met:</a>
+<a name="ln9"> *</a>
+<a name="ln10"> * * Redistributions of source code must retain the above copyright notice, this</a>
+<a name="ln11"> *   list of conditions and the following disclaimer.</a>
+<a name="ln12"> *</a>
+<a name="ln13"> * * Redistributions in binary form must reproduce the above copyright notice,</a>
+<a name="ln14"> *   this list of conditions and the following disclaimer in the documentation</a>
+<a name="ln15"> *   and/or other materials provided with the distribution.</a>
+<a name="ln16"> *</a>
+<a name="ln17"> * * Neither the name of the copyright holder nor the names of its</a>
+<a name="ln18"> *   contributors may be used to endorse or promote products derived from</a>
+<a name="ln19"> *   this software without specific prior written permission.</a>
+<a name="ln20"> *</a>
+<a name="ln21"> * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;</a>
+<a name="ln22"> * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</a>
+<a name="ln23"> * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE</a>
+<a name="ln24"> * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE</a>
+<a name="ln25"> * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL</a>
+<a name="ln26"> * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR</a>
+<a name="ln27"> * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER</a>
+<a name="ln28"> * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,</a>
+<a name="ln29"> * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE</a>
+<a name="ln30"> * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</a>
+<a name="ln31"> *</a>
+<a name="ln32"> * @filename    : zsyncwriter_p.cc</a>
+<a name="ln33"> * @description : This is where the main zsync algorithm is implemented.</a>
+<a name="ln34">*/</a>
+<a name="ln35">#include &lt;cstdlib&gt;</a>
+<a name="ln36"> </a>
+<a name="ln37">#include &quot;zsyncwriter_p.hpp&quot;</a>
+<a name="ln38">#include &quot;qappimageupdateenums.hpp&quot;</a>
+<a name="ln39">#include &quot;helpers_p.hpp&quot;</a>
+<a name="ln40"> </a>
+<a name="ln41">/*</a>
+<a name="ln42"> * An efficient logging system specially tailored</a>
+<a name="ln43"> * for this source file.</a>
+<a name="ln44"> *</a>
+<a name="ln45"> * Example:</a>
+<a name="ln46"> * 	LOGS &quot;This is a log message.&quot; LOGE</a>
+<a name="ln47"> *</a>
+<a name="ln48"> *</a>
+<a name="ln49">*/</a>
+<a name="ln50">#ifndef LOGGING_DISABLED</a>
+<a name="ln51">#define LOGS *(p_Logger.data()) &lt;&lt;</a>
+<a name="ln52">#define LOGR &lt;&lt;</a>
+<a name="ln53">#define LOGE ; \</a>
+<a name="ln54">	     emit(logger(s_LogBuffer , s_SourceFilePath)); \</a>
+<a name="ln55">	     s_LogBuffer.clear();</a>
+<a name="ln56">#else</a>
+<a name="ln57">#define LOGS (void)</a>
+<a name="ln58">#define LOGR ;(void)</a>
+<a name="ln59">#define LOGE ;</a>
+<a name="ln60">#endif // LOGGING_DISABLED</a>
+<a name="ln61"> </a>
+<a name="ln62">#define INFO_START LOGS &quot;   INFO: &quot; LOGR</a>
+<a name="ln63">#define INFO_END LOGE</a>
+<a name="ln64"> </a>
+<a name="ln65">#define WARNING_START LOGS &quot;WARNING: &quot; LOGR</a>
+<a name="ln66">#define WARNING_END LOGE</a>
+<a name="ln67"> </a>
+<a name="ln68">#define FATAL_START LOGS &quot;  FATAL: &quot; LOGR</a>
+<a name="ln69">#define FATAL_END LOGE</a>
+<a name="ln70"> </a>
+<a name="ln71">/* Update a already calculated block ,</a>
+<a name="ln72"> * This is why a rolling checksum is needed. */</a>
+<a name="ln73">#define UPDATE_RSUM(a, b, oldc, newc, bshift) do { \</a>
+<a name="ln74">						(a) += ((unsigned char)(newc)) - ((unsigned char)(oldc));\</a>
+<a name="ln75">       						(b) += (a) - ((oldc) &lt;&lt; (bshift)); \</a>
+<a name="ln76">					      } while (0)</a>
+<a name="ln77"> </a>
+<a name="ln78"> </a>
+<a name="ln79"> </a>
+<a name="ln80">/*</a>
+<a name="ln81"> * Zsync uses the same modified version of the Adler32 checksum</a>
+<a name="ln82"> * as in rsync as the rolling checksum , here after denoted by rsum.</a>
+<a name="ln83"> * Calculate the rsum for a single block of data. */</a>
+<a name="ln84">static rsum __attribute__ ((pure)) calc_rsum_block(const unsigned char *data, size_t len) {</a>
+<a name="ln85">    unsigned short a = 0;</a>
+<a name="ln86">    unsigned short b = 0;</a>
+<a name="ln87"> </a>
+<a name="ln88">    while (len) {</a>
+<a name="ln89">        unsigned char c = *data++;</a>
+<a name="ln90">        a += c;</a>
+<a name="ln91">        b += len * c;</a>
+<a name="ln92">        len--;</a>
+<a name="ln93">    }</a>
+<a name="ln94">    {</a>
+<a name="ln95">        struct rsum r = { a, b };</a>
+<a name="ln96">        return r;</a>
+<a name="ln97">    }</a>
+<a name="ln98">}</a>
+<a name="ln99"> </a>
+<a name="ln100">/*</a>
+<a name="ln101"> * The main class which provides the qt zsync api.</a>
+<a name="ln102"> * This class is responsible to do the delta writing and only that,</a>
+<a name="ln103"> * This will not download anything but expects a downloader to submit data to</a>
+<a name="ln104"> * it in order to check it and then write it in the correct location of the</a>
+<a name="ln105"> * temporary target file.</a>
+<a name="ln106"> * Needs a block range downloader in order to construct.</a>
+<a name="ln107"> *</a>
+<a name="ln108">*/</a>
+<a name="ln109">ZsyncWriterPrivate::ZsyncWriterPrivate(QNetworkAccessManager *manager)</a>
+<a name="ln110">    : QObject() {</a>
+<a name="ln111">    m_Manager = manager;</a>
+<a name="ln112">    p_Md4Ctx.reset(new QCryptographicHash(QCryptographicHash::Md4));</a>
+<a name="ln113">#ifndef LOGGING_DISABLED</a>
+<a name="ln114">    p_Logger.reset(new QDebug(&amp;s_LogBuffer));</a>
+<a name="ln115">#endif // LOGGING_DISABLED	</a>
+<a name="ln116">    return;</a>
+<a name="ln117">}</a>
+<a name="ln118"> </a>
+<a name="ln119">ZsyncWriterPrivate::~ZsyncWriterPrivate() {</a>
+<a name="ln120">    /* Free all c allocator allocated memory */</a>
+<a name="ln121">    if(p_RsumHash)</a>
+<a name="ln122">        free(p_RsumHash);</a>
+<a name="ln123">    if(p_Ranges)</a>
+<a name="ln124">        free(p_Ranges);</a>
+<a name="ln125">    if(p_BlockHashes)</a>
+<a name="ln126">        free(p_BlockHashes);</a>
+<a name="ln127">    if(p_BitHash)</a>
+<a name="ln128">        free(p_BitHash);</a>
+<a name="ln129">    return;</a>
+<a name="ln130">}</a>
+<a name="ln131"> </a>
+<a name="ln132">/* Sets the output directory for the target file. */</a>
+<a name="ln133">void ZsyncWriterPrivate::setOutputDirectory(const QString &amp;dir) {</a>
+<a name="ln134">    if(b_Started)</a>
+<a name="ln135">        return;</a>
+<a name="ln136">    s_OutputDirectory = QString(dir);</a>
+<a name="ln137">    return;</a>
+<a name="ln138">}</a>
+<a name="ln139"> </a>
+<a name="ln140">/* Sets the logger name. */</a>
+<a name="ln141">void ZsyncWriterPrivate::setLoggerName(const QString &amp;name) {</a>
+<a name="ln142">    if(b_Started)</a>
+<a name="ln143">        return;</a>
+<a name="ln144">#ifndef LOGGING_DISABLED</a>
+<a name="ln145">    s_LoggerName = QString(name);</a>
+<a name="ln146">#else</a>
+<a name="ln147">    (void)name;</a>
+<a name="ln148">#endif</a>
+<a name="ln149">    return;</a>
+<a name="ln150">}</a>
+<a name="ln151"> </a>
+<a name="ln152">/* Turns on or off the internal logger. */</a>
+<a name="ln153">void ZsyncWriterPrivate::setShowLog(bool logNeeded) {</a>
+<a name="ln154">#ifndef LOGGING_DISABLED</a>
+<a name="ln155">    if(logNeeded) {</a>
+<a name="ln156">        connect(this, SIGNAL(logger(QString, QString)),</a>
+<a name="ln157">                this, SLOT(handleLogMessage(QString, QString)),</a>
+<a name="ln158">                Qt::UniqueConnection);</a>
+<a name="ln159">        return;</a>
+<a name="ln160">    }</a>
+<a name="ln161">    disconnect(this, SIGNAL(logger(QString, QString)),</a>
+<a name="ln162">               this, SLOT(handleLogMessage(QString, QString)));</a>
+<a name="ln163">#else</a>
+<a name="ln164">    (void)logNeeded;</a>
+<a name="ln165">#endif</a>
+<a name="ln166">    return;</a>
+<a name="ln167">}</a>
+<a name="ln168"> </a>
+<a name="ln169">#ifndef LOGGING_DISABLED</a>
+<a name="ln170">void ZsyncWriterPrivate::handleLogMessage(QString msg, QString path) {</a>
+<a name="ln171">    qInfo().noquote()  &lt;&lt; &quot;[&quot;</a>
+<a name="ln172">                       &lt;&lt;  QDateTime::currentDateTime().toString(Qt::ISODate)</a>
+<a name="ln173">                       &lt;&lt; &quot;] &quot;</a>
+<a name="ln174">                       &lt;&lt; s_LoggerName</a>
+<a name="ln175">                       &lt;&lt; &quot;(&quot;</a>
+<a name="ln176">                       &lt;&lt;  QFileInfo(path).fileName() &lt;&lt; &quot;)::&quot; &lt;&lt; msg;</a>
+<a name="ln177">    return;</a>
+<a name="ln178">}</a>
+<a name="ln179">#endif // LOGGING_DISABLED</a>
+<a name="ln180"> </a>
+<a name="ln181">// Returns the required ranges</a>
+<a name="ln182">bool ZsyncWriterPrivate::getBlockRanges() {</a>
+<a name="ln183">    if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {</a>
+<a name="ln184">        return false;</a>
+<a name="ln185">    }</a>
+<a name="ln186"> </a>
+<a name="ln187">    INFO_START &quot; getBlockRanges : getting required block ranges.&quot; INFO_END;</a>
+<a name="ln188"> </a>
+<a name="ln189">    int i, n;</a>
+<a name="ln190">    int alloc_n = 100;</a>
+<a name="ln191">    zs_blockid from = 0, to = n_Blocks;</a>
+<a name="ln192">    zs_blockid *r = (zs_blockid*)malloc(2 * alloc_n * sizeof(zs_blockid));</a>
+<a name="ln193"> </a>
+<a name="ln194">    if (!r)</a>
+<a name="ln195">        return NULL;</a>
+<a name="ln196"> </a>
+<a name="ln197">    r[0] = from;</a>
+<a name="ln198">    r[1] = to;</a>
+<a name="ln199">    n = 1;</a>
+<a name="ln200">    /* Note r[2*n-1] is the last range in our prospective list */</a>
+<a name="ln201"> </a>
+<a name="ln202">    for (i = 0; i &lt; n_Ranges; i++) {</a>
+<a name="ln203">        if (p_Ranges[2 * i] &gt; r[2 * n - 1])</a>
+<a name="ln204">            continue;</a>
+<a name="ln205">        if (p_Ranges[2 * i + 1] &lt; from)</a>
+<a name="ln206">            continue;</a>
+<a name="ln207"> </a>
+<a name="ln208">        /* Okay, they intersect */</a>
+<a name="ln209">        if (n == 1 &amp;&amp; p_Ranges[2 * i] &lt;= from) {       /* Overlaps the start of our window */</a>
+<a name="ln210">            r[0] = p_Ranges[2 * i + 1] + 1;</a>
+<a name="ln211">        } else {</a>
+<a name="ln212">            /* If the last block that we still (which is the last window end -1, due</a>
+<a name="ln213">             * to half-openness) then this range just cuts the end of our window */</a>
+<a name="ln214">            if (p_Ranges[2 * i + 1] &gt;= r[2 * n - 1] - 1) {</a>
+<a name="ln215">                r[2 * n - 1] = p_Ranges[2 * i];</a>
+<a name="ln216">            } else {</a>
+<a name="ln217">                /* In the middle of our range, split it */</a>
+<a name="ln218">                r[2 * n] = p_Ranges[2 * i + 1] + 1;</a>
+<a name="ln219">                r[2 * n + 1] = r[2 * n - 1];</a>
+<a name="ln220">                r[2 * n - 1] = p_Ranges[2 * i];</a>
+<a name="ln221">                n++;</a>
+<a name="ln222">                if (n == alloc_n) {</a>
+<a name="ln223">                    zs_blockid *r2;</a>
+<a name="ln224">                    alloc_n += 100;</a>
+<a name="ln225">                    r2 = (zs_blockid*)realloc(r, 2 * alloc_n * sizeof *r);</a>
+<a name="ln226">                    if (!r2) {</a>
+<a name="ln227">                        free(r);</a>
+<a name="ln228">                        return NULL;</a>
+<a name="ln229">                    }</a>
+<a name="ln230">                    r = r2;</a>
+<a name="ln231">                }</a>
+<a name="ln232">            }</a>
+<a name="ln233">        }</a>
+<a name="ln234">    }</a>
+<a name="ln235">    r = (zs_blockid*)realloc(r, 2 * n * sizeof *r);</a>
+<a name="ln236">    if (n == 1 &amp;&amp; r[0] &gt;= r[1]) {</a>
+<a name="ln237">        n = 0;</a>
+<a name="ln238">    }</a>
+<a name="ln239"> </a>
+<a name="ln240">    for(i = 0; i &lt; n; ++i) {</a>
+<a name="ln241">        // Note: to = to * blocksize - 1; As given by author.</a>
+<a name="ln242">        auto to = r[2*i + 1];</a>
+<a name="ln243">        auto from = r[2*i];</a>
+<a name="ln244"> </a>
+<a name="ln245"> </a>
+<a name="ln246">        INFO_START &quot; getBlockRanges : (&quot; LOGR from LOGR &quot; , &quot; LOGR to LOGR &quot;).&quot; INFO_END;</a>
+<a name="ln247"> </a>
+<a name="ln248">        m_RangeDownloader-&gt;appendRange(from, to);</a>
+<a name="ln249">        QCoreApplication::processEvents();</a>
+<a name="ln250">    }</a>
+<a name="ln251"> </a>
+<a name="ln252">    INFO_START &quot; getBlockRanges : requesting &quot; LOGR n LOGR &quot; requests to server.&quot; INFO_END;</a>
+<a name="ln253"> </a>
+<a name="ln254">    free((void*)r);</a>
+<a name="ln255">    return true;</a>
+<a name="ln256">}</a>
+<a name="ln257"> </a>
+<a name="ln258">/* Simply writes whatever in downloadedData to the working target file ,</a>
+<a name="ln259"> * Used only if the downloader is downloading the entire file.</a>
+<a name="ln260"> * This automatically manages the memory of the given pointer to</a>
+<a name="ln261"> * QByteArray.</a>
+<a name="ln262">*/</a>
+<a name="ln263">void ZsyncWriterPrivate::writeDataSequential(QByteArray *dataFragment, bool isLast) {</a>
+<a name="ln264">    QScopedPointer&lt;QByteArray&gt; data(dataFragment);</a>
+<a name="ln265">    if(!p_TargetFile-&gt;isOpen()) {</a>
+<a name="ln266">        /*</a>
+<a name="ln267">         * If the target file is not opened then it most likely means</a>
+<a name="ln268">         * that the file is constructed successfully and so we have</a>
+<a name="ln269">         * no business in writting any further data.</a>
+<a name="ln270">        */</a>
+<a name="ln271">        return;</a>
+<a name="ln272">    }</a>
+<a name="ln273"> </a>
+<a name="ln274">    // Not to be confused with writeBlocks method</a>
+<a name="ln275">    // which updates n_BytesWritten by itself.</a>
+<a name="ln276">    n_BytesWritten += p_TargetFile-&gt;write(*(data.data()));</a>
+<a name="ln277">    if(isLast) {</a>
+<a name="ln278">        QTimer::singleShot(2500, this, &amp;ZsyncWriterPrivate::verifyAndConstructTargetFile);</a>
+<a name="ln279">    }</a>
+<a name="ln280">    return;</a>
+<a name="ln281">}</a>
+<a name="ln282"> </a>
+<a name="ln283">/*</a>
+<a name="ln284"> * Writes the range in the correct block location.</a>
+<a name="ln285"> * Compares all blocks with the rolling checksum parsed</a>
+<a name="ln286"> * from the zsync control file.</a>
+<a name="ln287"> * Incase there is a mismatch , Only verified blocks are written the working target file.</a>
+<a name="ln288">*/</a>
+<a name="ln289">void ZsyncWriterPrivate::writeBlockRanges(qint32 fromBlock, qint32 toBlock, QByteArray *downloadedData, bool isLast) {</a>
+<a name="ln290">    unsigned char md4sum[CHECKSUM_SIZE];</a>
+<a name="ln291">    /* Build checksum hash tables if we don't have them yet */</a>
+<a name="ln292">    if (!p_RsumHash) {</a>
+<a name="ln293">        if (!buildHash()) {</a>
+<a name="ln294">            emit error(QAppImageUpdateEnums::Error::CannotConstructHashTable);</a>
+<a name="ln295">            return;</a>
+<a name="ln296">        }</a>
+<a name="ln297">    }</a>
+<a name="ln298"> </a>
+<a name="ln299">    bool Md4ChecksumsMatched = true;</a>
+<a name="ln300">    QScopedPointer&lt;QByteArray&gt; downloaded(downloadedData);</a>
+<a name="ln301">    QScopedPointer&lt;QBuffer&gt; buffer(new QBuffer(downloadedData));</a>
+<a name="ln302">    buffer-&gt;open(QIODevice::ReadOnly);</a>
+<a name="ln303"> </a>
+<a name="ln304"> </a>
+<a name="ln305"> </a>
+<a name="ln306">    // In the original code the author uses the similar with the following equation,</a>
+<a name="ln307">    // bfrom = rangeFrom / blocksize</a>
+<a name="ln308">    // bto = bfrom + blocks - 1 .. (1)</a>
+<a name="ln309">    //</a>
+<a name="ln310">    // Such that blocks = bto - bfrom .. (2)</a>
+<a name="ln311">    //</a>
+<a name="ln312">    // If we substitute (2) in (1) we get,</a>
+<a name="ln313">    // bto = bfrom + bto - bfrom - 1</a>
+<a name="ln314">    //     = bto - 1 .. (3)</a>
+<a name="ln315">    //</a>
+<a name="ln316">    // Hence I've used bto = &lt;original to block value&gt; - 1;</a>
+<a name="ln317">    //</a>
+<a name="ln318">    //</a>
+<a name="ln319">    // Reason for using this is, the writeBlock function which writes the</a>
+<a name="ln320">    // given data to the actual working block uses the following equation as</a>
+<a name="ln321">    // length</a>
+<a name="ln322">    //</a>
+<a name="ln323">    // length = bto - brom + 1 .. (4)</a>
+<a name="ln324">    //</a>
+<a name="ln325">    // Equating (3) in (4) we get,</a>
+<a name="ln326">    // length = bfrom + bto - bfrom - bfrom - 1 + 1</a>
+<a name="ln327">    //        = bto - bfrom</a>
+<a name="ln328">    //        = actual no. of blocks got.</a>
+<a name="ln329">    zs_blockid bfrom = fromBlock,</a>
+<a name="ln330">               bto = toBlock - 1;</a>
+<a name="ln331"> </a>
+<a name="ln332">    for (zs_blockid x = bfrom; x &lt;= bto; ++x) {</a>
+<a name="ln333">        QByteArray blockData = buffer-&gt;read(n_BlockSize);</a>
+<a name="ln334">        //// Fill with zeros if the block size is less than the required blocksize.</a>
+<a name="ln335">        if(blockData.size() != n_BlockSize) {</a>
+<a name="ln336">            INFO_START &quot; writeBlockRanges : padding block(&quot; LOGR bfrom LOGR &quot;,&quot; LOGR bto LOGR &quot;).&quot; INFO_END;</a>
+<a name="ln337">            QByteArray newBlockData;</a>
+<a name="ln338">            newBlockData.fill('\0', (n_BlockSize - blockData.size()));</a>
+<a name="ln339">            blockData.append(newBlockData);</a>
+<a name="ln340">        }</a>
+<a name="ln341">        calcMd4Checksum(&amp;md4sum[0], (const unsigned char*)blockData.constData(), n_BlockSize);</a>
+<a name="ln342">        if(memcmp(&amp;md4sum, &amp;(p_BlockHashes[x].checksum[0]), n_StrongCheckSumBytes)) {</a>
+<a name="ln343">            Md4ChecksumsMatched = false;</a>
+<a name="ln344">            WARNING_START &quot; writeBlockRanges : block(&quot; LOGR bfrom LOGR &quot;,&quot; LOGR bto LOGR &quot;).&quot; WARNING_END;</a>
+<a name="ln345">            WARNING_START &quot; writeBlockRanges : MD4 checksums mismatch.&quot; WARNING_END;</a>
+<a name="ln346">            WARNING_START &quot; writeBlockRanges : MD4 Sum of Data : &quot; LOGR</a>
+<a name="ln347">            QByteArray((const char *)(&amp;md4sum[0])).toHex() WARNING_END;</a>
+<a name="ln348">            WARNING_START &quot; writeBlockRanges : MD4 Sum of Required :  &quot; LOGR</a>
+<a name="ln349">            QByteArray((const char *)(&amp;(p_BlockHashes[x].checksum[0]))).toHex() WARNING_END;</a>
+<a name="ln350">            if (x &gt; bfrom) {    /* Write any good blocks we did get */</a>
+<a name="ln351">                INFO_START &quot; writeBlockRanges : only writting good blocks. &quot; INFO_END;</a>
+<a name="ln352">                writeBlocks((const unsigned char*)downloaded-&gt;constData(), bfrom, x - 1);</a>
+<a name="ln353">            }</a>
+<a name="ln354">            break;</a>
+<a name="ln355">        }</a>
+<a name="ln356">        QCoreApplication::processEvents();</a>
+<a name="ln357">    }</a>
+<a name="ln358"> </a>
+<a name="ln359"> </a>
+<a name="ln360">    if(Md4ChecksumsMatched) {</a>
+<a name="ln361">        writeBlocks((const unsigned char*)downloaded-&gt;constData(), bfrom, bto);</a>
+<a name="ln362">    }</a>
+<a name="ln363"> </a>
+<a name="ln364"> </a>
+<a name="ln365">    if(isLast) {</a>
+<a name="ln366">        QTimer::singleShot(2500, this, &amp;ZsyncWriterPrivate::verifyAndConstructTargetFile);</a>
+<a name="ln367">    }</a>
+<a name="ln368"> </a>
+<a name="ln369">    return;</a>
+<a name="ln370">}</a>
+<a name="ln371"> </a>
+<a name="ln372">/*</a>
+<a name="ln373"> * Sets the configuration for the current ZsyncWriterPrivate.</a>
+<a name="ln374"> * This can be seen as somewhat like init.</a>
+<a name="ln375"> * Emits finishedConfiguring when finished.</a>
+<a name="ln376"> *</a>
+<a name="ln377"> * **IMPORTANT**: You should call this always before calling start.</a>
+<a name="ln378"> * Even if canceled. If you are going to call start again, You are instructed</a>
+<a name="ln379"> * to setConfiguration first and then start after getting finishedConfiguration signal.</a>
+<a name="ln380"> *</a>
+<a name="ln381"> * This is because setConfiguration acts as clear and new config setter. Also</a>
+<a name="ln382"> * b_Configured is set to True in setConfiguration and set to False in start.</a>
+<a name="ln383"> *</a>
+<a name="ln384"> * So start only works once after setConfiguration.</a>
+<a name="ln385">*/</a>
+<a name="ln386">void ZsyncWriterPrivate::setConfiguration(qint32 blocksize,</a>
+<a name="ln387">        qint32 nblocks,</a>
+<a name="ln388">        qint32 weakChecksumBytes,</a>
+<a name="ln389">        qint32 strongChecksumBytes,</a>
+<a name="ln390">        qint32 seqMatches,</a>
+<a name="ln391">        qint32 targetFileLength,</a>
+<a name="ln392">        const QString &amp;sourceFilePath,</a>
+<a name="ln393">        const QString &amp;targetFileName,</a>
+<a name="ln394">        const QString &amp;targetFileSHA1,</a>
+<a name="ln395">        QUrl targetFileUrl,</a>
+<a name="ln396">        QBuffer *targetFileCheckSumBlocks,</a>
+<a name="ln397">        bool rangeSupported,</a>
+<a name="ln398">        QUrl torrentFileUrl) {</a>
+<a name="ln399">    p_CurrentWeakCheckSums = qMakePair(rsum({ 0, 0 }), rsum({ 0, 0 }));</a>
+<a name="ln400">    n_Blocks = nblocks,</a>
+<a name="ln401">    n_BlockSize = blocksize,</a>
+<a name="ln402">    n_BlockShift = (blocksize == 1024) ? 10 : (blocksize == 2048) ? 11 : log2(blocksize);</a>
+<a name="ln403">    n_BytesWritten = 0;</a>
+<a name="ln404">    n_Context = blocksize * seqMatches;</a>
+<a name="ln405">    n_WeakCheckSumBytes = weakChecksumBytes;</a>
+<a name="ln406">    p_WeakCheckSumMask = n_WeakCheckSumBytes &lt; 3 ? 0 : n_WeakCheckSumBytes == 3 ? 0xff : 0xffff;</a>
+<a name="ln407">    n_StrongCheckSumBytes = strongChecksumBytes;</a>
+<a name="ln408">    n_SeqMatches = seqMatches;</a>
+<a name="ln409">    n_TargetFileLength = targetFileLength;</a>
+<a name="ln410">    p_TargetFileCheckSumBlocks.reset(targetFileCheckSumBlocks);</a>
+<a name="ln411">    n_Skip = n_NextKnown =p_HashMask = p_BitHashMask = 0;</a>
+<a name="ln412">    p_Rover = p_NextMatch = nullptr;</a>
+<a name="ln413">    b_AcceptRange = rangeSupported;</a>
+<a name="ln414">    b_TorrentAvail = torrentFileUrl.isValid();</a>
+<a name="ln415">    u_TorrentFileUrl = torrentFileUrl;</a>
+<a name="ln416"> </a>
+<a name="ln417">    // Since Zsync Writer is only finished officially when all the data is sent and SHA-1 hashes match.</a>
+<a name="ln418">    // But sometimes the block range downloader can have a error or could be canceled and the Zsync Writer</a>
+<a name="ln419">    // will still be in the started state and ignore any further start calls which makes the entire object</a>
+<a name="ln420">    // unusable.</a>
+<a name="ln421">    // So the we have to default the started flag to false. Trivially the start call will be initiated on</a>
+<a name="ln422">    // the control file parser side and the control file parser initiats the zsync writer(this class)</a>
+<a name="ln423">    // after it has parsed the control file.</a>
+<a name="ln424">    // Without the below line, the zsync writer will not recover from a error or cancel.</a>
+<a name="ln425">    b_Started = b_CancelRequested = false;</a>
+<a name="ln426"> </a>
+<a name="ln427">    u_TargetFileUrl = targetFileUrl;</a>
+<a name="ln428">    if(p_BlockHashes) {</a>
+<a name="ln429">        free(p_BlockHashes);</a>
+<a name="ln430">        p_BlockHashes = nullptr;</a>
+<a name="ln431">    }</a>
+<a name="ln432">    p_BlockHashes = (hash_entry*)calloc(n_Blocks + n_SeqMatches, sizeof(p_BlockHashes[0]));</a>
+<a name="ln433"> </a>
+<a name="ln434">    if(p_Ranges) {</a>
+<a name="ln435">        free(p_Ranges);</a>
+<a name="ln436">        p_Ranges = nullptr;</a>
+<a name="ln437">        n_Ranges = 0;</a>
+<a name="ln438">    }</a>
+<a name="ln439">    p_Md4Ctx-&gt;reset();</a>
+<a name="ln440"> </a>
+<a name="ln441">    s_SourceFilePath = sourceFilePath;</a>
+<a name="ln442">    s_TargetFileName = targetFileName;</a>
+<a name="ln443">    s_TargetFileSHA1 = targetFileSHA1;</a>
+<a name="ln444"> </a>
+<a name="ln445">    short errorCode = 0;</a>
+<a name="ln446">    if((errorCode = parseTargetFileCheckSumBlocks()) &gt; 0) {</a>
+<a name="ln447">        emit error(errorCode);</a>
+<a name="ln448">        return;</a>
+<a name="ln449">    }</a>
+<a name="ln450"> </a>
+<a name="ln451"> </a>
+<a name="ln452">    INFO_START &quot; setConfiguration : creating temporary file.&quot; INFO_END;</a>
+<a name="ln453">    auto path = (s_OutputDirectory.isEmpty()) ? QFileInfo(s_SourceFilePath).path() : s_OutputDirectory;</a>
+<a name="ln454">    path = (path == &quot;.&quot; ) ? QDir::currentPath() : path;</a>
+<a name="ln455">    auto targetFilePath = path + &quot;/&quot; + s_TargetFileName + &quot;.XXXXXXXXXX.part&quot;;</a>
+<a name="ln456"> </a>
+<a name="ln457">    QFileInfo perm(path);</a>
+<a name="ln458">    if(!perm.isWritable() || !perm.isReadable()) {</a>
+<a name="ln459">        emit error(QAppImageUpdateEnums::Error::NoPermissionToReadWriteTargetFile);</a>
+<a name="ln460">        return;</a>
+<a name="ln461">    }</a>
+<a name="ln462"> </a>
+<a name="ln463">    p_TargetFile.reset(new QTemporaryFile(targetFilePath));</a>
+<a name="ln464">    if(!p_TargetFile-&gt;open()) {</a>
+<a name="ln465">        emit error(QAppImageUpdateEnums::Error::CannotOpenTargetFile);</a>
+<a name="ln466">        return;</a>
+<a name="ln467">    }</a>
+<a name="ln468">    /*</a>
+<a name="ln469">     * To open the target file we have to</a>
+<a name="ln470">     * request fileName() from the temporary file.</a>
+<a name="ln471">    */</a>
+<a name="ln472">    (void)p_TargetFile-&gt;fileName();</a>
+<a name="ln473">    INFO_START &quot; setConfiguration : temporary file will temporarily reside at &quot; LOGR p_TargetFile-&gt;fileName() LOGR &quot;.&quot; INFO_END;</a>
+<a name="ln474"> </a>
+<a name="ln475">    /// Create a range downloader or a Torrent Client to download the update</a>
+<a name="ln476">    /// in a decentralized way. Saves bandwidth for the server.</a>
+<a name="ln477"> </a>
+<a name="ln478">#if defined(DECENTRALIZED_UPDATE_ENABLED) &amp;&amp; LIBTORRENT_VERSION_NUM &gt;= 10208</a>
+<a name="ln479">    if(b_TorrentAvail &amp;&amp; b_AcceptRange) {</a>
+<a name="ln480">        INFO_START &quot; setConfiguration : candidate suitable for decentralized update&quot; INFO_END;</a>
+<a name="ln481">        m_TorrentDownloader.reset(new TorrentDownloader(m_Manager));</a>
+<a name="ln482">    } else {</a>
+<a name="ln483">        WARNING_START &quot; setConfiguration : candidate not suitable for decentralized update&quot; WARNING_END;</a>
+<a name="ln484">        m_RangeDownloader.reset(new RangeDownloader(m_Manager));</a>
+<a name="ln485">    }</a>
+<a name="ln486">#else</a>
+<a name="ln487">    if(b_TorrentAvail &amp;&amp; b_AcceptRange) {</a>
+<a name="ln488">        WARNING_START &quot; setConfiguration : candidate suitable for decentralized update but this build has no capabilities&quot;</a>
+<a name="ln489">        WARNING_END;</a>
+<a name="ln490">    }</a>
+<a name="ln491">    m_RangeDownloader.reset(new RangeDownloader(m_Manager));</a>
+<a name="ln492">#endif // DECENTRALIZED_UPDATE_ENABLED</a>
+<a name="ln493"> </a>
+<a name="ln494">    b_Configured = true;</a>
+<a name="ln495">    emit finishedConfiguring();</a>
+<a name="ln496">    return;</a>
+<a name="ln497">}</a>
+<a name="ln498"> </a>
+<a name="ln499">/* cancels the started process. */</a>
+<a name="ln500">void ZsyncWriterPrivate::cancel() {</a>
+<a name="ln501">    INFO_START &quot; cancel : cancel requested.&quot; INFO_END;</a>
+<a name="ln502">    if(!b_Started) {</a>
+<a name="ln503">        INFO_START &quot; cancel : called before started!&quot; INFO_END;</a>
+<a name="ln504">        return;</a>
+<a name="ln505">    }</a>
+<a name="ln506">    b_CancelRequested = true;</a>
+<a name="ln507">#if defined(DECENTRALIZED_UPDATE_ENABLED) &amp;&amp; LIBTORRENT_VERSION_NUM &gt;= 10208</a>
+<a name="ln508">    if(b_TorrentAvail &amp;&amp; b_AcceptRange) {</a>
+<a name="ln509">        if(!m_TorrentDownloader.isNull()) {</a>
+<a name="ln510">            m_TorrentDownloader-&gt;cancel();</a>
+<a name="ln511">        }</a>
+<a name="ln512">    } else {</a>
+<a name="ln513">        if(!m_RangeDownloader.isNull()) {</a>
+<a name="ln514">            INFO_START &quot; cancel : cancel requested to Range Downloader.&quot; INFO_END;</a>
+<a name="ln515">	    m_RangeDownloader-&gt;cancel();</a>
+<a name="ln516">        }</a>
+<a name="ln517">    }</a>
+<a name="ln518">#else</a>
+<a name="ln519">    if(!m_RangeDownloader.isNull()) {</a>
+<a name="ln520">        m_RangeDownloader-&gt;cancel();</a>
+<a name="ln521">    }</a>
+<a name="ln522">#endif // DECENTRALIZED_UPDATE_ENABLED</a>
+<a name="ln523">    INFO_START &quot; cancel : cancel requested &quot; LOGR b_CancelRequested LOGR &quot;.&quot; INFO_END;</a>
+<a name="ln524">    return;</a>
+<a name="ln525">}</a>
+<a name="ln526"> </a>
+<a name="ln527">/// You should only start after getting finishedConfiguring signal.</a>
+<a name="ln528">//  If not, start does not work.</a>
+<a name="ln529">/* start the zsync algorithm. */</a>
+<a name="ln530">void ZsyncWriterPrivate::start() {</a>
+<a name="ln531">    if(b_Started || !b_Configured)</a>
+<a name="ln532">        return;</a>
+<a name="ln533">    b_Configured = false;</a>
+<a name="ln534">    b_CancelRequested = false;</a>
+<a name="ln535">    b_Started = true;</a>
+<a name="ln536">    emit started();</a>
+<a name="ln537"> </a>
+<a name="ln538">    INFO_START &quot; start : starting delta writer.&quot; INFO_END;</a>
+<a name="ln539">    short errorCode = 0;</a>
+<a name="ln540"> </a>
+<a name="ln541">    /*</a>
+<a name="ln542">     * Check if we have some incomplete downloads.</a>
+<a name="ln543">     * if so then add them as a seed file then delete them.</a>
+<a name="ln544">    */</a>
+<a name="ln545">    QStringList foundGarbageFiles;</a>
+<a name="ln546">    {</a>
+<a name="ln547">        QStringList filters;</a>
+<a name="ln548">        filters &lt;&lt; s_TargetFileName + &quot;.*.part&quot;;</a>
+<a name="ln549"> </a>
+<a name="ln550">        QDir dir(QFileInfo(p_TargetFile-&gt;fileName()).path());</a>
+<a name="ln551">        auto foundGarbageFilesInfo = dir.entryInfoList(filters);</a>
+<a name="ln552">        QDir seedFileDir(QFileInfo(s_SourceFilePath).path());</a>
+<a name="ln553">        foundGarbageFilesInfo &lt;&lt; seedFileDir.entryInfoList(filters);</a>
+<a name="ln554"> </a>
+<a name="ln555"> </a>
+<a name="ln556">        for(auto iter = foundGarbageFilesInfo.constBegin(),</a>
+<a name="ln557">                end = foundGarbageFilesInfo.constEnd();</a>
+<a name="ln558">                iter != end;</a>
+<a name="ln559">                ++iter</a>
+<a name="ln560">           ) {</a>
+<a name="ln561">            foundGarbageFiles &lt;&lt; (*iter).absoluteFilePath();</a>
+<a name="ln562">            QCoreApplication::processEvents();</a>
+<a name="ln563">        }</a>
+<a name="ln564">        foundGarbageFiles.removeAll(QFileInfo(p_TargetFile-&gt;fileName()).absoluteFilePath());</a>
+<a name="ln565">        foundGarbageFiles.removeDuplicates();</a>
+<a name="ln566">    }</a>
+<a name="ln567"> </a>
+<a name="ln568">    if(b_AcceptRange == true) {</a>
+<a name="ln569">        /*</a>
+<a name="ln570">         * Check if we have the target file already downloaded</a>
+<a name="ln571">         * in the output of the target file directory.</a>
+<a name="ln572">        */</a>
+<a name="ln573">        {</a>
+<a name="ln574">            QString alreadyDownloadedTargetFile = QFileInfo(p_TargetFile-&gt;fileName()).path() + &quot;/&quot; + s_TargetFileName;</a>
+<a name="ln575">            QFileInfo info(alreadyDownloadedTargetFile);</a>
+<a name="ln576">            if(info.exists() &amp;&amp; info.isReadable()) {</a>
+<a name="ln577">                QFile *targetFile = nullptr;</a>
+<a name="ln578">                if((errorCode = tryOpenSourceFile(alreadyDownloadedTargetFile, &amp;targetFile)) &gt; 0) {</a>
+<a name="ln579">                    emit error(errorCode);</a>
+<a name="ln580">                    return;</a>
+<a name="ln581">                }</a>
+<a name="ln582"> </a>
+<a name="ln583"> </a>
+<a name="ln584">                int r = 0;</a>
+<a name="ln585">                if((r = submitSourceFile(targetFile)) &lt; 0) {</a>
+<a name="ln586">                    delete targetFile;</a>
+<a name="ln587">                    if(r == -2) {</a>
+<a name="ln588">                        /// Cannot construst hash table.</a>
+<a name="ln589">                        b_Started = b_CancelRequested = false;</a>
+<a name="ln590">                        emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated);</a>
+<a name="ln591">                    } else if(r == -3) {</a>
+<a name="ln592">                        /// Canceled the update</a>
+<a name="ln593">                        b_Started = false;</a>
+<a name="ln594">                    }</a>
+<a name="ln595"> </a>
+<a name="ln596">                    if(r != -1) {</a>
+<a name="ln597">                        /// -1 cannot allocated memory.</a>
+<a name="ln598">                        return;</a>
+<a name="ln599">                    }</a>
+<a name="ln600">                }</a>
+<a name="ln601">                delete targetFile;</a>
+<a name="ln602">            }</a>
+<a name="ln603">        }</a>
+<a name="ln604"> </a>
+<a name="ln605">        if(n_BytesWritten &lt; n_TargetFileLength) {</a>
+<a name="ln606">            for(auto iter = foundGarbageFiles.constBegin(),</a>
+<a name="ln607">                    end  = foundGarbageFiles.constEnd();</a>
+<a name="ln608">                    iter != end &amp;&amp; n_BytesWritten &lt; n_TargetFileLength;</a>
+<a name="ln609">                    ++iter) {</a>
+<a name="ln610">                QFile *sourceFile = nullptr;</a>
+<a name="ln611">                if((errorCode = tryOpenSourceFile(*iter, &amp;sourceFile)) &gt; 0) {</a>
+<a name="ln612">                    emit error(errorCode);</a>
+<a name="ln613">                    return;</a>
+<a name="ln614">                }</a>
+<a name="ln615"> </a>
+<a name="ln616">                int r = 0;</a>
+<a name="ln617">                if((r = submitSourceFile(sourceFile)) &lt; 0) {</a>
+<a name="ln618">                    delete sourceFile;</a>
+<a name="ln619">                    if(r == -2) {</a>
+<a name="ln620">                        /// Cannot construst hash table.</a>
+<a name="ln621">                        b_Started = b_CancelRequested = false;</a>
+<a name="ln622">                        emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated);</a>
+<a name="ln623">                    } else if(r == -3) {</a>
+<a name="ln624">                        /// Canceled the update</a>
+<a name="ln625">                        b_Started = false;</a>
+<a name="ln626">                    }</a>
+<a name="ln627">                    if(r != -1) {</a>
+<a name="ln628">                        /// -1 cannot allocated memory.</a>
+<a name="ln629">                        return;</a>
+<a name="ln630">                    }</a>
+<a name="ln631">                }</a>
+<a name="ln632">                delete sourceFile;</a>
+<a name="ln633">                QFile::remove((*iter));</a>
+<a name="ln634">            }</a>
+<a name="ln635">        }</a>
+<a name="ln636"> </a>
+<a name="ln637"> </a>
+<a name="ln638">        if(n_BytesWritten &lt; n_TargetFileLength) {</a>
+<a name="ln639">            QFile *sourceFile = nullptr;</a>
+<a name="ln640">            if((errorCode = tryOpenSourceFile(s_SourceFilePath, &amp;sourceFile)) &gt; 0) {</a>
+<a name="ln641">                emit error(errorCode);</a>
+<a name="ln642">                return;</a>
+<a name="ln643">            }</a>
+<a name="ln644"> </a>
+<a name="ln645">            int r = 0;</a>
+<a name="ln646">            if((r = submitSourceFile(sourceFile)) &lt; 0) {</a>
+<a name="ln647">                delete sourceFile;</a>
+<a name="ln648">                if(r == -1) {</a>
+<a name="ln649">                    /// Cannot allocate buffer memory</a>
+<a name="ln650">                    b_Started = b_CancelRequested = false;</a>
+<a name="ln651">                    emit error(QAppImageUpdateEnums::Error::NotEnoughMemory);</a>
+<a name="ln652">                } else if(r == -2) {</a>
+<a name="ln653">                    /// Cannot construst hash table.</a>
+<a name="ln654">                    b_Started = b_CancelRequested = false;</a>
+<a name="ln655">                    emit error(QAppImageUpdateEnums::Error::HashTableNotAllocated);</a>
+<a name="ln656">                } else if(r == -3) {</a>
+<a name="ln657">                    /// Canceled the update</a>
+<a name="ln658">                    b_Started = false;</a>
+<a name="ln659">                }</a>
+<a name="ln660">                b_Started = b_CancelRequested = false;</a>
+<a name="ln661">                return;</a>
+<a name="ln662">            }</a>
+<a name="ln663">            delete sourceFile;</a>
+<a name="ln664">        }</a>
+<a name="ln665">    }</a>
+<a name="ln666"> </a>
+<a name="ln667">    p_TransferSpeed.reset(new QElapsedTimer); // Refresh timer.</a>
+<a name="ln668">    p_TransferSpeed-&gt;start();</a>
+<a name="ln669"> </a>
+<a name="ln670">    if(n_BytesWritten &gt;= n_TargetFileLength) {</a>
+<a name="ln671">        QCoreApplication::processEvents(); // Check if cancel requested.</a>
+<a name="ln672">        if(b_CancelRequested) {</a>
+<a name="ln673">            b_Started = b_CancelRequested = false;</a>
+<a name="ln674">            emit canceled();</a>
+<a name="ln675">            return;</a>
+<a name="ln676">        }</a>
+<a name="ln677">        verifyAndConstructTargetFile();</a>
+<a name="ln678">    }</a>
+<a name="ln679">#if defined(DECENTRALIZED_UPDATE_ENABLED) &amp;&amp; LIBTORRENT_VERSION_NUM &gt;= 10208</a>
+<a name="ln680">    /// See BEP 17 and BEP 19, Web seeds or url seeds needs a server which accepts</a>
+<a name="ln681">    /// range requests, It is possible for the torrent client to update if there are</a>
+<a name="ln682">    /// ample amounts of peers seeding it but there is no assurance that the AppImage</a>
+<a name="ln683">    /// is being seeded. So if we try torrenting with a unsupported url seed then</a>
+<a name="ln684">    /// the update will just be quietly waiting for seeds forever.</a>
+<a name="ln685">    /// So the best way is to just do a dumb http download.</a>
+<a name="ln686">    else if(b_TorrentAvail &amp;&amp; b_AcceptRange) {</a>
+<a name="ln687">        m_TorrentDownloader-&gt;setTargetFileDone(n_BytesWritten);</a>
+<a name="ln688">        m_TorrentDownloader-&gt;setTargetFileLength(n_TargetFileLength);</a>
+<a name="ln689">        m_TorrentDownloader-&gt;setTorrentFileUrl(u_TorrentFileUrl);</a>
+<a name="ln690">        m_TorrentDownloader-&gt;setTargetFile(p_TargetFile.data());</a>
+<a name="ln691">        m_TorrentDownloader-&gt;setTargetFileUrl(u_TargetFileUrl);</a>
+<a name="ln692"> </a>
+<a name="ln693">        connect(m_TorrentDownloader.data(), &amp;TorrentDownloader::finished,</a>
+<a name="ln694">                this, &amp;ZsyncWriterPrivate::verifyAndConstructTargetFile, Qt::QueuedConnection);</a>
+<a name="ln695">        connect(m_TorrentDownloader.data(), &amp;TorrentDownloader::error,</a>
+<a name="ln696">                this, &amp;ZsyncWriterPrivate::handleTorrentError, Qt::QueuedConnection);</a>
+<a name="ln697">        connect(m_TorrentDownloader.data(), &amp;TorrentDownloader::canceled,</a>
+<a name="ln698">                this, &amp;ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);</a>
+<a name="ln699">        connect(m_TorrentDownloader.data(), &amp;TorrentDownloader::logger,</a>
+<a name="ln700">                this, &amp;ZsyncWriterPrivate::handleTorrentLogger);</a>
+<a name="ln701"> </a>
+<a name="ln702">        connect(m_TorrentDownloader.data(), &amp;TorrentDownloader::progress,</a>
+<a name="ln703">                this, &amp;ZsyncWriterPrivate::progress, Qt::DirectConnection);</a>
+<a name="ln704"> </a>
+<a name="ln705">    	connect(m_TorrentDownloader.data(), &amp;TorrentDownloader::started,</a>
+<a name="ln706">                this, &amp;ZsyncWriterPrivate::torrentClientStarted, </a>
+<a name="ln707">		Qt::DirectConnection);</a>
+<a name="ln708">     	connect(m_TorrentDownloader.data(), &amp;TorrentDownloader::torrentStatus,</a>
+<a name="ln709">                this, &amp;ZsyncWriterPrivate::torrentStatus, </a>
+<a name="ln710">		Qt::DirectConnection);</a>
+<a name="ln711"> </a>
+<a name="ln712">        m_TorrentDownloader-&gt;start();</a>
+<a name="ln713">    }</a>
+<a name="ln714">#endif // DECENTRALIZED_UPDATE_ENABLED</a>
+<a name="ln715">    else {</a>
+<a name="ln716">        m_RangeDownloader-&gt;setTargetFileLength(n_TargetFileLength);</a>
+<a name="ln717">        m_RangeDownloader-&gt;setBytesWritten(n_BytesWritten);</a>
+<a name="ln718"> </a>
+<a name="ln719">        if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {</a>
+<a name="ln720">            m_RangeDownloader-&gt;setFullDownload(true);</a>
+<a name="ln721">            // Full Download</a>
+<a name="ln722">            connect(m_RangeDownloader.data(), &amp;RangeDownloader::data,</a>
+<a name="ln723">                    this, &amp;ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);</a>
+<a name="ln724">        } else {</a>
+<a name="ln725">            // Partial Download</a>
+<a name="ln726">            auto partial = getBlockRanges();</a>
+<a name="ln727">            m_RangeDownloader-&gt;setFullDownload(!partial);</a>
+<a name="ln728"> </a>
+<a name="ln729">            if(partial) {</a>
+<a name="ln730">                connect(m_RangeDownloader.data(), &amp;RangeDownloader::rangeData,</a>
+<a name="ln731">                        this, &amp;ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);</a>
+<a name="ln732"> </a>
+<a name="ln733">            } else {</a>
+<a name="ln734">                connect(m_RangeDownloader.data(), &amp;RangeDownloader::data,</a>
+<a name="ln735">                        this, &amp;ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);</a>
+<a name="ln736"> </a>
+<a name="ln737">            }</a>
+<a name="ln738">        }</a>
+<a name="ln739"> </a>
+<a name="ln740">        connect(m_RangeDownloader.data(), &amp;RangeDownloader::canceled,</a>
+<a name="ln741">                this, &amp;ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);</a>
+<a name="ln742"> </a>
+<a name="ln743">        connect(m_RangeDownloader.data(), &amp;RangeDownloader::progress,</a>
+<a name="ln744">                this, &amp;ZsyncWriterPrivate::progress, Qt::DirectConnection);</a>
+<a name="ln745"> </a>
+<a name="ln746">        connect(m_RangeDownloader.data(), &amp;RangeDownloader::error,</a>
+<a name="ln747">                this, &amp;ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection);</a>
+<a name="ln748"> </a>
+<a name="ln749">        m_RangeDownloader-&gt;setBlockSize(n_BlockSize);</a>
+<a name="ln750">        m_RangeDownloader-&gt;setTargetFileUrl(u_TargetFileUrl);</a>
+<a name="ln751">        m_RangeDownloader-&gt;start();</a>
+<a name="ln752">    }</a>
+<a name="ln753">    return;</a>
+<a name="ln754">}</a>
+<a name="ln755"> </a>
+<a name="ln756">void ZsyncWriterPrivate::handleNetworkError(QNetworkReply::NetworkError code) {</a>
+<a name="ln757">    b_Started = false;</a>
+<a name="ln758">    FATAL_START &quot; handleNetworkError : &quot; LOGR code FATAL_END;</a>
+<a name="ln759">    emit error(translateQNetworkReplyError(code));</a>
+<a name="ln760">}</a>
+<a name="ln761"> </a>
+<a name="ln762">#if defined(DECENTRALIZED_UPDATE_ENABLED) &amp;&amp; LIBTORRENT_VERSION_NUM &gt;= 10208</a>
+<a name="ln763">void ZsyncWriterPrivate::handleTorrentError(QNetworkReply::NetworkError code) {</a>
+<a name="ln764">    Q_UNUSED(code);</a>
+<a name="ln765">    FATAL_START &quot; handleTorrentError : &quot; LOGR code FATAL_END;</a>
+<a name="ln766">    INFO_START &quot; handleTorrentError : Falling back to range download&quot; INFO_END;</a>
+<a name="ln767"> </a>
+<a name="ln768">    m_TorrentDownloader-&gt;disconnect();</a>
+<a name="ln769">    m_TorrentDownloader.reset(nullptr); // Delete the torrent downloader completely.</a>
+<a name="ln770"> </a>
+<a name="ln771">    /// Reset everything to default.</a>
+<a name="ln772">    b_TorrentAvail = false;</a>
+<a name="ln773"> </a>
+<a name="ln774">    m_RangeDownloader.reset(new RangeDownloader(m_Manager));</a>
+<a name="ln775">    m_RangeDownloader-&gt;setTargetFileLength(n_TargetFileLength);</a>
+<a name="ln776">    m_RangeDownloader-&gt;setBytesWritten(n_BytesWritten);</a>
+<a name="ln777"> </a>
+<a name="ln778">    if(!p_Ranges || !n_Ranges || b_AcceptRange == false) {</a>
+<a name="ln779">        m_RangeDownloader-&gt;setFullDownload(true);</a>
+<a name="ln780">        // Full Download</a>
+<a name="ln781">        connect(m_RangeDownloader.data(), &amp;RangeDownloader::data,</a>
+<a name="ln782">                this, &amp;ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);</a>
+<a name="ln783">    } else {</a>
+<a name="ln784">        // Partial Download</a>
+<a name="ln785">        auto partial = getBlockRanges();</a>
+<a name="ln786">        m_RangeDownloader-&gt;setFullDownload(!partial);</a>
+<a name="ln787"> </a>
+<a name="ln788">        if(partial) {</a>
+<a name="ln789">            connect(m_RangeDownloader.data(), &amp;RangeDownloader::rangeData,</a>
+<a name="ln790">                    this, &amp;ZsyncWriterPrivate::writeBlockRanges, Qt::QueuedConnection);</a>
+<a name="ln791"> </a>
+<a name="ln792">        } else {</a>
+<a name="ln793">            connect(m_RangeDownloader.data(), &amp;RangeDownloader::data,</a>
+<a name="ln794">                    this, &amp;ZsyncWriterPrivate::writeDataSequential, Qt::QueuedConnection);</a>
+<a name="ln795">        }</a>
+<a name="ln796">    }</a>
+<a name="ln797"> </a>
+<a name="ln798">    connect(m_RangeDownloader.data(), &amp;RangeDownloader::canceled,</a>
+<a name="ln799">            this, &amp;ZsyncWriterPrivate::handleCancel, Qt::QueuedConnection);</a>
+<a name="ln800"> </a>
+<a name="ln801">    connect(m_RangeDownloader.data(), &amp;RangeDownloader::progress,</a>
+<a name="ln802">            this, &amp;ZsyncWriterPrivate::progress, Qt::DirectConnection);</a>
+<a name="ln803"> </a>
+<a name="ln804">    connect(m_RangeDownloader.data(), &amp;RangeDownloader::error,</a>
+<a name="ln805">            this, &amp;ZsyncWriterPrivate::handleNetworkError, Qt::QueuedConnection);</a>
+<a name="ln806"> </a>
+<a name="ln807">    m_RangeDownloader-&gt;setBlockSize(n_BlockSize);</a>
+<a name="ln808">    m_RangeDownloader-&gt;setTargetFileUrl(u_TargetFileUrl);</a>
+<a name="ln809">    m_RangeDownloader-&gt;start();</a>
+<a name="ln810">}</a>
+<a name="ln811"> </a>
+<a name="ln812">void ZsyncWriterPrivate::handleTorrentLogger(QString msg) {</a>
+<a name="ln813">    INFO_START msg INFO_END;</a>
+<a name="ln814">}</a>
+<a name="ln815">#endif // DECENTRALIZED_UPDATE_ENABLED</a>
+<a name="ln816"> </a>
+<a name="ln817">void ZsyncWriterPrivate::handleCancel() {</a>
+<a name="ln818">    b_CancelRequested = false;</a>
+<a name="ln819">    b_Started = false;</a>
+<a name="ln820">    INFO_START &quot; handleCancel : canceled.&quot; INFO_END;</a>
+<a name="ln821">    emit canceled();</a>
+<a name="ln822">}</a>
+<a name="ln823"> </a>
+<a name="ln824">/*</a>
+<a name="ln825"> * This private method parses the raw checksum blocks from the zsync control file</a>
+<a name="ln826"> * and then constructs the hash table , If some error is detected , this returns</a>
+<a name="ln827"> * a non zero value with respect to the error code intrinsic to this class.</a>
+<a name="ln828"> *</a>
+<a name="ln829"> * Note:</a>
+<a name="ln830"> * 	This has to be called before any other methods , Because without the</a>
+<a name="ln831"> * 	hash table we cannot compare anything.</a>
+<a name="ln832"> *</a>
+<a name="ln833"> * Example:</a>
+<a name="ln834"> * 	short errorCode = parseTargetFileCheckSumBlocks();</a>
+<a name="ln835"> * 	if(errorCode &gt; 0)</a>
+<a name="ln836"> * 		// Handle error.</a>
+<a name="ln837">*/</a>
+<a name="ln838">short ZsyncWriterPrivate::parseTargetFileCheckSumBlocks() {</a>
+<a name="ln839">    if(!p_BlockHashes) {</a>
+<a name="ln840">        return QAppImageUpdateEnums::Error::HashTableNotAllocated;</a>
+<a name="ln841">    } else if(!p_TargetFileCheckSumBlocks ||</a>
+<a name="ln842">              p_TargetFileCheckSumBlocks-&gt;size() &lt; (n_WeakCheckSumBytes + n_StrongCheckSumBytes)) {</a>
+<a name="ln843">        return QAppImageUpdateEnums::Error::InvalidTargetFileChecksumBlocks;</a>
+<a name="ln844">    } else {</a>
+<a name="ln845">        if(!p_TargetFileCheckSumBlocks-&gt;open(QIODevice::ReadOnly))</a>
+<a name="ln846">            return QAppImageUpdateEnums::Error::CannotOpenTargetFileChecksumBlocks;</a>
+<a name="ln847">    }</a>
+<a name="ln848"> </a>
+<a name="ln849">    p_TargetFileCheckSumBlocks-&gt;seek(0);</a>
+<a name="ln850"> </a>
+<a name="ln851">    for(zs_blockid id = 0; id &lt; n_Blocks &amp;&amp; !p_TargetFileCheckSumBlocks-&gt;atEnd(); ++id) {</a>
+<a name="ln852">        rsum r = { 0, 0 };</a>
+<a name="ln853">        unsigned char checksum[16];</a>
+<a name="ln854"> </a>
+<a name="ln855">        /* Read on. */</a>
+<a name="ln856">        if (p_TargetFileCheckSumBlocks-&gt;read(((char *)&amp;r) + 4 - n_WeakCheckSumBytes, n_WeakCheckSumBytes) &lt; 1</a>
+<a name="ln857">                || p_TargetFileCheckSumBlocks-&gt;read((char *)&amp;checksum, n_StrongCheckSumBytes) &lt; 1) {</a>
+<a name="ln858">            return QAppImageUpdateEnums::Error::QbufferIoReadError;</a>
+<a name="ln859">        }</a>
+<a name="ln860"> </a>
+<a name="ln861">        /* Convert to host endian and store.</a>
+<a name="ln862">         * We need to convert from network endian to host endian ,</a>
+<a name="ln863">         * Network endian is nothing but big endian byte order , So if we have little endian byte order ,</a>
+<a name="ln864">         * We need to convert the data but if we have a big endian byte order ,</a>
+<a name="ln865">         * We can simply avoid this conversion to save computation power.</a>
+<a name="ln866">         *</a>
+<a name="ln867">         * But most of the time we will need little endian since intel's microproccessors always follows</a>
+<a name="ln868">         * the little endian byte order.</a>
+<a name="ln869">        */</a>
+<a name="ln870">        if(Q_BYTE_ORDER == Q_LITTLE_ENDIAN) {</a>
+<a name="ln871">            r.a = qFromBigEndian(r.a);</a>
+<a name="ln872">            r.b = qFromBigEndian(r.b);</a>
+<a name="ln873">        }</a>
+<a name="ln874"> </a>
+<a name="ln875"> </a>
+<a name="ln876">        /* Get hash entry with checksums for this block */</a>
+<a name="ln877">        hash_entry *e = &amp;(p_BlockHashes[id]);</a>
+<a name="ln878"> </a>
+<a name="ln879">        /* Enter checksums */</a>
+<a name="ln880">        memcpy(e-&gt;checksum, checksum, n_StrongCheckSumBytes);</a>
+<a name="ln881">        e-&gt;r.a = r.a &amp; p_WeakCheckSumMask;</a>
+<a name="ln882">        e-&gt;r.b = r.b;</a>
+<a name="ln883"> </a>
+<a name="ln884">        QCoreApplication::processEvents();</a>
+<a name="ln885">    }</a>
+<a name="ln886"> </a>
+<a name="ln887">    /* New checksums invalidate any existing checksum hash tables */</a>
+<a name="ln888">    if (p_RsumHash) {</a>
+<a name="ln889">        free(p_RsumHash);</a>
+<a name="ln890">        p_RsumHash = NULL;</a>
+<a name="ln891">        free(p_BitHash);</a>
+<a name="ln892">        p_BitHash = NULL;</a>
+<a name="ln893">    }</a>
+<a name="ln894">    return 0;</a>
+<a name="ln895">}</a>
+<a name="ln896"> </a>
+<a name="ln897">/*</a>
+<a name="ln898"> * This is a private method which tries to open the given seed file</a>
+<a name="ln899"> * in the given path.</a>
+<a name="ln900"> * This method checks for the existence and the read permission of</a>
+<a name="ln901"> * the file.</a>
+<a name="ln902"> * If any of the two condition does not satisfy , This method returns</a>
+<a name="ln903"> * a error code with respect to the intrinsic error codes defined in this</a>
+<a name="ln904"> * class , else returns 0.</a>
+<a name="ln905">*/</a>
+<a name="ln906">short ZsyncWriterPrivate::tryOpenSourceFile(const QString &amp;filePath, QFile **sourceFile) {</a>
+<a name="ln907">    if(filePath.isEmpty()) {</a>
+<a name="ln908">        return 0;</a>
+<a name="ln909">    }</a>
+<a name="ln910"> </a>
+<a name="ln911">    auto seedFile = new QFile(filePath);</a>
+<a name="ln912">    /* Check if the file actually exists. */</a>
+<a name="ln913">    if(!seedFile-&gt;exists()) {</a>
+<a name="ln914">        delete seedFile;</a>
+<a name="ln915">        return QAppImageUpdateEnums::Error::SourceFileNotFound;</a>
+<a name="ln916">    }</a>
+<a name="ln917">    /* Check if we have the permission to read it. */</a>
+<a name="ln918">    auto perm = seedFile-&gt;permissions();</a>
+<a name="ln919">    if(</a>
+<a name="ln920">        !(perm &amp; QFileDevice::ReadUser) &amp;&amp;</a>
+<a name="ln921">        !(perm &amp; QFileDevice::ReadGroup) &amp;&amp;</a>
+<a name="ln922">        !(perm &amp; QFileDevice::ReadOther)</a>
+<a name="ln923">    ) {</a>
+<a name="ln924">        delete seedFile;</a>
+<a name="ln925">        return QAppImageUpdateEnums::Error::NoPermissionToReadSourceFile;</a>
+<a name="ln926">    }</a>
+<a name="ln927">    /*</a>
+<a name="ln928">     * Finally open the file.</a>
+<a name="ln929">     */</a>
+<a name="ln930">    if(!seedFile-&gt;open(QIODevice::ReadOnly)) {</a>
+<a name="ln931">        delete seedFile;</a>
+<a name="ln932">        return QAppImageUpdateEnums::Error::CannotOpenSourceFile;</a>
+<a name="ln933">    }</a>
+<a name="ln934">    *sourceFile = seedFile;</a>
+<a name="ln935">    return 0;</a>
+<a name="ln936">}</a>
+<a name="ln937"> </a>
+<a name="ln938"> </a>
+<a name="ln939">/*</a>
+<a name="ln940"> * This private slot verifies if the current working target file matches</a>
+<a name="ln941"> * the final SHA1 Hash of the actual target file which resides in a remote</a>
+<a name="ln942"> * server.</a>
+<a name="ln943"> * Returns true if successfully constructed the target file.</a>
+<a name="ln944">*/</a>
+<a name="ln945">bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {</a>
+<a name="ln946">    if(!p_TargetFile-&gt;isOpen() || !p_TargetFile-&gt;autoRemove()) {</a>
+<a name="ln947">        return true;</a>
+<a name="ln948">    }</a>
+<a name="ln949"> </a>
+<a name="ln950">    bool constructed = false;</a>
+<a name="ln951">    QString UnderConstructionFileSHA1;</a>
+<a name="ln952">    qint64 bufferSize = 0;</a>
+<a name="ln953">    QScopedPointer&lt;QCryptographicHash&gt; SHA1Hasher(new QCryptographicHash(QCryptographicHash::Sha1));</a>
+<a name="ln954"> </a>
+<a name="ln955">    /*</a>
+<a name="ln956">     * Truncate and Seek.</a>
+<a name="ln957">     **/</a>
+<a name="ln958">    p_TargetFile-&gt;resize(n_TargetFileLength);</a>
+<a name="ln959">    p_TargetFile-&gt;seek(0);</a>
+<a name="ln960"> </a>
+<a name="ln961">    INFO_START &quot; verifyAndConstructTargetFile : calculating sha1 hash on temporary target file. &quot; INFO_END;</a>
+<a name="ln962">    if(n_TargetFileLength &gt;= 1073741824) { // 1 GiB and more.</a>
+<a name="ln963">        bufferSize = 104857600; // copy per 100 MiB.</a>
+<a name="ln964">    } else if(n_TargetFileLength &gt;= 1048576 ) { // 1 MiB and more.</a>
+<a name="ln965">        bufferSize = 1048576; // copy per 1 MiB.</a>
+<a name="ln966">    } else if(n_TargetFileLength  &gt;= 1024) { // 1 KiB and more.</a>
+<a name="ln967">        bufferSize = 4096; // copy per 4 KiB.</a>
+<a name="ln968">    } else { // less than 1 KiB</a>
+<a name="ln969">        bufferSize = 1024; // copy per 1 KiB.</a>
+<a name="ln970">    }</a>
+<a name="ln971"> </a>
+<a name="ln972">    while(!p_TargetFile-&gt;atEnd()) {</a>
+<a name="ln973">        SHA1Hasher-&gt;addData(p_TargetFile-&gt;read(bufferSize));</a>
+<a name="ln974">        QCoreApplication::processEvents();</a>
+<a name="ln975">    }</a>
+<a name="ln976">    UnderConstructionFileSHA1 = QString(SHA1Hasher-&gt;result().toHex().toUpper());</a>
+<a name="ln977"> </a>
+<a name="ln978">    INFO_START &quot; verifyAndConstructTargetFile : comparing temporary target file sha1 hash(&quot; LOGR UnderConstructionFileSHA1</a>
+<a name="ln979">    LOGR &quot;) and remote target file sha1 hash(&quot; LOGR s_TargetFileSHA1 INFO_END;</a>
+<a name="ln980"> </a>
+<a name="ln981">    if(UnderConstructionFileSHA1 == s_TargetFileSHA1) {</a>
+<a name="ln982">        INFO_START &quot; verifyAndConstructTargetFile : sha1 hash matches!&quot; INFO_END;</a>
+<a name="ln983">        QString newTargetFileName;</a>
+<a name="ln984">        p_TargetFile-&gt;setAutoRemove(!(constructed = true));</a>
+<a name="ln985">        /*</a>
+<a name="ln986">             * Rename the new version with current time stamp.</a>
+<a name="ln987">             * Do not touch anything else.</a>
+<a name="ln988">             * Note: Since we checked for permissions earlier</a>
+<a name="ln989">             * , We don't need to verify it again.</a>
+<a name="ln990">             */</a>
+<a name="ln991">        {</a>
+<a name="ln992">            QFileInfo sameFile(QFileInfo(p_TargetFile-&gt;fileName()).path() + &quot;/&quot; + s_TargetFileName);</a>
+<a name="ln993">            if(sameFile.exists()) {</a>
+<a name="ln994">                newTargetFileName = sameFile.baseName() +</a>
+<a name="ln995">                                    QString(&quot;-revised-on-&quot;) +</a>
+<a name="ln996">                                    QDateTime::currentDateTime().toString(Qt::ISODate)</a>
+<a name="ln997">                                    .replace(&quot;:&quot;, &quot;-&quot;)</a>
+<a name="ln998">                                    .replace(&quot; &quot;, &quot;-&quot;) +</a>
+<a name="ln999">                                    QString(&quot;.&quot;) +</a>
+<a name="ln1000">                                    sameFile.completeSuffix();</a>
+<a name="ln1001"> </a>
+<a name="ln1002">                INFO_START &quot; verifyAndConstructTargetFile : file with target file name exists.&quot; INFO_END;</a>
+<a name="ln1003">                INFO_START &quot; verifyAndConstructTargetFile : renaming new version as &quot; LOGR newTargetFileName LOGR &quot;.&quot; INFO_END;</a>
+<a name="ln1004">            } else {</a>
+<a name="ln1005">                newTargetFileName = s_TargetFileName;</a>
+<a name="ln1006">            }</a>
+<a name="ln1007">        }</a>
+<a name="ln1008">        p_TargetFile-&gt;rename(QFileInfo(p_TargetFile-&gt;fileName()).path() + &quot;/&quot; + newTargetFileName);</a>
+<a name="ln1009"> </a>
+<a name="ln1010">        /*Set the same permission as the old version and close. */</a>
+<a name="ln1011">        p_TargetFile-&gt;setPermissions(QFileInfo(s_SourceFilePath).permissions());</a>
+<a name="ln1012">        p_TargetFile-&gt;close();</a>
+<a name="ln1013">    } else {</a>
+<a name="ln1014">        b_Started = b_CancelRequested = false;</a>
+<a name="ln1015">        FATAL_START &quot; verifyAndConstructTargetFile : sha1 hash mismatch.&quot; FATAL_END;</a>
+<a name="ln1016">        emit error(QAppImageUpdateEnums::Error::TargetFileSha1HashMismatch);</a>
+<a name="ln1017">        return constructed;</a>
+<a name="ln1018">    }</a>
+<a name="ln1019"> </a>
+<a name="ln1020">    /*</a>
+<a name="ln1021">     * Emit finished signal.</a>
+<a name="ln1022">    */</a>
+<a name="ln1023"> </a>
+<a name="ln1024">    QJsonObject newVersionDetails {</a>
+<a name="ln1025">        {&quot;AbsolutePath&quot;, QFileInfo(p_TargetFile-&gt;fileName()).absoluteFilePath() },</a>
+<a name="ln1026">        {&quot;Sha1Hash&quot;, UnderConstructionFileSHA1},</a>
+<a name="ln1027">        {&quot;UsedTorrent&quot;, b_TorrentAvail &amp;&amp; b_AcceptRange}</a>
+<a name="ln1028">    };</a>
+<a name="ln1029">    b_Started = b_CancelRequested = false;</a>
+<a name="ln1030">    emit finished(newVersionDetails, s_SourceFilePath);</a>
+<a name="ln1031">    return constructed;</a>
+<a name="ln1032">}</a>
+<a name="ln1033"> </a>
+<a name="ln1034">/* Given a hash table entry, check the data in this block against every entry</a>
+<a name="ln1035"> * in the linked list for this hash entry, checking the checksums for this</a>
+<a name="ln1036"> * block against those recorded in the hash entries.</a>
+<a name="ln1037"> *</a>
+<a name="ln1038"> * If we get a hit (checksums match a desired block), write the data to that</a>
+<a name="ln1039"> * block in the target file and update our state accordingly to indicate that</a>
+<a name="ln1040"> * we have got that block successfully.</a>
+<a name="ln1041"> *</a>
+<a name="ln1042"> * Return the number of blocks successfully obtained.</a>
+<a name="ln1043"> */</a>
+<a name="ln1044">qint32 ZsyncWriterPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, const unsigned char *data,int onlyone) {</a>
+<a name="ln1045">    unsigned char md4sum[2][CHECKSUM_SIZE];</a>
+<a name="ln1046">    signed int done_md4 = -1;</a>
+<a name="ln1047">    qint32 got_blocks = 0;</a>
+<a name="ln1048">    rsum rs = p_CurrentWeakCheckSums.first;</a>
+<a name="ln1049"> </a>
+<a name="ln1050">    /* This is a hint to the caller that they should try matching the next</a>
+<a name="ln1051">     * block against a particular hash entry (because at least n_SeqMatches</a>
+<a name="ln1052">     * prior blocks to it matched in sequence). Clear it here and set it below</a>
+<a name="ln1053">     * if and when we get such a set of matches. */</a>
+<a name="ln1054">    p_NextMatch = NULL;</a>
+<a name="ln1055"> </a>
+<a name="ln1056">    /* This is essentially a for (;e;e=e-&gt;next), but we want to remove links from</a>
+<a name="ln1057">     * the list as we find matches, without keeping too many temp variables.</a>
+<a name="ln1058">     */</a>
+<a name="ln1059">    p_Rover = e;</a>
+<a name="ln1060">    while (p_Rover) {</a>
+<a name="ln1061">        zs_blockid id;</a>
+<a name="ln1062"> </a>
+<a name="ln1063">        e = p_Rover;</a>
+<a name="ln1064">        p_Rover = onlyone ? NULL : e-&gt;next;</a>
+<a name="ln1065"> </a>
+<a name="ln1066">        /* Check weak checksum first */</a>
+<a name="ln1067"> </a>
+<a name="ln1068">        // HashHit++</a>
+<a name="ln1069">        if (e-&gt;r.a != (rs.a &amp; p_WeakCheckSumMask) || e-&gt;r.b != rs.b) {</a>
+<a name="ln1070">            continue;</a>
+<a name="ln1071">        }</a>
+<a name="ln1072"> </a>
+<a name="ln1073">        id = getHashEntryBlockId( e);</a>
+<a name="ln1074"> </a>
+<a name="ln1075">        if (!onlyone &amp;&amp; n_SeqMatches &gt; 1</a>
+<a name="ln1076">                &amp;&amp; (p_BlockHashes[id + 1].r.a != (p_CurrentWeakCheckSums.second.a &amp; p_WeakCheckSumMask)</a>
+<a name="ln1077">                    || p_BlockHashes[id + 1].r.b != p_CurrentWeakCheckSums.second.b))</a>
+<a name="ln1078">            continue;</a>
+<a name="ln1079"> </a>
+<a name="ln1080">        // WeakHit++</a>
+<a name="ln1081"> </a>
+<a name="ln1082">        {</a>
+<a name="ln1083">            int ok = 1;</a>
+<a name="ln1084">            signed int check_md4 = 0;</a>
+<a name="ln1085">            zs_blockid next_known = -1;</a>
+<a name="ln1086"> </a>
+<a name="ln1087">            /* This block at least must match; we must match at least</a>
+<a name="ln1088">             * n_SeqMatches-1 others, which could either be trailing stuff,</a>
+<a name="ln1089">             * or these could be preceding blocks that we have verified</a>
+<a name="ln1090">             * already. */</a>
+<a name="ln1091">            do {</a>
+<a name="ln1092">                /* We only calculate the MD4 once we need it; but need not do so twice */</a>
+<a name="ln1093">                if (check_md4 &gt; done_md4) {</a>
+<a name="ln1094">                    calcMd4Checksum(&amp;md4sum[check_md4][0],</a>
+<a name="ln1095">                                    data + n_BlockSize * check_md4,</a>
+<a name="ln1096">                                    n_BlockSize);</a>
+<a name="ln1097">                    done_md4 = check_md4;</a>
+<a name="ln1098">                    // Checksummed++</a>
+<a name="ln1099">                }</a>
+<a name="ln1100"> </a>
+<a name="ln1101">                /* Now check the strong checksum for this block */</a>
+<a name="ln1102">                if (memcmp(&amp;md4sum[check_md4],</a>
+<a name="ln1103">                           &amp;p_BlockHashes[id + check_md4].checksum[0],</a>
+<a name="ln1104">                           n_StrongCheckSumBytes)) {</a>
+<a name="ln1105">                    ok = 0;</a>
+<a name="ln1106">                } else if (next_known == -1) {</a>
+<a name="ln1107">                }</a>
+<a name="ln1108">                check_md4++;</a>
+<a name="ln1109">                QCoreApplication::processEvents();</a>
+<a name="ln1110">            } while (ok &amp;&amp; !onlyone &amp;&amp; check_md4 &lt; n_SeqMatches);</a>
+<a name="ln1111"> </a>
+<a name="ln1112">            if (ok) {</a>
+<a name="ln1113">                qint32 num_write_blocks;</a>
+<a name="ln1114"> </a>
+<a name="ln1115">                /* Find the next block that we already have data for. If this</a>
+<a name="ln1116">                 * is part of a run of matches then we have this stored already</a>
+<a name="ln1117">                 * as -&gt;next_known. */</a>
+<a name="ln1118">                zs_blockid next_known = onlyone ? n_NextKnown : nextKnownBlock( id);</a>
+<a name="ln1119"> </a>
+<a name="ln1120">                // stronghit++</a>
+<a name="ln1121"> </a>
+<a name="ln1122">                if (next_known &gt; id + check_md4) {</a>
+<a name="ln1123">                    num_write_blocks = check_md4;</a>
+<a name="ln1124"> </a>
+<a name="ln1125">                    /* Save state for this run of matches */</a>
+<a name="ln1126">                    p_NextMatch = &amp;(p_BlockHashes[id + check_md4]);</a>
+<a name="ln1127">                    if (!onlyone) n_NextKnown = next_known;</a>
+<a name="ln1128">                } else {</a>
+<a name="ln1129">                    /* We've reached the EOF, or data we already know. Just</a>
+<a name="ln1130">                     * write out the blocks we don't know, and that's the end</a>
+<a name="ln1131">                     * of this run of matches. */</a>
+<a name="ln1132">                    num_write_blocks = next_known - id;</a>
+<a name="ln1133">                }</a>
+<a name="ln1134"> </a>
+<a name="ln1135">                /* Write out the matched blocks that we don't yet know */</a>
+<a name="ln1136">                writeBlocks( data, id, id + num_write_blocks - 1);</a>
+<a name="ln1137">                got_blocks += num_write_blocks;</a>
+<a name="ln1138">            }</a>
+<a name="ln1139">        }</a>
+<a name="ln1140">    }</a>
+<a name="ln1141">    return got_blocks;</a>
+<a name="ln1142">}</a>
+<a name="ln1143"> </a>
+<a name="ln1144">/* Reads the supplied data (length datalen) and identifies any contained blocks</a>
+<a name="ln1145"> * of data that can be used to make up the target file.</a>
+<a name="ln1146"> *</a>
+<a name="ln1147"> * offset should be 0 for a new data stream (or if our position in the data</a>
+<a name="ln1148"> * stream has been changed and does not match the last call) or should be the</a>
+<a name="ln1149"> * offset in the whole source stream otherwise.</a>
+<a name="ln1150"> *</a>
+<a name="ln1151"> * Returns the number of blocks in the target file that we obtained as a result</a>
+<a name="ln1152"> * of reading this buffer.</a>
+<a name="ln1153"> *</a>
+<a name="ln1154"> * IMPLEMENTATION:</a>
+<a name="ln1155"> * We maintain the following state:</a>
+<a name="ln1156"> * n_Skip - the number of bytes to skip next time we enter ZsyncWriterPrivate::submitSourceData</a>
+<a name="ln1157"> *        e.g. because we've just matched a block and the forward jump takes</a>
+<a name="ln1158"> *        us past the end of the buffer</a>
+<a name="ln1159"> * p_CurrentWeakCheckSums.first - rolling checksum of the first blocksize bytes of the buffer</a>
+<a name="ln1160"> * p_CurrentWeakCheckSums.second - rolling checksum of the next blocksize bytes of the buffer (if n_SeqMatches &gt; 1)</a>
+<a name="ln1161"> */</a>
+<a name="ln1162">qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_t offset) {</a>
+<a name="ln1163">    /* The window in data[] currently being considered is</a>
+<a name="ln1164">     * [x, x+bs)</a>
+<a name="ln1165">     */</a>
+<a name="ln1166">    qint32 x = 0;</a>
+<a name="ln1167">    qint32 bs = n_BlockSize;</a>
+<a name="ln1168">    qint32 got_blocks = 0;</a>
+<a name="ln1169"> </a>
+<a name="ln1170">    if (offset) {</a>
+<a name="ln1171">        x = n_Skip;</a>
+<a name="ln1172">    } else {</a>
+<a name="ln1173">        p_NextMatch = NULL;</a>
+<a name="ln1174">    }</a>
+<a name="ln1175"> </a>
+<a name="ln1176">    if (x || !offset) {</a>
+<a name="ln1177">        p_CurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);</a>
+<a name="ln1178">        if (n_SeqMatches &gt; 1)</a>
+<a name="ln1179">            p_CurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);</a>
+<a name="ln1180">    }</a>
+<a name="ln1181">    n_Skip = 0;</a>
+<a name="ln1182"> </a>
+<a name="ln1183">    /* Work through the block until the current blocksize bytes being</a>
+<a name="ln1184">     * considered, starting at x, is at the end of the buffer */</a>
+<a name="ln1185">    for (;;) {</a>
+<a name="ln1186">        if ((size_t)(x + n_Context) == len) {</a>
+<a name="ln1187">            return got_blocks;</a>
+<a name="ln1188">        }</a>
+<a name="ln1189">        {</a>
+<a name="ln1190">            /* # of blocks of the output file we got from this data */</a>
+<a name="ln1191">            qint32 thismatch = 0;</a>
+<a name="ln1192">            /* # of blocks to advance if thismatch &gt; 0. Can be less than</a>
+<a name="ln1193">             * thismatch as thismatch could be N*blocks_matched, if a block was</a>
+<a name="ln1194">             * duplicated to multiple locations in the output file. */</a>
+<a name="ln1195">            qint32 blocks_matched = 0;</a>
+<a name="ln1196"> </a>
+<a name="ln1197">            /* If the previous block was a match, but we're looking for</a>
+<a name="ln1198">             * sequential matches, then test this block against the block in</a>
+<a name="ln1199">             * the target immediately after our previous hit. */</a>
+<a name="ln1200">            if (p_NextMatch &amp;&amp; n_SeqMatches &gt; 1) {</a>
+<a name="ln1201">                if (0 != (thismatch = checkCheckSumsOnHashChain( p_NextMatch, data + x, 1))) {</a>
+<a name="ln1202">                    blocks_matched = 1;</a>
+<a name="ln1203">                }</a>
+<a name="ln1204">            }</a>
+<a name="ln1205">            if (!thismatch) {</a>
+<a name="ln1206">                const struct hash_entry *e;</a>
+<a name="ln1207"> </a>
+<a name="ln1208">                /* Do a hash table lookup - first in the p_BitHash (fast negative</a>
+<a name="ln1209">                 * check) and then in the rsum hash */</a>
+<a name="ln1210">                unsigned hash = p_CurrentWeakCheckSums.first.b;</a>
+<a name="ln1211">                hash ^= ((n_SeqMatches &gt; 1) ? p_CurrentWeakCheckSums.second.b</a>
+<a name="ln1212">                         : p_CurrentWeakCheckSums.first.a &amp; p_WeakCheckSumMask) &lt;&lt; BITHASHBITS;</a>
+<a name="ln1213">                if ((p_BitHash[(hash &amp; p_BitHashMask) &gt;&gt; 3] &amp; (1 &lt;&lt; (hash &amp; 7))) != 0</a>
+<a name="ln1214">                        &amp;&amp; (e = p_RsumHash[hash &amp; p_HashMask]) != NULL) {</a>
+<a name="ln1215"> </a>
+<a name="ln1216">                    /* Okay, we have a hash hit. Follow the hash chain and</a>
+<a name="ln1217">                     * check our block against all the entries. */</a>
+<a name="ln1218">                    thismatch = checkCheckSumsOnHashChain( e, data + x, 0);</a>
+<a name="ln1219">                    if (thismatch)</a>
+<a name="ln1220">                        blocks_matched = n_SeqMatches;</a>
+<a name="ln1221">                }</a>
+<a name="ln1222">            }</a>
+<a name="ln1223">            got_blocks += thismatch;</a>
+<a name="ln1224"> </a>
+<a name="ln1225">            /* If we got a hit, skip forward (if a block in the target matches</a>
+<a name="ln1226">             * at x, it's highly unlikely to get a hit at x+1 as all the</a>
+<a name="ln1227">             * target's blocks are multiples of the blocksize apart. */</a>
+<a name="ln1228">            if (blocks_matched) {</a>
+<a name="ln1229">                x += bs + (blocks_matched &gt; 1 ? bs : 0);</a>
+<a name="ln1230"> </a>
+<a name="ln1231">                if ((size_t)(x + n_Context) &gt; len) {</a>
+<a name="ln1232">                    /* can't calculate rsum for block after this one, because</a>
+<a name="ln1233">                     * it's not in the buffer. So leave a hint for next time so</a>
+<a name="ln1234">                     * we know we need to recalculate */</a>
+<a name="ln1235">                    n_Skip = x + n_Context - len;</a>
+<a name="ln1236">                    return got_blocks;</a>
+<a name="ln1237">                }</a>
+<a name="ln1238"> </a>
+<a name="ln1239">                /* If we are moving forward just 1 block, we already have the</a>
+<a name="ln1240">                 * following block rsum. If we are skipping both, then</a>
+<a name="ln1241">                 * recalculate both */</a>
+<a name="ln1242">                if (n_SeqMatches &gt; 1 &amp;&amp; blocks_matched == 1)</a>
+<a name="ln1243">                    p_CurrentWeakCheckSums.first = p_CurrentWeakCheckSums.second;</a>
+<a name="ln1244">                else</a>
+<a name="ln1245">                    p_CurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);</a>
+<a name="ln1246">                if (n_SeqMatches &gt; 1)</a>
+<a name="ln1247">                    p_CurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);</a>
+<a name="ln1248">                continue;</a>
+<a name="ln1249">            }</a>
+<a name="ln1250">        }</a>
+<a name="ln1251"> </a>
+<a name="ln1252">        /* Else - advance the window by 1 byte - update the rolling checksum</a>
+<a name="ln1253">         * and our offset in the buffer */</a>
+<a name="ln1254">        {</a>
+<a name="ln1255">            unsigned char Nc = data[x + bs * 2];</a>
+<a name="ln1256">            unsigned char nc = data[x + bs];</a>
+<a name="ln1257">            unsigned char oc = data[x];</a>
+<a name="ln1258">            UPDATE_RSUM(p_CurrentWeakCheckSums.first.a, p_CurrentWeakCheckSums.first.b, oc, nc, n_BlockShift);</a>
+<a name="ln1259">            if (n_SeqMatches &gt; 1)</a>
+<a name="ln1260">                UPDATE_RSUM(p_CurrentWeakCheckSums.second.a, p_CurrentWeakCheckSums.second.b, nc, Nc, n_BlockShift);</a>
+<a name="ln1261">        }</a>
+<a name="ln1262">        x++;</a>
+<a name="ln1263">    }</a>
+<a name="ln1264">}</a>
+<a name="ln1265"> </a>
+<a name="ln1266">/* Read the given stream, applying the rsync rolling checksum algorithm to</a>
+<a name="ln1267"> * identify any blocks of data in common with the target file. Blocks found are</a>
+<a name="ln1268"> * written to our working target output.</a>
+<a name="ln1269"> */</a>
+<a name="ln1270">qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {</a>
+<a name="ln1271">    if(!file) {</a>
+<a name="ln1272">        return 0;</a>
+<a name="ln1273">    }</a>
+<a name="ln1274"> </a>
+<a name="ln1275">    qint32 error = 0;</a>
+<a name="ln1276">    off_t in = 0;</a>
+<a name="ln1277">    /* Allocate buffer of 16 blocks */</a>
+<a name="ln1278">    qint32 bufsize = n_BlockSize * 16;</a>
+<a name="ln1279">    unsigned char *buf = (unsigned char*)malloc(bufsize + n_Context);</a>
+<a name="ln1280">    if (!buf)</a>
+<a name="ln1281">        return (error = -1);</a>
+<a name="ln1282"> </a>
+<a name="ln1283">    /* Build checksum hash tables ready to analyse the blocks we find */</a>
+<a name="ln1284">    if (!p_RsumHash) {</a>
+<a name="ln1285">        if (!buildHash()) {</a>
+<a name="ln1286">            free(buf);</a>
+<a name="ln1287">            return (error = -2);</a>
+<a name="ln1288">        }</a>
+<a name="ln1289">    }</a>
+<a name="ln1290"> </a>
+<a name="ln1291"> </a>
+<a name="ln1292">    p_TransferSpeed.reset(new QElapsedTimer);</a>
+<a name="ln1293">    p_TransferSpeed-&gt;start();</a>
+<a name="ln1294">    while (!file-&gt;atEnd()) {</a>
+<a name="ln1295">        size_t len;</a>
+<a name="ln1296">        off_t start_in = in;</a>
+<a name="ln1297"> </a>
+<a name="ln1298">        /* If this is the start, fill the buffer for the first time */</a>
+<a name="ln1299">        if (!in) {</a>
+<a name="ln1300">            len = file-&gt;read((char*)buf, bufsize);</a>
+<a name="ln1301">            in += len;</a>
+<a name="ln1302">        }</a>
+<a name="ln1303"> </a>
+<a name="ln1304">        /* Else, move the last n_Context bytes from the end of the buffer to the</a>
+<a name="ln1305">         * start, and refill the rest of the buffer from the stream. */</a>
+<a name="ln1306">        else {</a>
+<a name="ln1307">            memcpy(buf, buf + (bufsize - n_Context), n_Context);</a>
+<a name="ln1308">            in += bufsize - n_Context;</a>
+<a name="ln1309">            len = n_Context + file-&gt;read((char*)(buf + n_Context), (bufsize - n_Context));</a>
+<a name="ln1310">        }</a>
+<a name="ln1311"> </a>
+<a name="ln1312">        if (file-&gt;atEnd()) {          /* 0 pad to complete a block */</a>
+<a name="ln1313">            memset(buf + len, 0, n_Context);</a>
+<a name="ln1314">            len += n_Context;</a>
+<a name="ln1315">        }</a>
+<a name="ln1316"> </a>
+<a name="ln1317">        /* Process the data in the buffer, and report progress */</a>
+<a name="ln1318">        submitSourceData( buf, len, start_in);</a>
+<a name="ln1319">        {</a>
+<a name="ln1320">            qint64 bytesReceived = n_BytesWritten,</a>
+<a name="ln1321">                   bytesTotal = n_TargetFileLength;</a>
+<a name="ln1322"> </a>
+<a name="ln1323">            int nPercentage = static_cast&lt;int&gt;(</a>
+<a name="ln1324">                                  (static_cast&lt;float&gt;</a>
+<a name="ln1325">                                   ( bytesReceived ) * 100.0</a>
+<a name="ln1326">                                  ) / static_cast&lt;float&gt;</a>
+<a name="ln1327">                                  (</a>
+<a name="ln1328">                                      bytesTotal</a>
+<a name="ln1329">                                  )</a>
+<a name="ln1330">                              );</a>
+<a name="ln1331"> </a>
+<a name="ln1332">            double nSpeed =  bytesReceived * 1000.0 / p_TransferSpeed-&gt;elapsed();</a>
+<a name="ln1333">            QString sUnit;</a>
+<a name="ln1334">            if (nSpeed &lt; 1024) {</a>
+<a name="ln1335">                sUnit = &quot;bytes/sec&quot;;</a>
+<a name="ln1336">            } else if (nSpeed &lt; 1024 * 1024) {</a>
+<a name="ln1337">                nSpeed /= 1024;</a>
+<a name="ln1338">                sUnit = &quot;kB/s&quot;;</a>
+<a name="ln1339">            } else {</a>
+<a name="ln1340">                nSpeed /= 1024 * 1024;</a>
+<a name="ln1341">                sUnit = &quot;MB/s&quot;;</a>
+<a name="ln1342">            }</a>
+<a name="ln1343"> </a>
+<a name="ln1344">            emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);</a>
+<a name="ln1345">        }</a>
+<a name="ln1346">        QCoreApplication::processEvents();</a>
+<a name="ln1347">        if(b_CancelRequested == true) {</a>
+<a name="ln1348">            error = -3;</a>
+<a name="ln1349">            b_CancelRequested = false;</a>
+<a name="ln1350">            emit canceled();</a>
+<a name="ln1351">            break;</a>
+<a name="ln1352">        }</a>
+<a name="ln1353">    }</a>
+<a name="ln1354">    p_TransferSpeed.reset(new QElapsedTimer);</a>
+<a name="ln1355">    file-&gt;close();</a>
+<a name="ln1356">    free(buf);</a>
+<a name="ln1357">    return error;</a>
+<a name="ln1358">}</a>
+<a name="ln1359"> </a>
+<a name="ln1360"> </a>
+<a name="ln1361"> </a>
+<a name="ln1362">/* Build hash tables to quickly lookup a block based on its rsum value.</a>
+<a name="ln1363"> * Returns non-zero if successful.</a>
+<a name="ln1364"> */</a>
+<a name="ln1365">qint32 ZsyncWriterPrivate::buildHash() {</a>
+<a name="ln1366">    zs_blockid id;</a>
+<a name="ln1367">    qint32 i = 16;</a>
+<a name="ln1368"> </a>
+<a name="ln1369">    /* Try hash size of 2^i; step down the value of i until we find a good size</a>
+<a name="ln1370">     */</a>
+<a name="ln1371">    while ((2 &lt;&lt; (i - 1)) &gt; n_Blocks &amp;&amp; i &gt; 4) {</a>
+<a name="ln1372">        i--;</a>
+<a name="ln1373">        QCoreApplication::processEvents();</a>
+<a name="ln1374">    }</a>
+<a name="ln1375"> </a>
+<a name="ln1376">    /* Allocate hash based on rsum */</a>
+<a name="ln1377">    p_HashMask = (2 &lt;&lt; i) - 1;</a>
+<a name="ln1378">    p_RsumHash = (hash_entry**)calloc(p_HashMask + 1, sizeof *(p_RsumHash));</a>
+<a name="ln1379">    if (!p_RsumHash)</a>
+<a name="ln1380">        return 0;</a>
+<a name="ln1381"> </a>
+<a name="ln1382">    /* Allocate bit-table based on rsum */</a>
+<a name="ln1383">    p_BitHashMask = (2 &lt;&lt; (i + BITHASHBITS)) - 1;</a>
+<a name="ln1384">    p_BitHash = (unsigned char*)calloc(p_BitHashMask + 1, 1);</a>
+<a name="ln1385">    if (!p_BitHash) {</a>
+<a name="ln1386">        free(p_RsumHash);</a>
+<a name="ln1387">        p_RsumHash = NULL;</a>
+<a name="ln1388">        return 0;</a>
+<a name="ln1389">    }</a>
+<a name="ln1390"> </a>
+<a name="ln1391">    /* Now fill in the hash tables.</a>
+<a name="ln1392">     * Minor point: We do this in reverse order, because we're adding entries</a>
+<a name="ln1393">     * to the hash chains by prepending, so if we iterate over the data in</a>
+<a name="ln1394">     * reverse then the resulting hash chains have the blocks in normal order.</a>
+<a name="ln1395">     * That's improves our pattern of I/O when writing out identical blocks</a>
+<a name="ln1396">     * once we are processing data; we will write them in order. */</a>
+<a name="ln1397">    for (id = n_Blocks; id &gt; 0;) {</a>
+<a name="ln1398">        /* Decrement the loop variable here, and get the hash entry. */</a>
+<a name="ln1399">        hash_entry *e = p_BlockHashes + (--id);</a>
+<a name="ln1400"> </a>
+<a name="ln1401">        /* Prepend to linked list for this hash entry */</a>
+<a name="ln1402">        unsigned h = calcRHash( e);</a>
+<a name="ln1403">        e-&gt;next = p_RsumHash[h &amp; p_HashMask];</a>
+<a name="ln1404">        p_RsumHash[h &amp; p_HashMask] = e;</a>
+<a name="ln1405"> </a>
+<a name="ln1406">        /* And set relevant bit in the p_BitHash to 1 */</a>
+<a name="ln1407">        p_BitHash[(h &amp; p_BitHashMask) &gt;&gt; 3] |= 1 &lt;&lt; (h &amp; 7);</a>
+<a name="ln1408"> </a>
+<a name="ln1409">        QCoreApplication::processEvents();</a>
+<a name="ln1410">    }</a>
+<a name="ln1411">    return 1;</a>
+<a name="ln1412">}</a>
+<a name="ln1413"> </a>
+<a name="ln1414">/* Remove the given data block from the rsum hash table, so it won't be</a>
+<a name="ln1415"> * returned in a hash lookup again (e.g. because we now have the data)</a>
+<a name="ln1416"> */</a>
+<a name="ln1417">void ZsyncWriterPrivate::removeBlockFromHash(zs_blockid id) {</a>
+<a name="ln1418">    hash_entry *t = &amp;(p_BlockHashes[id]);</a>
+<a name="ln1419"> </a>
+<a name="ln1420">    hash_entry **p = &amp;(p_RsumHash[calcRHash(t) &amp; p_HashMask]);</a>
+<a name="ln1421"> </a>
+<a name="ln1422">    while (*p != NULL) {</a>
+<a name="ln1423">        if (*p == t) {</a>
+<a name="ln1424">            if (t == p_Rover) {</a>
+<a name="ln1425">                p_Rover = t-&gt;next;</a>
+<a name="ln1426">            }</a>
+<a name="ln1427">            *p = (*p)-&gt;next;</a>
+<a name="ln1428">            return;</a>
+<a name="ln1429">        } else {</a>
+<a name="ln1430">            p = &amp;((*p)-&gt;next);</a>
+<a name="ln1431">        }</a>
+<a name="ln1432">        QCoreApplication::processEvents();</a>
+<a name="ln1433">    }</a>
+<a name="ln1434">}</a>
+<a name="ln1435"> </a>
+<a name="ln1436"> </a>
+<a name="ln1437">/* This determines which of the existing known ranges x falls in.</a>
+<a name="ln1438"> * It returns -1 if it is inside an existing range (it doesn't tell you which</a>
+<a name="ln1439"> *  one; if you already have it, that usually is enough to know).</a>
+<a name="ln1440"> * Or it returns 0 if x is before the 1st range;</a>
+<a name="ln1441"> * 1 if it is between ranges 1 and 2 (array indexes 0 and 1)</a>
+<a name="ln1442"> * ...</a>
+<a name="ln1443"> * n_Ranges if it is after the last range</a>
+<a name="ln1444"> */</a>
+<a name="ln1445">qint32 ZsyncWriterPrivate::rangeBeforeBlock(zs_blockid x) {</a>
+<a name="ln1446">    /* Lowest number and highest number block that it could be inside (0 based) */</a>
+<a name="ln1447">    qint32 min = 0, max = n_Ranges-1;</a>
+<a name="ln1448"> </a>
+<a name="ln1449">    /* By bisection */</a>
+<a name="ln1450">    for (; min&lt;=max;) {</a>
+<a name="ln1451">        /* Range number to compare against */</a>
+<a name="ln1452">        qint32 r = (max+min)/2;</a>
+<a name="ln1453"> </a>
+<a name="ln1454">        if (x &gt; p_Ranges[2*r+1]) min = r+1;  /* After range r */</a>
+<a name="ln1455">        else if (x &lt; p_Ranges[2*r]) max = r-1;/* Before range r */</a>
+<a name="ln1456">        else return -1;                     /* In range r */</a>
+<a name="ln1457">    }</a>
+<a name="ln1458"> </a>
+<a name="ln1459">    /* If we reach here, we know min = max + 1 and we were below range max+1</a>
+<a name="ln1460">     * and above range min-1.</a>
+<a name="ln1461">     * So we're between range max and max + 1</a>
+<a name="ln1462">     * So we return max + 1  (return value is 1 based)  ( = min )</a>
+<a name="ln1463">     */</a>
+<a name="ln1464">    return min;</a>
+<a name="ln1465">}</a>
+<a name="ln1466"> </a>
+<a name="ln1467">/* Mark the given blockid as known, updating the stored known ranges</a>
+<a name="ln1468"> * appropriately */</a>
+<a name="ln1469">void ZsyncWriterPrivate::addToRanges(zs_blockid x) {</a>
+<a name="ln1470">    qint32 r = rangeBeforeBlock(x);</a>
+<a name="ln1471"> </a>
+<a name="ln1472">    if (r == -1) {</a>
+<a name="ln1473">        /* Already have this block */</a>
+<a name="ln1474">    } else {</a>
+<a name="ln1475">        /* If between two ranges and exactly filling the hole between them,</a>
+<a name="ln1476">         * merge them */</a>
+<a name="ln1477">        if (r &gt; 0 &amp;&amp; r &lt; n_Ranges</a>
+<a name="ln1478">                &amp;&amp; p_Ranges[2 * (r - 1) + 1] == x - 1</a>
+<a name="ln1479">                &amp;&amp; p_Ranges[2 * r] == x + 1) {</a>
+<a name="ln1480"> </a>
+<a name="ln1481">            // This block fills the gap between two areas that we have got completely. Merge the adjacent ranges</a>
+<a name="ln1482">            p_Ranges[2 * (r - 1) + 1] = p_Ranges[2 * r + 1];</a>
+<a name="ln1483">            memmove(&amp;p_Ranges[2 * r], &amp;p_Ranges[2 * r + 2],</a>
+<a name="ln1484">                    (n_Ranges - r - 1) * sizeof(p_Ranges[0]) * 2);</a>
+<a name="ln1485">            n_Ranges--;</a>
+<a name="ln1486">        }</a>
+<a name="ln1487"> </a>
+<a name="ln1488">        /* If adjoining a range below, add to it */</a>
+<a name="ln1489">        else if (r &gt; 0 &amp;&amp; n_Ranges &amp;&amp; p_Ranges[2 * (r - 1) + 1] == x - 1) {</a>
+<a name="ln1490">            p_Ranges[2 * (r - 1) + 1] = x;</a>
+<a name="ln1491">        }</a>
+<a name="ln1492"> </a>
+<a name="ln1493">        /* If adjoining a range above, add to it */</a>
+<a name="ln1494">        else if (r &lt; n_Ranges &amp;&amp; p_Ranges[2 * r] == x + 1) {</a>
+<a name="ln1495">            p_Ranges[2 * r] = x;</a>
+<a name="ln1496">        }</a>
+<a name="ln1497"> </a>
+<a name="ln1498">        else { /* New range for this block alone */</a>
+<a name="ln1499">            void *guard = realloc(p_Ranges, (n_Ranges + 1) * 2 * sizeof(p_Ranges[0]));</a>
+<a name="ln1500">            if(!guard) {</a>
+<a name="ln1501">                return;</a>
+<a name="ln1502">            }</a>
+<a name="ln1503">            p_Ranges = (zs_blockid*) guard;</a>
+<a name="ln1504">            memmove(&amp;p_Ranges[2 * r + 2], &amp;p_Ranges[2 * r],</a>
+<a name="ln1505">                    (n_Ranges - r) * 2 * sizeof(p_Ranges[0]));</a>
+<a name="ln1506">            p_Ranges[2 * r] = p_Ranges[2 * r + 1] = x;</a>
+<a name="ln1507">            n_Ranges++;</a>
+<a name="ln1508">        }</a>
+<a name="ln1509">    }</a>
+<a name="ln1510">}</a>
+<a name="ln1511"> </a>
+<a name="ln1512">/* Return true if blockid x of the target file is already known */</a>
+<a name="ln1513">qint32 ZsyncWriterPrivate::alreadyGotBlock(zs_blockid x) {</a>
+<a name="ln1514">    return (rangeBeforeBlock(x) == -1);</a>
+<a name="ln1515">}</a>
+<a name="ln1516"> </a>
+<a name="ln1517">/* Returns the blockid of the next block which we already have data for.</a>
+<a name="ln1518"> * If we know the requested block, it returns the blockid given; otherwise it</a>
+<a name="ln1519"> * will return a later blockid.</a>
+<a name="ln1520"> * If no later blocks are known, it returns numblocks (i.e. the block after</a>
+<a name="ln1521"> * the end of the file).</a>
+<a name="ln1522"> */</a>
+<a name="ln1523">zs_blockid ZsyncWriterPrivate::nextKnownBlock(zs_blockid x) {</a>
+<a name="ln1524">    qint32 r = rangeBeforeBlock(x);</a>
+<a name="ln1525">    if (r == -1)</a>
+<a name="ln1526">        return x;</a>
+<a name="ln1527">    if (r == n_Ranges) {</a>
+<a name="ln1528">        return n_Blocks;</a>
+<a name="ln1529">    }</a>
+<a name="ln1530">    /* Else return first block of next known range. */</a>
+<a name="ln1531">    return p_Ranges[2*r];</a>
+<a name="ln1532">}</a>
+<a name="ln1533"> </a>
+<a name="ln1534">/* Calculates the rsum hash table hash for the given hash entry. */</a>
+<a name="ln1535">unsigned ZsyncWriterPrivate::calcRHash(const hash_entry *const e) {</a>
+<a name="ln1536">    unsigned h = e[0].r.b;</a>
+<a name="ln1537"> </a>
+<a name="ln1538">    h ^= ((n_SeqMatches &gt; 1) ? e[1].r.b</a>
+<a name="ln1539">          : e[0].r.a &amp; p_WeakCheckSumMask) &lt;&lt; BITHASHBITS;</a>
+<a name="ln1540"> </a>
+<a name="ln1541">    return h;</a>
+<a name="ln1542">}</a>
+<a name="ln1543"> </a>
+<a name="ln1544">/* Returns the hash entry's blockid. */</a>
+<a name="ln1545">zs_blockid ZsyncWriterPrivate::getHashEntryBlockId(const hash_entry *e) {</a>
+<a name="ln1546">    return e - p_BlockHashes;</a>
+<a name="ln1547">}</a>
+<a name="ln1548"> </a>
+<a name="ln1549"> </a>
+<a name="ln1550">/* Writes the block range (inclusive) from the supplied buffer to the given</a>
+<a name="ln1551"> * under-construction output file */</a>
+<a name="ln1552">void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto) {</a>
+<a name="ln1553">    if(!p_TargetFile-&gt;isOpen() || !p_TargetFile-&gt;autoRemove())</a>
+<a name="ln1554">        return;</a>
+<a name="ln1555"> </a>
+<a name="ln1556">    // Equation of length with</a>
+<a name="ln1557">    // bto = &lt;original bto&gt; - 1;</a>
+<a name="ln1558">    // bfrom = &lt;original bfrom&gt;;</a>
+<a name="ln1559">    //</a>
+<a name="ln1560">    // len = &lt;original bto&gt; - 1 - bfrom + 1</a>
+<a name="ln1561">    //     = &lt;original bto&gt; - bfrom</a>
+<a name="ln1562">    //     = actual no. of blocks got.</a>
+<a name="ln1563"> </a>
+<a name="ln1564">    off_t len = ((off_t) (bto - bfrom + 1)) &lt;&lt; n_BlockShift;</a>
+<a name="ln1565">    off_t offset = ((off_t)bfrom) &lt;&lt; n_BlockShift;</a>
+<a name="ln1566"> </a>
+<a name="ln1567">    auto pos = p_TargetFile-&gt;pos();</a>
+<a name="ln1568">    p_TargetFile-&gt;seek(offset);</a>
+<a name="ln1569">    n_BytesWritten += p_TargetFile-&gt;write((char*)data, len);</a>
+<a name="ln1570">    p_TargetFile-&gt;seek(pos);</a>
+<a name="ln1571"> </a>
+<a name="ln1572">    {</a>
+<a name="ln1573">        /* Having written those blocks, discard them from the rsum hashes (as</a>
+<a name="ln1574">         * we don't need to identify data for those blocks again, and this may</a>
+<a name="ln1575">         * speed up lookups (in particular if there are lots of identical</a>
+<a name="ln1576">         * blocks), and add the written blocks to the record of blocks that we</a>
+<a name="ln1577">         * have received and stored the data for */</a>
+<a name="ln1578">        int id;</a>
+<a name="ln1579">        for (id = bfrom; id &lt;= bto; id++) {</a>
+<a name="ln1580">            removeBlockFromHash(id);</a>
+<a name="ln1581">            addToRanges(id);</a>
+<a name="ln1582">            QCoreApplication::processEvents();</a>
+<a name="ln1583">        }</a>
+<a name="ln1584">    }</a>
+<a name="ln1585">    return;</a>
+<a name="ln1586">}</a>
+<a name="ln1587"> </a>
+<a name="ln1588">/* Calculates the Md4 Checksum of the given data with respect to the given len. */</a>
+<a name="ln1589">void ZsyncWriterPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *data, size_t len) {</a>
+<a name="ln1590">    p_Md4Ctx-&gt;reset();</a>
+<a name="ln1591">    p_Md4Ctx-&gt;addData((const char*)data, len);</a>
+<a name="ln1592">    auto result = p_Md4Ctx-&gt;result();</a>
+<a name="ln1593">    memmove(c, result.constData(), sizeof(const char) * result.size());</a>
+<a name="ln1594">    return;</a>
+<a name="ln1595">}</a>
+
+</code></pre>
+<div class="balloon" rel="235"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v701/" target="_blank">V701</a> realloc() possible leak: when realloc() fails in allocating memory, original pointer 'r' is lost. Consider assigning realloc() to a temporary pointer.</p></div>
+<div class="balloon" rel="236"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v522/" target="_blank">V522</a> There might be dereferencing of a potential null pointer 'r'. Check lines: 236, 235.</p></div>
+<div class="balloon" rel="660"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v519/" target="_blank">V519</a> The 'b_Started' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 650, 660.</p></div>
+<div class="balloon" rel="601"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v586/" target="_blank">V586</a> The 'delete' operator is called twice for deallocation of the same memory space.</p></div>
+<div class="balloon" rel="632"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v586/" target="_blank">V586</a> The 'delete' operator is called twice for deallocation of the same memory space.</p></div>
+<div class="balloon" rel="984"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v547/" target="_blank">V547</a> Expression '!(constructed = true)' is always false.</p></div>
+<div class="balloon" rel="1186"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'x + n_Context' operator to the 'size_t' type, not the result.</p></div>
+<div class="balloon" rel="1231"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'x + n_Context' operator to the 'size_t' type, not the result.</p></div>
+<div class="balloon" rel="1564"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'bto - bfrom + 1' operator to the 'off_t' type, not the result.</p></div>
+
+<link rel="stylesheet" href="highlight.css">
+<script src="highlight.pack.js"></script>
+<script src="highlightjs-line-numbers.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script>hljs.initLineNumbersOnLoad();</script>
+<script>
+  $(document).ready(function() {
+      $('.balloon').each(function () {
+          var bl = $(this);
+          var line = bl.attr('rel');
+          var text = $('a[name="ln'+line+'"]').text();
+
+          var space_count = 0;
+          for(var i = 0; i<text.length; i++){
+              var char = text[i];
+              if((char !== ' ')&&(char !== '\t'))break;
+              if(char === '\t')space_count++;
+              space_count++;
+          }
+
+          bl.css('margin-left', space_count*8);
+          $('a[name="ln'+line+'"]').after(bl);
+      });
+
+      window.location = window.location;
+  });
+</script>
+</body>
+</html>

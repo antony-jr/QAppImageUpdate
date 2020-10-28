@@ -1,0 +1,243 @@
+
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII" />
+  <title>qsslconfiguration.h</title>
+
+  <link rel="stylesheet" href="../style.css"/>
+  <script src="../jquery-3.5.1.min.js"></script>
+</head>
+<body>
+
+<pre><code class = "cpp">
+<a name="ln1">/****************************************************************************</a>
+<a name="ln2">**</a>
+<a name="ln3">** Copyright (C) 2016 The Qt Company Ltd.</a>
+<a name="ln4">** Copyright (C) 2014 BlackBerry Limited. All rights reserved.</a>
+<a name="ln5">** Contact: https://www.qt.io/licensing/</a>
+<a name="ln6">**</a>
+<a name="ln7">** This file is part of the QtNetwork module of the Qt Toolkit.</a>
+<a name="ln8">**</a>
+<a name="ln9">** $QT_BEGIN_LICENSE:LGPL$</a>
+<a name="ln10">** Commercial License Usage</a>
+<a name="ln11">** Licensees holding valid commercial Qt licenses may use this file in</a>
+<a name="ln12">** accordance with the commercial license agreement provided with the</a>
+<a name="ln13">** Software or, alternatively, in accordance with the terms contained in</a>
+<a name="ln14">** a written agreement between you and The Qt Company. For licensing terms</a>
+<a name="ln15">** and conditions see https://www.qt.io/terms-conditions. For further</a>
+<a name="ln16">** information use the contact form at https://www.qt.io/contact-us.</a>
+<a name="ln17">**</a>
+<a name="ln18">** GNU Lesser General Public License Usage</a>
+<a name="ln19">** Alternatively, this file may be used under the terms of the GNU Lesser</a>
+<a name="ln20">** General Public License version 3 as published by the Free Software</a>
+<a name="ln21">** Foundation and appearing in the file LICENSE.LGPL3 included in the</a>
+<a name="ln22">** packaging of this file. Please review the following information to</a>
+<a name="ln23">** ensure the GNU Lesser General Public License version 3 requirements</a>
+<a name="ln24">** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.</a>
+<a name="ln25">**</a>
+<a name="ln26">** GNU General Public License Usage</a>
+<a name="ln27">** Alternatively, this file may be used under the terms of the GNU</a>
+<a name="ln28">** General Public License version 2.0 or (at your option) the GNU General</a>
+<a name="ln29">** Public license version 3 or any later version approved by the KDE Free</a>
+<a name="ln30">** Qt Foundation. The licenses are as published by the Free Software</a>
+<a name="ln31">** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3</a>
+<a name="ln32">** included in the packaging of this file. Please review the following</a>
+<a name="ln33">** information to ensure the GNU General Public License requirements will</a>
+<a name="ln34">** be met: https://www.gnu.org/licenses/gpl-2.0.html and</a>
+<a name="ln35">** https://www.gnu.org/licenses/gpl-3.0.html.</a>
+<a name="ln36">**</a>
+<a name="ln37">** $QT_END_LICENSE$</a>
+<a name="ln38">**</a>
+<a name="ln39">****************************************************************************/</a>
+<a name="ln40"> </a>
+<a name="ln41">/****************************************************************************</a>
+<a name="ln42">**</a>
+<a name="ln43">** In addition, as a special exception, the copyright holders listed above give</a>
+<a name="ln44">** permission to link the code of its release of Qt with the OpenSSL project's</a>
+<a name="ln45">** &quot;OpenSSL&quot; library (or modified versions of the &quot;OpenSSL&quot; library that use the</a>
+<a name="ln46">** same license as the original version), and distribute the linked executables.</a>
+<a name="ln47">**</a>
+<a name="ln48">** You must comply with the GNU General Public License version 2 in all</a>
+<a name="ln49">** respects for all of the code used other than the &quot;OpenSSL&quot; code.  If you</a>
+<a name="ln50">** modify this file, you may extend this exception to your version of the file,</a>
+<a name="ln51">** but you are not obligated to do so.  If you do not wish to do so, delete</a>
+<a name="ln52">** this exception statement from your version of this file.</a>
+<a name="ln53">**</a>
+<a name="ln54">****************************************************************************/</a>
+<a name="ln55"> </a>
+<a name="ln56">#ifndef QSSLCONFIGURATION_H</a>
+<a name="ln57">#define QSSLCONFIGURATION_H</a>
+<a name="ln58"> </a>
+<a name="ln59">#include &lt;QtNetwork/qtnetworkglobal.h&gt;</a>
+<a name="ln60">#include &lt;QtCore/qmap.h&gt;</a>
+<a name="ln61">#include &lt;QtCore/qshareddata.h&gt;</a>
+<a name="ln62">#include &lt;QtNetwork/qsslsocket.h&gt;</a>
+<a name="ln63">#include &lt;QtNetwork/qssl.h&gt;</a>
+<a name="ln64"> </a>
+<a name="ln65">#ifndef QT_NO_SSL</a>
+<a name="ln66"> </a>
+<a name="ln67">QT_BEGIN_NAMESPACE</a>
+<a name="ln68"> </a>
+<a name="ln69">template&lt;typename T&gt; class QList;</a>
+<a name="ln70">class QSslCertificate;</a>
+<a name="ln71">class QSslCipher;</a>
+<a name="ln72">class QSslKey;</a>
+<a name="ln73">class QSslEllipticCurve;</a>
+<a name="ln74">class QSslDiffieHellmanParameters;</a>
+<a name="ln75"> </a>
+<a name="ln76">class QSslConfigurationPrivate;</a>
+<a name="ln77">class Q_NETWORK_EXPORT QSslConfiguration</a>
+<a name="ln78">{</a>
+<a name="ln79">public:</a>
+<a name="ln80">    QSslConfiguration();</a>
+<a name="ln81">    QSslConfiguration(const QSslConfiguration &amp;other);</a>
+<a name="ln82">    ~QSslConfiguration();</a>
+<a name="ln83">#ifdef Q_COMPILER_RVALUE_REFS</a>
+<a name="ln84">    QSslConfiguration &amp;operator=(QSslConfiguration &amp;&amp;other) Q_DECL_NOTHROW { swap(other); return *this; }</a>
+<a name="ln85">#endif</a>
+<a name="ln86">    QSslConfiguration &amp;operator=(const QSslConfiguration &amp;other);</a>
+<a name="ln87"> </a>
+<a name="ln88">    void swap(QSslConfiguration &amp;other) Q_DECL_NOTHROW</a>
+<a name="ln89">    { qSwap(d, other.d); }</a>
+<a name="ln90"> </a>
+<a name="ln91">    bool operator==(const QSslConfiguration &amp;other) const;</a>
+<a name="ln92">    inline bool operator!=(const QSslConfiguration &amp;other) const</a>
+<a name="ln93">    { return !(*this == other); }</a>
+<a name="ln94"> </a>
+<a name="ln95">    bool isNull() const;</a>
+<a name="ln96"> </a>
+<a name="ln97">    QSsl::SslProtocol protocol() const;</a>
+<a name="ln98">    void setProtocol(QSsl::SslProtocol protocol);</a>
+<a name="ln99"> </a>
+<a name="ln100">    // Verification</a>
+<a name="ln101">    QSslSocket::PeerVerifyMode peerVerifyMode() const;</a>
+<a name="ln102">    void setPeerVerifyMode(QSslSocket::PeerVerifyMode mode);</a>
+<a name="ln103"> </a>
+<a name="ln104">    int peerVerifyDepth() const;</a>
+<a name="ln105">    void setPeerVerifyDepth(int depth);</a>
+<a name="ln106"> </a>
+<a name="ln107">    // Certificate &amp; cipher configuration</a>
+<a name="ln108">    QList&lt;QSslCertificate&gt; localCertificateChain() const;</a>
+<a name="ln109">    void setLocalCertificateChain(const QList&lt;QSslCertificate&gt; &amp;localChain);</a>
+<a name="ln110"> </a>
+<a name="ln111">    QSslCertificate localCertificate() const;</a>
+<a name="ln112">    void setLocalCertificate(const QSslCertificate &amp;certificate);</a>
+<a name="ln113"> </a>
+<a name="ln114">    QSslCertificate peerCertificate() const;</a>
+<a name="ln115">    QList&lt;QSslCertificate&gt; peerCertificateChain() const;</a>
+<a name="ln116">    QSslCipher sessionCipher() const;</a>
+<a name="ln117">    QSsl::SslProtocol sessionProtocol() const;</a>
+<a name="ln118"> </a>
+<a name="ln119">    // Private keys, for server sockets</a>
+<a name="ln120">    QSslKey privateKey() const;</a>
+<a name="ln121">    void setPrivateKey(const QSslKey &amp;key);</a>
+<a name="ln122"> </a>
+<a name="ln123">    // Cipher settings</a>
+<a name="ln124">    QList&lt;QSslCipher&gt; ciphers() const;</a>
+<a name="ln125">    void setCiphers(const QList&lt;QSslCipher&gt; &amp;ciphers);</a>
+<a name="ln126">    static QList&lt;QSslCipher&gt; supportedCiphers();</a>
+<a name="ln127"> </a>
+<a name="ln128">    // Certificate Authority (CA) settings</a>
+<a name="ln129">    QList&lt;QSslCertificate&gt; caCertificates() const;</a>
+<a name="ln130">    void setCaCertificates(const QList&lt;QSslCertificate&gt; &amp;certificates);</a>
+<a name="ln131">    static QList&lt;QSslCertificate&gt; systemCaCertificates();</a>
+<a name="ln132"> </a>
+<a name="ln133">    void setSslOption(QSsl::SslOption option, bool on);</a>
+<a name="ln134">    bool testSslOption(QSsl::SslOption option) const;</a>
+<a name="ln135"> </a>
+<a name="ln136">    QByteArray sessionTicket() const;</a>
+<a name="ln137">    void setSessionTicket(const QByteArray &amp;sessionTicket);</a>
+<a name="ln138">    int sessionTicketLifeTimeHint() const;</a>
+<a name="ln139"> </a>
+<a name="ln140">    QSslKey ephemeralServerKey() const;</a>
+<a name="ln141"> </a>
+<a name="ln142">    // EC settings</a>
+<a name="ln143">    QVector&lt;QSslEllipticCurve&gt; ellipticCurves() const;</a>
+<a name="ln144">    void setEllipticCurves(const QVector&lt;QSslEllipticCurve&gt; &amp;curves);</a>
+<a name="ln145">    static QVector&lt;QSslEllipticCurve&gt; supportedEllipticCurves();</a>
+<a name="ln146"> </a>
+<a name="ln147">    QByteArray preSharedKeyIdentityHint() const;</a>
+<a name="ln148">    void setPreSharedKeyIdentityHint(const QByteArray &amp;hint);</a>
+<a name="ln149"> </a>
+<a name="ln150">    QSslDiffieHellmanParameters diffieHellmanParameters() const;</a>
+<a name="ln151">    void setDiffieHellmanParameters(const QSslDiffieHellmanParameters &amp;dhparams);</a>
+<a name="ln152"> </a>
+<a name="ln153">    QMap&lt;QByteArray, QVariant&gt; backendConfiguration() const;</a>
+<a name="ln154">    void setBackendConfigurationOption(const QByteArray &amp;name, const QVariant &amp;value);</a>
+<a name="ln155">    void setBackendConfiguration(const QMap&lt;QByteArray, QVariant&gt; &amp;backendConfiguration = QMap&lt;QByteArray, QVariant&gt;());</a>
+<a name="ln156"> </a>
+<a name="ln157">    static QSslConfiguration defaultConfiguration();</a>
+<a name="ln158">    static void setDefaultConfiguration(const QSslConfiguration &amp;configuration);</a>
+<a name="ln159"> </a>
+<a name="ln160">    enum NextProtocolNegotiationStatus {</a>
+<a name="ln161">        NextProtocolNegotiationNone,</a>
+<a name="ln162">        NextProtocolNegotiationNegotiated,</a>
+<a name="ln163">        NextProtocolNegotiationUnsupported</a>
+<a name="ln164">    };</a>
+<a name="ln165"> </a>
+<a name="ln166">#if QT_VERSION &gt;= QT_VERSION_CHECK(6,0,0)</a>
+<a name="ln167">    void setAllowedNextProtocols(const QList&lt;QByteArray&gt; &amp;protocols);</a>
+<a name="ln168">#else</a>
+<a name="ln169">    void setAllowedNextProtocols(QList&lt;QByteArray&gt; protocols);</a>
+<a name="ln170">#endif</a>
+<a name="ln171">    QList&lt;QByteArray&gt; allowedNextProtocols() const;</a>
+<a name="ln172"> </a>
+<a name="ln173">    QByteArray nextNegotiatedProtocol() const;</a>
+<a name="ln174">    NextProtocolNegotiationStatus nextProtocolNegotiationStatus() const;</a>
+<a name="ln175"> </a>
+<a name="ln176">    static const char ALPNProtocolHTTP2[];</a>
+<a name="ln177">    static const char NextProtocolSpdy3_0[];</a>
+<a name="ln178">    static const char NextProtocolHttp1_1[];</a>
+<a name="ln179"> </a>
+<a name="ln180">private:</a>
+<a name="ln181">    friend class QSslSocket;</a>
+<a name="ln182">    friend class QSslConfigurationPrivate;</a>
+<a name="ln183">    friend class QSslSocketBackendPrivate;</a>
+<a name="ln184">    friend class QSslContext;</a>
+<a name="ln185">    QSslConfiguration(QSslConfigurationPrivate *dd);</a>
+<a name="ln186">    QSharedDataPointer&lt;QSslConfigurationPrivate&gt; d;</a>
+<a name="ln187">};</a>
+<a name="ln188"> </a>
+<a name="ln189">Q_DECLARE_SHARED(QSslConfiguration)</a>
+<a name="ln190"> </a>
+<a name="ln191">QT_END_NAMESPACE</a>
+<a name="ln192"> </a>
+<a name="ln193">Q_DECLARE_METATYPE(QSslConfiguration)</a>
+<a name="ln194"> </a>
+<a name="ln195">#endif  // QT_NO_SSL</a>
+<a name="ln196"> </a>
+<a name="ln197">#endif</a>
+
+</code></pre>
+<div class="balloon" rel="77"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v690/" target="_blank">V690</a> The 'QSslConfiguration' class implements the move assignment operator, but lacks a move constructor. It is dangerous to use such a class.</p></div>
+
+<link rel="stylesheet" href="highlight.css">
+<script src="highlight.pack.js"></script>
+<script src="highlightjs-line-numbers.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script>hljs.initLineNumbersOnLoad();</script>
+<script>
+  $(document).ready(function() {
+      $('.balloon').each(function () {
+          var bl = $(this);
+          var line = bl.attr('rel');
+          var text = $('a[name="ln'+line+'"]').text();
+
+          var space_count = 0;
+          for(var i = 0; i<text.length; i++){
+              var char = text[i];
+              if((char !== ' ')&&(char !== '\t'))break;
+              if(char === '\t')space_count++;
+              space_count++;
+          }
+
+          bl.css('margin-left', space_count*8);
+          $('a[name="ln'+line+'"]').after(bl);
+      });
+
+      window.location = window.location;
+  });
+</script>
+</body>
+</html>

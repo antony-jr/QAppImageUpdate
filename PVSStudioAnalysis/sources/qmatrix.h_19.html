@@ -1,0 +1,240 @@
+
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII" />
+  <title>qmatrix.h</title>
+
+  <link rel="stylesheet" href="../style.css"/>
+  <script src="../jquery-3.5.1.min.js"></script>
+</head>
+<body>
+
+<pre><code class = "cpp">
+<a name="ln1">/****************************************************************************</a>
+<a name="ln2">**</a>
+<a name="ln3">** Copyright (C) 2016 The Qt Company Ltd.</a>
+<a name="ln4">** Contact: https://www.qt.io/licensing/</a>
+<a name="ln5">**</a>
+<a name="ln6">** This file is part of the QtGui module of the Qt Toolkit.</a>
+<a name="ln7">**</a>
+<a name="ln8">** $QT_BEGIN_LICENSE:LGPL$</a>
+<a name="ln9">** Commercial License Usage</a>
+<a name="ln10">** Licensees holding valid commercial Qt licenses may use this file in</a>
+<a name="ln11">** accordance with the commercial license agreement provided with the</a>
+<a name="ln12">** Software or, alternatively, in accordance with the terms contained in</a>
+<a name="ln13">** a written agreement between you and The Qt Company. For licensing terms</a>
+<a name="ln14">** and conditions see https://www.qt.io/terms-conditions. For further</a>
+<a name="ln15">** information use the contact form at https://www.qt.io/contact-us.</a>
+<a name="ln16">**</a>
+<a name="ln17">** GNU Lesser General Public License Usage</a>
+<a name="ln18">** Alternatively, this file may be used under the terms of the GNU Lesser</a>
+<a name="ln19">** General Public License version 3 as published by the Free Software</a>
+<a name="ln20">** Foundation and appearing in the file LICENSE.LGPL3 included in the</a>
+<a name="ln21">** packaging of this file. Please review the following information to</a>
+<a name="ln22">** ensure the GNU Lesser General Public License version 3 requirements</a>
+<a name="ln23">** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.</a>
+<a name="ln24">**</a>
+<a name="ln25">** GNU General Public License Usage</a>
+<a name="ln26">** Alternatively, this file may be used under the terms of the GNU</a>
+<a name="ln27">** General Public License version 2.0 or (at your option) the GNU General</a>
+<a name="ln28">** Public license version 3 or any later version approved by the KDE Free</a>
+<a name="ln29">** Qt Foundation. The licenses are as published by the Free Software</a>
+<a name="ln30">** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3</a>
+<a name="ln31">** included in the packaging of this file. Please review the following</a>
+<a name="ln32">** information to ensure the GNU General Public License requirements will</a>
+<a name="ln33">** be met: https://www.gnu.org/licenses/gpl-2.0.html and</a>
+<a name="ln34">** https://www.gnu.org/licenses/gpl-3.0.html.</a>
+<a name="ln35">**</a>
+<a name="ln36">** $QT_END_LICENSE$</a>
+<a name="ln37">**</a>
+<a name="ln38">****************************************************************************/</a>
+<a name="ln39"> </a>
+<a name="ln40">#ifndef QMATRIX_H</a>
+<a name="ln41">#define QMATRIX_H</a>
+<a name="ln42"> </a>
+<a name="ln43">#include &lt;QtGui/qtguiglobal.h&gt;</a>
+<a name="ln44">#include &lt;QtGui/qpolygon.h&gt;</a>
+<a name="ln45">#include &lt;QtGui/qregion.h&gt;</a>
+<a name="ln46">#include &lt;QtGui/qwindowdefs.h&gt;</a>
+<a name="ln47">#include &lt;QtCore/qline.h&gt;</a>
+<a name="ln48">#include &lt;QtCore/qpoint.h&gt;</a>
+<a name="ln49">#include &lt;QtCore/qrect.h&gt;</a>
+<a name="ln50"> </a>
+<a name="ln51">QT_BEGIN_NAMESPACE</a>
+<a name="ln52"> </a>
+<a name="ln53"> </a>
+<a name="ln54">class QPainterPath;</a>
+<a name="ln55">class QVariant;</a>
+<a name="ln56"> </a>
+<a name="ln57">class Q_GUI_EXPORT QMatrix // 2D transform matrix</a>
+<a name="ln58">{</a>
+<a name="ln59">public:</a>
+<a name="ln60">    inline explicit QMatrix(Qt::Initialization) {}</a>
+<a name="ln61">    QMatrix();</a>
+<a name="ln62">    QMatrix(qreal m11, qreal m12, qreal m21, qreal m22,</a>
+<a name="ln63">            qreal dx, qreal dy);</a>
+<a name="ln64"> </a>
+<a name="ln65">#if QT_VERSION &lt; QT_VERSION_CHECK(6, 0, 0)</a>
+<a name="ln66">    // ### Qt 6: remove; the compiler-generated ones are fine!</a>
+<a name="ln67">    QMatrix &amp;operator=(QMatrix &amp;&amp;other) Q_DECL_NOTHROW // = default</a>
+<a name="ln68">    { memcpy(static_cast&lt;void *&gt;(this), static_cast&lt;void *&gt;(&amp;other), sizeof(QMatrix)); return *this; }</a>
+<a name="ln69">    QMatrix &amp;operator=(const QMatrix &amp;) Q_DECL_NOTHROW; // = default</a>
+<a name="ln70">    QMatrix(QMatrix &amp;&amp;other) Q_DECL_NOTHROW // = default</a>
+<a name="ln71">    { memcpy(static_cast&lt;void *&gt;(this), static_cast&lt;void *&gt;(&amp;other), sizeof(QMatrix)); }</a>
+<a name="ln72">    QMatrix(const QMatrix &amp;other) Q_DECL_NOTHROW; // = default</a>
+<a name="ln73">#endif</a>
+<a name="ln74"> </a>
+<a name="ln75">    void setMatrix(qreal m11, qreal m12, qreal m21, qreal m22,</a>
+<a name="ln76">                   qreal dx, qreal dy);</a>
+<a name="ln77"> </a>
+<a name="ln78">    qreal m11() const { return _m11; }</a>
+<a name="ln79">    qreal m12() const { return _m12; }</a>
+<a name="ln80">    qreal m21() const { return _m21; }</a>
+<a name="ln81">    qreal m22() const { return _m22; }</a>
+<a name="ln82">    qreal dx() const { return _dx; }</a>
+<a name="ln83">    qreal dy() const { return _dy; }</a>
+<a name="ln84"> </a>
+<a name="ln85">    void map(int x, int y, int *tx, int *ty) const;</a>
+<a name="ln86">    void map(qreal x, qreal y, qreal *tx, qreal *ty) const;</a>
+<a name="ln87">    QRect mapRect(const QRect &amp;) const;</a>
+<a name="ln88">    QRectF mapRect(const QRectF &amp;) const;</a>
+<a name="ln89"> </a>
+<a name="ln90">    QPoint map(const QPoint &amp;p) const;</a>
+<a name="ln91">    QPointF map(const QPointF&amp;p) const;</a>
+<a name="ln92">    QLine map(const QLine &amp;l) const;</a>
+<a name="ln93">    QLineF map(const QLineF &amp;l) const;</a>
+<a name="ln94">    QPolygonF map(const QPolygonF &amp;a) const;</a>
+<a name="ln95">    QPolygon map(const QPolygon &amp;a) const;</a>
+<a name="ln96">    QRegion map(const QRegion &amp;r) const;</a>
+<a name="ln97">    QPainterPath map(const QPainterPath &amp;p) const;</a>
+<a name="ln98">    QPolygon mapToPolygon(const QRect &amp;r) const;</a>
+<a name="ln99"> </a>
+<a name="ln100">    void reset();</a>
+<a name="ln101">    inline bool isIdentity() const;</a>
+<a name="ln102"> </a>
+<a name="ln103">    QMatrix &amp;translate(qreal dx, qreal dy);</a>
+<a name="ln104">    QMatrix &amp;scale(qreal sx, qreal sy);</a>
+<a name="ln105">    QMatrix &amp;shear(qreal sh, qreal sv);</a>
+<a name="ln106">    QMatrix &amp;rotate(qreal a);</a>
+<a name="ln107"> </a>
+<a name="ln108">    bool isInvertible() const { return !qFuzzyIsNull(_m11*_m22 - _m12*_m21); }</a>
+<a name="ln109">    qreal determinant() const { return _m11*_m22 - _m12*_m21; }</a>
+<a name="ln110"> </a>
+<a name="ln111">    Q_REQUIRED_RESULT QMatrix inverted(bool *invertible = nullptr) const;</a>
+<a name="ln112"> </a>
+<a name="ln113">    bool operator==(const QMatrix &amp;) const;</a>
+<a name="ln114">    bool operator!=(const QMatrix &amp;) const;</a>
+<a name="ln115"> </a>
+<a name="ln116">    QMatrix &amp;operator*=(const QMatrix &amp;);</a>
+<a name="ln117">    QMatrix operator*(const QMatrix &amp;o) const;</a>
+<a name="ln118"> </a>
+<a name="ln119">    operator QVariant() const;</a>
+<a name="ln120"> </a>
+<a name="ln121">private:</a>
+<a name="ln122">    inline QMatrix(bool)</a>
+<a name="ln123">            : _m11(1.)</a>
+<a name="ln124">            , _m12(0.)</a>
+<a name="ln125">            , _m21(0.)</a>
+<a name="ln126">            , _m22(1.)</a>
+<a name="ln127">            , _dx(0.)</a>
+<a name="ln128">            , _dy(0.) {}</a>
+<a name="ln129">    inline QMatrix(qreal am11, qreal am12, qreal am21, qreal am22, qreal adx, qreal ady, bool)</a>
+<a name="ln130">            : _m11(am11)</a>
+<a name="ln131">            , _m12(am12)</a>
+<a name="ln132">            , _m21(am21)</a>
+<a name="ln133">            , _m22(am22)</a>
+<a name="ln134">            , _dx(adx)</a>
+<a name="ln135">            , _dy(ady) {}</a>
+<a name="ln136">    friend class QTransform;</a>
+<a name="ln137">    qreal _m11, _m12;</a>
+<a name="ln138">    qreal _m21, _m22;</a>
+<a name="ln139">    qreal _dx, _dy;</a>
+<a name="ln140">};</a>
+<a name="ln141">Q_DECLARE_TYPEINFO(QMatrix, Q_MOVABLE_TYPE);</a>
+<a name="ln142"> </a>
+<a name="ln143">Q_GUI_EXPORT Q_DECL_CONST_FUNCTION uint qHash(const QMatrix &amp;key, uint seed = 0) Q_DECL_NOTHROW;</a>
+<a name="ln144"> </a>
+<a name="ln145">// mathematical semantics</a>
+<a name="ln146">inline QPoint operator*(const QPoint &amp;p, const QMatrix &amp;m)</a>
+<a name="ln147">{ return m.map(p); }</a>
+<a name="ln148">inline QPointF operator*(const QPointF &amp;p, const QMatrix &amp;m)</a>
+<a name="ln149">{ return m.map(p); }</a>
+<a name="ln150">inline QLineF operator*(const QLineF &amp;l, const QMatrix &amp;m)</a>
+<a name="ln151">{ return m.map(l); }</a>
+<a name="ln152">inline QLine operator*(const QLine &amp;l, const QMatrix &amp;m)</a>
+<a name="ln153">{ return m.map(l); }</a>
+<a name="ln154">inline QPolygon operator *(const QPolygon &amp;a, const QMatrix &amp;m)</a>
+<a name="ln155">{ return m.map(a); }</a>
+<a name="ln156">inline QPolygonF operator *(const QPolygonF &amp;a, const QMatrix &amp;m)</a>
+<a name="ln157">{ return m.map(a); }</a>
+<a name="ln158">inline QRegion operator *(const QRegion &amp;r, const QMatrix &amp;m)</a>
+<a name="ln159">{ return m.map(r); }</a>
+<a name="ln160">Q_GUI_EXPORT QPainterPath operator *(const QPainterPath &amp;p, const QMatrix &amp;m);</a>
+<a name="ln161"> </a>
+<a name="ln162">inline bool QMatrix::isIdentity() const</a>
+<a name="ln163">{</a>
+<a name="ln164">    return qFuzzyIsNull(_m11 - 1) &amp;&amp; qFuzzyIsNull(_m22 - 1) &amp;&amp; qFuzzyIsNull(_m12)</a>
+<a name="ln165">           &amp;&amp; qFuzzyIsNull(_m21) &amp;&amp; qFuzzyIsNull(_dx) &amp;&amp; qFuzzyIsNull(_dy);</a>
+<a name="ln166">}</a>
+<a name="ln167"> </a>
+<a name="ln168">inline bool qFuzzyCompare(const QMatrix&amp; m1, const QMatrix&amp; m2)</a>
+<a name="ln169">{</a>
+<a name="ln170">    return qFuzzyCompare(m1.m11(), m2.m11())</a>
+<a name="ln171">        &amp;&amp; qFuzzyCompare(m1.m12(), m2.m12())</a>
+<a name="ln172">        &amp;&amp; qFuzzyCompare(m1.m21(), m2.m21())</a>
+<a name="ln173">        &amp;&amp; qFuzzyCompare(m1.m22(), m2.m22())</a>
+<a name="ln174">        &amp;&amp; qFuzzyCompare(m1.dx(), m2.dx())</a>
+<a name="ln175">        &amp;&amp; qFuzzyCompare(m1.dy(), m2.dy());</a>
+<a name="ln176">}</a>
+<a name="ln177"> </a>
+<a name="ln178"> </a>
+<a name="ln179">/*****************************************************************************</a>
+<a name="ln180"> QMatrix stream functions</a>
+<a name="ln181"> *****************************************************************************/</a>
+<a name="ln182"> </a>
+<a name="ln183">#ifndef QT_NO_DATASTREAM</a>
+<a name="ln184">Q_GUI_EXPORT QDataStream &amp;operator&lt;&lt;(QDataStream &amp;, const QMatrix &amp;);</a>
+<a name="ln185">Q_GUI_EXPORT QDataStream &amp;operator&gt;&gt;(QDataStream &amp;, QMatrix &amp;);</a>
+<a name="ln186">#endif</a>
+<a name="ln187"> </a>
+<a name="ln188">#ifndef QT_NO_DEBUG_STREAM</a>
+<a name="ln189">Q_GUI_EXPORT QDebug operator&lt;&lt;(QDebug, const QMatrix &amp;);</a>
+<a name="ln190">#endif</a>
+<a name="ln191"> </a>
+<a name="ln192">QT_END_NAMESPACE</a>
+<a name="ln193"> </a>
+<a name="ln194">#endif // QMATRIX_H</a>
+
+</code></pre>
+<div class="balloon" rel="60"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v730/" target="_blank">V730</a> Not all members of a class are initialized inside the constructor. Consider inspecting: _m11, _m12, _m21, _m22, _dx, _dy.</p></div>
+
+<link rel="stylesheet" href="highlight.css">
+<script src="highlight.pack.js"></script>
+<script src="highlightjs-line-numbers.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script>hljs.initLineNumbersOnLoad();</script>
+<script>
+  $(document).ready(function() {
+      $('.balloon').each(function () {
+          var bl = $(this);
+          var line = bl.attr('rel');
+          var text = $('a[name="ln'+line+'"]').text();
+
+          var space_count = 0;
+          for(var i = 0; i<text.length; i++){
+              var char = text[i];
+              if((char !== ' ')&&(char !== '\t'))break;
+              if(char === '\t')space_count++;
+              space_count++;
+          }
+
+          bl.css('margin-left', space_count*8);
+          $('a[name="ln'+line+'"]').after(bl);
+      });
+
+      window.location = window.location;
+  });
+</script>
+</body>
+</html>

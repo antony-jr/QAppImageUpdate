@@ -1,0 +1,592 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PVS-Studio HTML Report</title>
+<style type="text/css">
+   TABLE {
+    width: 100%;
+   }
+   #col_group, #col_level, #col_code, #col_cwe, #col_misra {
+    text-align: center;
+    white-space: nowrap;
+    width: 0;
+   }
+   #col_file, #col_info, #col_projects {
+    white-space: nowrap;
+    text-align: left;
+    width: 0;
+   }
+   #col_info {
+    width: 120px;
+   }
+   #col_message {
+    text-align: left;
+   }
+  </style>
+<link rel="stylesheet" href="style.css" />
+<script type="text/javascript" src="script.js"></script>
+</head>
+<body>
+  <div class="header">
+    <img src="images/logo.png" alt=""/>
+    <h1>PVS-Studio Analysis Results</h1>
+    <br class="clear">
+  </div>
+
+  <table cellpadding="0" cellspacing="0" border="0" class="infotopic">
+     <tr><th id="col_info">Date:</th><td>Wed Oct 28 14:47:15 2020</td></tr>
+     <tr><th id="col_info">PVS-Studio Version:</th><td>7.09.42228.74</td></tr>
+     <tr><th id="col_info">Command Line:</th><td>plog-converter -a GA\:1,2 -t fullhtml -o ../website/build/QAppImageUpdate/PVSStudioAnalysis project.log </td></tr>
+     <tr><th id="col_info">Total Warnings (GA):</th><td>76</td></tr>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="sortable" id="sorter">
+    <tr>
+      <th class="gsort">Group</th>
+      <th>Location</th>
+      <th class="lsort">Level</th>
+      <th class="vsort">Code</th>
+      <th>Message</th>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qglobal.h_0.html#ln274">qglobal.h:274</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v677/">V677</td>
+      <td id="col_message">Custom declaration of a standard 'ushort' type. The declaration from system header files should be used instead.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qglobal.h_0.html#ln275">qglobal.h:275</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v677/">V677</td>
+      <td id="col_message">Custom declaration of a standard 'uint' type. The declaration from system header files should be used instead.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qglobal.h_0.html#ln276">qglobal.h:276</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v677/">V677</td>
+      <td id="col_message">Custom declaration of a standard 'ulong' type. The declaration from system header files should be used instead.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qobjectdefs.h_1.html#ln589">qobjectdefs.h:589</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'QMetaObject::Connection' class implements the copy assignment operator, but lacks a copy constructor. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qobjectdefs.h_1.html#ln589">qobjectdefs.h:589</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'QMetaObject::Connection' class implements the move assignment operator, but lacks a move constructor. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringliteral.h_2.html#ln117">qstringliteral.h:117</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v717/">V717</td>
+      <td id="col_message">It is suspicious to cast object of base class 'QArrayData' to derived class 'QTypedArrayData'.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln222">qstringview.h:222</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln236">qstringview.h:236</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln238">qstringview.h:238</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln240">qstringview.h:240</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln242">qstringview.h:242</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln244">qstringview.h:244</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln285">qstringview.h:285</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v521/">V521</td>
+      <td id="col_message">Such expressions using the ',' operator are dangerous. Make sure the expression is correct.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln285">qstringview.h:285</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln286">qstringview.h:286</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v521/">V521</td>
+      <td id="col_message">Such expressions using the ',' operator are dangerous. Make sure the expression is correct.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln286">qstringview.h:286</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln294">qstringview.h:294</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v521/">V521</td>
+      <td id="col_message">Such expressions using the ',' operator are dangerous. Make sure the expression is correct.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstringview.h_3.html#ln294">qstringview.h:294</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstring.h_4.html#ln109">qstring.h:109</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstring.h_4.html#ln155">qstring.h:155</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstring.h_4.html#ln157">qstring.h:157</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstring.h_4.html#ln159">qstring.h:159</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstring.h_4.html#ln161">qstring.h:161</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstring.h_4.html#ln163">qstring.h:163</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstring.h_4.html#ln921">qstring.h:921</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v521/">V521</td>
+      <td id="col_message">Such expressions using the ',' operator are dangerous. Make sure the expression is correct.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qstring.h_4.html#ln921">qstring.h:921</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v685/">V685</td>
+      <td id="col_message">Consider inspecting the return statement. The expression contains a comma.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qlist.h_5.html#ln224">qlist.h:224</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'iterator' class implements a copy constructor, but lacks the copy assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qlist.h_5.html#ln276">qlist.h:276</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'const_iterator' class implements a copy constructor, but lacks the copy assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qregexp.h_6.html#ln58">qregexp.h:58</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'QRegExp' class implements the move assignment operator, but lacks a move constructor. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qshareddata.h_7.html#ln283">qshareddata.h:283</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1061/">V1061</td>
+      <td id="col_message">Extending the 'std' namespace may result in undefined behavior.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qshareddata.h_7.html#ln68">qshareddata.h:68</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">Instantiation of QSharedDataPointer &lt; QProcessEnvironmentPrivate &gt;: The 'QSharedDataPointer' class implements a move constructor, but lacks the move assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qdatetime.h_8.html#ln240">qdatetime.h:240</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v602/">V602</td>
+      <td id="col_message">Consider inspecting the 'sizeof (ShortData) * 8 &gt; 50' expression. '&gt;' possibly should be replaced with '&gt;&gt;'.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qdatetime.h_8.html#ln235">qdatetime.h:235</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'Data' class implements a move constructor, but lacks the move assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qmap.h_9.html#ln214">qmap.h:214</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v717/">V717</td>
+      <td id="col_message">It is suspicious to cast object of base class 'QMapNodeBase' to derived class 'QMapNode'.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qmap.h_9.html#ln215">qmap.h:215</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v717/">V717</td>
+      <td id="col_message">It is suspicious to cast object of base class 'QMapNodeBase' to derived class 'QMapNode'.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qmap.h_9.html#ln328">qmap.h:328</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v717/">V717</td>
+      <td id="col_message">It is suspicious to cast object of base class 'QMapDataBase' to derived class 'QMapData'.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qmap.h_9.html#ln331">qmap.h:331</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v717/">V717</td>
+      <td id="col_message">It is suspicious to cast object of base class 'QMapDataBase' to derived class 'QMapData'.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qmap.h_9.html#ln346">qmap.h:346</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v717/">V717</td>
+      <td id="col_message">It is suspicious to cast object of base class 'QMapDataBase' to derived class 'QMapData'.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qcontiguouscache.h_10.html#ln337">qcontiguouscache.h:337</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v678/">V678</td>
+      <td id="col_message">An object is used as an argument to its own method. Consider checking the first actual argument of the 'freeData' function.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qsharedpointer_impl.h_11.html#ln141">qsharedpointer_impl.h:141</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1062/">V1062</td>
+      <td id="col_message">The 'ExternalRefCountData' class defines a custom 'delete' operator. The 'new' operator must also be defined.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qsharedpointer_impl.h_11.html#ln893">qsharedpointer_impl.h:893</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1061/">V1061</td>
+      <td id="col_message">Extending the 'std' namespace may result in undefined behavior.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/appimageupdateinformation_p.cc_12.html#ln613">appimageupdateinformation_p.cc:613</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v575/">V575</td>
+      <td id="col_message">The null pointer is passed into 'read' function. Inspect the second argument.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qvariant.h_13.html#ln395">qvariant.h:395</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v730/">V730</td>
+      <td id="col_message">Not all members of a class are initialized inside the constructor. Consider inspecting: data.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qsharedpointer_impl.h_11.html#ln154">qsharedpointer_impl.h:154</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v730/">V730</td>
+      <td id="col_message">Not all members of a class are initialized inside the constructor. Consider inspecting: destroyer.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qshareddata.h_7.html#ln68">qshareddata.h:68</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">Instantiation of QSharedDataPointer &lt; QLocalePrivate &gt;: The 'QSharedDataPointer' class implements a move constructor, but lacks the move assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qshareddata.h_7.html#ln139">qshareddata.h:139</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">Instantiation of QExplicitlySharedDataPointer &lt; QHostAddressPrivate &gt;: The 'QExplicitlySharedDataPointer' class implements a move constructor, but lacks the move assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qjsonarray.h_14.html#ln171">qjsonarray.h:171</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'const_iterator' class implements a copy constructor, but lacks the copy assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qsslconfiguration.h_15.html#ln77">qsslconfiguration.h:77</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'QSslConfiguration' class implements the move assignment operator, but lacks a move constructor. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qkeysequence.h_16.html#ln71">qkeysequence.h:71</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">The 'QKeySequence' class implements the move assignment operator, but lacks a move constructor. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/moc_rangedownloader_p.cpp_17.html#ln187">moc_rangedownloader_p.cpp:187</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1037/">V1037</td>
+      <td id="col_message">Two or more case-branches perform the same actions. Check lines: 187, 194, 201</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/moc_rangereply_p.cpp_18.html#ln145">moc_rangereply_p.cpp:145</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1037/">V1037</td>
+      <td id="col_message">Two or more case-branches perform the same actions. Check lines: 145, 152</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qmatrix.h_19.html#ln60">qmatrix.h:60</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v730/">V730</td>
+      <td id="col_message">Not all members of a class are initialized inside the constructor. Consider inspecting: _m11, _m12, _m21, _m22, _dx, _dy.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qtransform.h_20.html#ln69">qtransform.h:69</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v730/">V730</td>
+      <td id="col_message">Not all members of a class are initialized inside the constructor. Consider inspecting: m_13, m_23, m_33, m_type, m_dirty, d.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qshareddata.h_7.html#ln68">qshareddata.h:68</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">Instantiation of QSharedDataPointer &lt; QNetworkRequestPrivate &gt;: The 'QSharedDataPointer' class implements a move constructor, but lacks the move assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qshareddata.h_7.html#ln139">qshareddata.h:139</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">Instantiation of QExplicitlySharedDataPointer &lt; QSslCertificatePrivate &gt;: The 'QExplicitlySharedDataPointer' class implements a move constructor, but lacks the move assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/helpers_p.cc_21.html#ln13">helpers_p.cc:13</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v547/">V547</td>
+      <td id="col_message">Expression is always false.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qappimageupdate_p.cc_22.html#ln231">qappimageupdate_p.cc:231</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1048/">V1048</td>
+      <td id="col_message">The 'b_Running' variable was assigned the same value.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qappimageupdate_p.cc_22.html#ln231">qappimageupdate_p.cc:231</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1048/">V1048</td>
+      <td id="col_message">The 'b_Started' variable was assigned the same value.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qappimageupdate_p.cc_22.html#ln485">qappimageupdate_p.cc:485</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1048/">V1048</td>
+      <td id="col_message">The 'b_Canceled' variable was assigned the same value.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qappimageupdate_p.cc_22.html#ln844">qappimageupdate_p.cc:844</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v519/">V519</td>
+      <td id="col_message">The 'b_Canceled' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 842, 844.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qappimageupdate_p.cc_22.html#ln963">qappimageupdate_p.cc:963</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v519/">V519</td>
+      <td id="col_message">The 'b_Canceled' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 961, 963.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qappimageupdate_p.cc_22.html#ln1013">qappimageupdate_p.cc:1013</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v636/">V636</td>
+      <td id="col_message">The 'bytesReceived / 1048576' expression was implicitly cast from 'long long' type to 'double' type. Consider utilizing an explicit type cast to avoid the loss of a fractional part. An example: double A = (double)(X) / Y;.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qappimageupdate_p.cc_22.html#ln1014">qappimageupdate_p.cc:1014</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v636/">V636</td>
+      <td id="col_message">The 'bytesTotal / 1048576' expression was implicitly cast from 'long long' type to 'double' type. Consider utilizing an explicit type cast to avoid the loss of a fractional part. An example: double A = (double)(X) / Y;.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/rangedownloader_p.cc_23.html#ln76">rangedownloader_p.cc:76</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1048/">V1048</td>
+      <td id="col_message">The 'b_Running' variable was assigned the same value.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/rangedownloader_p.cc_23.html#ln6">rangedownloader_p.cc:6</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v730/">V730</td>
+      <td id="col_message">Not all members of a class are initialized inside the constructor. Consider inspecting: n_RecievedBytes.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qshareddata.h_7.html#ln139">qshareddata.h:139</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">Instantiation of QExplicitlySharedDataPointer &lt; QPlatformPixmap &gt;: The 'QExplicitlySharedDataPointer' class implements a move constructor, but lacks the move assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/qshareddata.h_7.html#ln68">qshareddata.h:68</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v690/">V690</td>
+      <td id="col_message">Instantiation of QSharedDataPointer &lt; QFileInfoPrivate &gt;: The 'QSharedDataPointer' class implements a move constructor, but lacks the move assignment operator. It is dangerous to use such a class.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln235">zsyncwriter_p.cc:235</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v701/">V701</td>
+      <td id="col_message">realloc() possible leak: when realloc() fails in allocating memory, original pointer 'r' is lost. Consider assigning realloc() to a temporary pointer.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln236">zsyncwriter_p.cc:236</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v522/">V522</td>
+      <td id="col_message">There might be dereferencing of a potential null pointer 'r'. Check lines: 236, 235.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln660">zsyncwriter_p.cc:660</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v519/">V519</td>
+      <td id="col_message">The 'b_Started' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 650, 660.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln601">zsyncwriter_p.cc:601</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v586/">V586</td>
+      <td id="col_message">The 'delete' operator is called twice for deallocation of the same memory space.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln632">zsyncwriter_p.cc:632</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v586/">V586</td>
+      <td id="col_message">The 'delete' operator is called twice for deallocation of the same memory space.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln984">zsyncwriter_p.cc:984</a></td>
+      <td id="col_level" style="color:#FFA500"><b>Medium</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v547/">V547</td>
+      <td id="col_message">Expression '!(constructed = true)' is always false.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln1186">zsyncwriter_p.cc:1186</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1028/">V1028</td>
+      <td id="col_message">Possible overflow. Consider casting operands of the 'x + n_Context' operator to the 'size_t' type, not the result.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln1231">zsyncwriter_p.cc:1231</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1028/">V1028</td>
+      <td id="col_message">Possible overflow. Consider casting operands of the 'x + n_Context' operator to the 'size_t' type, not the result.</td>
+    </tr>
+    <tr>
+      <td id="col_group">General Analysis</td>
+      <td id="col_file"><a target="_blank" href="sources/zsyncwriter_p.cc_24.html#ln1564">zsyncwriter_p.cc:1564</a></td>
+      <td id="col_level" style="color:#FF0000"><b>High</b></td>
+      <td id="col_code"><a target="_blank" href="https://www.viva64.com/en/w/v1028/">V1028</td>
+      <td id="col_message">Possible overflow. Consider casting operands of the 'bto - bfrom + 1' operator to the 'off_t' type, not the result.</td>
+    </tr>
+
+  </table>
+<script type="text/javascript">
+var sorter=new table.sorter("sorter");
+sorter.init("sorter",0);
+</script>
+</body>
+</html>
+

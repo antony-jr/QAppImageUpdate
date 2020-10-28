@@ -1,0 +1,320 @@
+
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII" />
+  <title>qjsonarray.h</title>
+
+  <link rel="stylesheet" href="../style.css"/>
+  <script src="../jquery-3.5.1.min.js"></script>
+</head>
+<body>
+
+<pre><code class = "cpp">
+<a name="ln1">/****************************************************************************</a>
+<a name="ln2">**</a>
+<a name="ln3">** Copyright (C) 2016 The Qt Company Ltd.</a>
+<a name="ln4">** Contact: https://www.qt.io/licensing/</a>
+<a name="ln5">**</a>
+<a name="ln6">** This file is part of the QtCore module of the Qt Toolkit.</a>
+<a name="ln7">**</a>
+<a name="ln8">** $QT_BEGIN_LICENSE:LGPL$</a>
+<a name="ln9">** Commercial License Usage</a>
+<a name="ln10">** Licensees holding valid commercial Qt licenses may use this file in</a>
+<a name="ln11">** accordance with the commercial license agreement provided with the</a>
+<a name="ln12">** Software or, alternatively, in accordance with the terms contained in</a>
+<a name="ln13">** a written agreement between you and The Qt Company. For licensing terms</a>
+<a name="ln14">** and conditions see https://www.qt.io/terms-conditions. For further</a>
+<a name="ln15">** information use the contact form at https://www.qt.io/contact-us.</a>
+<a name="ln16">**</a>
+<a name="ln17">** GNU Lesser General Public License Usage</a>
+<a name="ln18">** Alternatively, this file may be used under the terms of the GNU Lesser</a>
+<a name="ln19">** General Public License version 3 as published by the Free Software</a>
+<a name="ln20">** Foundation and appearing in the file LICENSE.LGPL3 included in the</a>
+<a name="ln21">** packaging of this file. Please review the following information to</a>
+<a name="ln22">** ensure the GNU Lesser General Public License version 3 requirements</a>
+<a name="ln23">** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.</a>
+<a name="ln24">**</a>
+<a name="ln25">** GNU General Public License Usage</a>
+<a name="ln26">** Alternatively, this file may be used under the terms of the GNU</a>
+<a name="ln27">** General Public License version 2.0 or (at your option) the GNU General</a>
+<a name="ln28">** Public license version 3 or any later version approved by the KDE Free</a>
+<a name="ln29">** Qt Foundation. The licenses are as published by the Free Software</a>
+<a name="ln30">** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3</a>
+<a name="ln31">** included in the packaging of this file. Please review the following</a>
+<a name="ln32">** information to ensure the GNU General Public License requirements will</a>
+<a name="ln33">** be met: https://www.gnu.org/licenses/gpl-2.0.html and</a>
+<a name="ln34">** https://www.gnu.org/licenses/gpl-3.0.html.</a>
+<a name="ln35">**</a>
+<a name="ln36">** $QT_END_LICENSE$</a>
+<a name="ln37">**</a>
+<a name="ln38">****************************************************************************/</a>
+<a name="ln39"> </a>
+<a name="ln40">#ifndef QJSONARRAY_H</a>
+<a name="ln41">#define QJSONARRAY_H</a>
+<a name="ln42"> </a>
+<a name="ln43">#include &lt;QtCore/qjsonvalue.h&gt;</a>
+<a name="ln44">#include &lt;QtCore/qiterator.h&gt;</a>
+<a name="ln45">#if defined(Q_COMPILER_INITIALIZER_LISTS)</a>
+<a name="ln46">#include &lt;initializer_list&gt;</a>
+<a name="ln47">#endif</a>
+<a name="ln48"> </a>
+<a name="ln49">QT_BEGIN_NAMESPACE</a>
+<a name="ln50"> </a>
+<a name="ln51">class QDebug;</a>
+<a name="ln52">class QStringList;</a>
+<a name="ln53">template &lt;typename T&gt; class QList;</a>
+<a name="ln54">typedef QList&lt;QVariant&gt; QVariantList;</a>
+<a name="ln55"> </a>
+<a name="ln56">class Q_CORE_EXPORT QJsonArray</a>
+<a name="ln57">{</a>
+<a name="ln58">public:</a>
+<a name="ln59">    QJsonArray();</a>
+<a name="ln60"> </a>
+<a name="ln61">#if defined(Q_COMPILER_INITIALIZER_LISTS) || defined(Q_QDOC)</a>
+<a name="ln62">    QJsonArray(std::initializer_list&lt;QJsonValue&gt; args)</a>
+<a name="ln63">    {</a>
+<a name="ln64">        initialize();</a>
+<a name="ln65">        for (std::initializer_list&lt;QJsonValue&gt;::const_iterator i = args.begin(); i != args.end(); ++i)</a>
+<a name="ln66">            append(*i);</a>
+<a name="ln67">    }</a>
+<a name="ln68">#endif</a>
+<a name="ln69"> </a>
+<a name="ln70">    ~QJsonArray();</a>
+<a name="ln71"> </a>
+<a name="ln72">    QJsonArray(const QJsonArray &amp;other);</a>
+<a name="ln73">    QJsonArray &amp;operator =(const QJsonArray &amp;other);</a>
+<a name="ln74"> </a>
+<a name="ln75">    QJsonArray(QJsonArray &amp;&amp;other) Q_DECL_NOTHROW</a>
+<a name="ln76">        : d(other.d),</a>
+<a name="ln77">          a(other.a)</a>
+<a name="ln78">    {</a>
+<a name="ln79">        other.d = nullptr;</a>
+<a name="ln80">        other.a = nullptr;</a>
+<a name="ln81">    }</a>
+<a name="ln82"> </a>
+<a name="ln83">    QJsonArray &amp;operator =(QJsonArray &amp;&amp;other) Q_DECL_NOTHROW</a>
+<a name="ln84">    {</a>
+<a name="ln85">        swap(other);</a>
+<a name="ln86">        return *this;</a>
+<a name="ln87">    }</a>
+<a name="ln88"> </a>
+<a name="ln89">    static QJsonArray fromStringList(const QStringList &amp;list);</a>
+<a name="ln90">    static QJsonArray fromVariantList(const QVariantList &amp;list);</a>
+<a name="ln91">    QVariantList toVariantList() const;</a>
+<a name="ln92"> </a>
+<a name="ln93">    int size() const;</a>
+<a name="ln94">    inline int count() const { return size(); }</a>
+<a name="ln95"> </a>
+<a name="ln96">    bool isEmpty() const;</a>
+<a name="ln97">    QJsonValue at(int i) const;</a>
+<a name="ln98">    QJsonValue first() const;</a>
+<a name="ln99">    QJsonValue last() const;</a>
+<a name="ln100"> </a>
+<a name="ln101">    void prepend(const QJsonValue &amp;value);</a>
+<a name="ln102">    void append(const QJsonValue &amp;value);</a>
+<a name="ln103">    void removeAt(int i);</a>
+<a name="ln104">    QJsonValue takeAt(int i);</a>
+<a name="ln105">    inline void removeFirst() { removeAt(0); }</a>
+<a name="ln106">    inline void removeLast() { removeAt(size() - 1); }</a>
+<a name="ln107"> </a>
+<a name="ln108">    void insert(int i, const QJsonValue &amp;value);</a>
+<a name="ln109">    void replace(int i, const QJsonValue &amp;value);</a>
+<a name="ln110"> </a>
+<a name="ln111">    bool contains(const QJsonValue &amp;element) const;</a>
+<a name="ln112">    QJsonValueRef operator[](int i);</a>
+<a name="ln113">    QJsonValue operator[](int i) const;</a>
+<a name="ln114"> </a>
+<a name="ln115">    bool operator==(const QJsonArray &amp;other) const;</a>
+<a name="ln116">    bool operator!=(const QJsonArray &amp;other) const;</a>
+<a name="ln117"> </a>
+<a name="ln118">    void swap(QJsonArray &amp;other) Q_DECL_NOTHROW</a>
+<a name="ln119">    {</a>
+<a name="ln120">        qSwap(d, other.d);</a>
+<a name="ln121">        qSwap(a, other.a);</a>
+<a name="ln122">    }</a>
+<a name="ln123"> </a>
+<a name="ln124">    class const_iterator;</a>
+<a name="ln125"> </a>
+<a name="ln126">    class iterator {</a>
+<a name="ln127">    public:</a>
+<a name="ln128">        QJsonArray *a;</a>
+<a name="ln129">        int i;</a>
+<a name="ln130">        typedef std::random_access_iterator_tag  iterator_category;</a>
+<a name="ln131">        typedef int difference_type;</a>
+<a name="ln132">        typedef QJsonValue value_type;</a>
+<a name="ln133">        typedef QJsonValueRef reference;</a>
+<a name="ln134">        typedef QJsonValueRefPtr pointer;</a>
+<a name="ln135"> </a>
+<a name="ln136">        inline iterator() : a(nullptr), i(0) { }</a>
+<a name="ln137">        explicit inline iterator(QJsonArray *array, int index) : a(array), i(index) { }</a>
+<a name="ln138"> </a>
+<a name="ln139">        inline QJsonValueRef operator*() const { return QJsonValueRef(a, i); }</a>
+<a name="ln140">#ifdef Q_QDOC</a>
+<a name="ln141">        inline QJsonValueRef* operator-&gt;() const;</a>
+<a name="ln142">#else</a>
+<a name="ln143">        inline QJsonValueRefPtr operator-&gt;() const { return QJsonValueRefPtr(a, i); }</a>
+<a name="ln144">#endif</a>
+<a name="ln145">        inline QJsonValueRef operator[](int j) const { return QJsonValueRef(a, i + j); }</a>
+<a name="ln146"> </a>
+<a name="ln147">        inline bool operator==(const iterator &amp;o) const { return i == o.i; }</a>
+<a name="ln148">        inline bool operator!=(const iterator &amp;o) const { return i != o.i; }</a>
+<a name="ln149">        inline bool operator&lt;(const iterator&amp; other) const { return i &lt; other.i; }</a>
+<a name="ln150">        inline bool operator&lt;=(const iterator&amp; other) const { return i &lt;= other.i; }</a>
+<a name="ln151">        inline bool operator&gt;(const iterator&amp; other) const { return i &gt; other.i; }</a>
+<a name="ln152">        inline bool operator&gt;=(const iterator&amp; other) const { return i &gt;= other.i; }</a>
+<a name="ln153">        inline bool operator==(const const_iterator &amp;o) const { return i == o.i; }</a>
+<a name="ln154">        inline bool operator!=(const const_iterator &amp;o) const { return i != o.i; }</a>
+<a name="ln155">        inline bool operator&lt;(const const_iterator&amp; other) const { return i &lt; other.i; }</a>
+<a name="ln156">        inline bool operator&lt;=(const const_iterator&amp; other) const { return i &lt;= other.i; }</a>
+<a name="ln157">        inline bool operator&gt;(const const_iterator&amp; other) const { return i &gt; other.i; }</a>
+<a name="ln158">        inline bool operator&gt;=(const const_iterator&amp; other) const { return i &gt;= other.i; }</a>
+<a name="ln159">        inline iterator &amp;operator++() { ++i; return *this; }</a>
+<a name="ln160">        inline iterator operator++(int) { iterator n = *this; ++i; return n; }</a>
+<a name="ln161">        inline iterator &amp;operator--() { i--; return *this; }</a>
+<a name="ln162">        inline iterator operator--(int) { iterator n = *this; i--; return n; }</a>
+<a name="ln163">        inline iterator &amp;operator+=(int j) { i+=j; return *this; }</a>
+<a name="ln164">        inline iterator &amp;operator-=(int j) { i-=j; return *this; }</a>
+<a name="ln165">        inline iterator operator+(int j) const { return iterator(a, i+j); }</a>
+<a name="ln166">        inline iterator operator-(int j) const { return iterator(a, i-j); }</a>
+<a name="ln167">        inline int operator-(iterator j) const { return i - j.i; }</a>
+<a name="ln168">    };</a>
+<a name="ln169">    friend class iterator;</a>
+<a name="ln170"> </a>
+<a name="ln171">    class const_iterator {</a>
+<a name="ln172">    public:</a>
+<a name="ln173">        const QJsonArray *a;</a>
+<a name="ln174">        int i;</a>
+<a name="ln175">        typedef std::random_access_iterator_tag  iterator_category;</a>
+<a name="ln176">        typedef qptrdiff difference_type;</a>
+<a name="ln177">        typedef QJsonValue value_type;</a>
+<a name="ln178">        typedef QJsonValue reference;</a>
+<a name="ln179">        typedef QJsonValuePtr pointer;</a>
+<a name="ln180"> </a>
+<a name="ln181">        inline const_iterator() : a(nullptr), i(0) { }</a>
+<a name="ln182">        explicit inline const_iterator(const QJsonArray *array, int index) : a(array), i(index) { }</a>
+<a name="ln183">#if QT_VERSION &lt; QT_VERSION_CHECK(6, 0, 0)</a>
+<a name="ln184">        inline const_iterator(const const_iterator &amp;o) : a(o.a), i(o.i) {} // ### Qt 6: Removed so class can be trivially-copyable</a>
+<a name="ln185">#endif</a>
+<a name="ln186">        inline const_iterator(const iterator &amp;o) : a(o.a), i(o.i) {}</a>
+<a name="ln187"> </a>
+<a name="ln188">        inline QJsonValue operator*() const { return a-&gt;at(i); }</a>
+<a name="ln189">#ifdef Q_QDOC</a>
+<a name="ln190">        inline QJsonValue* operator-&gt;() const;</a>
+<a name="ln191">#else</a>
+<a name="ln192">        inline QJsonValuePtr operator-&gt;() const { return QJsonValuePtr(a-&gt;at(i)); }</a>
+<a name="ln193">#endif</a>
+<a name="ln194">        inline QJsonValue operator[](int j) const { return a-&gt;at(i+j); }</a>
+<a name="ln195">        inline bool operator==(const const_iterator &amp;o) const { return i == o.i; }</a>
+<a name="ln196">        inline bool operator!=(const const_iterator &amp;o) const { return i != o.i; }</a>
+<a name="ln197">        inline bool operator&lt;(const const_iterator&amp; other) const { return i &lt; other.i; }</a>
+<a name="ln198">        inline bool operator&lt;=(const const_iterator&amp; other) const { return i &lt;= other.i; }</a>
+<a name="ln199">        inline bool operator&gt;(const const_iterator&amp; other) const { return i &gt; other.i; }</a>
+<a name="ln200">        inline bool operator&gt;=(const const_iterator&amp; other) const { return i &gt;= other.i; }</a>
+<a name="ln201">        inline const_iterator &amp;operator++() { ++i; return *this; }</a>
+<a name="ln202">        inline const_iterator operator++(int) { const_iterator n = *this; ++i; return n; }</a>
+<a name="ln203">        inline const_iterator &amp;operator--() { i--; return *this; }</a>
+<a name="ln204">        inline const_iterator operator--(int) { const_iterator n = *this; i--; return n; }</a>
+<a name="ln205">        inline const_iterator &amp;operator+=(int j) { i+=j; return *this; }</a>
+<a name="ln206">        inline const_iterator &amp;operator-=(int j) { i-=j; return *this; }</a>
+<a name="ln207">        inline const_iterator operator+(int j) const { return const_iterator(a, i+j); }</a>
+<a name="ln208">        inline const_iterator operator-(int j) const { return const_iterator(a, i-j); }</a>
+<a name="ln209">        inline int operator-(const_iterator j) const { return i - j.i; }</a>
+<a name="ln210">    };</a>
+<a name="ln211">    friend class const_iterator;</a>
+<a name="ln212"> </a>
+<a name="ln213">    // stl style</a>
+<a name="ln214">    inline iterator begin() { detach2(); return iterator(this, 0); }</a>
+<a name="ln215">    inline const_iterator begin() const { return const_iterator(this, 0); }</a>
+<a name="ln216">    inline const_iterator constBegin() const { return const_iterator(this, 0); }</a>
+<a name="ln217">    inline iterator end() { detach2(); return iterator(this, size()); }</a>
+<a name="ln218">    inline const_iterator end() const { return const_iterator(this, size()); }</a>
+<a name="ln219">    inline const_iterator constEnd() const { return const_iterator(this, size()); }</a>
+<a name="ln220">    iterator insert(iterator before, const QJsonValue &amp;value) { insert(before.i, value); return before; }</a>
+<a name="ln221">    iterator erase(iterator it) { removeAt(it.i); return it; }</a>
+<a name="ln222"> </a>
+<a name="ln223">    // more Qt</a>
+<a name="ln224">    typedef iterator Iterator;</a>
+<a name="ln225">    typedef const_iterator ConstIterator;</a>
+<a name="ln226"> </a>
+<a name="ln227">    // convenience</a>
+<a name="ln228">    inline QJsonArray operator+(const QJsonValue &amp;v) const</a>
+<a name="ln229">    { QJsonArray n = *this; n += v; return n; }</a>
+<a name="ln230">    inline QJsonArray &amp;operator+=(const QJsonValue &amp;v)</a>
+<a name="ln231">    { append(v); return *this; }</a>
+<a name="ln232">    inline QJsonArray &amp;operator&lt;&lt; (const QJsonValue &amp;v)</a>
+<a name="ln233">    { append(v); return *this; }</a>
+<a name="ln234"> </a>
+<a name="ln235">    // stl compatibility</a>
+<a name="ln236">    inline void push_back(const QJsonValue &amp;t) { append(t); }</a>
+<a name="ln237">    inline void push_front(const QJsonValue &amp;t) { prepend(t); }</a>
+<a name="ln238">    inline void pop_front() { removeFirst(); }</a>
+<a name="ln239">    inline void pop_back() { removeLast(); }</a>
+<a name="ln240">    inline bool empty() const { return isEmpty(); }</a>
+<a name="ln241">    typedef int size_type;</a>
+<a name="ln242">    typedef QJsonValue value_type;</a>
+<a name="ln243">    typedef value_type *pointer;</a>
+<a name="ln244">    typedef const value_type *const_pointer;</a>
+<a name="ln245">    typedef QJsonValueRef reference;</a>
+<a name="ln246">    typedef QJsonValue const_reference;</a>
+<a name="ln247">    typedef int difference_type;</a>
+<a name="ln248"> </a>
+<a name="ln249">private:</a>
+<a name="ln250">    friend class QJsonPrivate::Data;</a>
+<a name="ln251">    friend class QJsonValue;</a>
+<a name="ln252">    friend class QJsonDocument;</a>
+<a name="ln253">    friend Q_CORE_EXPORT QDebug operator&lt;&lt;(QDebug, const QJsonArray &amp;);</a>
+<a name="ln254"> </a>
+<a name="ln255">    QJsonArray(QJsonPrivate::Data *data, QJsonPrivate::Array *array);</a>
+<a name="ln256">    void initialize();</a>
+<a name="ln257">    void compact();</a>
+<a name="ln258">    // ### Qt 6: remove me and merge with detach2</a>
+<a name="ln259">    void detach(uint reserve = 0);</a>
+<a name="ln260">    bool detach2(uint reserve = 0);</a>
+<a name="ln261"> </a>
+<a name="ln262">    QJsonPrivate::Data *d;</a>
+<a name="ln263">    QJsonPrivate::Array *a;</a>
+<a name="ln264">};</a>
+<a name="ln265"> </a>
+<a name="ln266">Q_DECLARE_SHARED_NOT_MOVABLE_UNTIL_QT6(QJsonArray)</a>
+<a name="ln267"> </a>
+<a name="ln268">#if !defined(QT_NO_DEBUG_STREAM) &amp;&amp; !defined(QT_JSON_READONLY)</a>
+<a name="ln269">Q_CORE_EXPORT QDebug operator&lt;&lt;(QDebug, const QJsonArray &amp;);</a>
+<a name="ln270">#endif</a>
+<a name="ln271"> </a>
+<a name="ln272">QT_END_NAMESPACE</a>
+<a name="ln273"> </a>
+<a name="ln274">#endif // QJSONARRAY_H</a>
+
+</code></pre>
+<div class="balloon" rel="171"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v690/" target="_blank">V690</a> The 'const_iterator' class implements a copy constructor, but lacks the copy assignment operator. It is dangerous to use such a class.</p></div>
+
+<link rel="stylesheet" href="highlight.css">
+<script src="highlight.pack.js"></script>
+<script src="highlightjs-line-numbers.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script>hljs.initLineNumbersOnLoad();</script>
+<script>
+  $(document).ready(function() {
+      $('.balloon').each(function () {
+          var bl = $(this);
+          var line = bl.attr('rel');
+          var text = $('a[name="ln'+line+'"]').text();
+
+          var space_count = 0;
+          for(var i = 0; i<text.length; i++){
+              var char = text[i];
+              if((char !== ' ')&&(char !== '\t'))break;
+              if(char === '\t')space_count++;
+              space_count++;
+          }
+
+          bl.css('margin-left', space_count*8);
+          $('a[name="ln'+line+'"]').after(bl);
+      });
+
+      window.location = window.location;
+  });
+</script>
+</body>
+</html>
