@@ -601,6 +601,52 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void) {
     INFO_START LOGR " handleControlFile : zsync make version confirmed to be " LOGR s_ZsyncMakeVersion LOGR "." INFO_END;
 
     STORE_SPLIT(s_TargetFileName, ZsyncHeaderList.at(1), "Filename: ", QAppImageUpdateEnums::Error::InvalidZsyncTargetFilename);
+    
+    /*
+     ***** SECURITY FIX:
+	 * 	When updated from home directory if .bashrc is not created
+	 * 	the single line in the untrusted zsync file can decide what
+	 * 	the target file should be renamed to even if it is dangerous.
+	 *
+	 * 	Even if the AppImage is run from Firejail for VM, this exploit
+	 * 	will give a way to do remote code execution, 
+	 * 	See https://www.youtube.com/watch?v=PbNthAK2WKQ&feature=youtu.be
+	 *
+	 * 	But this library does not move old files in the filesystem so
+	 * 	this exploit will only work if .bashrc is not present in HOME
+	 *
+	 * 	But there is also using .. and stuff to do to write in some
+	 * 	directory. And AppImageUpdater does ask for permission and 
+	 * 	users might just give sudo which is even more dangerous.
+	 *
+	 * 	Overwrite, say 'ls' binary with some AppImage then this is 
+	 * 	a disaster.
+    */
+
+    s_TargetFileName.remove(' '); /// Remove all spaces in file name entry.
+
+    if(s_TargetFileName.isEmpty() ||
+       s_TargetFileName.contains("/") ||
+       s_TargetFileName == "." ||
+       s_TargetFileName == "..") { /// Contains any slashes means bad so just error out.
+	emit error(QAppImageUpdateEnums::Error::InvalidZsyncTargetFilename);
+	return;	
+    }
+
+    auto targetFileNameInfo = QFileInfo(s_TargetFileName);
+    s_TargetFileName = targetFileNameInfo.fileName();
+
+    /// Add suffix .AppImage if the target file does not have it.
+    if(targetFileNameInfo.completeSuffix().toLower() != "appimage") {
+	    s_TargetFileName += ".AppImage";
+    }
+
+    /// Add if it has a leading dot then error out. 
+    if(targetFileNameInfo.isHidden() || s_TargetFileName[0] == '.') {
+	emit error(QAppImageUpdateEnums::Error::InvalidZsyncTargetFilename);
+	return;
+    }
+
     INFO_START LOGR " handleControlFile : zsync target file name confirmed to be " LOGR s_TargetFileName LOGR "." INFO_END;
 
     {
@@ -692,9 +738,10 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void) {
      * The redirected url must be checked on the downloader itself to solve this problem.
      **/
     {
-        u_TargetFileUrl  = (u_TargetFileUrl.isRelative()) ?
-                           QUrl(u_ControlFileUrl.toString().replace(u_ControlFileUrl.fileName(), s_TargetFileName))
-                           : u_TargetFileUrl;
+	if(u_TargetFileUrl.isRelative()) {
+	        u_TargetFileUrl = QUrl(u_ControlFileUrl.toString().replace(
+					u_ControlFileUrl.fileName(), u_TargetFileUrl.fileName()));        		
+	}
         QNetworkRequest request;
         /* Even if the abort does'nt work if range is assumed to be supported then the request will not
          * spend too much data.

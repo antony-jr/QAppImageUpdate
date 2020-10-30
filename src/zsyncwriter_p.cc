@@ -583,7 +583,6 @@ void ZsyncWriterPrivate::start() {
 
                 int r = 0;
                 if((r = submitSourceFile(targetFile)) < 0) {
-                    delete targetFile;
                     if(r == -2) {
                         /// Cannot construst hash table.
                         b_Started = b_CancelRequested = false;
@@ -594,7 +593,7 @@ void ZsyncWriterPrivate::start() {
                     }
 
                     if(r != -1) {
-                        /// -1 cannot allocated memory.
+                        /// -1 cannot allocate memory.
                         return;
                     }
                 }
@@ -615,7 +614,6 @@ void ZsyncWriterPrivate::start() {
 
                 int r = 0;
                 if((r = submitSourceFile(sourceFile)) < 0) {
-                    delete sourceFile;
                     if(r == -2) {
                         /// Cannot construst hash table.
                         b_Started = b_CancelRequested = false;
@@ -625,7 +623,7 @@ void ZsyncWriterPrivate::start() {
                         b_Started = false;
                     }
                     if(r != -1) {
-                        /// -1 cannot allocated memory.
+                        /// -1 cannot allocate memory.
                         return;
                     }
                 }
@@ -983,12 +981,13 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
         QString newTargetFileName;
         p_TargetFile->setAutoRemove(!(constructed = true));
         /*
-             * Rename the new version with current time stamp.
-             * Do not touch anything else.
-             * Note: Since we checked for permissions earlier
-             * , We don't need to verify it again.
-             */
-        {
+         * Rename the new version with current time stamp.
+         * Do not touch anything else.
+         * Note: Since we checked for permissions earlier
+         * , We don't need to verify it again.
+	 *
+         */
+        {	
             QFileInfo sameFile(QFileInfo(p_TargetFile->fileName()).path() + "/" + s_TargetFileName);
             if(sameFile.exists()) {
                 newTargetFileName = sameFile.baseName() +
