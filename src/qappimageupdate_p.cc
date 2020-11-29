@@ -605,14 +605,18 @@ void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
             localAppImagePath = oldVersionInformation["AppImageFilePath"].toString();
 
     bool torrentSupported = info["TorrentSupported"].toBool();
+    auto torrentFileUrl = info["TorrentFileUrl"].toString();
+    auto targetFileName = info["RemoteTargetFileName"].toString();
 
     QJsonObject updateinfo {
         { "UpdateAvailable", localAppImageSHA1Hash != remoteTargetFileSHA1Hash},
         { "AbsolutePath", localAppImagePath},
-        { "LocalSha1Hash",  localAppImageSHA1Hash },
+	{ "RemoteTargetFileName", targetFileName}, 
+	{ "LocalSha1Hash",  localAppImageSHA1Hash },
         { "RemoteSha1Hash", remoteTargetFileSHA1Hash},
         { "ReleaseNotes", releaseNotes},
-        { "TorrentSupported", torrentSupported}
+        { "TorrentSupported", torrentSupported},
+	{ "TorrentFileUrl", torrentFileUrl }
     };
 
     b_Started = b_Running = false;
@@ -725,7 +729,8 @@ void QAppImageUpdatePrivate::handleUpdateFinished(QJsonObject info, QString oldV
         {"OldVersionPath", oldVersionPath},
         {"NewVersionPath", info["AbsolutePath"].toString()},
         {"NewVersionSha1Hash", info["Sha1Hash"].toString()},
-        {"UsedTorrent", info["UsedTorrent"].toBool()}
+        {"UsedTorrent", info["UsedTorrent"].toBool()},
+	{"TorrentFileUrl", info["TorrentFileUrl"].toString()}
     };
     b_Started = b_Running = false;
     b_Finished = true;

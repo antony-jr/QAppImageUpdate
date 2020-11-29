@@ -300,9 +300,11 @@ void ZsyncRemoteControlFileParserPrivate::getControlFile(void) {
 void ZsyncRemoteControlFileParserPrivate::getUpdateCheckInformation(void) {
     QJsonObject result {
         { "EmbededUpdateInformation", j_UpdateInformation},
-        { "RemoteTargetFileSHA1Hash", s_TargetFileSHA1 },
+	{ "RemoteTargetFileName", s_TargetFileName},
+	{ "RemoteTargetFileSHA1Hash", s_TargetFileSHA1 },
         { "ReleaseNotes", s_ReleaseNotes },
         { "TorrentSupported", u_TorrentFile.isValid() },
+	{ "TorrentFileUrl", u_TorrentFile.isValid() ? u_TorrentFile.toString() : ""}
     };
 
     emit updateCheckInformation(result);

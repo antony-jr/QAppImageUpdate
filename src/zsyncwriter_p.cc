@@ -1023,7 +1023,8 @@ bool ZsyncWriterPrivate::verifyAndConstructTargetFile() {
     QJsonObject newVersionDetails {
         {"AbsolutePath", QFileInfo(p_TargetFile->fileName()).absoluteFilePath() },
         {"Sha1Hash", UnderConstructionFileSHA1},
-        {"UsedTorrent", b_TorrentAvail && b_AcceptRange}
+        {"UsedTorrent", b_TorrentAvail && b_AcceptRange},
+	{"TorrentFileUrl", u_TorrentFileUrl.isValid() ? u_TorrentFileUrl.toString() : ""}
     };
     b_Started = b_CancelRequested = false;
     emit finished(newVersionDetails, s_SourceFilePath);
