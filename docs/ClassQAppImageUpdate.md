@@ -339,10 +339,12 @@ The *QJsonObject* will follow the following format with respect to json for ```A
     {
         "UpdateAvailable": <Boolean, True if update is available>,
         "AbsolutePath" : <Absolute path to local AppImage>,
+        "RemoteTargetFileName": <The Filename of the new version of the AppImage>,
         "LocalSha1Hash" : <Sha1 Hash of local AppImage>,
         "RemoteSha1Hash" : <Sha1 Hash of Remote AppImage>,
         "ReleaseNotes": <Release notes of the latest release if found>,
-        "TorrentSupported": <Boolean, True if torrent update is supported>
+        "TorrentSupported": <Boolean, True if torrent update is supported>,
+        "TorrentFileUrl": <Url of the Torrent file if supported>
     }     
 
 
@@ -353,7 +355,8 @@ The *QJsonObject* will follow the following format with respect to json for ```A
     {
         "OldVersionPath": <Absolute Path to the old version>,
         "NewVersionPath": <Absolute Path to the new version>,
-        "UsedTorrent": <Boolean, True if torrent was used to update
+        "UsedTorrent": <Boolean, True if torrent was used to update>,
+        "TorrentFileUrl": <Url of the Torrent file if available>
     } 
 
 
