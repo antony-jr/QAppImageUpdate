@@ -42,7 +42,9 @@ class QAppImageUpdateTests : public QObject {
                 /* Slightly larger AppImage */
                 << "https://github.com/antony-jr/AppImageUpdater/releases/download/14/AppImageUpdater-9b4000e-x86_64.AppImage"
                 /* Largest AppImage */
-                << "https://github.com/FreeCAD/FreeCAD/releases/download/0.18.2/FreeCAD_0.18-16117-Linux-Conda_Py3Qt5_glibc2.12-x86_64.AppImage"
+                /* Temporarily Disable FreeCAD update check because it has broken release right now
+		   as of 19/02/2021.
+		<< "https://github.com/FreeCAD/FreeCAD/releases/download/0.18.2/FreeCAD_0.18-16117-Linux-Conda_Py3Qt5_glibc2.12-x86_64.AppImage"*/
                 ;
 
         /// Bintray based AppImage Update
