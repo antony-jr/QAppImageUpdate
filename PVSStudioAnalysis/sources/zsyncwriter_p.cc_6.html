@@ -1036,584 +1036,585 @@
 <a name="ln1023">    QJsonObject newVersionDetails {</a>
 <a name="ln1024">        {&quot;AbsolutePath&quot;, QFileInfo(p_TargetFile-&gt;fileName()).absoluteFilePath() },</a>
 <a name="ln1025">        {&quot;Sha1Hash&quot;, UnderConstructionFileSHA1},</a>
-<a name="ln1026">        {&quot;UsedTorrent&quot;, b_TorrentAvail &amp;&amp; b_AcceptRange}</a>
-<a name="ln1027">    };</a>
-<a name="ln1028">    b_Started = b_CancelRequested = false;</a>
-<a name="ln1029">    emit finished(newVersionDetails, s_SourceFilePath);</a>
-<a name="ln1030">    return constructed;</a>
-<a name="ln1031">}</a>
-<a name="ln1032"> </a>
-<a name="ln1033">/* Given a hash table entry, check the data in this block against every entry</a>
-<a name="ln1034"> * in the linked list for this hash entry, checking the checksums for this</a>
-<a name="ln1035"> * block against those recorded in the hash entries.</a>
-<a name="ln1036"> *</a>
-<a name="ln1037"> * If we get a hit (checksums match a desired block), write the data to that</a>
-<a name="ln1038"> * block in the target file and update our state accordingly to indicate that</a>
-<a name="ln1039"> * we have got that block successfully.</a>
-<a name="ln1040"> *</a>
-<a name="ln1041"> * Return the number of blocks successfully obtained.</a>
-<a name="ln1042"> */</a>
-<a name="ln1043">qint32 ZsyncWriterPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, const unsigned char *data,int onlyone) {</a>
-<a name="ln1044">    unsigned char md4sum[2][CHECKSUM_SIZE];</a>
-<a name="ln1045">    signed int done_md4 = -1;</a>
-<a name="ln1046">    qint32 got_blocks = 0;</a>
-<a name="ln1047">    rsum rs = p_CurrentWeakCheckSums.first;</a>
-<a name="ln1048"> </a>
-<a name="ln1049">    /* This is a hint to the caller that they should try matching the next</a>
-<a name="ln1050">     * block against a particular hash entry (because at least n_SeqMatches</a>
-<a name="ln1051">     * prior blocks to it matched in sequence). Clear it here and set it below</a>
-<a name="ln1052">     * if and when we get such a set of matches. */</a>
-<a name="ln1053">    p_NextMatch = NULL;</a>
-<a name="ln1054"> </a>
-<a name="ln1055">    /* This is essentially a for (;e;e=e-&gt;next), but we want to remove links from</a>
-<a name="ln1056">     * the list as we find matches, without keeping too many temp variables.</a>
-<a name="ln1057">     */</a>
-<a name="ln1058">    p_Rover = e;</a>
-<a name="ln1059">    while (p_Rover) {</a>
-<a name="ln1060">        zs_blockid id;</a>
-<a name="ln1061"> </a>
-<a name="ln1062">        e = p_Rover;</a>
-<a name="ln1063">        p_Rover = onlyone ? NULL : e-&gt;next;</a>
-<a name="ln1064"> </a>
-<a name="ln1065">        /* Check weak checksum first */</a>
-<a name="ln1066"> </a>
-<a name="ln1067">        // HashHit++</a>
-<a name="ln1068">        if (e-&gt;r.a != (rs.a &amp; p_WeakCheckSumMask) || e-&gt;r.b != rs.b) {</a>
-<a name="ln1069">            continue;</a>
-<a name="ln1070">        }</a>
-<a name="ln1071"> </a>
-<a name="ln1072">        id = getHashEntryBlockId( e);</a>
-<a name="ln1073"> </a>
-<a name="ln1074">        if (!onlyone &amp;&amp; n_SeqMatches &gt; 1</a>
-<a name="ln1075">                &amp;&amp; (p_BlockHashes[id + 1].r.a != (p_CurrentWeakCheckSums.second.a &amp; p_WeakCheckSumMask)</a>
-<a name="ln1076">                    || p_BlockHashes[id + 1].r.b != p_CurrentWeakCheckSums.second.b))</a>
-<a name="ln1077">            continue;</a>
-<a name="ln1078"> </a>
-<a name="ln1079">        // WeakHit++</a>
-<a name="ln1080"> </a>
-<a name="ln1081">        {</a>
-<a name="ln1082">            int ok = 1;</a>
-<a name="ln1083">            signed int check_md4 = 0;</a>
-<a name="ln1084">            zs_blockid next_known = -1;</a>
-<a name="ln1085"> </a>
-<a name="ln1086">            /* This block at least must match; we must match at least</a>
-<a name="ln1087">             * n_SeqMatches-1 others, which could either be trailing stuff,</a>
-<a name="ln1088">             * or these could be preceding blocks that we have verified</a>
-<a name="ln1089">             * already. */</a>
-<a name="ln1090">            do {</a>
-<a name="ln1091">                /* We only calculate the MD4 once we need it; but need not do so twice */</a>
-<a name="ln1092">                if (check_md4 &gt; done_md4) {</a>
-<a name="ln1093">                    calcMd4Checksum(&amp;md4sum[check_md4][0],</a>
-<a name="ln1094">                                    data + n_BlockSize * check_md4,</a>
-<a name="ln1095">                                    n_BlockSize);</a>
-<a name="ln1096">                    done_md4 = check_md4;</a>
-<a name="ln1097">                    // Checksummed++</a>
-<a name="ln1098">                }</a>
-<a name="ln1099"> </a>
-<a name="ln1100">                /* Now check the strong checksum for this block */</a>
-<a name="ln1101">                if (memcmp(&amp;md4sum[check_md4],</a>
-<a name="ln1102">                           &amp;p_BlockHashes[id + check_md4].checksum[0],</a>
-<a name="ln1103">                           n_StrongCheckSumBytes)) {</a>
-<a name="ln1104">                    ok = 0;</a>
-<a name="ln1105">                } else if (next_known == -1) {</a>
-<a name="ln1106">                }</a>
-<a name="ln1107">                check_md4++;</a>
-<a name="ln1108">                QCoreApplication::processEvents();</a>
-<a name="ln1109">            } while (ok &amp;&amp; !onlyone &amp;&amp; check_md4 &lt; n_SeqMatches);</a>
-<a name="ln1110"> </a>
-<a name="ln1111">            if (ok) {</a>
-<a name="ln1112">                qint32 num_write_blocks;</a>
-<a name="ln1113"> </a>
-<a name="ln1114">                /* Find the next block that we already have data for. If this</a>
-<a name="ln1115">                 * is part of a run of matches then we have this stored already</a>
-<a name="ln1116">                 * as -&gt;next_known. */</a>
-<a name="ln1117">                zs_blockid next_known = onlyone ? n_NextKnown : nextKnownBlock( id);</a>
-<a name="ln1118"> </a>
-<a name="ln1119">                // stronghit++</a>
-<a name="ln1120"> </a>
-<a name="ln1121">                if (next_known &gt; id + check_md4) {</a>
-<a name="ln1122">                    num_write_blocks = check_md4;</a>
-<a name="ln1123"> </a>
-<a name="ln1124">                    /* Save state for this run of matches */</a>
-<a name="ln1125">                    p_NextMatch = &amp;(p_BlockHashes[id + check_md4]);</a>
-<a name="ln1126">                    if (!onlyone) n_NextKnown = next_known;</a>
-<a name="ln1127">                } else {</a>
-<a name="ln1128">                    /* We've reached the EOF, or data we already know. Just</a>
-<a name="ln1129">                     * write out the blocks we don't know, and that's the end</a>
-<a name="ln1130">                     * of this run of matches. */</a>
-<a name="ln1131">                    num_write_blocks = next_known - id;</a>
-<a name="ln1132">                }</a>
-<a name="ln1133"> </a>
-<a name="ln1134">                /* Write out the matched blocks that we don't yet know */</a>
-<a name="ln1135">                writeBlocks( data, id, id + num_write_blocks - 1);</a>
-<a name="ln1136">                got_blocks += num_write_blocks;</a>
-<a name="ln1137">            }</a>
-<a name="ln1138">        }</a>
-<a name="ln1139">    }</a>
-<a name="ln1140">    return got_blocks;</a>
-<a name="ln1141">}</a>
-<a name="ln1142"> </a>
-<a name="ln1143">/* Reads the supplied data (length datalen) and identifies any contained blocks</a>
-<a name="ln1144"> * of data that can be used to make up the target file.</a>
-<a name="ln1145"> *</a>
-<a name="ln1146"> * offset should be 0 for a new data stream (or if our position in the data</a>
-<a name="ln1147"> * stream has been changed and does not match the last call) or should be the</a>
-<a name="ln1148"> * offset in the whole source stream otherwise.</a>
-<a name="ln1149"> *</a>
-<a name="ln1150"> * Returns the number of blocks in the target file that we obtained as a result</a>
-<a name="ln1151"> * of reading this buffer.</a>
-<a name="ln1152"> *</a>
-<a name="ln1153"> * IMPLEMENTATION:</a>
-<a name="ln1154"> * We maintain the following state:</a>
-<a name="ln1155"> * n_Skip - the number of bytes to skip next time we enter ZsyncWriterPrivate::submitSourceData</a>
-<a name="ln1156"> *        e.g. because we've just matched a block and the forward jump takes</a>
-<a name="ln1157"> *        us past the end of the buffer</a>
-<a name="ln1158"> * p_CurrentWeakCheckSums.first - rolling checksum of the first blocksize bytes of the buffer</a>
-<a name="ln1159"> * p_CurrentWeakCheckSums.second - rolling checksum of the next blocksize bytes of the buffer (if n_SeqMatches &gt; 1)</a>
-<a name="ln1160"> */</a>
-<a name="ln1161">qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_t offset) {</a>
-<a name="ln1162">    /* The window in data[] currently being considered is</a>
-<a name="ln1163">     * [x, x+bs)</a>
-<a name="ln1164">     */</a>
-<a name="ln1165">    qint32 x = 0;</a>
-<a name="ln1166">    qint32 bs = n_BlockSize;</a>
-<a name="ln1167">    qint32 got_blocks = 0;</a>
-<a name="ln1168"> </a>
-<a name="ln1169">    if (offset) {</a>
-<a name="ln1170">        x = n_Skip;</a>
-<a name="ln1171">    } else {</a>
-<a name="ln1172">        p_NextMatch = NULL;</a>
-<a name="ln1173">    }</a>
-<a name="ln1174"> </a>
-<a name="ln1175">    if (x || !offset) {</a>
-<a name="ln1176">        p_CurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);</a>
-<a name="ln1177">        if (n_SeqMatches &gt; 1)</a>
-<a name="ln1178">            p_CurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);</a>
-<a name="ln1179">    }</a>
-<a name="ln1180">    n_Skip = 0;</a>
-<a name="ln1181"> </a>
-<a name="ln1182">    /* Work through the block until the current blocksize bytes being</a>
-<a name="ln1183">     * considered, starting at x, is at the end of the buffer */</a>
-<a name="ln1184">    for (;;) {</a>
-<a name="ln1185">        if ((size_t)(x + n_Context) == len) {</a>
-<a name="ln1186">            return got_blocks;</a>
-<a name="ln1187">        }</a>
-<a name="ln1188">        {</a>
-<a name="ln1189">            /* # of blocks of the output file we got from this data */</a>
-<a name="ln1190">            qint32 thismatch = 0;</a>
-<a name="ln1191">            /* # of blocks to advance if thismatch &gt; 0. Can be less than</a>
-<a name="ln1192">             * thismatch as thismatch could be N*blocks_matched, if a block was</a>
-<a name="ln1193">             * duplicated to multiple locations in the output file. */</a>
-<a name="ln1194">            qint32 blocks_matched = 0;</a>
-<a name="ln1195"> </a>
-<a name="ln1196">            /* If the previous block was a match, but we're looking for</a>
-<a name="ln1197">             * sequential matches, then test this block against the block in</a>
-<a name="ln1198">             * the target immediately after our previous hit. */</a>
-<a name="ln1199">            if (p_NextMatch &amp;&amp; n_SeqMatches &gt; 1) {</a>
-<a name="ln1200">                if (0 != (thismatch = checkCheckSumsOnHashChain( p_NextMatch, data + x, 1))) {</a>
-<a name="ln1201">                    blocks_matched = 1;</a>
-<a name="ln1202">                }</a>
-<a name="ln1203">            }</a>
-<a name="ln1204">            if (!thismatch) {</a>
-<a name="ln1205">                const struct hash_entry *e;</a>
-<a name="ln1206"> </a>
-<a name="ln1207">                /* Do a hash table lookup - first in the p_BitHash (fast negative</a>
-<a name="ln1208">                 * check) and then in the rsum hash */</a>
-<a name="ln1209">                unsigned hash = p_CurrentWeakCheckSums.first.b;</a>
-<a name="ln1210">                hash ^= ((n_SeqMatches &gt; 1) ? p_CurrentWeakCheckSums.second.b</a>
-<a name="ln1211">                         : p_CurrentWeakCheckSums.first.a &amp; p_WeakCheckSumMask) &lt;&lt; BITHASHBITS;</a>
-<a name="ln1212">                if ((p_BitHash[(hash &amp; p_BitHashMask) &gt;&gt; 3] &amp; (1 &lt;&lt; (hash &amp; 7))) != 0</a>
-<a name="ln1213">                        &amp;&amp; (e = p_RsumHash[hash &amp; p_HashMask]) != NULL) {</a>
-<a name="ln1214"> </a>
-<a name="ln1215">                    /* Okay, we have a hash hit. Follow the hash chain and</a>
-<a name="ln1216">                     * check our block against all the entries. */</a>
-<a name="ln1217">                    thismatch = checkCheckSumsOnHashChain( e, data + x, 0);</a>
-<a name="ln1218">                    if (thismatch)</a>
-<a name="ln1219">                        blocks_matched = n_SeqMatches;</a>
-<a name="ln1220">                }</a>
-<a name="ln1221">            }</a>
-<a name="ln1222">            got_blocks += thismatch;</a>
-<a name="ln1223"> </a>
-<a name="ln1224">            /* If we got a hit, skip forward (if a block in the target matches</a>
-<a name="ln1225">             * at x, it's highly unlikely to get a hit at x+1 as all the</a>
-<a name="ln1226">             * target's blocks are multiples of the blocksize apart. */</a>
-<a name="ln1227">            if (blocks_matched) {</a>
-<a name="ln1228">                x += bs + (blocks_matched &gt; 1 ? bs : 0);</a>
-<a name="ln1229"> </a>
-<a name="ln1230">                if ((size_t)(x + n_Context) &gt; len) {</a>
-<a name="ln1231">                    /* can't calculate rsum for block after this one, because</a>
-<a name="ln1232">                     * it's not in the buffer. So leave a hint for next time so</a>
-<a name="ln1233">                     * we know we need to recalculate */</a>
-<a name="ln1234">                    n_Skip = x + n_Context - len;</a>
-<a name="ln1235">                    return got_blocks;</a>
-<a name="ln1236">                }</a>
-<a name="ln1237"> </a>
-<a name="ln1238">                /* If we are moving forward just 1 block, we already have the</a>
-<a name="ln1239">                 * following block rsum. If we are skipping both, then</a>
-<a name="ln1240">                 * recalculate both */</a>
-<a name="ln1241">                if (n_SeqMatches &gt; 1 &amp;&amp; blocks_matched == 1)</a>
-<a name="ln1242">                    p_CurrentWeakCheckSums.first = p_CurrentWeakCheckSums.second;</a>
-<a name="ln1243">                else</a>
-<a name="ln1244">                    p_CurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);</a>
-<a name="ln1245">                if (n_SeqMatches &gt; 1)</a>
-<a name="ln1246">                    p_CurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);</a>
-<a name="ln1247">                continue;</a>
-<a name="ln1248">            }</a>
-<a name="ln1249">        }</a>
-<a name="ln1250"> </a>
-<a name="ln1251">        /* Else - advance the window by 1 byte - update the rolling checksum</a>
-<a name="ln1252">         * and our offset in the buffer */</a>
-<a name="ln1253">        {</a>
-<a name="ln1254">            unsigned char Nc = data[x + bs * 2];</a>
-<a name="ln1255">            unsigned char nc = data[x + bs];</a>
-<a name="ln1256">            unsigned char oc = data[x];</a>
-<a name="ln1257">            UPDATE_RSUM(p_CurrentWeakCheckSums.first.a, p_CurrentWeakCheckSums.first.b, oc, nc, n_BlockShift);</a>
-<a name="ln1258">            if (n_SeqMatches &gt; 1)</a>
-<a name="ln1259">                UPDATE_RSUM(p_CurrentWeakCheckSums.second.a, p_CurrentWeakCheckSums.second.b, nc, Nc, n_BlockShift);</a>
-<a name="ln1260">        }</a>
-<a name="ln1261">        x++;</a>
-<a name="ln1262">    }</a>
-<a name="ln1263">}</a>
-<a name="ln1264"> </a>
-<a name="ln1265">/* Read the given stream, applying the rsync rolling checksum algorithm to</a>
-<a name="ln1266"> * identify any blocks of data in common with the target file. Blocks found are</a>
-<a name="ln1267"> * written to our working target output.</a>
-<a name="ln1268"> */</a>
-<a name="ln1269">qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {</a>
-<a name="ln1270">    if(!file) {</a>
-<a name="ln1271">        return 0;</a>
-<a name="ln1272">    }</a>
-<a name="ln1273"> </a>
-<a name="ln1274">    qint32 error = 0;</a>
-<a name="ln1275">    off_t in = 0;</a>
-<a name="ln1276">    /* Allocate buffer of 16 blocks */</a>
-<a name="ln1277">    qint32 bufsize = n_BlockSize * 16;</a>
-<a name="ln1278">    unsigned char *buf = (unsigned char*)malloc(bufsize + n_Context);</a>
-<a name="ln1279">    if (!buf)</a>
-<a name="ln1280">        return (error = -1);</a>
-<a name="ln1281"> </a>
-<a name="ln1282">    /* Build checksum hash tables ready to analyse the blocks we find */</a>
-<a name="ln1283">    if (!p_RsumHash) {</a>
-<a name="ln1284">        if (!buildHash()) {</a>
-<a name="ln1285">            free(buf);</a>
-<a name="ln1286">            return (error = -2);</a>
-<a name="ln1287">        }</a>
-<a name="ln1288">    }</a>
-<a name="ln1289"> </a>
+<a name="ln1026">        {&quot;UsedTorrent&quot;, b_TorrentAvail &amp;&amp; b_AcceptRange},</a>
+<a name="ln1027">	{&quot;TorrentFileUrl&quot;, u_TorrentFileUrl.isValid() ? u_TorrentFileUrl.toString() : &quot;&quot;}</a>
+<a name="ln1028">    };</a>
+<a name="ln1029">    b_Started = b_CancelRequested = false;</a>
+<a name="ln1030">    emit finished(newVersionDetails, s_SourceFilePath);</a>
+<a name="ln1031">    return constructed;</a>
+<a name="ln1032">}</a>
+<a name="ln1033"> </a>
+<a name="ln1034">/* Given a hash table entry, check the data in this block against every entry</a>
+<a name="ln1035"> * in the linked list for this hash entry, checking the checksums for this</a>
+<a name="ln1036"> * block against those recorded in the hash entries.</a>
+<a name="ln1037"> *</a>
+<a name="ln1038"> * If we get a hit (checksums match a desired block), write the data to that</a>
+<a name="ln1039"> * block in the target file and update our state accordingly to indicate that</a>
+<a name="ln1040"> * we have got that block successfully.</a>
+<a name="ln1041"> *</a>
+<a name="ln1042"> * Return the number of blocks successfully obtained.</a>
+<a name="ln1043"> */</a>
+<a name="ln1044">qint32 ZsyncWriterPrivate::checkCheckSumsOnHashChain(const struct hash_entry *e, const unsigned char *data,int onlyone) {</a>
+<a name="ln1045">    unsigned char md4sum[2][CHECKSUM_SIZE];</a>
+<a name="ln1046">    signed int done_md4 = -1;</a>
+<a name="ln1047">    qint32 got_blocks = 0;</a>
+<a name="ln1048">    rsum rs = p_CurrentWeakCheckSums.first;</a>
+<a name="ln1049"> </a>
+<a name="ln1050">    /* This is a hint to the caller that they should try matching the next</a>
+<a name="ln1051">     * block against a particular hash entry (because at least n_SeqMatches</a>
+<a name="ln1052">     * prior blocks to it matched in sequence). Clear it here and set it below</a>
+<a name="ln1053">     * if and when we get such a set of matches. */</a>
+<a name="ln1054">    p_NextMatch = NULL;</a>
+<a name="ln1055"> </a>
+<a name="ln1056">    /* This is essentially a for (;e;e=e-&gt;next), but we want to remove links from</a>
+<a name="ln1057">     * the list as we find matches, without keeping too many temp variables.</a>
+<a name="ln1058">     */</a>
+<a name="ln1059">    p_Rover = e;</a>
+<a name="ln1060">    while (p_Rover) {</a>
+<a name="ln1061">        zs_blockid id;</a>
+<a name="ln1062"> </a>
+<a name="ln1063">        e = p_Rover;</a>
+<a name="ln1064">        p_Rover = onlyone ? NULL : e-&gt;next;</a>
+<a name="ln1065"> </a>
+<a name="ln1066">        /* Check weak checksum first */</a>
+<a name="ln1067"> </a>
+<a name="ln1068">        // HashHit++</a>
+<a name="ln1069">        if (e-&gt;r.a != (rs.a &amp; p_WeakCheckSumMask) || e-&gt;r.b != rs.b) {</a>
+<a name="ln1070">            continue;</a>
+<a name="ln1071">        }</a>
+<a name="ln1072"> </a>
+<a name="ln1073">        id = getHashEntryBlockId( e);</a>
+<a name="ln1074"> </a>
+<a name="ln1075">        if (!onlyone &amp;&amp; n_SeqMatches &gt; 1</a>
+<a name="ln1076">                &amp;&amp; (p_BlockHashes[id + 1].r.a != (p_CurrentWeakCheckSums.second.a &amp; p_WeakCheckSumMask)</a>
+<a name="ln1077">                    || p_BlockHashes[id + 1].r.b != p_CurrentWeakCheckSums.second.b))</a>
+<a name="ln1078">            continue;</a>
+<a name="ln1079"> </a>
+<a name="ln1080">        // WeakHit++</a>
+<a name="ln1081"> </a>
+<a name="ln1082">        {</a>
+<a name="ln1083">            int ok = 1;</a>
+<a name="ln1084">            signed int check_md4 = 0;</a>
+<a name="ln1085">            zs_blockid next_known = -1;</a>
+<a name="ln1086"> </a>
+<a name="ln1087">            /* This block at least must match; we must match at least</a>
+<a name="ln1088">             * n_SeqMatches-1 others, which could either be trailing stuff,</a>
+<a name="ln1089">             * or these could be preceding blocks that we have verified</a>
+<a name="ln1090">             * already. */</a>
+<a name="ln1091">            do {</a>
+<a name="ln1092">                /* We only calculate the MD4 once we need it; but need not do so twice */</a>
+<a name="ln1093">                if (check_md4 &gt; done_md4) {</a>
+<a name="ln1094">                    calcMd4Checksum(&amp;md4sum[check_md4][0],</a>
+<a name="ln1095">                                    data + n_BlockSize * check_md4,</a>
+<a name="ln1096">                                    n_BlockSize);</a>
+<a name="ln1097">                    done_md4 = check_md4;</a>
+<a name="ln1098">                    // Checksummed++</a>
+<a name="ln1099">                }</a>
+<a name="ln1100"> </a>
+<a name="ln1101">                /* Now check the strong checksum for this block */</a>
+<a name="ln1102">                if (memcmp(&amp;md4sum[check_md4],</a>
+<a name="ln1103">                           &amp;p_BlockHashes[id + check_md4].checksum[0],</a>
+<a name="ln1104">                           n_StrongCheckSumBytes)) {</a>
+<a name="ln1105">                    ok = 0;</a>
+<a name="ln1106">                } else if (next_known == -1) {</a>
+<a name="ln1107">                }</a>
+<a name="ln1108">                check_md4++;</a>
+<a name="ln1109">                QCoreApplication::processEvents();</a>
+<a name="ln1110">            } while (ok &amp;&amp; !onlyone &amp;&amp; check_md4 &lt; n_SeqMatches);</a>
+<a name="ln1111"> </a>
+<a name="ln1112">            if (ok) {</a>
+<a name="ln1113">                qint32 num_write_blocks;</a>
+<a name="ln1114"> </a>
+<a name="ln1115">                /* Find the next block that we already have data for. If this</a>
+<a name="ln1116">                 * is part of a run of matches then we have this stored already</a>
+<a name="ln1117">                 * as -&gt;next_known. */</a>
+<a name="ln1118">                zs_blockid next_known = onlyone ? n_NextKnown : nextKnownBlock( id);</a>
+<a name="ln1119"> </a>
+<a name="ln1120">                // stronghit++</a>
+<a name="ln1121"> </a>
+<a name="ln1122">                if (next_known &gt; id + check_md4) {</a>
+<a name="ln1123">                    num_write_blocks = check_md4;</a>
+<a name="ln1124"> </a>
+<a name="ln1125">                    /* Save state for this run of matches */</a>
+<a name="ln1126">                    p_NextMatch = &amp;(p_BlockHashes[id + check_md4]);</a>
+<a name="ln1127">                    if (!onlyone) n_NextKnown = next_known;</a>
+<a name="ln1128">                } else {</a>
+<a name="ln1129">                    /* We've reached the EOF, or data we already know. Just</a>
+<a name="ln1130">                     * write out the blocks we don't know, and that's the end</a>
+<a name="ln1131">                     * of this run of matches. */</a>
+<a name="ln1132">                    num_write_blocks = next_known - id;</a>
+<a name="ln1133">                }</a>
+<a name="ln1134"> </a>
+<a name="ln1135">                /* Write out the matched blocks that we don't yet know */</a>
+<a name="ln1136">                writeBlocks( data, id, id + num_write_blocks - 1);</a>
+<a name="ln1137">                got_blocks += num_write_blocks;</a>
+<a name="ln1138">            }</a>
+<a name="ln1139">        }</a>
+<a name="ln1140">    }</a>
+<a name="ln1141">    return got_blocks;</a>
+<a name="ln1142">}</a>
+<a name="ln1143"> </a>
+<a name="ln1144">/* Reads the supplied data (length datalen) and identifies any contained blocks</a>
+<a name="ln1145"> * of data that can be used to make up the target file.</a>
+<a name="ln1146"> *</a>
+<a name="ln1147"> * offset should be 0 for a new data stream (or if our position in the data</a>
+<a name="ln1148"> * stream has been changed and does not match the last call) or should be the</a>
+<a name="ln1149"> * offset in the whole source stream otherwise.</a>
+<a name="ln1150"> *</a>
+<a name="ln1151"> * Returns the number of blocks in the target file that we obtained as a result</a>
+<a name="ln1152"> * of reading this buffer.</a>
+<a name="ln1153"> *</a>
+<a name="ln1154"> * IMPLEMENTATION:</a>
+<a name="ln1155"> * We maintain the following state:</a>
+<a name="ln1156"> * n_Skip - the number of bytes to skip next time we enter ZsyncWriterPrivate::submitSourceData</a>
+<a name="ln1157"> *        e.g. because we've just matched a block and the forward jump takes</a>
+<a name="ln1158"> *        us past the end of the buffer</a>
+<a name="ln1159"> * p_CurrentWeakCheckSums.first - rolling checksum of the first blocksize bytes of the buffer</a>
+<a name="ln1160"> * p_CurrentWeakCheckSums.second - rolling checksum of the next blocksize bytes of the buffer (if n_SeqMatches &gt; 1)</a>
+<a name="ln1161"> */</a>
+<a name="ln1162">qint32 ZsyncWriterPrivate::submitSourceData(unsigned char *data,size_t len, off_t offset) {</a>
+<a name="ln1163">    /* The window in data[] currently being considered is</a>
+<a name="ln1164">     * [x, x+bs)</a>
+<a name="ln1165">     */</a>
+<a name="ln1166">    qint32 x = 0;</a>
+<a name="ln1167">    qint32 bs = n_BlockSize;</a>
+<a name="ln1168">    qint32 got_blocks = 0;</a>
+<a name="ln1169"> </a>
+<a name="ln1170">    if (offset) {</a>
+<a name="ln1171">        x = n_Skip;</a>
+<a name="ln1172">    } else {</a>
+<a name="ln1173">        p_NextMatch = NULL;</a>
+<a name="ln1174">    }</a>
+<a name="ln1175"> </a>
+<a name="ln1176">    if (x || !offset) {</a>
+<a name="ln1177">        p_CurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);</a>
+<a name="ln1178">        if (n_SeqMatches &gt; 1)</a>
+<a name="ln1179">            p_CurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);</a>
+<a name="ln1180">    }</a>
+<a name="ln1181">    n_Skip = 0;</a>
+<a name="ln1182"> </a>
+<a name="ln1183">    /* Work through the block until the current blocksize bytes being</a>
+<a name="ln1184">     * considered, starting at x, is at the end of the buffer */</a>
+<a name="ln1185">    for (;;) {</a>
+<a name="ln1186">        if ((size_t)(x + n_Context) == len) {</a>
+<a name="ln1187">            return got_blocks;</a>
+<a name="ln1188">        }</a>
+<a name="ln1189">        {</a>
+<a name="ln1190">            /* # of blocks of the output file we got from this data */</a>
+<a name="ln1191">            qint32 thismatch = 0;</a>
+<a name="ln1192">            /* # of blocks to advance if thismatch &gt; 0. Can be less than</a>
+<a name="ln1193">             * thismatch as thismatch could be N*blocks_matched, if a block was</a>
+<a name="ln1194">             * duplicated to multiple locations in the output file. */</a>
+<a name="ln1195">            qint32 blocks_matched = 0;</a>
+<a name="ln1196"> </a>
+<a name="ln1197">            /* If the previous block was a match, but we're looking for</a>
+<a name="ln1198">             * sequential matches, then test this block against the block in</a>
+<a name="ln1199">             * the target immediately after our previous hit. */</a>
+<a name="ln1200">            if (p_NextMatch &amp;&amp; n_SeqMatches &gt; 1) {</a>
+<a name="ln1201">                if (0 != (thismatch = checkCheckSumsOnHashChain( p_NextMatch, data + x, 1))) {</a>
+<a name="ln1202">                    blocks_matched = 1;</a>
+<a name="ln1203">                }</a>
+<a name="ln1204">            }</a>
+<a name="ln1205">            if (!thismatch) {</a>
+<a name="ln1206">                const struct hash_entry *e;</a>
+<a name="ln1207"> </a>
+<a name="ln1208">                /* Do a hash table lookup - first in the p_BitHash (fast negative</a>
+<a name="ln1209">                 * check) and then in the rsum hash */</a>
+<a name="ln1210">                unsigned hash = p_CurrentWeakCheckSums.first.b;</a>
+<a name="ln1211">                hash ^= ((n_SeqMatches &gt; 1) ? p_CurrentWeakCheckSums.second.b</a>
+<a name="ln1212">                         : p_CurrentWeakCheckSums.first.a &amp; p_WeakCheckSumMask) &lt;&lt; BITHASHBITS;</a>
+<a name="ln1213">                if ((p_BitHash[(hash &amp; p_BitHashMask) &gt;&gt; 3] &amp; (1 &lt;&lt; (hash &amp; 7))) != 0</a>
+<a name="ln1214">                        &amp;&amp; (e = p_RsumHash[hash &amp; p_HashMask]) != NULL) {</a>
+<a name="ln1215"> </a>
+<a name="ln1216">                    /* Okay, we have a hash hit. Follow the hash chain and</a>
+<a name="ln1217">                     * check our block against all the entries. */</a>
+<a name="ln1218">                    thismatch = checkCheckSumsOnHashChain( e, data + x, 0);</a>
+<a name="ln1219">                    if (thismatch)</a>
+<a name="ln1220">                        blocks_matched = n_SeqMatches;</a>
+<a name="ln1221">                }</a>
+<a name="ln1222">            }</a>
+<a name="ln1223">            got_blocks += thismatch;</a>
+<a name="ln1224"> </a>
+<a name="ln1225">            /* If we got a hit, skip forward (if a block in the target matches</a>
+<a name="ln1226">             * at x, it's highly unlikely to get a hit at x+1 as all the</a>
+<a name="ln1227">             * target's blocks are multiples of the blocksize apart. */</a>
+<a name="ln1228">            if (blocks_matched) {</a>
+<a name="ln1229">                x += bs + (blocks_matched &gt; 1 ? bs : 0);</a>
+<a name="ln1230"> </a>
+<a name="ln1231">                if ((size_t)(x + n_Context) &gt; len) {</a>
+<a name="ln1232">                    /* can't calculate rsum for block after this one, because</a>
+<a name="ln1233">                     * it's not in the buffer. So leave a hint for next time so</a>
+<a name="ln1234">                     * we know we need to recalculate */</a>
+<a name="ln1235">                    n_Skip = x + n_Context - len;</a>
+<a name="ln1236">                    return got_blocks;</a>
+<a name="ln1237">                }</a>
+<a name="ln1238"> </a>
+<a name="ln1239">                /* If we are moving forward just 1 block, we already have the</a>
+<a name="ln1240">                 * following block rsum. If we are skipping both, then</a>
+<a name="ln1241">                 * recalculate both */</a>
+<a name="ln1242">                if (n_SeqMatches &gt; 1 &amp;&amp; blocks_matched == 1)</a>
+<a name="ln1243">                    p_CurrentWeakCheckSums.first = p_CurrentWeakCheckSums.second;</a>
+<a name="ln1244">                else</a>
+<a name="ln1245">                    p_CurrentWeakCheckSums.first = calc_rsum_block(data + x, bs);</a>
+<a name="ln1246">                if (n_SeqMatches &gt; 1)</a>
+<a name="ln1247">                    p_CurrentWeakCheckSums.second = calc_rsum_block(data + x + bs, bs);</a>
+<a name="ln1248">                continue;</a>
+<a name="ln1249">            }</a>
+<a name="ln1250">        }</a>
+<a name="ln1251"> </a>
+<a name="ln1252">        /* Else - advance the window by 1 byte - update the rolling checksum</a>
+<a name="ln1253">         * and our offset in the buffer */</a>
+<a name="ln1254">        {</a>
+<a name="ln1255">            unsigned char Nc = data[x + bs * 2];</a>
+<a name="ln1256">            unsigned char nc = data[x + bs];</a>
+<a name="ln1257">            unsigned char oc = data[x];</a>
+<a name="ln1258">            UPDATE_RSUM(p_CurrentWeakCheckSums.first.a, p_CurrentWeakCheckSums.first.b, oc, nc, n_BlockShift);</a>
+<a name="ln1259">            if (n_SeqMatches &gt; 1)</a>
+<a name="ln1260">                UPDATE_RSUM(p_CurrentWeakCheckSums.second.a, p_CurrentWeakCheckSums.second.b, nc, Nc, n_BlockShift);</a>
+<a name="ln1261">        }</a>
+<a name="ln1262">        x++;</a>
+<a name="ln1263">    }</a>
+<a name="ln1264">}</a>
+<a name="ln1265"> </a>
+<a name="ln1266">/* Read the given stream, applying the rsync rolling checksum algorithm to</a>
+<a name="ln1267"> * identify any blocks of data in common with the target file. Blocks found are</a>
+<a name="ln1268"> * written to our working target output.</a>
+<a name="ln1269"> */</a>
+<a name="ln1270">qint32 ZsyncWriterPrivate::submitSourceFile(QFile *file) {</a>
+<a name="ln1271">    if(!file) {</a>
+<a name="ln1272">        return 0;</a>
+<a name="ln1273">    }</a>
+<a name="ln1274"> </a>
+<a name="ln1275">    qint32 error = 0;</a>
+<a name="ln1276">    off_t in = 0;</a>
+<a name="ln1277">    /* Allocate buffer of 16 blocks */</a>
+<a name="ln1278">    qint32 bufsize = n_BlockSize * 16;</a>
+<a name="ln1279">    unsigned char *buf = (unsigned char*)malloc(bufsize + n_Context);</a>
+<a name="ln1280">    if (!buf)</a>
+<a name="ln1281">        return (error = -1);</a>
+<a name="ln1282"> </a>
+<a name="ln1283">    /* Build checksum hash tables ready to analyse the blocks we find */</a>
+<a name="ln1284">    if (!p_RsumHash) {</a>
+<a name="ln1285">        if (!buildHash()) {</a>
+<a name="ln1286">            free(buf);</a>
+<a name="ln1287">            return (error = -2);</a>
+<a name="ln1288">        }</a>
+<a name="ln1289">    }</a>
 <a name="ln1290"> </a>
-<a name="ln1291">    p_TransferSpeed.reset(new QElapsedTimer);</a>
-<a name="ln1292">    p_TransferSpeed-&gt;start();</a>
-<a name="ln1293">    while (!file-&gt;atEnd()) {</a>
-<a name="ln1294">        size_t len;</a>
-<a name="ln1295">        off_t start_in = in;</a>
-<a name="ln1296"> </a>
-<a name="ln1297">        /* If this is the start, fill the buffer for the first time */</a>
-<a name="ln1298">        if (!in) {</a>
-<a name="ln1299">            len = file-&gt;read((char*)buf, bufsize);</a>
-<a name="ln1300">            in += len;</a>
-<a name="ln1301">        }</a>
-<a name="ln1302"> </a>
-<a name="ln1303">        /* Else, move the last n_Context bytes from the end of the buffer to the</a>
-<a name="ln1304">         * start, and refill the rest of the buffer from the stream. */</a>
-<a name="ln1305">        else {</a>
-<a name="ln1306">            memcpy(buf, buf + (bufsize - n_Context), n_Context);</a>
-<a name="ln1307">            in += bufsize - n_Context;</a>
-<a name="ln1308">            len = n_Context + file-&gt;read((char*)(buf + n_Context), (bufsize - n_Context));</a>
-<a name="ln1309">        }</a>
-<a name="ln1310"> </a>
-<a name="ln1311">        if (file-&gt;atEnd()) {          /* 0 pad to complete a block */</a>
-<a name="ln1312">            memset(buf + len, 0, n_Context);</a>
-<a name="ln1313">            len += n_Context;</a>
-<a name="ln1314">        }</a>
-<a name="ln1315"> </a>
-<a name="ln1316">        /* Process the data in the buffer, and report progress */</a>
-<a name="ln1317">        submitSourceData( buf, len, start_in);</a>
-<a name="ln1318">        {</a>
-<a name="ln1319">            qint64 bytesReceived = n_BytesWritten,</a>
-<a name="ln1320">                   bytesTotal = n_TargetFileLength;</a>
-<a name="ln1321"> </a>
-<a name="ln1322">            int nPercentage = static_cast&lt;int&gt;(</a>
-<a name="ln1323">                                  (static_cast&lt;float&gt;</a>
-<a name="ln1324">                                   ( bytesReceived ) * 100.0</a>
-<a name="ln1325">                                  ) / static_cast&lt;float&gt;</a>
-<a name="ln1326">                                  (</a>
-<a name="ln1327">                                      bytesTotal</a>
-<a name="ln1328">                                  )</a>
-<a name="ln1329">                              );</a>
-<a name="ln1330"> </a>
-<a name="ln1331">            double nSpeed =  bytesReceived * 1000.0 / p_TransferSpeed-&gt;elapsed();</a>
-<a name="ln1332">            QString sUnit;</a>
-<a name="ln1333">            if (nSpeed &lt; 1024) {</a>
-<a name="ln1334">                sUnit = &quot;bytes/sec&quot;;</a>
-<a name="ln1335">            } else if (nSpeed &lt; 1024 * 1024) {</a>
-<a name="ln1336">                nSpeed /= 1024;</a>
-<a name="ln1337">                sUnit = &quot;kB/s&quot;;</a>
-<a name="ln1338">            } else {</a>
-<a name="ln1339">                nSpeed /= 1024 * 1024;</a>
-<a name="ln1340">                sUnit = &quot;MB/s&quot;;</a>
-<a name="ln1341">            }</a>
-<a name="ln1342"> </a>
-<a name="ln1343">            emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);</a>
-<a name="ln1344">        }</a>
-<a name="ln1345">        QCoreApplication::processEvents();</a>
-<a name="ln1346">        if(b_CancelRequested == true) {</a>
-<a name="ln1347">            error = -3;</a>
-<a name="ln1348">            b_CancelRequested = false;</a>
-<a name="ln1349">            emit canceled();</a>
-<a name="ln1350">            break;</a>
-<a name="ln1351">        }</a>
-<a name="ln1352">    }</a>
-<a name="ln1353">    p_TransferSpeed.reset(new QElapsedTimer);</a>
-<a name="ln1354">    file-&gt;close();</a>
-<a name="ln1355">    free(buf);</a>
-<a name="ln1356">    return error;</a>
-<a name="ln1357">}</a>
-<a name="ln1358"> </a>
+<a name="ln1291"> </a>
+<a name="ln1292">    p_TransferSpeed.reset(new QElapsedTimer);</a>
+<a name="ln1293">    p_TransferSpeed-&gt;start();</a>
+<a name="ln1294">    while (!file-&gt;atEnd()) {</a>
+<a name="ln1295">        size_t len;</a>
+<a name="ln1296">        off_t start_in = in;</a>
+<a name="ln1297"> </a>
+<a name="ln1298">        /* If this is the start, fill the buffer for the first time */</a>
+<a name="ln1299">        if (!in) {</a>
+<a name="ln1300">            len = file-&gt;read((char*)buf, bufsize);</a>
+<a name="ln1301">            in += len;</a>
+<a name="ln1302">        }</a>
+<a name="ln1303"> </a>
+<a name="ln1304">        /* Else, move the last n_Context bytes from the end of the buffer to the</a>
+<a name="ln1305">         * start, and refill the rest of the buffer from the stream. */</a>
+<a name="ln1306">        else {</a>
+<a name="ln1307">            memcpy(buf, buf + (bufsize - n_Context), n_Context);</a>
+<a name="ln1308">            in += bufsize - n_Context;</a>
+<a name="ln1309">            len = n_Context + file-&gt;read((char*)(buf + n_Context), (bufsize - n_Context));</a>
+<a name="ln1310">        }</a>
+<a name="ln1311"> </a>
+<a name="ln1312">        if (file-&gt;atEnd()) {          /* 0 pad to complete a block */</a>
+<a name="ln1313">            memset(buf + len, 0, n_Context);</a>
+<a name="ln1314">            len += n_Context;</a>
+<a name="ln1315">        }</a>
+<a name="ln1316"> </a>
+<a name="ln1317">        /* Process the data in the buffer, and report progress */</a>
+<a name="ln1318">        submitSourceData( buf, len, start_in);</a>
+<a name="ln1319">        {</a>
+<a name="ln1320">            qint64 bytesReceived = n_BytesWritten,</a>
+<a name="ln1321">                   bytesTotal = n_TargetFileLength;</a>
+<a name="ln1322"> </a>
+<a name="ln1323">            int nPercentage = static_cast&lt;int&gt;(</a>
+<a name="ln1324">                                  (static_cast&lt;float&gt;</a>
+<a name="ln1325">                                   ( bytesReceived ) * 100.0</a>
+<a name="ln1326">                                  ) / static_cast&lt;float&gt;</a>
+<a name="ln1327">                                  (</a>
+<a name="ln1328">                                      bytesTotal</a>
+<a name="ln1329">                                  )</a>
+<a name="ln1330">                              );</a>
+<a name="ln1331"> </a>
+<a name="ln1332">            double nSpeed =  bytesReceived * 1000.0 / p_TransferSpeed-&gt;elapsed();</a>
+<a name="ln1333">            QString sUnit;</a>
+<a name="ln1334">            if (nSpeed &lt; 1024) {</a>
+<a name="ln1335">                sUnit = &quot;bytes/sec&quot;;</a>
+<a name="ln1336">            } else if (nSpeed &lt; 1024 * 1024) {</a>
+<a name="ln1337">                nSpeed /= 1024;</a>
+<a name="ln1338">                sUnit = &quot;kB/s&quot;;</a>
+<a name="ln1339">            } else {</a>
+<a name="ln1340">                nSpeed /= 1024 * 1024;</a>
+<a name="ln1341">                sUnit = &quot;MB/s&quot;;</a>
+<a name="ln1342">            }</a>
+<a name="ln1343"> </a>
+<a name="ln1344">            emit progress(nPercentage, bytesReceived, bytesTotal, nSpeed, sUnit);</a>
+<a name="ln1345">        }</a>
+<a name="ln1346">        QCoreApplication::processEvents();</a>
+<a name="ln1347">        if(b_CancelRequested == true) {</a>
+<a name="ln1348">            error = -3;</a>
+<a name="ln1349">            b_CancelRequested = false;</a>
+<a name="ln1350">            emit canceled();</a>
+<a name="ln1351">            break;</a>
+<a name="ln1352">        }</a>
+<a name="ln1353">    }</a>
+<a name="ln1354">    p_TransferSpeed.reset(new QElapsedTimer);</a>
+<a name="ln1355">    file-&gt;close();</a>
+<a name="ln1356">    free(buf);</a>
+<a name="ln1357">    return error;</a>
+<a name="ln1358">}</a>
 <a name="ln1359"> </a>
 <a name="ln1360"> </a>
-<a name="ln1361">/* Build hash tables to quickly lookup a block based on its rsum value.</a>
-<a name="ln1362"> * Returns non-zero if successful.</a>
-<a name="ln1363"> */</a>
-<a name="ln1364">qint32 ZsyncWriterPrivate::buildHash() {</a>
-<a name="ln1365">    zs_blockid id;</a>
-<a name="ln1366">    qint32 i = 16;</a>
-<a name="ln1367"> </a>
-<a name="ln1368">    /* Try hash size of 2^i; step down the value of i until we find a good size</a>
-<a name="ln1369">     */</a>
-<a name="ln1370">    while ((2 &lt;&lt; (i - 1)) &gt; n_Blocks &amp;&amp; i &gt; 4) {</a>
-<a name="ln1371">        i--;</a>
-<a name="ln1372">        QCoreApplication::processEvents();</a>
-<a name="ln1373">    }</a>
-<a name="ln1374"> </a>
-<a name="ln1375">    /* Allocate hash based on rsum */</a>
-<a name="ln1376">    p_HashMask = (2 &lt;&lt; i) - 1;</a>
-<a name="ln1377">    p_RsumHash = (hash_entry**)calloc(p_HashMask + 1, sizeof *(p_RsumHash));</a>
-<a name="ln1378">    if (!p_RsumHash)</a>
-<a name="ln1379">        return 0;</a>
-<a name="ln1380"> </a>
-<a name="ln1381">    /* Allocate bit-table based on rsum */</a>
-<a name="ln1382">    p_BitHashMask = (2 &lt;&lt; (i + BITHASHBITS)) - 1;</a>
-<a name="ln1383">    p_BitHash = (unsigned char*)calloc(p_BitHashMask + 1, 1);</a>
-<a name="ln1384">    if (!p_BitHash) {</a>
-<a name="ln1385">        free(p_RsumHash);</a>
-<a name="ln1386">        p_RsumHash = NULL;</a>
-<a name="ln1387">        return 0;</a>
-<a name="ln1388">    }</a>
-<a name="ln1389"> </a>
-<a name="ln1390">    /* Now fill in the hash tables.</a>
-<a name="ln1391">     * Minor point: We do this in reverse order, because we're adding entries</a>
-<a name="ln1392">     * to the hash chains by prepending, so if we iterate over the data in</a>
-<a name="ln1393">     * reverse then the resulting hash chains have the blocks in normal order.</a>
-<a name="ln1394">     * That's improves our pattern of I/O when writing out identical blocks</a>
-<a name="ln1395">     * once we are processing data; we will write them in order. */</a>
-<a name="ln1396">    for (id = n_Blocks; id &gt; 0;) {</a>
-<a name="ln1397">        /* Decrement the loop variable here, and get the hash entry. */</a>
-<a name="ln1398">        hash_entry *e = p_BlockHashes + (--id);</a>
-<a name="ln1399"> </a>
-<a name="ln1400">        /* Prepend to linked list for this hash entry */</a>
-<a name="ln1401">        unsigned h = calcRHash( e);</a>
-<a name="ln1402">        e-&gt;next = p_RsumHash[h &amp; p_HashMask];</a>
-<a name="ln1403">        p_RsumHash[h &amp; p_HashMask] = e;</a>
-<a name="ln1404"> </a>
-<a name="ln1405">        /* And set relevant bit in the p_BitHash to 1 */</a>
-<a name="ln1406">        p_BitHash[(h &amp; p_BitHashMask) &gt;&gt; 3] |= 1 &lt;&lt; (h &amp; 7);</a>
-<a name="ln1407"> </a>
-<a name="ln1408">        QCoreApplication::processEvents();</a>
-<a name="ln1409">    }</a>
-<a name="ln1410">    return 1;</a>
-<a name="ln1411">}</a>
-<a name="ln1412"> </a>
-<a name="ln1413">/* Remove the given data block from the rsum hash table, so it won't be</a>
-<a name="ln1414"> * returned in a hash lookup again (e.g. because we now have the data)</a>
-<a name="ln1415"> */</a>
-<a name="ln1416">void ZsyncWriterPrivate::removeBlockFromHash(zs_blockid id) {</a>
-<a name="ln1417">    hash_entry *t = &amp;(p_BlockHashes[id]);</a>
-<a name="ln1418"> </a>
-<a name="ln1419">    hash_entry **p = &amp;(p_RsumHash[calcRHash(t) &amp; p_HashMask]);</a>
-<a name="ln1420"> </a>
-<a name="ln1421">    while (*p != NULL) {</a>
-<a name="ln1422">        if (*p == t) {</a>
-<a name="ln1423">            if (t == p_Rover) {</a>
-<a name="ln1424">                p_Rover = t-&gt;next;</a>
-<a name="ln1425">            }</a>
-<a name="ln1426">            *p = (*p)-&gt;next;</a>
-<a name="ln1427">            return;</a>
-<a name="ln1428">        } else {</a>
-<a name="ln1429">            p = &amp;((*p)-&gt;next);</a>
-<a name="ln1430">        }</a>
-<a name="ln1431">        QCoreApplication::processEvents();</a>
-<a name="ln1432">    }</a>
-<a name="ln1433">}</a>
-<a name="ln1434"> </a>
+<a name="ln1361"> </a>
+<a name="ln1362">/* Build hash tables to quickly lookup a block based on its rsum value.</a>
+<a name="ln1363"> * Returns non-zero if successful.</a>
+<a name="ln1364"> */</a>
+<a name="ln1365">qint32 ZsyncWriterPrivate::buildHash() {</a>
+<a name="ln1366">    zs_blockid id;</a>
+<a name="ln1367">    qint32 i = 16;</a>
+<a name="ln1368"> </a>
+<a name="ln1369">    /* Try hash size of 2^i; step down the value of i until we find a good size</a>
+<a name="ln1370">     */</a>
+<a name="ln1371">    while ((2 &lt;&lt; (i - 1)) &gt; n_Blocks &amp;&amp; i &gt; 4) {</a>
+<a name="ln1372">        i--;</a>
+<a name="ln1373">        QCoreApplication::processEvents();</a>
+<a name="ln1374">    }</a>
+<a name="ln1375"> </a>
+<a name="ln1376">    /* Allocate hash based on rsum */</a>
+<a name="ln1377">    p_HashMask = (2 &lt;&lt; i) - 1;</a>
+<a name="ln1378">    p_RsumHash = (hash_entry**)calloc(p_HashMask + 1, sizeof *(p_RsumHash));</a>
+<a name="ln1379">    if (!p_RsumHash)</a>
+<a name="ln1380">        return 0;</a>
+<a name="ln1381"> </a>
+<a name="ln1382">    /* Allocate bit-table based on rsum */</a>
+<a name="ln1383">    p_BitHashMask = (2 &lt;&lt; (i + BITHASHBITS)) - 1;</a>
+<a name="ln1384">    p_BitHash = (unsigned char*)calloc(p_BitHashMask + 1, 1);</a>
+<a name="ln1385">    if (!p_BitHash) {</a>
+<a name="ln1386">        free(p_RsumHash);</a>
+<a name="ln1387">        p_RsumHash = NULL;</a>
+<a name="ln1388">        return 0;</a>
+<a name="ln1389">    }</a>
+<a name="ln1390"> </a>
+<a name="ln1391">    /* Now fill in the hash tables.</a>
+<a name="ln1392">     * Minor point: We do this in reverse order, because we're adding entries</a>
+<a name="ln1393">     * to the hash chains by prepending, so if we iterate over the data in</a>
+<a name="ln1394">     * reverse then the resulting hash chains have the blocks in normal order.</a>
+<a name="ln1395">     * That's improves our pattern of I/O when writing out identical blocks</a>
+<a name="ln1396">     * once we are processing data; we will write them in order. */</a>
+<a name="ln1397">    for (id = n_Blocks; id &gt; 0;) {</a>
+<a name="ln1398">        /* Decrement the loop variable here, and get the hash entry. */</a>
+<a name="ln1399">        hash_entry *e = p_BlockHashes + (--id);</a>
+<a name="ln1400"> </a>
+<a name="ln1401">        /* Prepend to linked list for this hash entry */</a>
+<a name="ln1402">        unsigned h = calcRHash( e);</a>
+<a name="ln1403">        e-&gt;next = p_RsumHash[h &amp; p_HashMask];</a>
+<a name="ln1404">        p_RsumHash[h &amp; p_HashMask] = e;</a>
+<a name="ln1405"> </a>
+<a name="ln1406">        /* And set relevant bit in the p_BitHash to 1 */</a>
+<a name="ln1407">        p_BitHash[(h &amp; p_BitHashMask) &gt;&gt; 3] |= 1 &lt;&lt; (h &amp; 7);</a>
+<a name="ln1408"> </a>
+<a name="ln1409">        QCoreApplication::processEvents();</a>
+<a name="ln1410">    }</a>
+<a name="ln1411">    return 1;</a>
+<a name="ln1412">}</a>
+<a name="ln1413"> </a>
+<a name="ln1414">/* Remove the given data block from the rsum hash table, so it won't be</a>
+<a name="ln1415"> * returned in a hash lookup again (e.g. because we now have the data)</a>
+<a name="ln1416"> */</a>
+<a name="ln1417">void ZsyncWriterPrivate::removeBlockFromHash(zs_blockid id) {</a>
+<a name="ln1418">    hash_entry *t = &amp;(p_BlockHashes[id]);</a>
+<a name="ln1419"> </a>
+<a name="ln1420">    hash_entry **p = &amp;(p_RsumHash[calcRHash(t) &amp; p_HashMask]);</a>
+<a name="ln1421"> </a>
+<a name="ln1422">    while (*p != NULL) {</a>
+<a name="ln1423">        if (*p == t) {</a>
+<a name="ln1424">            if (t == p_Rover) {</a>
+<a name="ln1425">                p_Rover = t-&gt;next;</a>
+<a name="ln1426">            }</a>
+<a name="ln1427">            *p = (*p)-&gt;next;</a>
+<a name="ln1428">            return;</a>
+<a name="ln1429">        } else {</a>
+<a name="ln1430">            p = &amp;((*p)-&gt;next);</a>
+<a name="ln1431">        }</a>
+<a name="ln1432">        QCoreApplication::processEvents();</a>
+<a name="ln1433">    }</a>
+<a name="ln1434">}</a>
 <a name="ln1435"> </a>
-<a name="ln1436">/* This determines which of the existing known ranges x falls in.</a>
-<a name="ln1437"> * It returns -1 if it is inside an existing range (it doesn't tell you which</a>
-<a name="ln1438"> *  one; if you already have it, that usually is enough to know).</a>
-<a name="ln1439"> * Or it returns 0 if x is before the 1st range;</a>
-<a name="ln1440"> * 1 if it is between ranges 1 and 2 (array indexes 0 and 1)</a>
-<a name="ln1441"> * ...</a>
-<a name="ln1442"> * n_Ranges if it is after the last range</a>
-<a name="ln1443"> */</a>
-<a name="ln1444">qint32 ZsyncWriterPrivate::rangeBeforeBlock(zs_blockid x) {</a>
-<a name="ln1445">    /* Lowest number and highest number block that it could be inside (0 based) */</a>
-<a name="ln1446">    qint32 min = 0, max = n_Ranges-1;</a>
-<a name="ln1447"> </a>
-<a name="ln1448">    /* By bisection */</a>
-<a name="ln1449">    for (; min&lt;=max;) {</a>
-<a name="ln1450">        /* Range number to compare against */</a>
-<a name="ln1451">        qint32 r = (max+min)/2;</a>
-<a name="ln1452"> </a>
-<a name="ln1453">        if (x &gt; p_Ranges[2*r+1]) min = r+1;  /* After range r */</a>
-<a name="ln1454">        else if (x &lt; p_Ranges[2*r]) max = r-1;/* Before range r */</a>
-<a name="ln1455">        else return -1;                     /* In range r */</a>
-<a name="ln1456">    }</a>
-<a name="ln1457"> </a>
-<a name="ln1458">    /* If we reach here, we know min = max + 1 and we were below range max+1</a>
-<a name="ln1459">     * and above range min-1.</a>
-<a name="ln1460">     * So we're between range max and max + 1</a>
-<a name="ln1461">     * So we return max + 1  (return value is 1 based)  ( = min )</a>
-<a name="ln1462">     */</a>
-<a name="ln1463">    return min;</a>
-<a name="ln1464">}</a>
-<a name="ln1465"> </a>
-<a name="ln1466">/* Mark the given blockid as known, updating the stored known ranges</a>
-<a name="ln1467"> * appropriately */</a>
-<a name="ln1468">void ZsyncWriterPrivate::addToRanges(zs_blockid x) {</a>
-<a name="ln1469">    qint32 r = rangeBeforeBlock(x);</a>
-<a name="ln1470"> </a>
-<a name="ln1471">    if (r == -1) {</a>
-<a name="ln1472">        /* Already have this block */</a>
-<a name="ln1473">    } else {</a>
-<a name="ln1474">        /* If between two ranges and exactly filling the hole between them,</a>
-<a name="ln1475">         * merge them */</a>
-<a name="ln1476">        if (r &gt; 0 &amp;&amp; r &lt; n_Ranges</a>
-<a name="ln1477">                &amp;&amp; p_Ranges[2 * (r - 1) + 1] == x - 1</a>
-<a name="ln1478">                &amp;&amp; p_Ranges[2 * r] == x + 1) {</a>
-<a name="ln1479"> </a>
-<a name="ln1480">            // This block fills the gap between two areas that we have got completely. Merge the adjacent ranges</a>
-<a name="ln1481">            p_Ranges[2 * (r - 1) + 1] = p_Ranges[2 * r + 1];</a>
-<a name="ln1482">            memmove(&amp;p_Ranges[2 * r], &amp;p_Ranges[2 * r + 2],</a>
-<a name="ln1483">                    (n_Ranges - r - 1) * sizeof(p_Ranges[0]) * 2);</a>
-<a name="ln1484">            n_Ranges--;</a>
-<a name="ln1485">        }</a>
-<a name="ln1486"> </a>
-<a name="ln1487">        /* If adjoining a range below, add to it */</a>
-<a name="ln1488">        else if (r &gt; 0 &amp;&amp; n_Ranges &amp;&amp; p_Ranges[2 * (r - 1) + 1] == x - 1) {</a>
-<a name="ln1489">            p_Ranges[2 * (r - 1) + 1] = x;</a>
-<a name="ln1490">        }</a>
-<a name="ln1491"> </a>
-<a name="ln1492">        /* If adjoining a range above, add to it */</a>
-<a name="ln1493">        else if (r &lt; n_Ranges &amp;&amp; p_Ranges[2 * r] == x + 1) {</a>
-<a name="ln1494">            p_Ranges[2 * r] = x;</a>
-<a name="ln1495">        }</a>
-<a name="ln1496"> </a>
-<a name="ln1497">        else { /* New range for this block alone */</a>
-<a name="ln1498">            void *guard = realloc(p_Ranges, (n_Ranges + 1) * 2 * sizeof(p_Ranges[0]));</a>
-<a name="ln1499">            if(!guard) {</a>
-<a name="ln1500">                return;</a>
-<a name="ln1501">            }</a>
-<a name="ln1502">            p_Ranges = (zs_blockid*) guard;</a>
-<a name="ln1503">            memmove(&amp;p_Ranges[2 * r + 2], &amp;p_Ranges[2 * r],</a>
-<a name="ln1504">                    (n_Ranges - r) * 2 * sizeof(p_Ranges[0]));</a>
-<a name="ln1505">            p_Ranges[2 * r] = p_Ranges[2 * r + 1] = x;</a>
-<a name="ln1506">            n_Ranges++;</a>
-<a name="ln1507">        }</a>
-<a name="ln1508">    }</a>
-<a name="ln1509">}</a>
-<a name="ln1510"> </a>
-<a name="ln1511">/* Return true if blockid x of the target file is already known */</a>
-<a name="ln1512">qint32 ZsyncWriterPrivate::alreadyGotBlock(zs_blockid x) {</a>
-<a name="ln1513">    return (rangeBeforeBlock(x) == -1);</a>
-<a name="ln1514">}</a>
-<a name="ln1515"> </a>
-<a name="ln1516">/* Returns the blockid of the next block which we already have data for.</a>
-<a name="ln1517"> * If we know the requested block, it returns the blockid given; otherwise it</a>
-<a name="ln1518"> * will return a later blockid.</a>
-<a name="ln1519"> * If no later blocks are known, it returns numblocks (i.e. the block after</a>
-<a name="ln1520"> * the end of the file).</a>
-<a name="ln1521"> */</a>
-<a name="ln1522">zs_blockid ZsyncWriterPrivate::nextKnownBlock(zs_blockid x) {</a>
-<a name="ln1523">    qint32 r = rangeBeforeBlock(x);</a>
-<a name="ln1524">    if (r == -1)</a>
-<a name="ln1525">        return x;</a>
-<a name="ln1526">    if (r == n_Ranges) {</a>
-<a name="ln1527">        return n_Blocks;</a>
-<a name="ln1528">    }</a>
-<a name="ln1529">    /* Else return first block of next known range. */</a>
-<a name="ln1530">    return p_Ranges[2*r];</a>
-<a name="ln1531">}</a>
-<a name="ln1532"> </a>
-<a name="ln1533">/* Calculates the rsum hash table hash for the given hash entry. */</a>
-<a name="ln1534">unsigned ZsyncWriterPrivate::calcRHash(const hash_entry *const e) {</a>
-<a name="ln1535">    unsigned h = e[0].r.b;</a>
-<a name="ln1536"> </a>
-<a name="ln1537">    h ^= ((n_SeqMatches &gt; 1) ? e[1].r.b</a>
-<a name="ln1538">          : e[0].r.a &amp; p_WeakCheckSumMask) &lt;&lt; BITHASHBITS;</a>
-<a name="ln1539"> </a>
-<a name="ln1540">    return h;</a>
-<a name="ln1541">}</a>
-<a name="ln1542"> </a>
-<a name="ln1543">/* Returns the hash entry's blockid. */</a>
-<a name="ln1544">zs_blockid ZsyncWriterPrivate::getHashEntryBlockId(const hash_entry *e) {</a>
-<a name="ln1545">    return e - p_BlockHashes;</a>
-<a name="ln1546">}</a>
-<a name="ln1547"> </a>
+<a name="ln1436"> </a>
+<a name="ln1437">/* This determines which of the existing known ranges x falls in.</a>
+<a name="ln1438"> * It returns -1 if it is inside an existing range (it doesn't tell you which</a>
+<a name="ln1439"> *  one; if you already have it, that usually is enough to know).</a>
+<a name="ln1440"> * Or it returns 0 if x is before the 1st range;</a>
+<a name="ln1441"> * 1 if it is between ranges 1 and 2 (array indexes 0 and 1)</a>
+<a name="ln1442"> * ...</a>
+<a name="ln1443"> * n_Ranges if it is after the last range</a>
+<a name="ln1444"> */</a>
+<a name="ln1445">qint32 ZsyncWriterPrivate::rangeBeforeBlock(zs_blockid x) {</a>
+<a name="ln1446">    /* Lowest number and highest number block that it could be inside (0 based) */</a>
+<a name="ln1447">    qint32 min = 0, max = n_Ranges-1;</a>
+<a name="ln1448"> </a>
+<a name="ln1449">    /* By bisection */</a>
+<a name="ln1450">    for (; min&lt;=max;) {</a>
+<a name="ln1451">        /* Range number to compare against */</a>
+<a name="ln1452">        qint32 r = (max+min)/2;</a>
+<a name="ln1453"> </a>
+<a name="ln1454">        if (x &gt; p_Ranges[2*r+1]) min = r+1;  /* After range r */</a>
+<a name="ln1455">        else if (x &lt; p_Ranges[2*r]) max = r-1;/* Before range r */</a>
+<a name="ln1456">        else return -1;                     /* In range r */</a>
+<a name="ln1457">    }</a>
+<a name="ln1458"> </a>
+<a name="ln1459">    /* If we reach here, we know min = max + 1 and we were below range max+1</a>
+<a name="ln1460">     * and above range min-1.</a>
+<a name="ln1461">     * So we're between range max and max + 1</a>
+<a name="ln1462">     * So we return max + 1  (return value is 1 based)  ( = min )</a>
+<a name="ln1463">     */</a>
+<a name="ln1464">    return min;</a>
+<a name="ln1465">}</a>
+<a name="ln1466"> </a>
+<a name="ln1467">/* Mark the given blockid as known, updating the stored known ranges</a>
+<a name="ln1468"> * appropriately */</a>
+<a name="ln1469">void ZsyncWriterPrivate::addToRanges(zs_blockid x) {</a>
+<a name="ln1470">    qint32 r = rangeBeforeBlock(x);</a>
+<a name="ln1471"> </a>
+<a name="ln1472">    if (r == -1) {</a>
+<a name="ln1473">        /* Already have this block */</a>
+<a name="ln1474">    } else {</a>
+<a name="ln1475">        /* If between two ranges and exactly filling the hole between them,</a>
+<a name="ln1476">         * merge them */</a>
+<a name="ln1477">        if (r &gt; 0 &amp;&amp; r &lt; n_Ranges</a>
+<a name="ln1478">                &amp;&amp; p_Ranges[2 * (r - 1) + 1] == x - 1</a>
+<a name="ln1479">                &amp;&amp; p_Ranges[2 * r] == x + 1) {</a>
+<a name="ln1480"> </a>
+<a name="ln1481">            // This block fills the gap between two areas that we have got completely. Merge the adjacent ranges</a>
+<a name="ln1482">            p_Ranges[2 * (r - 1) + 1] = p_Ranges[2 * r + 1];</a>
+<a name="ln1483">            memmove(&amp;p_Ranges[2 * r], &amp;p_Ranges[2 * r + 2],</a>
+<a name="ln1484">                    (n_Ranges - r - 1) * sizeof(p_Ranges[0]) * 2);</a>
+<a name="ln1485">            n_Ranges--;</a>
+<a name="ln1486">        }</a>
+<a name="ln1487"> </a>
+<a name="ln1488">        /* If adjoining a range below, add to it */</a>
+<a name="ln1489">        else if (r &gt; 0 &amp;&amp; n_Ranges &amp;&amp; p_Ranges[2 * (r - 1) + 1] == x - 1) {</a>
+<a name="ln1490">            p_Ranges[2 * (r - 1) + 1] = x;</a>
+<a name="ln1491">        }</a>
+<a name="ln1492"> </a>
+<a name="ln1493">        /* If adjoining a range above, add to it */</a>
+<a name="ln1494">        else if (r &lt; n_Ranges &amp;&amp; p_Ranges[2 * r] == x + 1) {</a>
+<a name="ln1495">            p_Ranges[2 * r] = x;</a>
+<a name="ln1496">        }</a>
+<a name="ln1497"> </a>
+<a name="ln1498">        else { /* New range for this block alone */</a>
+<a name="ln1499">            void *guard = realloc(p_Ranges, (n_Ranges + 1) * 2 * sizeof(p_Ranges[0]));</a>
+<a name="ln1500">            if(!guard) {</a>
+<a name="ln1501">                return;</a>
+<a name="ln1502">            }</a>
+<a name="ln1503">            p_Ranges = (zs_blockid*) guard;</a>
+<a name="ln1504">            memmove(&amp;p_Ranges[2 * r + 2], &amp;p_Ranges[2 * r],</a>
+<a name="ln1505">                    (n_Ranges - r) * 2 * sizeof(p_Ranges[0]));</a>
+<a name="ln1506">            p_Ranges[2 * r] = p_Ranges[2 * r + 1] = x;</a>
+<a name="ln1507">            n_Ranges++;</a>
+<a name="ln1508">        }</a>
+<a name="ln1509">    }</a>
+<a name="ln1510">}</a>
+<a name="ln1511"> </a>
+<a name="ln1512">/* Return true if blockid x of the target file is already known */</a>
+<a name="ln1513">qint32 ZsyncWriterPrivate::alreadyGotBlock(zs_blockid x) {</a>
+<a name="ln1514">    return (rangeBeforeBlock(x) == -1);</a>
+<a name="ln1515">}</a>
+<a name="ln1516"> </a>
+<a name="ln1517">/* Returns the blockid of the next block which we already have data for.</a>
+<a name="ln1518"> * If we know the requested block, it returns the blockid given; otherwise it</a>
+<a name="ln1519"> * will return a later blockid.</a>
+<a name="ln1520"> * If no later blocks are known, it returns numblocks (i.e. the block after</a>
+<a name="ln1521"> * the end of the file).</a>
+<a name="ln1522"> */</a>
+<a name="ln1523">zs_blockid ZsyncWriterPrivate::nextKnownBlock(zs_blockid x) {</a>
+<a name="ln1524">    qint32 r = rangeBeforeBlock(x);</a>
+<a name="ln1525">    if (r == -1)</a>
+<a name="ln1526">        return x;</a>
+<a name="ln1527">    if (r == n_Ranges) {</a>
+<a name="ln1528">        return n_Blocks;</a>
+<a name="ln1529">    }</a>
+<a name="ln1530">    /* Else return first block of next known range. */</a>
+<a name="ln1531">    return p_Ranges[2*r];</a>
+<a name="ln1532">}</a>
+<a name="ln1533"> </a>
+<a name="ln1534">/* Calculates the rsum hash table hash for the given hash entry. */</a>
+<a name="ln1535">unsigned ZsyncWriterPrivate::calcRHash(const hash_entry *const e) {</a>
+<a name="ln1536">    unsigned h = e[0].r.b;</a>
+<a name="ln1537"> </a>
+<a name="ln1538">    h ^= ((n_SeqMatches &gt; 1) ? e[1].r.b</a>
+<a name="ln1539">          : e[0].r.a &amp; p_WeakCheckSumMask) &lt;&lt; BITHASHBITS;</a>
+<a name="ln1540"> </a>
+<a name="ln1541">    return h;</a>
+<a name="ln1542">}</a>
+<a name="ln1543"> </a>
+<a name="ln1544">/* Returns the hash entry's blockid. */</a>
+<a name="ln1545">zs_blockid ZsyncWriterPrivate::getHashEntryBlockId(const hash_entry *e) {</a>
+<a name="ln1546">    return e - p_BlockHashes;</a>
+<a name="ln1547">}</a>
 <a name="ln1548"> </a>
-<a name="ln1549">/* Writes the block range (inclusive) from the supplied buffer to the given</a>
-<a name="ln1550"> * under-construction output file */</a>
-<a name="ln1551">void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto) {</a>
-<a name="ln1552">    if(!p_TargetFile-&gt;isOpen() || !p_TargetFile-&gt;autoRemove())</a>
-<a name="ln1553">        return;</a>
-<a name="ln1554"> </a>
-<a name="ln1555">    // Equation of length with</a>
-<a name="ln1556">    // bto = &lt;original bto&gt; - 1;</a>
-<a name="ln1557">    // bfrom = &lt;original bfrom&gt;;</a>
-<a name="ln1558">    //</a>
-<a name="ln1559">    // len = &lt;original bto&gt; - 1 - bfrom + 1</a>
-<a name="ln1560">    //     = &lt;original bto&gt; - bfrom</a>
-<a name="ln1561">    //     = actual no. of blocks got.</a>
-<a name="ln1562"> </a>
-<a name="ln1563">    off_t len = ((off_t) (bto - bfrom + 1)) &lt;&lt; n_BlockShift;</a>
-<a name="ln1564">    off_t offset = ((off_t)bfrom) &lt;&lt; n_BlockShift;</a>
-<a name="ln1565"> </a>
-<a name="ln1566">    auto pos = p_TargetFile-&gt;pos();</a>
-<a name="ln1567">    p_TargetFile-&gt;seek(offset);</a>
-<a name="ln1568">    n_BytesWritten += p_TargetFile-&gt;write((char*)data, len);</a>
-<a name="ln1569">    p_TargetFile-&gt;seek(pos);</a>
-<a name="ln1570"> </a>
-<a name="ln1571">    {</a>
-<a name="ln1572">        /* Having written those blocks, discard them from the rsum hashes (as</a>
-<a name="ln1573">         * we don't need to identify data for those blocks again, and this may</a>
-<a name="ln1574">         * speed up lookups (in particular if there are lots of identical</a>
-<a name="ln1575">         * blocks), and add the written blocks to the record of blocks that we</a>
-<a name="ln1576">         * have received and stored the data for */</a>
-<a name="ln1577">        int id;</a>
-<a name="ln1578">        for (id = bfrom; id &lt;= bto; id++) {</a>
-<a name="ln1579">            removeBlockFromHash(id);</a>
-<a name="ln1580">            addToRanges(id);</a>
-<a name="ln1581">            QCoreApplication::processEvents();</a>
-<a name="ln1582">        }</a>
-<a name="ln1583">    }</a>
-<a name="ln1584">    return;</a>
-<a name="ln1585">}</a>
-<a name="ln1586"> </a>
-<a name="ln1587">/* Calculates the Md4 Checksum of the given data with respect to the given len. */</a>
-<a name="ln1588">void ZsyncWriterPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *data, size_t len) {</a>
-<a name="ln1589">    p_Md4Ctx-&gt;reset();</a>
-<a name="ln1590">    p_Md4Ctx-&gt;addData((const char*)data, len);</a>
-<a name="ln1591">    auto result = p_Md4Ctx-&gt;result();</a>
-<a name="ln1592">    memmove(c, result.constData(), sizeof(const char) * result.size());</a>
-<a name="ln1593">    return;</a>
-<a name="ln1594">}</a>
+<a name="ln1549"> </a>
+<a name="ln1550">/* Writes the block range (inclusive) from the supplied buffer to the given</a>
+<a name="ln1551"> * under-construction output file */</a>
+<a name="ln1552">void ZsyncWriterPrivate::writeBlocks(const unsigned char *data, zs_blockid bfrom, zs_blockid bto) {</a>
+<a name="ln1553">    if(!p_TargetFile-&gt;isOpen() || !p_TargetFile-&gt;autoRemove())</a>
+<a name="ln1554">        return;</a>
+<a name="ln1555"> </a>
+<a name="ln1556">    // Equation of length with</a>
+<a name="ln1557">    // bto = &lt;original bto&gt; - 1;</a>
+<a name="ln1558">    // bfrom = &lt;original bfrom&gt;;</a>
+<a name="ln1559">    //</a>
+<a name="ln1560">    // len = &lt;original bto&gt; - 1 - bfrom + 1</a>
+<a name="ln1561">    //     = &lt;original bto&gt; - bfrom</a>
+<a name="ln1562">    //     = actual no. of blocks got.</a>
+<a name="ln1563"> </a>
+<a name="ln1564">    off_t len = ((off_t) (bto - bfrom + 1)) &lt;&lt; n_BlockShift;</a>
+<a name="ln1565">    off_t offset = ((off_t)bfrom) &lt;&lt; n_BlockShift;</a>
+<a name="ln1566"> </a>
+<a name="ln1567">    auto pos = p_TargetFile-&gt;pos();</a>
+<a name="ln1568">    p_TargetFile-&gt;seek(offset);</a>
+<a name="ln1569">    n_BytesWritten += p_TargetFile-&gt;write((char*)data, len);</a>
+<a name="ln1570">    p_TargetFile-&gt;seek(pos);</a>
+<a name="ln1571"> </a>
+<a name="ln1572">    {</a>
+<a name="ln1573">        /* Having written those blocks, discard them from the rsum hashes (as</a>
+<a name="ln1574">         * we don't need to identify data for those blocks again, and this may</a>
+<a name="ln1575">         * speed up lookups (in particular if there are lots of identical</a>
+<a name="ln1576">         * blocks), and add the written blocks to the record of blocks that we</a>
+<a name="ln1577">         * have received and stored the data for */</a>
+<a name="ln1578">        int id;</a>
+<a name="ln1579">        for (id = bfrom; id &lt;= bto; id++) {</a>
+<a name="ln1580">            removeBlockFromHash(id);</a>
+<a name="ln1581">            addToRanges(id);</a>
+<a name="ln1582">            QCoreApplication::processEvents();</a>
+<a name="ln1583">        }</a>
+<a name="ln1584">    }</a>
+<a name="ln1585">    return;</a>
+<a name="ln1586">}</a>
+<a name="ln1587"> </a>
+<a name="ln1588">/* Calculates the Md4 Checksum of the given data with respect to the given len. */</a>
+<a name="ln1589">void ZsyncWriterPrivate::calcMd4Checksum(unsigned char *c, const unsigned char *data, size_t len) {</a>
+<a name="ln1590">    p_Md4Ctx-&gt;reset();</a>
+<a name="ln1591">    p_Md4Ctx-&gt;addData((const char*)data, len);</a>
+<a name="ln1592">    auto result = p_Md4Ctx-&gt;result();</a>
+<a name="ln1593">    memmove(c, result.constData(), sizeof(const char) * result.size());</a>
+<a name="ln1594">    return;</a>
+<a name="ln1595">}</a>
 
 </code></pre>
 <div class="balloon" rel="235"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v701/" target="_blank">V701</a> realloc() possible leak: when realloc() fails in allocating memory, original pointer 'r' is lost. Consider assigning realloc() to a temporary pointer.</p></div>
 <div class="balloon" rel="236"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v522/" target="_blank">V522</a> There might be dereferencing of a potential null pointer 'r'. Check lines: 236, 235.</p></div>
 <div class="balloon" rel="658"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v519/" target="_blank">V519</a> The 'b_Started' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 648, 658.</p></div>
 <div class="balloon" rel="982"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v547/" target="_blank">V547</a> Expression '!(constructed = true)' is always false.</p></div>
-<div class="balloon" rel="1185"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'x + n_Context' operator to the 'size_t' type, not the result.</p></div>
-<div class="balloon" rel="1230"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'x + n_Context' operator to the 'size_t' type, not the result.</p></div>
-<div class="balloon" rel="1563"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'bto - bfrom + 1' operator to the 'off_t' type, not the result.</p></div>
+<div class="balloon" rel="1186"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'x + n_Context' operator to the 'size_t' type, not the result.</p></div>
+<div class="balloon" rel="1231"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'x + n_Context' operator to the 'size_t' type, not the result.</p></div>
+<div class="balloon" rel="1564"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1028/" target="_blank">V1028</a> Possible overflow. Consider casting operands of the 'bto - bfrom + 1' operator to the 'off_t' type, not the result.</p></div>
 
 <link rel="stylesheet" href="highlight.css">
 <script src="highlight.pack.js"></script>
