@@ -1,0 +1,359 @@
+
+<html>
+<head>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII" />
+  <title>torrentdownloader_p.cc</title>
+
+  <link rel="stylesheet" href="../style.css"/>
+  <script src="../jquery-3.5.1.min.js"></script>
+</head>
+<body>
+
+<pre><code class = "cpp">
+<a name="ln1">#ifdef DECENTRALIZED_UPDATE_ENABLED</a>
+<a name="ln2">#include &lt;QFileInfo&gt;</a>
+<a name="ln3">#include &lt;QDebug&gt;</a>
+<a name="ln4">#include &lt;QThread&gt;</a>
+<a name="ln5">#include &lt;QCoreApplication&gt;</a>
+<a name="ln6">#include &lt;QNetworkProxy&gt;</a>
+<a name="ln7">#include &lt;vector&gt;</a>
+<a name="ln8">#include &lt;iostream&gt;</a>
+<a name="ln9"> </a>
+<a name="ln10">#include &quot;torrentdownloader_p.hpp&quot;</a>
+<a name="ln11"> </a>
+<a name="ln12">TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manager)</a>
+<a name="ln13">    : QObject() {</a>
+<a name="ln14">    n_TargetFileLength = n_TargetFileDone = 0;</a>
+<a name="ln15">    lt::session_params p = lt::session_params();</a>
+<a name="ln16">    p.settings.set_int(lt::settings_pack::alert_mask,</a>
+<a name="ln17">                       lt::alert_category::status |</a>
+<a name="ln18">                       lt::alert_category::error |</a>
+<a name="ln19">                       lt::alert_category::storage);</a>
+<a name="ln20">    </a>
+<a name="ln21">    //// Set proxy for libtorrent.</a>
+<a name="ln22">    auto proxy = manager-&gt;proxy();</a>
+<a name="ln23">    if(proxy.type() != QNetworkProxy::NoProxy) {</a>
+<a name="ln24">	emit logger(&quot;Using proxy for torrent download&quot;);</a>
+<a name="ln25">	p.settings.set_str(lt::settings_pack::proxy_hostname,</a>
+<a name="ln26">			   proxy.hostName().toStdString());</a>
+<a name="ln27">	p.settings.set_int(lt::settings_pack::proxy_port,</a>
+<a name="ln28">			   (int)proxy.port());</a>
+<a name="ln29">	p.settings.set_str(lt::settings_pack::proxy_username,</a>
+<a name="ln30">			   proxy.user().toStdString());</a>
+<a name="ln31">	p.settings.set_str(lt::settings_pack::proxy_password,</a>
+<a name="ln32">			   proxy.password().toStdString());</a>
+<a name="ln33">	</a>
+<a name="ln34">	/// Set Proxy type.</a>
+<a name="ln35">	if(proxy.type() == QNetworkProxy::Socks5Proxy) {</a>
+<a name="ln36">		p.settings.set_int(lt::settings_pack::proxy_type,</a>
+<a name="ln37">				   lt::settings_pack::socks5_pw);</a>
+<a name="ln38">	}else if(proxy.type() == QNetworkProxy::HttpProxy) {</a>
+<a name="ln39">		p.settings.set_int(lt::settings_pack::proxy_type,</a>
+<a name="ln40">				   lt::settings_pack::http_pw);</a>
+<a name="ln41">	}else{</a>
+<a name="ln42">		emit logger(&quot;Cannot find proxy type. You have been warned&quot;);</a>
+<a name="ln43">	}</a>
+<a name="ln44">    }</a>
+<a name="ln45"> </a>
+<a name="ln46">    m_Manager = manager;</a>
+<a name="ln47">    m_Session.reset(new lt::session(p));</a>
+<a name="ln48">    m_TorrentMeta.reset(new QByteArray);</a>
+<a name="ln49"> </a>
+<a name="ln50">    m_TimeoutTimer.setSingleShot(true);</a>
+<a name="ln51">    m_TimeoutTimer.setInterval(100 * 1000); // 100 seconds</a>
+<a name="ln52"> </a>
+<a name="ln53">    connect(&amp;m_TimeoutTimer, &amp;QTimer::timeout,</a>
+<a name="ln54">            this, &amp;TorrentDownloaderPrivate::handleTimeout,</a>
+<a name="ln55">            Qt::QueuedConnection);</a>
+<a name="ln56"> </a>
+<a name="ln57">    m_Timer.setSingleShot(false);</a>
+<a name="ln58">    m_Timer.setInterval(100); // 1ms?</a>
+<a name="ln59">    connect(&amp;m_Timer, &amp;QTimer::timeout,</a>
+<a name="ln60">            this, &amp;TorrentDownloaderPrivate::torrentLoop,</a>
+<a name="ln61">            Qt::QueuedConnection);</a>
+<a name="ln62">}</a>
+<a name="ln63">TorrentDownloaderPrivate::~TorrentDownloaderPrivate() {</a>
+<a name="ln64"> </a>
+<a name="ln65">}</a>
+<a name="ln66"> </a>
+<a name="ln67">void TorrentDownloaderPrivate::setTargetFileDone(qint64 done) {</a>
+<a name="ln68">    if(b_Running) {</a>
+<a name="ln69">        return;</a>
+<a name="ln70">    }</a>
+<a name="ln71"> </a>
+<a name="ln72">    n_TargetFileDone = done;</a>
+<a name="ln73">}</a>
+<a name="ln74"> </a>
+<a name="ln75">void TorrentDownloaderPrivate::setTargetFileLength(qint64 n) {</a>
+<a name="ln76">    if(b_Running) {</a>
+<a name="ln77">        return;</a>
+<a name="ln78">    }</a>
+<a name="ln79"> </a>
+<a name="ln80">    n_TargetFileLength = n;</a>
+<a name="ln81">}</a>
+<a name="ln82"> </a>
+<a name="ln83">void TorrentDownloaderPrivate::setTargetFile(QTemporaryFile *file) {</a>
+<a name="ln84">    if(b_Running) {</a>
+<a name="ln85">        return;</a>
+<a name="ln86">    }</a>
+<a name="ln87"> </a>
+<a name="ln88">    m_File = file;</a>
+<a name="ln89">}</a>
+<a name="ln90"> </a>
+<a name="ln91">void TorrentDownloaderPrivate::setTorrentFileUrl(const QUrl &amp;url) {</a>
+<a name="ln92">    if(b_Running) {</a>
+<a name="ln93">        return;</a>
+<a name="ln94">    }</a>
+<a name="ln95">    m_TorrentFileUrl = url;</a>
+<a name="ln96">}</a>
+<a name="ln97"> </a>
+<a name="ln98">void TorrentDownloaderPrivate::setTargetFileUrl(const QUrl &amp;url) {</a>
+<a name="ln99">    if(b_Running) {</a>
+<a name="ln100">        return;</a>
+<a name="ln101">    }</a>
+<a name="ln102">    m_TargetFileUrl = url;</a>
+<a name="ln103"> </a>
+<a name="ln104">}</a>
+<a name="ln105"> </a>
+<a name="ln106">void TorrentDownloaderPrivate::start() {</a>
+<a name="ln107">    if(b_Running) {</a>
+<a name="ln108">        return;</a>
+<a name="ln109">    }</a>
+<a name="ln110">    b_Running = b_Finished = false;</a>
+<a name="ln111"> </a>
+<a name="ln112"> </a>
+<a name="ln113">    m_TorrentMeta-&gt;clear();</a>
+<a name="ln114"> </a>
+<a name="ln115">    QNetworkRequest request;</a>
+<a name="ln116">    request.setUrl(m_TorrentFileUrl);</a>
+<a name="ln117">    request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);</a>
+<a name="ln118"> </a>
+<a name="ln119">    auto reply = m_Manager-&gt;get(request);</a>
+<a name="ln120">    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),</a>
+<a name="ln121">            this, SLOT(handleTorrentFileError(QNetworkReply::NetworkError)));</a>
+<a name="ln122">    connect(reply, SIGNAL(downloadProgress(qint64, qint64)),</a>
+<a name="ln123">            this, SLOT(handleTorrentFileData(qint64, qint64)));</a>
+<a name="ln124">    connect(reply, SIGNAL(finished()),</a>
+<a name="ln125">            this, SLOT(handleTorrentFileFinish()));</a>
+<a name="ln126">    b_Running = true;</a>
+<a name="ln127">    emit started();</a>
+<a name="ln128">}</a>
+<a name="ln129"> </a>
+<a name="ln130">void TorrentDownloaderPrivate::cancel() {</a>
+<a name="ln131">    if(!b_Running || b_CancelRequested) {</a>
+<a name="ln132">        return;</a>
+<a name="ln133">    }</a>
+<a name="ln134">    b_CancelRequested = true;</a>
+<a name="ln135">}</a>
+<a name="ln136"> </a>
+<a name="ln137">void TorrentDownloaderPrivate::handleTorrentFileError(QNetworkReply::NetworkError code) {</a>
+<a name="ln138">    QNetworkReply *reply = qobject_cast&lt;QNetworkReply*&gt;(QObject::sender());</a>
+<a name="ln139">    if(!reply) {</a>
+<a name="ln140">        return;</a>
+<a name="ln141">    }</a>
+<a name="ln142"> </a>
+<a name="ln143">    reply-&gt;disconnect();</a>
+<a name="ln144">    reply-&gt;deleteLater();</a>
+<a name="ln145"> </a>
+<a name="ln146">    emit error(code);</a>
+<a name="ln147">}</a>
+<a name="ln148"> </a>
+<a name="ln149">void TorrentDownloaderPrivate::handleTorrentFileData(qint64 br, qint64 bt) {</a>
+<a name="ln150">    Q_UNUSED(br);</a>
+<a name="ln151">    Q_UNUSED(bt);</a>
+<a name="ln152"> </a>
+<a name="ln153">    auto reply = qobject_cast&lt;QNetworkReply*&gt;(QObject::sender());</a>
+<a name="ln154">    if(!reply) {</a>
+<a name="ln155">        return;</a>
+<a name="ln156">    }</a>
+<a name="ln157"> </a>
+<a name="ln158">    if(reply-&gt;error() != QNetworkReply::NoError) {</a>
+<a name="ln159">        return;</a>
+<a name="ln160">    }</a>
+<a name="ln161"> </a>
+<a name="ln162">    if(reply-&gt;isReadable()) {</a>
+<a name="ln163">        m_TorrentMeta-&gt;append(reply-&gt;readAll());</a>
+<a name="ln164">    }</a>
+<a name="ln165">}</a>
+<a name="ln166"> </a>
+<a name="ln167">void TorrentDownloaderPrivate::handleTorrentFileFinish() {</a>
+<a name="ln168">    auto reply = qobject_cast&lt;QNetworkReply*&gt;(QObject::sender());</a>
+<a name="ln169">    m_TorrentMeta-&gt;append(reply-&gt;readAll());</a>
+<a name="ln170"> </a>
+<a name="ln171">    reply-&gt;disconnect();</a>
+<a name="ln172">    reply-&gt;deleteLater();</a>
+<a name="ln173"> </a>
+<a name="ln174">    if(b_CancelRequested) {</a>
+<a name="ln175">        m_File-&gt;setAutoRemove(true);</a>
+<a name="ln176">        m_File-&gt;open();</a>
+<a name="ln177">        b_CancelRequested = false;</a>
+<a name="ln178">        b_Running = b_Finished = false;</a>
+<a name="ln179">        emit canceled();</a>
+<a name="ln180">        return;</a>
+<a name="ln181">    }</a>
+<a name="ln182"> </a>
+<a name="ln183">    lt::add_torrent_params params;</a>
+<a name="ln184">    QString savePath = QFileInfo(m_File-&gt;fileName()).path() + &quot;/&quot;;</a>
+<a name="ln185"> </a>
+<a name="ln186">    params.save_path = savePath.toStdString();</a>
+<a name="ln187">    auto ti = std::make_shared&lt;lt::torrent_info&gt;(m_TorrentMeta-&gt;constData(), (int)m_TorrentMeta-&gt;size());</a>
+<a name="ln188"> </a>
+<a name="ln189">    /// We know that MakeAppImageTorrent only packs a single file that is the</a>
+<a name="ln190">    /// the Target AppImage. So We just need to check if it is bundled correctly.</a>
+<a name="ln191">    if(ti-&gt;num_files() != 1) {</a>
+<a name="ln192">        emit error(QNetworkReply::ProtocolFailure);</a>
+<a name="ln193">        return;</a>
+<a name="ln194">    }</a>
+<a name="ln195"> </a>
+<a name="ln196">    /// Since only 1 file is packaged in the torrent, we can</a>
+<a name="ln197">    /// assume that the file index for our Target AppImage is 0</a>
+<a name="ln198">    ti-&gt;rename_file(0,</a>
+<a name="ln199">                    QFileInfo(m_File-&gt;fileName()).fileName().toStdString());</a>
+<a name="ln200"> </a>
+<a name="ln201"> </a>
+<a name="ln202">    /// Add the target file url as web seed</a>
+<a name="ln203">    /// See BEP 17 and BEP 19</a>
+<a name="ln204">    ti-&gt;add_url_seed(m_TargetFileUrl.toString().toStdString());</a>
+<a name="ln205"> </a>
+<a name="ln206">    params.ti = ti;</a>
+<a name="ln207">    m_Handle = m_Session-&gt;add_torrent(params);</a>
+<a name="ln208">    if(!m_Handle.is_valid()) {</a>
+<a name="ln209">        emit error(QNetworkReply::ProtocolFailure);</a>
+<a name="ln210">        return;</a>
+<a name="ln211">    }</a>
+<a name="ln212"> </a>
+<a name="ln213">    m_Timer.setSingleShot(false);</a>
+<a name="ln214">    m_Timer.setInterval(100);</a>
+<a name="ln215">    m_Timer.start();</a>
+<a name="ln216">    m_TimeoutTimer.start();</a>
+<a name="ln217">    return;</a>
+<a name="ln218">}</a>
+<a name="ln219"> </a>
+<a name="ln220">void TorrentDownloaderPrivate::handleTimeout() {</a>
+<a name="ln221">    m_TimeoutTimer.stop();</a>
+<a name="ln222"> </a>
+<a name="ln223">    emit logger(QString::fromStdString(&quot; handleTimeout: Torrent Downloader Timeout, falling back to range downloader.&quot;));</a>
+<a name="ln224">    m_File-&gt;setAutoRemove(true);</a>
+<a name="ln225">    m_File-&gt;open();</a>
+<a name="ln226">    m_Session-&gt;abort();</a>
+<a name="ln227">    b_Running = false;</a>
+<a name="ln228">    b_Finished = false;</a>
+<a name="ln229">    emit error(QNetworkReply::ProtocolFailure);</a>
+<a name="ln230">}</a>
+<a name="ln231"> </a>
+<a name="ln232">void TorrentDownloaderPrivate::torrentLoop() {</a>
+<a name="ln233">    if(!b_Running) {</a>
+<a name="ln234">        /// To avoid queued calls from being called</a>
+<a name="ln235">        return;</a>
+<a name="ln236">    }</a>
+<a name="ln237">    if(b_CancelRequested) {</a>
+<a name="ln238">        m_TimeoutTimer.stop();</a>
+<a name="ln239">        m_Timer.stop();</a>
+<a name="ln240">        {</a>
+<a name="ln241">	// The destruction of session proxy </a>
+<a name="ln242">	// assures that all call writes and everything</a>
+<a name="ln243">	// is finished. This is sync.</a>
+<a name="ln244">	auto sess_proxy = m_Session-&gt;abort();</a>
+<a name="ln245">	}  </a>
+<a name="ln246">	m_File-&gt;setAutoRemove(true);</a>
+<a name="ln247">        m_File-&gt;open();</a>
+<a name="ln248">        b_CancelRequested = false;</a>
+<a name="ln249">        b_Running = b_Finished = false;</a>
+<a name="ln250">        emit canceled();</a>
+<a name="ln251">        return;</a>
+<a name="ln252">    }</a>
+<a name="ln253">    auto status = m_Handle.status();</a>
+<a name="ln254"> </a>
+<a name="ln255">    emit torrentStatus(status.num_seeds, status.num_peers);</a>
+<a name="ln256">    if(status.state == lt::torrent_status::seeding) {</a>
+<a name="ln257">        emit progress((int)(status.progress * 100),</a>
+<a name="ln258">                      (qint64)(status.total_done),</a>
+<a name="ln259">                      n_TargetFileLength,</a>
+<a name="ln260">                      (double)(status.download_payload_rate/1024),</a>
+<a name="ln261">                      QString::fromUtf8(&quot; KB/s &quot;));</a>
+<a name="ln262">        m_Timer.stop();</a>
+<a name="ln263">        m_TimeoutTimer.stop();</a>
+<a name="ln264">        {</a>
+<a name="ln265">	// The destruction of session proxy </a>
+<a name="ln266">	// assures that all call writes and everything</a>
+<a name="ln267">	// is finished. This is sync.</a>
+<a name="ln268">	auto sess_proxy = m_Session-&gt;abort();</a>
+<a name="ln269">	}  </a>
+<a name="ln270">	m_File-&gt;setAutoRemove(true);</a>
+<a name="ln271">        m_File-&gt;open();</a>
+<a name="ln272">        b_Running = false;</a>
+<a name="ln273">        b_Finished = true;</a>
+<a name="ln274">        emit finished();</a>
+<a name="ln275">        return;</a>
+<a name="ln276"> </a>
+<a name="ln277">    }</a>
+<a name="ln278"> </a>
+<a name="ln279">    if(status.state == lt::torrent_status::downloading) {</a>
+<a name="ln280">        m_TimeoutTimer.start(); // Reset timeout timer on every progress in download.</a>
+<a name="ln281"> </a>
+<a name="ln282">        emit progress((int)(status.progress * 100),</a>
+<a name="ln283">                      (qint64)(status.total_done),</a>
+<a name="ln284">                      n_TargetFileLength,</a>
+<a name="ln285">                      (double)(status.download_payload_rate/1024),</a>
+<a name="ln286">                      QString::fromUtf8(&quot; KB/s &quot;));</a>
+<a name="ln287">    }</a>
+<a name="ln288"> </a>
+<a name="ln289">    std::vector&lt;lt::alert*&gt; alerts;</a>
+<a name="ln290">    m_Session-&gt;pop_alerts(&amp;alerts);</a>
+<a name="ln291">    for (lt::alert const* a : alerts) {</a>
+<a name="ln292">        if (lt::alert_cast&lt;lt::torrent_error_alert&gt;(a)) {</a>
+<a name="ln293">            emit logger(QString::fromStdString(a-&gt;message()));</a>
+<a name="ln294">            m_Timer.stop();</a>
+<a name="ln295">            m_TimeoutTimer.stop();</a>
+<a name="ln296">	    {</a>
+<a name="ln297">		// The destruction of session proxy </a>
+<a name="ln298">		// assures that all call writes and everything</a>
+<a name="ln299">		// is finished. This is sync.</a>
+<a name="ln300">	    	auto sess_proxy = m_Session-&gt;abort();</a>
+<a name="ln301">	    }</a>
+<a name="ln302">       	    m_File-&gt;setAutoRemove(true);</a>
+<a name="ln303">            m_File-&gt;open();	</a>
+<a name="ln304">            b_Running = false;</a>
+<a name="ln305">            b_Finished = false;</a>
+<a name="ln306">            emit error(QNetworkReply::ProtocolFailure);</a>
+<a name="ln307">            return;</a>
+<a name="ln308">        }</a>
+<a name="ln309">        QCoreApplication::processEvents();</a>
+<a name="ln310">    }</a>
+<a name="ln311">}</a>
+<a name="ln312"> </a>
+<a name="ln313">#endif // DECENTRALIZED_UPDATE_ENABLED</a>
+
+</code></pre>
+<div class="balloon" rel="110"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1048/" target="_blank">V1048</a> The 'b_Running' variable was assigned the same value.</p></div>
+
+<link rel="stylesheet" href="highlight.css">
+<script src="highlight.pack.js"></script>
+<script src="highlightjs-line-numbers.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<script>hljs.initLineNumbersOnLoad();</script>
+<script>
+  $(document).ready(function() {
+      $('.balloon').each(function () {
+          var bl = $(this);
+          var line = bl.attr('rel');
+          var text = $('a[name="ln'+line+'"]').text();
+
+          var space_count = 0;
+          for(var i = 0; i<text.length; i++){
+              var char = text[i];
+              if((char !== ' ')&&(char !== '\t'))break;
+              if(char === '\t')space_count++;
+              space_count++;
+          }
+
+          bl.css('margin-left', space_count*8);
+          $('a[name="ln'+line+'"]').after(bl);
+      });
+
+      window.location = window.location;
+  });
+</script>
+</body>
+</html>
