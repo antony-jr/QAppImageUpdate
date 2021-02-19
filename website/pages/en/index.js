@@ -129,17 +129,6 @@ class Index extends React.Component {
             />
           </Container>
 
-          <Container padding={['bottom', 'top']} background="dark">
-            <GridBlock
-              contents={[
-                {
-			content: 'QAppImageUpdate formerly known as AppImage Updater Bridge is a delta updater based on the zsync algorithm for the AppImage format, Using this library you can delta update any AppImage file, That is, Only download the binary data which you need to get the latest version, Therefore saving your time and internet.' + ' This library gives absolute support for Qt, Infact, All you need is the minimal installation of Qt(i.e, base ).'  , 
-                  title: 'What is this?',
-                },
-              ]}
-            />
-          </Container>
-
           <div className="productShowcaseSection paddingBottom">
             <h2>{"Who's Using This?"}</h2>
             <p>This project is used by all these people</p>
