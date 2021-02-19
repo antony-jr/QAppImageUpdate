@@ -1,4 +1,4 @@
-name: gh-pages
+name: "Test and Deploy"
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  deploy:
+  Test-and-Deploy:
     runs-on: ubuntu-18.04
     defaults:
       run:
@@ -27,8 +27,44 @@ jobs:
         run: |
           sudo add-apt-repository ppa:beineri/opt-qt-5.11.0-bionic -y
           sudo apt-get update -qq
-          sudo apt-get -y install build-essential libgl1-mesa-dev xvfb qt511base
+          sudo apt-get -y install build-essential libgl1-mesa-dev xvfb qt511base \
+               libboost-system-dev libboost-python-dev libboost-chrono-dev \
+               libboost-random-dev libssl-dev
           source /opt/qt*/bin/qt*-env.sh || true
+
+      - name: Install Torrent Rasterbar
+        run: |
+          cd ..
+          mkdir torrent-rasterbar
+          cd torrent-rasterbar
+          wget -q "https://github.com/arvidn/libtorrent/releases/download/libtorrent-1.2.8/libtorrent-rasterbar-1.2.8.tar.gz"
+          tar -xvf libtorrent-rasterbar-1.2.8.tar.gz
+          cd libtorrent-rasterbar-1.2.8
+          mkdir build
+          cd build
+          cmake ..
+          make -j$(nproc)
+          sudo make install -j$(nproc)
+          sudo ln -s /usr/local/lib/libtorrent-rasterbar.so.1.2.8 /usr/lib/libtorrent-rasterbar.so.10
+          cd ..
+          cd ..
+          cd ..
+          rm -rf torrent-rasterbar
+
+      - name: Run Unit Tests
+        run: |
+          Xvfb :100 -ac &
+          export DISPLAY=:100.0
+          cd ..
+          mkdir build
+          cd build
+          source /opt/qt*/bin/qt*-env.sh || true
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DDECENTRALIZED_UPDATE_ENABLED=ON -DBUILD_TESTS=ON ..
+          make -j$(nproc)
+          cd tests
+          ./QAppImageUpdateTests
+          cd ..
+          cd ..
 
       - name: Setup Node
         uses: actions/setup-node@v2
@@ -56,12 +92,7 @@ jobs:
           PVS_LIC_KEY: ${{secrets.PVS_LICENSE_KEY}}
         run: |
           cd ..
-          ls
-          mkdir build
           cd build
-          source /opt/qt*/bin/qt*-env.sh || true
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=On ..
-          make -j$(nproc)
           pvs-studio-analyzer credentials "$PVS_LIC_NAME" "$PVS_LIC_KEY" -o pvs.lic
           pvs-studio-analyzer analyze -l pvs.lic \
               -e "/opt/qt511/*" \
