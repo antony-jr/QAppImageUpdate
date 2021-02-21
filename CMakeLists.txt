@@ -134,18 +134,8 @@ target_include_directories(QAppImageUpdate INTERFACE "$<BUILD_INTERFACE:${PROJEC
 target_include_directories(QAppImageUpdate INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate>" )
 
 if(DECENTRALIZED_UPDATE_ENABLED)
-	if(NOT LINK_TORRENT)
-	target_link_libraries(QAppImageUpdate PUBLIC torrent-rasterbar pthread boost_system)
-	endif()
-	# Build LibTorrent Rasterbar with the following boost-build options to 
-	# use this option without errors.
-	# You should have installed boost system
-	# You should have static version of OpenSSL installed.
-	# cd libtorrent-rasterbar/
-	# b2 cxxflags="-std=c++14" variant=release boost-link=static crypto=openssl install -j4
-	if(LINK_TORRENT)
-	target_link_libraries(QAppImageUpdate PUBLIC torrent)
-	endif()	
+	find_package(LibtorrentRasterbar)	
+	target_link_libraries(QAppImageUpdate PUBLIC LibtorrentRasterbar::torrent-rasterbar)
 endif()
 
 if(NOT NO_GUI)

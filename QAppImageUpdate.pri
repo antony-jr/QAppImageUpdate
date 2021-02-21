@@ -51,15 +51,14 @@ LOGGING_DISABLED {
 }
 
 DECENTRALIZED_UPDATE_ENABLED {
-	message(Decentralized update feature will be enabled for this build.)
-	
+	message(Decentralized update feature will be enabled for this build.)	
 	DEFINES += DECENTRALIZED_UPDATE_ENABLED
 	HEADERS += $$PWD/include/torrentdownloader.hpp
 	HEADERS += $$PWD/include/torrentdownloader_p.hpp
 	SOURCES += $$PWD/src/torrentdownloader.cc
 	SOURCES += $$PWD/src/torrentdownloader_p.cc
-	
-	LIBS += -ltorrent-rasterbar -lboost_system -lpthread
+
+	LIBS += -ltorrent
 }else {
 	message(Decentralized update feature is not enabled.)
 }
