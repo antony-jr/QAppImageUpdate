@@ -134,6 +134,7 @@ target_include_directories(QAppImageUpdate INTERFACE "$<BUILD_INTERFACE:${PROJEC
 target_include_directories(QAppImageUpdate INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate>" )
 
 if(DECENTRALIZED_UPDATE_ENABLED)
+	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/local/share/cmake/Modules")
 	find_package(LibtorrentRasterbar)	
 	target_link_libraries(QAppImageUpdate PUBLIC LibtorrentRasterbar::torrent-rasterbar)
 endif()

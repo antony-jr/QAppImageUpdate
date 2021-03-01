@@ -639,7 +639,8 @@ void ZsyncRemoteControlFileParserPrivate::handleControlFile(void) {
     s_TargetFileName = targetFileNameInfo.fileName();
 
     /// Add suffix .AppImage if the target file does not have it.
-    if(targetFileNameInfo.completeSuffix().toLower() != "appimage") {
+    auto lastEight = s_TargetFileName.right(8);  
+    if(lastEight.toLower() != "appimage") {
 	    s_TargetFileName += ".AppImage";
     }
 
