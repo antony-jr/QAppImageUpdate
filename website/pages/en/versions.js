@@ -23,7 +23,7 @@ function Versions(props) {
             <h1>{siteConfig.title} Versions</h1>
           </header>
           <h3 id="latest">Current version (Stable)</h3>
-          <p>Latest version of Docusaurus.</p>
+          <p>Latest version of QAppImageUpdate.</p>
           <table className="versions">
             <tbody>
               <tr>
@@ -62,7 +62,7 @@ function Versions(props) {
           </table>
           <h3 id="archive">Past Versions</h3>
           <p>
-            Here you can find documentation for previous versions of Docusaurus.
+            Here you can find documentation for previous versions of QAppImageUpdate.
           </p>
           <table className="versions">
             <tbody>
