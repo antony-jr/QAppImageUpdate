@@ -25,6 +25,8 @@ QAppImageUpdateInterfaceImpl::QAppImageUpdateInterfaceImpl(QObject *parent)
             this, &QAppImageUpdateInterfaceImpl::logger, Qt::DirectConnection);
     connect(s, &QAppImageUpdate::error,
             this, &QAppImageUpdateInterfaceImpl::error, Qt::DirectConnection);
+    connect(s, &QAppImageUpdate::quit,
+            this, &QAppImageUpdateInterfaceImpl::quit, Qt::DirectConnection);
 }
 
 QAppImageUpdateInterfaceImpl::~QAppImageUpdateInterfaceImpl() {

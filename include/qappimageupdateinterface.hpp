@@ -34,6 +34,7 @@ class QAppImageUpdateInterface {
     virtual void progress(int, qint64, qint64, double, QString, short) = 0;
     virtual void logger(QString, QString) = 0;
     virtual void error(short, short) = 0;
+    virtual void quit() = 0;
 };
 
 #ifndef QAppImageUpdateInterface_iid

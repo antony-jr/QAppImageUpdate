@@ -58,6 +58,7 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
 | void | [error(short, short)](#void-errorshort-errorcode-short-action) |
 | void | [progress(int, qint64, qint64, double, QString, short)](#void-progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits-short-action) |
 | void | [logger(QString, QString)](#void-loggerqstring--qstring) |
+| void | [quit()](#void-quit) 					  |
 
 
 ## Static Public Members
@@ -390,6 +391,12 @@ The updater's progress is emitted through this unified signal.
 
 Emitted when the updater issues a log message with the *first QString* as the log message and
 the *second QString* as the path to the respective AppImage.
+
+
+### void quit()
+<p align="right"> <code>[SIGNAL]</code> </p>
+
+Emitted when it's required quit the current application when using the GUI updater.
 
 
 ## QString errorCodeToString(short errorCode)

@@ -52,7 +52,7 @@ I'm not sure about other Qt bindings, So help is much welcomed.
 | [error(short, short)](#errorshort-errorcode-short-action) | Emitted when some error occurs in an action. |
 | [progress(int, qint64, qint64, double, QString, short)](#progressint-percentage--qint64-bytesreceived--qint64-bytestotal--double-speed--qstring-speedunits-short-action) | Emitted on progress of a action. |
 | [logger(QString, QString)](#loggerqstring--qstring) | See here for more information. |
-
+| [quit()](#quit) 		    | Emitted when it's desired to quit current application. |
 
 ## Actions
 
@@ -340,6 +340,12 @@ The updater's progress is emitted through this unified signal.
 
 Emitted when the updater issues a log message with the *first QString* as the log message and
 the *second QString* as the path to the respective AppImage.
+
+### quit()
+<p align="right"> <code>[SIGNAL]</code> </p>
+
+Emitted when it's desired to quit the current application when using GUI update.
+
 
 ### QObject\* getObject()
 
