@@ -871,7 +871,9 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheck(QJsonObject info) {
     bool showNoUpdateDialog = n_GuiFlag & GuiFlag::NotifyWhenNoUpdateIsAvailable;
     bool noConfirmTorrentUsage = n_GuiFlag & GuiFlag::NoConfirmTorrentUsage;
     m_UpdaterDialog->setWindowTitle(QString::fromUtf8("Updating ") +
-                                    QFileInfo(localAppImagePath).baseName());
+		    		   (m_ApplicationName.isEmpty() ? 
+				    QFileInfo(localAppImagePath).baseName() : 
+				    m_ApplicationName));
 
     bool isUpdateAvailable = (localAppImageSHA1Hash != remoteTargetFileSHA1Hash);
 
@@ -886,7 +888,8 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheck(QJsonObject info) {
                 box.setText(
                     QString::fromUtf8(
                         "It seems that the author of ") +
-                    QFileInfo(localAppImagePath).baseName() +
+                    (m_ApplicationName.isEmpty() ? QFileInfo(localAppImagePath).baseName() : 
+		     m_ApplicationName) +
                     QString::fromUtf8(" supports decentralized update via Bittorrent.") +
                     QString::fromUtf8(
                         " Do you agree to <b>use Bittorrent for decentralized update?</b> This is completely optional.") +
@@ -923,8 +926,9 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheck(QJsonObject info) {
             QMessageBox box(m_UpdaterDialog.data());
             box.setWindowTitle(QString::fromUtf8("No Updates Available!"));
             box.setText(
-                QString::fromUtf8("You are currently using the lastest version of ") +
-                QFileInfo(localAppImagePath).fileName() +
+                QString::fromUtf8("You are currently using the lastest version of ") +\
+		(m_ApplicationName.isEmpty() ? QFileInfo(localAppImagePath).fileName()
+		 : m_ApplicationName ) +
                 QString::fromUtf8("."));
             box.exec();
         }
@@ -1135,7 +1139,7 @@ void QAppImageUpdatePrivate::handleGUIUpdateError(short ecode) {
         box.setWindowTitle(QString::fromUtf8("Update Failed"));
         box.setIcon(QMessageBox::Critical);
         box.setText(QString::fromUtf8("Update failed for '") +
-                    QFileInfo(m_CurrentAppImagePath).fileName() +
+                    (m_ApplicationName.isEmpty() ? QFileInfo(m_CurrentAppImagePath).fileName() : m_ApplicationName) +
                     QString::fromUtf8("': ") + errorString);
         box.exec();
     }
@@ -1223,7 +1227,7 @@ void QAppImageUpdatePrivate::handleGUIUpdateFinished(QJsonObject info, QString o
             QString::fromUtf8("New version is saved at: ") +
             result["NewVersionPath"].toString());
         box.setText(QString::fromUtf8("Update completed successfully for <b>") +
-                    currentAppImageName +
+                    (m_ApplicationName.isEmpty() ? currentAppImageName : m_ApplicationName) +
                     QString::fromUtf8("</b>, do you want to launch the new version? View details for more information."));
         box.addButton(QMessageBox::Yes);
         box.addButton(QMessageBox::No);

@@ -21,6 +21,7 @@ class QAppImageUpdateInterfaceImpl : public QObject, QAppImageUpdateInterface {
     QAppImageUpdateInterfaceImpl(QObject *parent = nullptr);
     ~QAppImageUpdateInterfaceImpl();
   public Q_SLOTS:
+    void setApplicationName(const QString&);
     void setIcon(QByteArray);
     void setGuiFlag(int);
     void setAppImagePath(const QString&);

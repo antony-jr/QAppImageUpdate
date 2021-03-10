@@ -29,6 +29,7 @@ I'm not sure about other Qt bindings, So help is much welcomed.
 | [setIcon(QByteArray)](#seticonqbytearray-icon) | Set Icon for GUI Update. |
 | [start(short)](#startshort-action)  | Starts the given action.        |
 | [cancel()](#cancel)           | Cancels current update process. |
+| [setApplicationName(QString)](#setapplicationnameqstring) | Sets the Application Name in GUI dialogs. |
 | [setAppImagePath(QString)](#setappimagepathqstring) | Assume the given string as path to AppImage to update. |
 | [setAppImageFile(QFile\*)](#setappimagefileqfile)   | Assume the given QFile as the AppImage to update. |
 | [setShowLog(bool)](#setshowlogbool) | If the given boolean is true then prints log. |
@@ -169,6 +170,15 @@ One has to use **getConstant(QString)** method to get a constant.
 
 Cancels the current action.
 Emits **canceled(short)** signal when cancel for a action was successfull.
+
+
+### setApplicationName(QString)
+<p align="right"> <code>[SLOT]</code> </p>
+
+Sets the given string as the Application Name which will be used in GUI dialogs.
+
+> NOTE: This is optional and by default the updater uses the AppImage filename.
+
 
 ### setAppImagePath(QString)
 <p align="right"> <code>[SLOT]</code> </p>

@@ -9,6 +9,7 @@
 
 class QAppImageUpdateInterface {
   public Q_SLOTS:
+    virtual void setApplicationName(const QString&) = 0;
     virtual void setGuiFlag(int) = 0;
     virtual void setIcon(QByteArray) = 0;
     virtual void setAppImagePath(const QString&) = 0;

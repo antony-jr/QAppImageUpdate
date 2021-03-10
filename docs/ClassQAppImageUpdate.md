@@ -39,6 +39,7 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
 | **void** | [setIcon(QByteArray)](#void-seticonqbytearray-icon) |
 | **void** | [start(short)](#void-startshort-action) |
 | **void** | [cancel()](#void-cancel) |
+| **void** | [setApplicationName(const QString&)](#void-setapplicationname-qstring) |
 | **void** | [setAppImage(const QString&)](#void-setappimageconst-qstring) |
 | **void** | [setAppImage(QFile \*)](#void-setappimageqfile-) |
 | **void** | [setShowLog(bool)](#void-setshowlogbool) |
@@ -197,6 +198,15 @@ updater.start(QAppImageUpdate::Action::CheckForUpdate);
 
 Cancels the update.
 Emits **canceled(short action)** signal when cancel was successfull.
+
+
+### void setApplicationName(const QString&)
+<p align="right"> <code>[SLOT]</code> </p>
+
+Set a application name to use when display GUI dialogs if required.
+
+> NOTE: This is optional. By default the GUI dialogs uses the AppImage filename.
+
 
 
 ### void setAppImage(const QString&)

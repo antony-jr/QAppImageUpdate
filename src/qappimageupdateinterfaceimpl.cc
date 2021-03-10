@@ -32,6 +32,10 @@ QAppImageUpdateInterfaceImpl::QAppImageUpdateInterfaceImpl(QObject *parent)
 QAppImageUpdateInterfaceImpl::~QAppImageUpdateInterfaceImpl() {
 }
 
+void QAppImageUpdateInterfaceImpl::setApplicationName(const QString &a) {
+    m_Private->setApplicationName(a);
+}
+
 void QAppImageUpdateInterfaceImpl::setIcon(QByteArray icon) {
     m_Private->setIcon(icon);
 }
