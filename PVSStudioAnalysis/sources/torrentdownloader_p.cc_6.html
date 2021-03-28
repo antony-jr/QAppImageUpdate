@@ -74,7 +74,7 @@
 <a name="ln61">            Qt::QueuedConnection);</a>
 <a name="ln62">}</a>
 <a name="ln63">TorrentDownloaderPrivate::~TorrentDownloaderPrivate() {</a>
-<a name="ln64"> </a>
+<a name="ln64">	m_Session-&gt;abort();</a>
 <a name="ln65">}</a>
 <a name="ln66"> </a>
 <a name="ln67">void TorrentDownloaderPrivate::setTargetFileDone(qint64 done) {</a>

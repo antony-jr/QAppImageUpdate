@@ -118,6 +118,7 @@ In dynamic languages like python, you can just use native data types. (i.e) For 
 <tr><td>Action::UpdateWithTorrent</td><td>3</td></tr>
 <tr><td>Action::UpdateWithGUI</td><td>4</td></tr>
 <tr><td>Action::UpdateWithGUIAndTorrent</td><td>5</td></tr>
+<tr><td>Action::Seed</td><td>6</td></tr>
 </tbody>
 </table>
 <p>You can use <strong>getConstant(QString)</strong> method of the plugin interface to get the value for a action.</p>
@@ -178,6 +179,9 @@ Emits <strong>started(short action)</strong> signal when starts.</p>
 One has to use <strong>getConstant(QString)</strong> method to get a constant.</p>
 <blockquote>
 <p>Please start your QApplication event loop to get effect from the updater.</p>
+</blockquote>
+<blockquote>
+<p>When you start Action::Seed, The finished signal will not be emitted until cancel is requested.</p>
 </blockquote>
 <pre><code class="hljs">   # PyQt5 code
    updater = plugin_loader.instance<span class="hljs-literal">()</span>
