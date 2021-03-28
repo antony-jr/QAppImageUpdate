@@ -81,7 +81,7 @@ All methods in this class is [reentrant](https://doc.qt.io/qt-5/threads-reentran
 | QAppImageUpdate::Action::UpdateWithTorrent       |   3   |
 | QAppImageUpdate::Action::UpdateWithGUI           |   4   |
 | QAppImageUpdate::Action::UpdateWithGUIAndTorrent |   5   |
-
+| QAppImageUpdate::Action::Seed                    |   6   |
 
 
 ```
@@ -192,6 +192,9 @@ Valid actions are put up in the [Actions table](#actions).
 QAppImageUpdater updater;
 updater.start(QAppImageUpdate::Action::CheckForUpdate);
 ```
+
+> When you start QAppImageUpdate::Action::Seed, The finished signal will not be emitted until cancel is requested.
+
 
 ### void cancel()
 <p align="right"> <code>[SLOT]</code> </p>

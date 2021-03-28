@@ -10,7 +10,8 @@ struct QAppImageUpdateCodes {
             Update,
             UpdateWithTorrent,
             UpdateWithGUI,
-            UpdateWithGUIAndTorrent
+            UpdateWithGUIAndTorrent,
+	    Seed
         };
     };
 

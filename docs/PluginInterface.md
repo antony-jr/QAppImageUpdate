@@ -65,6 +65,7 @@ I'm not sure about other Qt bindings, So help is much welcomed.
 | Action::UpdateWithTorrent       |   3   |
 | Action::UpdateWithGUI           |   4   |
 | Action::UpdateWithGUIAndTorrent |   5   |
+| Action::Seed                    |   6   |
 
 
 You can use **getConstant(QString)** method of the plugin interface to get the value for a action.
@@ -142,6 +143,9 @@ One has to use **getConstant(QString)** method to get a constant.
 
 
 > Please start your QApplication event loop to get effect from the updater.
+
+
+> When you start Action::Seed, The finished signal will not be emitted until cancel is requested.
 
 
 ```

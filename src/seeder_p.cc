@@ -7,11 +7,12 @@
 #include <vector>
 #include <iostream>
 
-#include "torrentdownloader_p.hpp"
+#include "helpers_p.hpp"
+#include "qappimageupdateenums.hpp"
+#include "seeder_p.hpp"
 
-TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manager)
+SeederPrivate::SeederPrivate(QNetworkAccessManager *manager)
     : QObject() {
-    n_TargetFileLength = n_TargetFileDone = 0;
     lt::session_params p = lt::session_params();
     p.settings.set_int(lt::settings_pack::alert_mask,
                        lt::alert_category::status |
@@ -21,7 +22,7 @@ TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manage
     //// Set proxy for libtorrent.
     auto proxy = manager->proxy();
     if(proxy.type() != QNetworkProxy::NoProxy) {
-	emit logger("Using proxy for torrent download");
+	emit logger("Using proxy for torrent seeding.");
 	p.settings.set_str(lt::settings_pack::proxy_hostname,
 			   proxy.hostName().toStdString());
 	p.settings.set_int(lt::settings_pack::proxy_port,
@@ -39,7 +40,7 @@ TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manage
 		p.settings.set_int(lt::settings_pack::proxy_type,
 				   lt::settings_pack::http_pw);
 	}else{
-		emit logger("Cannot find proxy type. You have been warned");
+		emit logger("Cannot find proxy type. Failed to set proxy.");
 	}
     }
 
@@ -51,69 +52,59 @@ TorrentDownloaderPrivate::TorrentDownloaderPrivate(QNetworkAccessManager *manage
     m_TimeoutTimer.setInterval(100 * 1000); // 100 seconds
 
     connect(&m_TimeoutTimer, &QTimer::timeout,
-            this, &TorrentDownloaderPrivate::handleTimeout,
+            this, &SeederPrivate::handleTimeout,
             Qt::QueuedConnection);
 
     m_Timer.setSingleShot(false);
     m_Timer.setInterval(100); // 1ms?
     connect(&m_Timer, &QTimer::timeout,
-            this, &TorrentDownloaderPrivate::torrentLoop,
+            this, &SeederPrivate::torrentLoop,
             Qt::QueuedConnection);
 }
-TorrentDownloaderPrivate::~TorrentDownloaderPrivate() {
+
+SeederPrivate::~SeederPrivate() {
 	m_Session->abort();
 }
 
-void TorrentDownloaderPrivate::setTargetFileDone(qint64 done) {
+void SeederPrivate::start(QJsonObject info) {
     if(b_Running) {
         return;
     }
-
-    n_TargetFileDone = done;
-}
-
-void TorrentDownloaderPrivate::setTargetFileLength(qint64 n) {
-    if(b_Running) {
+    
+    if(info.isEmpty()) {
+	emit error(QAppImageUpdateEnums::Error::ProtocolFailure);
         return;
     }
 
-    n_TargetFileLength = n;
-}
+    b_Running = false;
 
-void TorrentDownloaderPrivate::setTargetFile(QTemporaryFile *file) {
-    if(b_Running) {
-        return;
+    auto embeddedUpdateInformation = info["EmbededUpdateInformation"].toObject();
+    auto oldVersionInformation = embeddedUpdateInformation["FileInformation"].toObject();
+
+    QString remoteTargetFileSHA1Hash = info["RemoteTargetFileSHA1Hash"].toString(),
+            localAppImageSHA1Hash = oldVersionInformation["AppImageSHA1Hash"].toString(),
+            localAppImagePath = oldVersionInformation["AppImageFilePath"].toString();
+
+    bool torrentSupported = info["TorrentSupported"].toBool();
+    auto torrentFileUrl = info["TorrentFileUrl"].toString();
+    auto targetFileName = info["RemoteTargetFileName"].toString();
+
+    if(localAppImageSHA1Hash != remoteTargetFileSHA1Hash) {
+	    emit error(QAppImageUpdateEnums::Error::OutdatedAppImageForSeed);
+	    return;
     }
 
-    m_File = file;
-}
-
-void TorrentDownloaderPrivate::setTorrentFileUrl(const QUrl &url) {
-    if(b_Running) {
-        return;
+    if(!torrentSupported) {
+	    emit error(QAppImageUpdateEnums::Error::TorrentNotSupported);
+	    return;
     }
-    m_TorrentFileUrl = url;
-}
 
-void TorrentDownloaderPrivate::setTargetFileUrl(const QUrl &url) {
-    if(b_Running) {
-        return;
-    }
-    m_TargetFileUrl = url;
-
-}
-
-void TorrentDownloaderPrivate::start() {
-    if(b_Running) {
-        return;
-    }
-    b_Running = b_Finished = false;
-
+    m_TargetFilePath = localAppImagePath;
 
     m_TorrentMeta->clear();
 
     QNetworkRequest request;
-    request.setUrl(m_TorrentFileUrl);
+    request.setUrl(torrentFileUrl);
     request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
 
     auto reply = m_Manager->get(request);
@@ -127,14 +118,14 @@ void TorrentDownloaderPrivate::start() {
     emit started();
 }
 
-void TorrentDownloaderPrivate::cancel() {
+void SeederPrivate::cancel() {
     if(!b_Running || b_CancelRequested) {
         return;
     }
     b_CancelRequested = true;
 }
 
-void TorrentDownloaderPrivate::handleTorrentFileError(QNetworkReply::NetworkError code) {
+void SeederPrivate::handleTorrentFileError(QNetworkReply::NetworkError code) {
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(QObject::sender());
     if(!reply) {
         return;
@@ -143,10 +134,10 @@ void TorrentDownloaderPrivate::handleTorrentFileError(QNetworkReply::NetworkErro
     reply->disconnect();
     reply->deleteLater();
 
-    emit error(code);
+    emit error(translateQNetworkReplyError(code));
 }
 
-void TorrentDownloaderPrivate::handleTorrentFileData(qint64 br, qint64 bt) {
+void SeederPrivate::handleTorrentFileData(qint64 br, qint64 bt) {
     Q_UNUSED(br);
     Q_UNUSED(bt);
 
@@ -164,7 +155,7 @@ void TorrentDownloaderPrivate::handleTorrentFileData(qint64 br, qint64 bt) {
     }
 }
 
-void TorrentDownloaderPrivate::handleTorrentFileFinish() {
+void SeederPrivate::handleTorrentFileFinish() {
     auto reply = qobject_cast<QNetworkReply*>(QObject::sender());
     m_TorrentMeta->append(reply->readAll());
 
@@ -172,16 +163,14 @@ void TorrentDownloaderPrivate::handleTorrentFileFinish() {
     reply->deleteLater();
 
     if(b_CancelRequested) {
-        m_File->setAutoRemove(true);
-        m_File->open();
         b_CancelRequested = false;
-        b_Running = b_Finished = false;
+        b_Running = false;
         emit canceled();
         return;
     }
 
     lt::add_torrent_params params;
-    QString savePath = QFileInfo(m_File->fileName()).path() + "/";
+    QString savePath = QFileInfo(m_TargetFilePath).path() + "/";
 
     params.save_path = savePath.toStdString();
     auto ti = std::make_shared<lt::torrent_info>(m_TorrentMeta->constData(), (int)m_TorrentMeta->size());
@@ -196,17 +185,15 @@ void TorrentDownloaderPrivate::handleTorrentFileFinish() {
     /// Since only 1 file is packaged in the torrent, we can
     /// assume that the file index for our Target AppImage is 0
     ti->rename_file(0,
-                    QFileInfo(m_File->fileName()).fileName().toStdString());
+                    QFileInfo(m_TargetFilePath).fileName().toStdString());
 
 
-    /// Add the target file url as web seed
-    /// See BEP 17 and BEP 19
-    ti->add_url_seed(m_TargetFileUrl.toString().toStdString());
+    //ti->add_url_seed(m_TargetFileUrl.toString().toStdString());
 
     params.ti = ti;
     m_Handle = m_Session->add_torrent(params);
     if(!m_Handle.is_valid()) {
-        emit error(QNetworkReply::ProtocolFailure);
+        emit error(QAppImageUpdateEnums::Error::ProtocolFailure);
         return;
     }
 
@@ -217,19 +204,16 @@ void TorrentDownloaderPrivate::handleTorrentFileFinish() {
     return;
 }
 
-void TorrentDownloaderPrivate::handleTimeout() {
+void SeederPrivate::handleTimeout() {
     m_TimeoutTimer.stop();
 
-    emit logger(QString::fromStdString(" handleTimeout: Torrent Downloader Timeout, falling back to range downloader."));
-    m_File->setAutoRemove(true);
-    m_File->open();
+    emit logger(QString::fromStdString(" handleTimeout: Torrent Seeder Timeout, failing."));
     m_Session->abort();
     b_Running = false;
-    b_Finished = false;
-    emit error(QNetworkReply::ProtocolFailure);
+    emit error(QAppImageUpdateEnums::Error::ProtocolFailure);
 }
 
-void TorrentDownloaderPrivate::torrentLoop() {
+void SeederPrivate::torrentLoop() {
     if(!b_Running) {
         /// To avoid queued calls from being called
         return;
@@ -243,22 +227,19 @@ void TorrentDownloaderPrivate::torrentLoop() {
 	// is finished. This is sync.
 	auto sess_proxy = m_Session->abort();
 	}  
-	m_File->setAutoRemove(true);
-        m_File->open();
         b_CancelRequested = false;
-        b_Running = b_Finished = false;
+        b_Running = false;
         emit canceled();
         return;
     }
     auto status = m_Handle.status();
 
     emit torrentStatus(status.num_seeds, status.num_peers);
-    if(status.state == lt::torrent_status::seeding) {
-        emit progress((int)(status.progress * 100),
-                      (qint64)(status.total_done),
-                      n_TargetFileLength,
-                      (double)(status.download_payload_rate/1024),
-                      QString::fromUtf8(" KB/s "));
+    if(status.state != lt::torrent_status::seeding) {
+	    m_TimeoutTimer.start();
+    }
+
+    if(status.state == lt::torrent_status::downloading) {
         m_Timer.stop();
         m_TimeoutTimer.stop();
         {
@@ -267,23 +248,9 @@ void TorrentDownloaderPrivate::torrentLoop() {
 	// is finished. This is sync.
 	auto sess_proxy = m_Session->abort();
 	}  
-	m_File->setAutoRemove(true);
-        m_File->open();
         b_Running = false;
-        b_Finished = true;
-        emit finished();
-        return;
-
-    }
-
-    if(status.state == lt::torrent_status::downloading) {
-        m_TimeoutTimer.start(); // Reset timeout timer on every progress in download.
-
-        emit progress((int)(status.progress * 100),
-                      (qint64)(status.total_done),
-                      n_TargetFileLength,
-                      (double)(status.download_payload_rate/1024),
-                      QString::fromUtf8(" KB/s "));
+	emit error(QAppImageUpdateEnums::Error::IncompleteAppImageForSeed);
+	return;
     }
 
     std::vector<lt::alert*> alerts;
@@ -299,10 +266,7 @@ void TorrentDownloaderPrivate::torrentLoop() {
 		// is finished. This is sync.
 	    	auto sess_proxy = m_Session->abort();
 	    }
-       	    m_File->setAutoRemove(true);
-            m_File->open();	
             b_Running = false;
-            b_Finished = false;
             emit error(QNetworkReply::ProtocolFailure);
             return;
         }

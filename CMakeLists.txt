@@ -104,8 +104,12 @@ if(DECENTRALIZED_UPDATE_ENABLED)
     add_definitions(-DDECENTRALIZED_UPDATE_ENABLED)
     list(APPEND source src/torrentdownloader.cc
 	    	       src/torrentdownloader_p.cc
+		       src/seeder.cc
+		       src/seeder_p.cc
 		       include/torrentdownloader.hpp
-		       include/torrentdownloader_p.hpp)
+		       include/torrentdownloader_p.hpp
+		       include/seeder.hpp
+		       include/seeder_p.hpp)
 endif()
 
 if(NOT DECENTRALIZED_UPDATE_ENABLED)

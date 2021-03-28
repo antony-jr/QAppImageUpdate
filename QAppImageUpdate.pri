@@ -55,8 +55,13 @@ DECENTRALIZED_UPDATE_ENABLED {
 	DEFINES += DECENTRALIZED_UPDATE_ENABLED
 	HEADERS += $$PWD/include/torrentdownloader.hpp
 	HEADERS += $$PWD/include/torrentdownloader_p.hpp
+	HEADERS += $$PWD/include/seeder.hpp
+	HEADERS += $$PWD/include/seeder_p.hpp
+	
 	SOURCES += $$PWD/src/torrentdownloader.cc
 	SOURCES += $$PWD/src/torrentdownloader_p.cc
+	SOURCES += $$PWD/src/seeder.cc
+	SOURCES += $$PWD/src/seeder_p.cc
 
 	LIBS += -ltorrent
 }else {

@@ -34,4 +34,4 @@ class TorrentDownloader : public QObject {
     void torrentStatus(int,int);
 };
 #endif // DECENTRALIZED_UPDATE_ENABLED
-#endif // RANGE_DOWNLOADER_HPP_INCLUDED
+#endif // TORRENT_DOWNLOADER_HPP_INCLUDED

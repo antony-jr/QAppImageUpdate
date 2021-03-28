@@ -120,8 +120,14 @@ struct QAppImageUpdateEnums {
             CannotOpenTargetFile,
             TargetFileSha1HashMismatch,
 
+	    /* Seeder errors. */
+	    TorrentNotSupported = 200,
+	    TorrentSeedFailed,
+	    OutdatedAppImageForSeed,
+	    IncompleteAppImageForSeed,
+
             /* Library errors. */
-            UnsupportedActionForBuild = 200,
+            UnsupportedActionForBuild = 300,
             InvalidAction
         };
     };

@@ -14,6 +14,9 @@
 #include "appimageupdateinformation_p.hpp"
 #include "zsyncremotecontrolfileparser_p.hpp"
 #include "zsyncwriter_p.hpp"
+#ifdef DECENTRALIZED_UPDATE_ENABLED 
+ #include "seeder.hpp"
+#endif
 
 #ifndef NO_GUI
 #include <QDialog>
@@ -58,6 +61,10 @@ class QAppImageUpdatePrivate : public QObject {
     void handleGetEmbeddedInfoError(short);
     void redirectEmbeddedInformation(QJsonObject);
     void handleCheckForUpdateError(short);
+#ifdef DECENTRALIZED_UPDATE_ENABLED 
+    void handleSeedError(short);
+    void handleSeedCancel();
+#endif
     void redirectUpdateCheck(QJsonObject);
     void handleCheckForUpdateProgress(int);
     void handleGetEmbeddedInfoProgress(int);
@@ -107,6 +114,9 @@ class QAppImageUpdatePrivate : public QObject {
     QScopedPointer<AppImageUpdateInformationPrivate> m_UpdateInformation;
     QScopedPointer<ZsyncRemoteControlFileParserPrivate> m_ControlFileParser;
     QScopedPointer<ZsyncWriterPrivate> m_DeltaWriter;
+#ifdef DECENTRALIZED_UPDATE_ENABLED 
+    QScopedPointer<Seeder> m_Seeder;
+#endif
     QScopedPointer<QThread> m_SharedThread;
     QScopedPointer<QNetworkAccessManager> m_SharedNetworkAccessManager;
 #ifndef NO_GUI

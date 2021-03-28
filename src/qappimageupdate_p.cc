@@ -60,6 +60,10 @@ QAppImageUpdatePrivate::QAppImageUpdatePrivate(bool singleThreaded, QObject *par
     m_SharedNetworkAccessManager.reset(new QNetworkAccessManager);
     m_UpdateInformation.reset(new AppImageUpdateInformationPrivate);
     m_DeltaWriter.reset(new ZsyncWriterPrivate(m_SharedNetworkAccessManager.data()));
+#ifdef DECENTRALIZED_UPDATE_ENABLED
+    m_Seeder.reset(new Seeder(m_SharedNetworkAccessManager.data()));
+#endif
+
     if(!singleThreaded) {
         m_SharedNetworkAccessManager->moveToThread(m_SharedThread.data());
         m_UpdateInformation->moveToThread(m_SharedThread.data());
@@ -99,7 +103,17 @@ QAppImageUpdatePrivate::QAppImageUpdatePrivate(bool singleThreaded, QObject *par
             (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
     connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::started,
             this, &QAppImageUpdatePrivate::handleUpdateStart,
-            (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+   	    (Qt::ConnectionType)(Qt::QueuedConnection | Qt::UniqueConnection));
+
+    // Torrent Seeder
+#ifdef DECENTRALIZED_UPDATE_ENABLED 
+    connect(m_Seeder.data(), &Seeder::started,
+            this, &QAppImageUpdatePrivate::torrentClientStarted ,
+            (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
+    connect(m_Seeder.data(), &Seeder::torrentStatus,
+            this, &QAppImageUpdatePrivate::torrentStatus,
+            (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
+#endif
 
     // Torrent Downloader Specific
     connect(m_DeltaWriter.data(), &ZsyncWriterPrivate::torrentClientStarted,
@@ -480,6 +494,49 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
             showWidget();
         }
 #endif // NO_GUI
+    } else if(action == Action::Seed) {
+#ifndef DECENTRALIZED_UPDATE_ENABLED
+	b_Started = b_CancelRequested = b_Finished = b_Canceled = false;
+        emit error(QAppImageUpdateEnums::Error::UnsupportedActionForBuild, action);
+        return;
+#else
+	n_CurrentAction = action;
+
+        m_ControlFileParser->setUseBittorrent(true);
+
+	connect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
+                m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)),
+                (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
+        connect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
+                m_ControlFileParser.data(), SLOT(getUpdateCheckInformation(void)),
+                (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
+        connect(m_ControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
+                m_Seeder.data(), SLOT(start(QJsonObject)),
+                (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
+        connect(m_Seeder.data(), SIGNAL(canceled()),
+                this, SLOT(handleSeedCancel()),
+                (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
+        connect(m_Seeder.data(), SIGNAL(error(short)),
+                this, SLOT(handleSeedError(short)),
+                (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
+        connect(m_ControlFileParser.data(), SIGNAL(error(short)),
+                this, SLOT(handleSeedError(short)),
+                (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
+        connect(m_UpdateInformation.data(), SIGNAL(error(short)),
+                this, SLOT(handleSeedError(short)),
+                (Qt::ConnectionType)(Qt::UniqueConnection | Qt::QueuedConnection));
+
+        emit started(Action::Seed);
+        getMethod(m_UpdateInformation.data(), "getInfo(void)")
+        .invoke(m_UpdateInformation.data(), Qt::QueuedConnection);
+
+#endif // DECENTRALIZED_UPDATE_ENABLED
     } else {
         n_CurrentAction = Action::None;
         b_Started = b_Running = b_Canceled = false;
@@ -496,6 +553,7 @@ void QAppImageUpdatePrivate::cancel(void) {
     b_CancelRequested = true;
     getMethod(m_DeltaWriter.data(),"cancel()")
     .invoke(m_DeltaWriter.data(), Qt::QueuedConnection);
+    
     return;
 }
 
@@ -574,6 +632,55 @@ void QAppImageUpdatePrivate::handleCheckForUpdateError(short code) {
                this, SLOT(handleCheckForUpdateProgress(int)));
 
     emit error(code, n_CurrentAction);
+}
+
+void QAppImageUpdatePrivate::handleSeedError(short code) {
+    b_Canceled = b_Started = b_Running = false;
+    b_Finished = false;
+    b_CancelRequested = false;
+
+    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
+               m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
+    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
+               m_ControlFileParser.data(), SLOT(getUpdateCheckInformation(void)));
+    disconnect(m_ControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
+                m_Seeder.data(), SLOT(start(QJsonObject)));
+    disconnect(m_ControlFileParser.data(), SIGNAL(error(short)),
+               this, SLOT(handleSeedError(short)));
+    disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
+               this, SLOT(handleSeedError(short)));
+    disconnect(m_Seeder.data(), SIGNAL(canceled()),
+                this, SLOT(handleSeedCancel()));
+    disconnect(m_Seeder.data(), SIGNAL(error(short)),
+                this, SLOT(handleSeedError(short)));
+
+    emit error(code, n_CurrentAction);
+}
+
+void QAppImageUpdatePrivate::handleSeedCancel() {
+    b_Canceled = b_Started = b_Running = false;
+    b_Finished = false;
+    b_CancelRequested = false;
+
+    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),
+               m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));
+    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),
+               m_ControlFileParser.data(), SLOT(getUpdateCheckInformation(void)));
+    disconnect(m_ControlFileParser.data(), SIGNAL(updateCheckInformation(QJsonObject)),
+                m_Seeder.data(), SLOT(start(QJsonObject)));
+    disconnect(m_ControlFileParser.data(), SIGNAL(error(short)),
+               this, SLOT(handleSeedError(short)));
+    disconnect(m_UpdateInformation.data(), SIGNAL(error(short)),
+               this, SLOT(handleSeedError(short)));
+    disconnect(m_Seeder.data(), SIGNAL(canceled()),
+                this, SLOT(handleSeedCancel()));
+    disconnect(m_Seeder.data(), SIGNAL(error(short)),
+                this, SLOT(handleSeedError(short)));
+
+    b_Finished = true;
+
+    QJsonObject r { };
+    emit finished(r, n_CurrentAction);
 }
 
 void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
@@ -1486,6 +1593,18 @@ QString QAppImageUpdatePrivate::errorCodeToString(short errorCode) {
     case QAppImageUpdateEnums::Error::TargetFileSha1HashMismatch:
         ret += "TargetFileSha1HashMismatch";
         break;
+    case QAppImageUpdateEnums::Error::TorrentNotSupported:
+	ret += "TorrentNotSupported";
+	break;
+    case QAppImageUpdateEnums::Error::TorrentSeedFailed:
+	ret += "TorrentSeedFailed";
+	break;
+    case QAppImageUpdateEnums::Error::OutdatedAppImageForSeed:
+	ret += "OutdatedAppImageForSeed";
+	break;
+    case QAppImageUpdateEnums::Error::IncompleteAppImageForSeed:
+	ret += "IncompleteAppImageForSeed";
+	break;
     case QAppImageUpdateEnums::Error::UnsupportedActionForBuild:
         ret += "UnsupportedActionForBuild";
         break;
@@ -1674,6 +1793,18 @@ QString QAppImageUpdatePrivate::errorCodeToDescriptionString(short errorCode) {
     case QAppImageUpdateEnums::Error::TargetFileSha1HashMismatch:
         errorString = QString::fromUtf8("The newly constructed AppImage failed the integrity check, please try again.");
         break;
+    case QAppImageUpdateEnums::Error::TorrentNotSupported:
+	errorString = QString::fromUtf8("The AppImage author does not support decentralized update.");
+	break;
+    case QAppImageUpdateEnums::Error::TorrentSeedFailed:
+	errorString = QString::fromUtf8("The AppImage cannot be seeded.");
+	break;
+    case QAppImageUpdateEnums::Error::OutdatedAppImageForSeed:
+	errorString = QString::fromUtf8("The AppImage is not the newest available for seeding.");
+	break;
+    case QAppImageUpdateEnums::Error::IncompleteAppImageForSeed:
+	errorString = QString::fromUtf8("The AppImage is incomplete for seeding.");
+	break;
     case QAppImageUpdateEnums::Error::UnsupportedActionForBuild:
         errorString = QString::fromUtf8("The current build of the core library does not support the requested action.");
         break;
