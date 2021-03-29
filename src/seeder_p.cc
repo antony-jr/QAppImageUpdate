@@ -235,7 +235,7 @@ void SeederPrivate::torrentLoop() {
     auto status = m_Handle.status();
 
     emit torrentStatus(status.num_seeds, status.num_peers);
-    if(status.state != lt::torrent_status::seeding) {
+    if(status.state == lt::torrent_status::seeding) {
 	    m_TimeoutTimer.start();
     }
 
