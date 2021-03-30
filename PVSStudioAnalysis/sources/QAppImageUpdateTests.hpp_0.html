@@ -469,153 +469,155 @@
 <a name="ln456">        QVERIFY(action == QAppImageUpdate::Action::Update);</a>
 <a name="ln457">    }</a>
 <a name="ln458"> </a>
-<a name="ln459">    void actionUpdateWithTorrent() {</a>
-<a name="ln460">        short action = 0;</a>
-<a name="ln461">        QJsonObject result;</a>
-<a name="ln462">        QList&lt;QVariant&gt; sg;</a>
-<a name="ln463">        QAppImageUpdate updater;</a>
-<a name="ln464">        connect(&amp;updater, &amp;QAppImageUpdate::error, this, &amp;QAppImageUpdateTests::defaultErrorHandler);</a>
-<a name="ln465">        QSignalSpy spyInfo(&amp;updater, SIGNAL(finished(QJsonObject, short)));</a>
-<a name="ln466">        QEventLoop loop;</a>
-<a name="ln467">        connect(&amp;updater, &amp;QAppImageUpdate::finished, &amp;loop, &amp;QEventLoop::quit, Qt::QueuedConnection);</a>
-<a name="ln468"> </a>
+<a name="ln459">#ifdef DECENTRALIZED_UPDATE_ENABLED</a>
+<a name="ln460">    void actionUpdateWithTorrent() {</a>
+<a name="ln461">        short action = 0;</a>
+<a name="ln462">        QJsonObject result;</a>
+<a name="ln463">        QList&lt;QVariant&gt; sg;</a>
+<a name="ln464">        QAppImageUpdate updater;</a>
+<a name="ln465">        connect(&amp;updater, &amp;QAppImageUpdate::error, this, &amp;QAppImageUpdateTests::defaultErrorHandler);</a>
+<a name="ln466">        QSignalSpy spyInfo(&amp;updater, SIGNAL(finished(QJsonObject, short)));</a>
+<a name="ln467">        QEventLoop loop;</a>
+<a name="ln468">        connect(&amp;updater, &amp;QAppImageUpdate::finished, &amp;loop, &amp;QEventLoop::quit, Qt::QueuedConnection);</a>
 <a name="ln469"> </a>
-<a name="ln470">        //// Search for all test files which supports torrent update and</a>
-<a name="ln471">        //// Update it with torrents.</a>
-<a name="ln472">        for(auto iter = m_Available.begin(),</a>
-<a name="ln473">                end = m_Available.end();</a>
-<a name="ln474">                iter != end;</a>
-<a name="ln475">                ++iter) {</a>
-<a name="ln476">            updater.setAppImage(*iter);</a>
-<a name="ln477">            qInfo().noquote() &lt;&lt; &quot;Update(&quot; &lt;&lt; *iter &lt;&lt; &quot;)&quot;;</a>
-<a name="ln478"> </a>
-<a name="ln479">            updater.start(QAppImageUpdate::Action::CheckForUpdate);</a>
-<a name="ln480">            loop.exec();</a>
-<a name="ln481"> </a>
-<a name="ln482">            QCOMPARE(spyInfo.count(), 1);</a>
-<a name="ln483"> </a>
-<a name="ln484">            sg = spyInfo.takeFirst();</a>
-<a name="ln485">            result = sg.at(0).toJsonObject();</a>
-<a name="ln486">            action = sg.at(1).toInt();</a>
-<a name="ln487"> </a>
-<a name="ln488">            QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);</a>
-<a name="ln489">            QVERIFY(result.contains(&quot;UpdateAvailable&quot;));</a>
-<a name="ln490"> </a>
-<a name="ln491">            auto remoteSha1 = result[&quot;RemoteSha1Hash&quot;].toString();</a>
-<a name="ln492"> </a>
-<a name="ln493">            if(result[&quot;TorrentSupported&quot;].toBool())  {</a>
-<a name="ln494">                // Now Update With Torrent confirmation.</a>
-<a name="ln495">                updater.start(QAppImageUpdate::Action::UpdateWithTorrent);</a>
-<a name="ln496">                loop.exec();</a>
-<a name="ln497"> </a>
-<a name="ln498">                QCOMPARE(spyInfo.count(), 1);</a>
-<a name="ln499"> </a>
-<a name="ln500">                sg = spyInfo.takeFirst();</a>
-<a name="ln501">                result = sg.at(0).toJsonObject();</a>
-<a name="ln502">                action = sg.at(1).toInt();</a>
-<a name="ln503"> </a>
-<a name="ln504">                QVERIFY(action == QAppImageUpdate::Action::UpdateWithTorrent);</a>
-<a name="ln505">                QCOMPARE(remoteSha1, result[&quot;NewVersionSha1Hash&quot;].toString());</a>
-<a name="ln506">                QCOMPARE(true, result[&quot;UsedTorrent&quot;].toBool());</a>
-<a name="ln507"> </a>
-<a name="ln508">                QFile::remove(result[&quot;NewVersionPath&quot;].toString());</a>
-<a name="ln509">            }</a>
-<a name="ln510">        }</a>
-<a name="ln511">    }</a>
-<a name="ln512"> </a>
-<a name="ln513">    //// This should not crash the test</a>
-<a name="ln514">    //// That is the test.</a>
-<a name="ln515">    void destructWhileUpdate() {</a>
-<a name="ln516">        {</a>
-<a name="ln517">            QAppImageUpdate updater;</a>
-<a name="ln518">            QEventLoop startLoop;</a>
-<a name="ln519">            connect(&amp;updater, &amp;QAppImageUpdate::started, &amp;startLoop, &amp;QEventLoop::quit, Qt::QueuedConnection);</a>
-<a name="ln520">            connect(&amp;updater, &amp;QAppImageUpdate::error, this, &amp;QAppImageUpdateTests::defaultErrorHandler);</a>
-<a name="ln521"> </a>
-<a name="ln522">            updater.setAppImage(m_Available.at(0));</a>
-<a name="ln523">            updater.start();</a>
-<a name="ln524"> </a>
-<a name="ln525">            // Destruct as soon as the update starts.</a>
-<a name="ln526">            startLoop.exec();</a>
-<a name="ln527">        }</a>
-<a name="ln528">    }</a>
-<a name="ln529"> </a>
-<a name="ln530">    /// I have no idea on how to test thread safety,</a>
-<a name="ln531">    //  so we are just gonna call setAppImage and</a>
-<a name="ln532">    //  start from multiple threads.</a>
-<a name="ln533">    //</a>
-<a name="ln534">    //  The expected result is,</a>
+<a name="ln470"> </a>
+<a name="ln471">        //// Search for all test files which supports torrent update and</a>
+<a name="ln472">        //// Update it with torrents.</a>
+<a name="ln473">        for(auto iter = m_Available.begin(),</a>
+<a name="ln474">                end = m_Available.end();</a>
+<a name="ln475">                iter != end;</a>
+<a name="ln476">                ++iter) {</a>
+<a name="ln477">            updater.setAppImage(*iter);</a>
+<a name="ln478">            qInfo().noquote() &lt;&lt; &quot;Update(&quot; &lt;&lt; *iter &lt;&lt; &quot;)&quot;;</a>
+<a name="ln479"> </a>
+<a name="ln480">            updater.start(QAppImageUpdate::Action::CheckForUpdate);</a>
+<a name="ln481">            loop.exec();</a>
+<a name="ln482"> </a>
+<a name="ln483">            QCOMPARE(spyInfo.count(), 1);</a>
+<a name="ln484"> </a>
+<a name="ln485">            sg = spyInfo.takeFirst();</a>
+<a name="ln486">            result = sg.at(0).toJsonObject();</a>
+<a name="ln487">            action = sg.at(1).toInt();</a>
+<a name="ln488"> </a>
+<a name="ln489">            QVERIFY(action == QAppImageUpdate::Action::CheckForUpdate);</a>
+<a name="ln490">            QVERIFY(result.contains(&quot;UpdateAvailable&quot;));</a>
+<a name="ln491"> </a>
+<a name="ln492">            auto remoteSha1 = result[&quot;RemoteSha1Hash&quot;].toString();</a>
+<a name="ln493"> </a>
+<a name="ln494">            if(result[&quot;TorrentSupported&quot;].toBool())  {</a>
+<a name="ln495">                // Now Update With Torrent confirmation.</a>
+<a name="ln496">                updater.start(QAppImageUpdate::Action::UpdateWithTorrent);</a>
+<a name="ln497">                loop.exec();</a>
+<a name="ln498"> </a>
+<a name="ln499">                QCOMPARE(spyInfo.count(), 1);</a>
+<a name="ln500"> </a>
+<a name="ln501">                sg = spyInfo.takeFirst();</a>
+<a name="ln502">                result = sg.at(0).toJsonObject();</a>
+<a name="ln503">                action = sg.at(1).toInt();</a>
+<a name="ln504"> </a>
+<a name="ln505">                QVERIFY(action == QAppImageUpdate::Action::UpdateWithTorrent);</a>
+<a name="ln506">                QCOMPARE(remoteSha1, result[&quot;NewVersionSha1Hash&quot;].toString());</a>
+<a name="ln507">                QCOMPARE(true, result[&quot;UsedTorrent&quot;].toBool());</a>
+<a name="ln508"> </a>
+<a name="ln509">                QFile::remove(result[&quot;NewVersionPath&quot;].toString());</a>
+<a name="ln510">            }</a>
+<a name="ln511">        }</a>
+<a name="ln512">    }</a>
+<a name="ln513">#endif // DECENTRALIZED_UPDATE_ENABLED</a>
+<a name="ln514"> </a>
+<a name="ln515">    //// This should not crash the test</a>
+<a name="ln516">    //// That is the test.</a>
+<a name="ln517">    void destructWhileUpdate() {</a>
+<a name="ln518">        {</a>
+<a name="ln519">            QAppImageUpdate updater;</a>
+<a name="ln520">            QEventLoop startLoop;</a>
+<a name="ln521">            connect(&amp;updater, &amp;QAppImageUpdate::started, &amp;startLoop, &amp;QEventLoop::quit, Qt::QueuedConnection);</a>
+<a name="ln522">            connect(&amp;updater, &amp;QAppImageUpdate::error, this, &amp;QAppImageUpdateTests::defaultErrorHandler);</a>
+<a name="ln523"> </a>
+<a name="ln524">            updater.setAppImage(m_Available.at(0));</a>
+<a name="ln525">            updater.start();</a>
+<a name="ln526"> </a>
+<a name="ln527">            // Destruct as soon as the update starts.</a>
+<a name="ln528">            startLoop.exec();</a>
+<a name="ln529">        }</a>
+<a name="ln530">    }</a>
+<a name="ln531"> </a>
+<a name="ln532">    /// I have no idea on how to test thread safety,</a>
+<a name="ln533">    //  so we are just gonna call setAppImage and</a>
+<a name="ln534">    //  start from multiple threads.</a>
 <a name="ln535">    //</a>
-<a name="ln536">    //  The first thread to call setAppImage and start</a>
-<a name="ln537">    //  will succeed and all other threads calls will be</a>
-<a name="ln538">    //  invalid and will not affect the object or segfaults.</a>
-<a name="ln539">    //</a>
-<a name="ln540">    //  So the QSignalSpy should have only one signal that</a>
-<a name="ln541">    //  is finished. and not multiple signals.</a>
-<a name="ln542">    void threadSafety() {</a>
-<a name="ln543">        QAppImageUpdate updater;</a>
-<a name="ln544">        QEventLoop loop;</a>
-<a name="ln545">        connect(&amp;updater, &amp;QAppImageUpdate::error, this, &amp;QAppImageUpdateTests::defaultErrorHandler);</a>
-<a name="ln546">        QSignalSpy spyInfo(&amp;updater, SIGNAL(finished(QJsonObject, short)));</a>
-<a name="ln547">        connect(&amp;updater, &amp;QAppImageUpdate::finished, &amp;loop, &amp;QEventLoop::quit, Qt::QueuedConnection);</a>
-<a name="ln548"> </a>
-<a name="ln549">        auto function = [&amp;]() {</a>
-<a name="ln550">            updater.setAppImage(m_Available.at(0));</a>
-<a name="ln551">            updater.start();</a>
-<a name="ln552">        };</a>
-<a name="ln553"> </a>
-<a name="ln554">        auto future1 = new QFuture&lt;void&gt;;</a>
-<a name="ln555">        auto future2 = new QFuture&lt;void&gt;;</a>
-<a name="ln556">        auto future3 = new QFuture&lt;void&gt;;</a>
-<a name="ln557">        auto future4 = new QFuture&lt;void&gt;;</a>
-<a name="ln558">        *future1 = QtConcurrent::run(function);</a>
-<a name="ln559">        *future2 = QtConcurrent::run(function);</a>
-<a name="ln560">        *future3 = QtConcurrent::run(function);</a>
-<a name="ln561">        *future4 = QtConcurrent::run(function);</a>
-<a name="ln562"> </a>
-<a name="ln563">        /// Wait for all futures to end;</a>
-<a name="ln564">        while(future1-&gt;isRunning() || future2-&gt;isRunning() ||</a>
-<a name="ln565">                future3-&gt;isRunning() || future4-&gt;isRunning()) {</a>
-<a name="ln566">            QCoreApplication::processEvents();</a>
-<a name="ln567">        }</a>
-<a name="ln568"> </a>
-<a name="ln569">        delete future1;</a>
-<a name="ln570">        delete future2;</a>
-<a name="ln571">        delete future3;</a>
-<a name="ln572">        delete future4;</a>
-<a name="ln573"> </a>
-<a name="ln574">        if(spyInfo.count() &lt; 1) {</a>
-<a name="ln575">            if(!spyInfo.wait()) {</a>
-<a name="ln576">                loop.exec();</a>
-<a name="ln577">            }</a>
-<a name="ln578">        }</a>
-<a name="ln579"> </a>
-<a name="ln580">        QCOMPARE(spyInfo.count(), 1);</a>
+<a name="ln536">    //  The expected result is,</a>
+<a name="ln537">    //</a>
+<a name="ln538">    //  The first thread to call setAppImage and start</a>
+<a name="ln539">    //  will succeed and all other threads calls will be</a>
+<a name="ln540">    //  invalid and will not affect the object or segfaults.</a>
+<a name="ln541">    //</a>
+<a name="ln542">    //  So the QSignalSpy should have only one signal that</a>
+<a name="ln543">    //  is finished. and not multiple signals.</a>
+<a name="ln544">    void threadSafety() {</a>
+<a name="ln545">        QAppImageUpdate updater;</a>
+<a name="ln546">        QEventLoop loop;</a>
+<a name="ln547">        connect(&amp;updater, &amp;QAppImageUpdate::error, this, &amp;QAppImageUpdateTests::defaultErrorHandler);</a>
+<a name="ln548">        QSignalSpy spyInfo(&amp;updater, SIGNAL(finished(QJsonObject, short)));</a>
+<a name="ln549">        connect(&amp;updater, &amp;QAppImageUpdate::finished, &amp;loop, &amp;QEventLoop::quit, Qt::QueuedConnection);</a>
+<a name="ln550"> </a>
+<a name="ln551">        auto function = [&amp;]() {</a>
+<a name="ln552">            updater.setAppImage(m_Available.at(0));</a>
+<a name="ln553">            updater.start();</a>
+<a name="ln554">        };</a>
+<a name="ln555"> </a>
+<a name="ln556">        auto future1 = new QFuture&lt;void&gt;;</a>
+<a name="ln557">        auto future2 = new QFuture&lt;void&gt;;</a>
+<a name="ln558">        auto future3 = new QFuture&lt;void&gt;;</a>
+<a name="ln559">        auto future4 = new QFuture&lt;void&gt;;</a>
+<a name="ln560">        *future1 = QtConcurrent::run(function);</a>
+<a name="ln561">        *future2 = QtConcurrent::run(function);</a>
+<a name="ln562">        *future3 = QtConcurrent::run(function);</a>
+<a name="ln563">        *future4 = QtConcurrent::run(function);</a>
+<a name="ln564"> </a>
+<a name="ln565">        /// Wait for all futures to end;</a>
+<a name="ln566">        while(future1-&gt;isRunning() || future2-&gt;isRunning() ||</a>
+<a name="ln567">                future3-&gt;isRunning() || future4-&gt;isRunning()) {</a>
+<a name="ln568">            QCoreApplication::processEvents();</a>
+<a name="ln569">        }</a>
+<a name="ln570"> </a>
+<a name="ln571">        delete future1;</a>
+<a name="ln572">        delete future2;</a>
+<a name="ln573">        delete future3;</a>
+<a name="ln574">        delete future4;</a>
+<a name="ln575"> </a>
+<a name="ln576">        if(spyInfo.count() &lt; 1) {</a>
+<a name="ln577">            if(!spyInfo.wait()) {</a>
+<a name="ln578">                loop.exec();</a>
+<a name="ln579">            }</a>
+<a name="ln580">        }</a>
 <a name="ln581"> </a>
-<a name="ln582">        auto sg = spyInfo.takeFirst();</a>
-<a name="ln583">        QJsonObject result = sg.at(0).toJsonObject();</a>
-<a name="ln584">        short action = sg.at(1).toInt();</a>
-<a name="ln585"> </a>
-<a name="ln586">        QVERIFY(action == QAppImageUpdate::Action::Update);</a>
-<a name="ln587">    }</a>
-<a name="ln588"> </a>
-<a name="ln589">    void cleanupTestCase(void) {</a>
-<a name="ln590">        m_TempDir-&gt;remove();</a>
-<a name="ln591">        emit finished();</a>
-<a name="ln592">        return;</a>
-<a name="ln593">    }</a>
-<a name="ln594">  protected slots:</a>
-<a name="ln595">    void defaultErrorHandler(short code, short action) {</a>
-<a name="ln596">        Q_UNUSED(action);</a>
-<a name="ln597">        auto scode = QAppImageUpdate::errorCodeToString(code);</a>
-<a name="ln598">        scode.prepend(&quot;error:: &quot;);</a>
-<a name="ln599">        QFAIL(QTest::toString(scode));</a>
-<a name="ln600">        return;</a>
-<a name="ln601">    }</a>
-<a name="ln602">  Q_SIGNALS:</a>
-<a name="ln603">    void finished(void);</a>
-<a name="ln604">};</a>
-<a name="ln605">#endif</a>
+<a name="ln582">        QCOMPARE(spyInfo.count(), 1);</a>
+<a name="ln583"> </a>
+<a name="ln584">        auto sg = spyInfo.takeFirst();</a>
+<a name="ln585">        QJsonObject result = sg.at(0).toJsonObject();</a>
+<a name="ln586">        short action = sg.at(1).toInt();</a>
+<a name="ln587"> </a>
+<a name="ln588">        QVERIFY(action == QAppImageUpdate::Action::Update);</a>
+<a name="ln589">    }</a>
+<a name="ln590"> </a>
+<a name="ln591">    void cleanupTestCase(void) {</a>
+<a name="ln592">        m_TempDir-&gt;remove();</a>
+<a name="ln593">        emit finished();</a>
+<a name="ln594">        return;</a>
+<a name="ln595">    }</a>
+<a name="ln596">  protected slots:</a>
+<a name="ln597">    void defaultErrorHandler(short code, short action) {</a>
+<a name="ln598">        Q_UNUSED(action);</a>
+<a name="ln599">        auto scode = QAppImageUpdate::errorCodeToString(code);</a>
+<a name="ln600">        scode.prepend(&quot;error:: &quot;);</a>
+<a name="ln601">        QFAIL(QTest::toString(scode));</a>
+<a name="ln602">        return;</a>
+<a name="ln603">    }</a>
+<a name="ln604">  Q_SIGNALS:</a>
+<a name="ln605">    void finished(void);</a>
+<a name="ln606">};</a>
+<a name="ln607">#endif</a>
 
 </code></pre>
 <div class="balloon" rel="29"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v779/" target="_blank">V779</a> Unreachable code detected. It is possible that an error is present.</p></div>
