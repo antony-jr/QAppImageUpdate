@@ -68,6 +68,9 @@ QAppImageUpdatePrivate::QAppImageUpdatePrivate(bool singleThreaded, QObject *par
         m_SharedNetworkAccessManager->moveToThread(m_SharedThread.data());
         m_UpdateInformation->moveToThread(m_SharedThread.data());
         m_DeltaWriter->moveToThread(m_SharedThread.data());
+#ifdef DECENTRALIZED_UPDATE_ENABLED
+	m_Seeder->moveToThread(m_SharedThread.data());
+#endif       
     }
     m_ControlFileParser.reset(new ZsyncRemoteControlFileParserPrivate(m_SharedNetworkAccessManager.data()));
     if(!singleThreaded) {
@@ -268,10 +271,11 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
         return;
     }
 
-    if(flags == GuiFlag::None) {
-        flags = (n_GuiFlag != GuiFlag::None) ? n_GuiFlag : GuiFlag::Default;
+    if(flags != (int)GuiFlag::None) {
+	    n_GuiFlag = flags;
+    }else if(n_GuiFlag == GuiFlag::None) {
+	    n_GuiFlag = GuiFlag::Default;
     }
-    n_GuiFlag = flags;
 
     if(icon.isEmpty() && !m_Icon.isEmpty()) {
         icon = m_Icon;

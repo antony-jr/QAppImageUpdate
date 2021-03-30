@@ -42,7 +42,7 @@ class QAppImageUpdate : public QObject {
     void setOutputDirectory(const QString&);
     void setProxy(const QNetworkProxy&);
     void start(short action = Action::Update,
-               int flags = GuiFlag::Default,
+               int flags = GuiFlag::None,
                QByteArray icon = QByteArray());
     void cancel();
     void clear();

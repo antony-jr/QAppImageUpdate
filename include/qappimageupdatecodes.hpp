@@ -16,7 +16,7 @@ struct QAppImageUpdateCodes {
     };
 
     struct GuiFlag {
-        enum {
+	enum : int {
             None = 0x0,
             ShowProgressDialog = 0x1,
             ShowBeforeProgress = 0x2,
