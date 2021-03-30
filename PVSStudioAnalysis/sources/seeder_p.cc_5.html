@@ -248,7 +248,7 @@
 <a name="ln235">    auto status = m_Handle.status();</a>
 <a name="ln236"> </a>
 <a name="ln237">    emit torrentStatus(status.num_seeds, status.num_peers);</a>
-<a name="ln238">    if(status.state != lt::torrent_status::seeding) {</a>
+<a name="ln238">    if(status.state == lt::torrent_status::seeding) {</a>
 <a name="ln239">	    m_TimeoutTimer.start();</a>
 <a name="ln240">    }</a>
 <a name="ln241"> </a>
