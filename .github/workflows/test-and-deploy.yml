@@ -55,10 +55,17 @@ jobs:
         run: |
           Xvfb :100 -ac &
           export DISPLAY=:100.0
+          source /opt/qt*/bin/qt*-env.sh || true 
           cd ..
+          mkdir test-build
+          cd test-build
+          cmake -DBUILD_TESTS=ON ..
+          make -j$(nproc)
+          ./tests/QAppImageUpdateTests
+          cd ..
+          rm -rf test-build
           mkdir build
           cd build
-          source /opt/qt*/bin/qt*-env.sh || true
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DDECENTRALIZED_UPDATE_ENABLED=ON -DBUILD_TESTS=ON ..
           make -j$(nproc)
           cd tests

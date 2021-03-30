@@ -640,6 +640,7 @@ void QAppImageUpdatePrivate::handleCheckForUpdateError(short code) {
     emit error(code, n_CurrentAction);
 }
 
+#ifdef DECENTRALIZED_UPDATE_ENABLED
 void QAppImageUpdatePrivate::handleSeedError(short code) {
     b_Canceled = b_Started = b_Running = false;
     b_Finished = false;
@@ -688,6 +689,7 @@ void QAppImageUpdatePrivate::handleSeedCancel() {
     QJsonObject r { };
     emit finished(r, n_CurrentAction);
 }
+#endif // DECENTRALIZED_UPDATE_ENABLED
 
 void QAppImageUpdatePrivate::redirectUpdateCheck(QJsonObject info) {
     disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),

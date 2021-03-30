@@ -456,6 +456,7 @@ class QAppImageUpdateTests : public QObject {
         QVERIFY(action == QAppImageUpdate::Action::Update);
     }
 
+#ifdef DECENTRALIZED_UPDATE_ENABLED
     void actionUpdateWithTorrent() {
         short action = 0;
         QJsonObject result;
@@ -509,6 +510,7 @@ class QAppImageUpdateTests : public QObject {
             }
         }
     }
+#endif // DECENTRALIZED_UPDATE_ENABLED
 
     //// This should not crash the test
     //// That is the test.

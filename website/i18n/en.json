@@ -148,6 +148,14 @@
       "version-2.0.0/version-2.0.0-UsingPlugin": {
         "title": "Build QAppImageUpdate as Qt Plugin",
         "sidebar_label": "Building as Qt Plugin"
+      },
+      "version-2.0.1/version-2.0.1-ClassQAppImageUpdate": {
+        "title": "Class QAppImageUpdate",
+        "sidebar_label": "Class QAppImageUpdate"
+      },
+      "version-2.0.1/version-2.0.1-PluginInterface": {
+        "title": "QAppImageUpdate Plugin Interface",
+        "sidebar_label": "Qt Plugin Interface"
       }
     },
     "links": {

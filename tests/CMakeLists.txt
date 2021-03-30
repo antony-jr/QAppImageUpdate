@@ -24,5 +24,10 @@ if(QUICK_TEST)
 	add_definitions(-DQUICK_TEST)
 endif()
 
+if(DECENTRALIZED_UPDATE_ENABLED)
+    message("-- [*] IMPORTANT: Decentralized update feature will be TESTED.")
+    add_definitions(-DDECENTRALIZED_UPDATE_ENABLED)
+endif()
+
 add_executable(QAppImageUpdateTests main.cc QAppImageUpdateTests.hpp SimpleDownload.hpp)
 target_link_libraries(QAppImageUpdateTests PRIVATE QAppImageUpdate Qt5::Test Qt5::Concurrent)
