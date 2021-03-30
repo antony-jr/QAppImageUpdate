@@ -455,6 +455,8 @@ void QAppImageUpdatePrivate::start(short action, int flags, QByteArray icon) {
             }
         }
 
+	// Reset Check For Update Progress Bar.
+	(m_Ui->updateCheckProgressBar)->setValue(0);    
 
 
         m_ConfirmationDialog = QSharedPointer<SoftwareUpdateDialog>(new SoftwareUpdateDialog(nullptr, icon, n_GuiFlag));
@@ -1114,9 +1116,9 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheckError(short ecode) {
 }
 
 void QAppImageUpdatePrivate::handleGUIUpdateCheckProgress(int percentage) {
-	Q_UNUSED(percentage);
+	(m_Ui->updateCheckProgressBar)->setValue(percentage);
+	return;
 }
-
 
 void QAppImageUpdatePrivate::handleGUIUpdateProgress(int percentage,
         qint64 bytesReceived,
@@ -1823,5 +1825,5 @@ QString QAppImageUpdatePrivate::errorCodeToDescriptionString(short errorCode) {
 }
 
 QString QAppImageUpdatePrivate::versionString() {
-    return QString::fromUtf8("2.0.0");
+    return QString::fromUtf8("2.0.1");
 }
