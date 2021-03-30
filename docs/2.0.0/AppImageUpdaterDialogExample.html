@@ -1,9 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Updating an AppImage · QAppImageUpdate</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="This guide Demonstrates how to use the *AppImageUpdaterBridge* APIs for updating a single AppImage file."/><meta name="docsearch:version" content="2.0.1"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Updating an AppImage · QAppImageUpdate"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/QAppImageUpdate/index.html"/><meta property="og:description" content="This guide Demonstrates how to use the *AppImageUpdaterBridge* APIs for updating a single AppImage file."/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/QAppImageUpdate/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/QAppImageUpdate/js/scrollSpy.js"></script><link rel="stylesheet" href="/QAppImageUpdate/css/main.css"/><script src="/QAppImageUpdate/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/QAppImageUpdate/"><img class="logo" src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate"/><h2 class="headerTitleWithLogo">QAppImageUpdate</h2></a><a href="/QAppImageUpdate/versions.html"><h3>2.0.1</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/QAppImageUpdate/docs/Installation.html" target="_self">Docs</a></li><li class=""><a href="/QAppImageUpdate/help.html" target="_self">Help</a></li><li class=""><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Updating an AppImage</h1></header><article><div><span><p>This guide Demonstrates how to use the <em>AppImageUpdaterBridge</em> APIs for updating a single AppImage file.
-This example parses the path from the program arguments , And uses the <em><a href="ClassAppImageDeltaRevisioner.html">AppImageDeltaRevisioner</a></em> class to perform the actual delta update.</p>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Updating an AppImage with GUI · QAppImageUpdate</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="This guide demonstrates on using the AppImage updater dialog to update appimages through "/><meta name="docsearch:version" content="2.0.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Updating an AppImage with GUI · QAppImageUpdate"/><meta property="og:type" content="website"/><meta property="og:url" content="https://antony-jr.github.io/QAppImageUpdate/index.html"/><meta property="og:description" content="This guide demonstrates on using the AppImage updater dialog to update appimages through "/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/QAppImageUpdate/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/QAppImageUpdate/js/scrollSpy.js"></script><link rel="stylesheet" href="/QAppImageUpdate/css/main.css"/><script src="/QAppImageUpdate/js/codetabs.js"></script></head><body class="sideNavVisible"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/QAppImageUpdate/"><img class="logo" src="/QAppImageUpdate/img/AppImageUpdaterBridge.png" alt="QAppImageUpdate"/><h2 class="headerTitleWithLogo">QAppImageUpdate</h2></a><a href="/QAppImageUpdate/versions.html"><h3>2.0.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class=""><a href="/QAppImageUpdate/docs/2.0.0/Installation.html" target="_self">Docs</a></li><li class=""><a href="/QAppImageUpdate/help.html" target="_self">Help</a></li><li class=""><a target="_self">Blog</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Updating an AppImage with GUI</h1></header><article><div><span><p>This guide demonstrates on using the AppImage updater dialog to update appimages through
+graphical user interface.</p>
 <h2><a class="anchor" aria-hidden="true" id="maincpp"></a><a href="#maincpp" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>main.cpp</h2>
-<pre><code class="hljs"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;QCoreApplication&gt;</span></span>
+<pre><code class="hljs"><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;QApplication&gt;</span></span>
 <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;QDebug&gt;</span></span>
 <span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;AppImageUpdaterBridge&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;AppImageUpdaterDialog&gt;</span></span>
 
 <span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">int</span> ac , <span class="hljs-keyword">char</span> **av)</span>
 </span>{
@@ -12,25 +13,26 @@ This example parses the path from the program arguments , And uses the <em><a hr
         <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;   
         }
     
+    <span class="hljs-keyword">using</span> AppImageUpdaterBridge::AppImageUpdaterDialog;
     <span class="hljs-keyword">using</span> AppImageUpdaterBridge::AppImageDeltaRevisioner;
-    <span class="hljs-function">QCoreApplication <span class="hljs-title">app</span><span class="hljs-params">(ac , av)</span></span>;
+    <span class="hljs-function">QApplication <span class="hljs-title">app</span><span class="hljs-params">(ac , av)</span></span>;
     QString AppImagePath = QString(av[<span class="hljs-number">1</span>]);
 
-    <span class="hljs-function">AppImageDeltaRevisioner <span class="hljs-title">DRevisioner</span><span class="hljs-params">(AppImagePath)</span></span>;
-    QObject::<span class="hljs-built_in">connect</span>(&amp;DRevisioner , &amp;AppImageDeltaRevisioner::finished ,
-        [&amp;](QJsonObject newVersionDetails , QString oldVersionPath){
-        (<span class="hljs-keyword">void</span>)oldVersionPath;
+    <span class="hljs-function">AppImageDeltaRevisioner <span class="hljs-title">DRev</span><span class="hljs-params">(AppImagePath)</span></span>;
+    DRev.setShowLog(<span class="hljs-literal">true</span>); <span class="hljs-comment">// Display log?</span>
+    
+    AppImageUpdaterDialog UWidget;
+    QObject::<span class="hljs-built_in">connect</span>(&amp;UWidget , &amp;AppImageUpdaterDialog::finished ,
+        [&amp;](QJsonObject newVersionDetails){
         qInfo() &lt;&lt; <span class="hljs-string">"New Version Details:: "</span> &lt;&lt; newVersionDetails;
         app.quit();
     });
-    QObject::<span class="hljs-built_in">connect</span>(&amp;DRevisioner , &amp;AppImageDeltaRevisioner::error ,
-        [&amp;](short e){
-        qInfo() &lt;&lt; <span class="hljs-string">"error:: "</span> &lt;&lt; AppImageUpdaterBridge::errorCodeToString(e);
+    QObject::<span class="hljs-built_in">connect</span>(&amp;UWidget , &amp;AppImageUpdaterDialog::error ,
+        [&amp;](QString eStr , short e){
+        qInfo() &lt;&lt; <span class="hljs-string">"error("</span> &lt;&lt; e <span class="hljs-string">"):: "</span> &lt;&lt; eStr;
         app.quit();
-    });
-    DRevisioner.setShowLog(<span class="hljs-literal">true</span>); <span class="hljs-comment">// Display log?</span>
-    
-    DRevisioner.start(); <span class="hljs-comment">/* Start the update. */</span>
+    }); 
+    UWidget.init(&amp;DRev); <span class="hljs-comment">/* Start the update using GUI */</span>
     <span class="hljs-keyword">return</span> app.exec();
 }
  
@@ -38,7 +40,7 @@ This example parses the path from the program arguments , And uses the <em><a hr
 <h2><a class="anchor" aria-hidden="true" id="updatepro"></a><a href="#updatepro" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>update.pro</h2>
 <pre><code class="hljs"><span class="hljs-keyword">include</span>(AppImageUpdaterBridge/AppImageUpdaterBridge.pri)
 TEMPLATE = app
-TARGET = update
+TARGET = updategui
 SOURCES += main.cpp
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="compilation-and-execution"></a><a href="#compilation-and-execution" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Compilation and Execution</h2>
