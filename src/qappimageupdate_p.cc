@@ -1110,10 +1110,9 @@ void QAppImageUpdatePrivate::handleGUIUpdateCheckError(short ecode) {
                     QString::fromUtf8("': ") + errorString);
         box.exec();
     }
-
-
+    
+    m_UpdaterDialog->hide(); 
     emit error(ecode, n_CurrentAction);
-    m_UpdaterDialog->hide();
     return;
 }
 
