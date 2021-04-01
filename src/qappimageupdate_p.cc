@@ -1817,5 +1817,5 @@ QString QAppImageUpdatePrivate::errorCodeToDescriptionString(short errorCode) {
 }
 
 QString QAppImageUpdatePrivate::versionString() {
-    return QString::fromUtf8("2.0.1");
+    return QString::fromUtf8("2.0.2");
 }
