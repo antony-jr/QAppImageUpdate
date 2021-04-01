@@ -11,6 +11,10 @@ QAppImageUpdate::QAppImageUpdate(bool singleThreaded, QObject *parent)
                     new QAppImageUpdatePrivate(singleThreaded = singleThreaded));
     auto s = m_Private.data();
 
+    connect(s, &QAppImageUpdatePrivate::torrentClientStarted,
+	    this, &QAppImageUpdate::torrentClientStarted, Qt::DirectConnection);
+    connect(s, &QAppImageUpdatePrivate::torrentStatus,
+	    this, &QAppImageUpdate::torrentStatus, Qt::DirectConnection);
     connect(s, &QAppImageUpdatePrivate::started,
             this, &QAppImageUpdate::started, Qt::DirectConnection);
     connect(s, &QAppImageUpdatePrivate::canceled,
