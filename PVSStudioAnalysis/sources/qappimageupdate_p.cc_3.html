@@ -1123,725 +1123,724 @@
 <a name="ln1110">                    QString::fromUtf8(&quot;': &quot;) + errorString);</a>
 <a name="ln1111">        box.exec();</a>
 <a name="ln1112">    }</a>
-<a name="ln1113"> </a>
-<a name="ln1114"> </a>
+<a name="ln1113">    </a>
+<a name="ln1114">    m_UpdaterDialog-&gt;hide(); </a>
 <a name="ln1115">    emit error(ecode, n_CurrentAction);</a>
-<a name="ln1116">    m_UpdaterDialog-&gt;hide();</a>
-<a name="ln1117">    return;</a>
-<a name="ln1118">}</a>
-<a name="ln1119"> </a>
-<a name="ln1120">void QAppImageUpdatePrivate::handleGUIUpdateCheckProgress(int percentage) {</a>
-<a name="ln1121">	(m_Ui-&gt;updateCheckProgressBar)-&gt;setValue(percentage);</a>
-<a name="ln1122">	return;</a>
-<a name="ln1123">}</a>
-<a name="ln1124"> </a>
-<a name="ln1125">void QAppImageUpdatePrivate::handleGUIUpdateProgress(int percentage,</a>
-<a name="ln1126">        qint64 bytesReceived,</a>
-<a name="ln1127">        qint64 bytesTotal,</a>
-<a name="ln1128">        double speed,</a>
-<a name="ln1129">        QString units) {</a>
-<a name="ln1130">    //// Show that we are canceling if cancel was requested.</a>
-<a name="ln1131">    if(b_CancelRequested) {</a>
-<a name="ln1132">        (m_Ui-&gt;updateSpeedLbl)-&gt;setText(QString::fromUtf8(&quot;Rolling back changes, Please wait... &quot;));</a>
-<a name="ln1133">        return;</a>
-<a name="ln1134">    }</a>
-<a name="ln1135"> </a>
-<a name="ln1136">    (m_Ui-&gt;progressBar)-&gt;setValue(percentage);</a>
-<a name="ln1137">    double MegaBytesReceived = bytesReceived / 1048576;</a>
-<a name="ln1138">    double MegaBytesTotal = bytesTotal / 1048576;</a>
-<a name="ln1139">    const QString progressTemplate = QString::fromUtf8(&quot;Updating %1 MiB of %2 MiB at %3 %4...&quot;);</a>
-<a name="ln1140">    QString statusText = progressTemplate.arg(MegaBytesReceived).arg(MegaBytesTotal).arg(speed).arg(units);</a>
-<a name="ln1141">    (m_Ui-&gt;updateSpeedLbl)-&gt;setText(statusText);</a>
-<a name="ln1142">}</a>
+<a name="ln1116">    return;</a>
+<a name="ln1117">}</a>
+<a name="ln1118"> </a>
+<a name="ln1119">void QAppImageUpdatePrivate::handleGUIUpdateCheckProgress(int percentage) {</a>
+<a name="ln1120">	(m_Ui-&gt;updateCheckProgressBar)-&gt;setValue(percentage);</a>
+<a name="ln1121">	return;</a>
+<a name="ln1122">}</a>
+<a name="ln1123"> </a>
+<a name="ln1124">void QAppImageUpdatePrivate::handleGUIUpdateProgress(int percentage,</a>
+<a name="ln1125">        qint64 bytesReceived,</a>
+<a name="ln1126">        qint64 bytesTotal,</a>
+<a name="ln1127">        double speed,</a>
+<a name="ln1128">        QString units) {</a>
+<a name="ln1129">    //// Show that we are canceling if cancel was requested.</a>
+<a name="ln1130">    if(b_CancelRequested) {</a>
+<a name="ln1131">        (m_Ui-&gt;updateSpeedLbl)-&gt;setText(QString::fromUtf8(&quot;Rolling back changes, Please wait... &quot;));</a>
+<a name="ln1132">        return;</a>
+<a name="ln1133">    }</a>
+<a name="ln1134"> </a>
+<a name="ln1135">    (m_Ui-&gt;progressBar)-&gt;setValue(percentage);</a>
+<a name="ln1136">    double MegaBytesReceived = bytesReceived / 1048576;</a>
+<a name="ln1137">    double MegaBytesTotal = bytesTotal / 1048576;</a>
+<a name="ln1138">    const QString progressTemplate = QString::fromUtf8(&quot;Updating %1 MiB of %2 MiB at %3 %4...&quot;);</a>
+<a name="ln1139">    QString statusText = progressTemplate.arg(MegaBytesReceived).arg(MegaBytesTotal).arg(speed).arg(units);</a>
+<a name="ln1140">    (m_Ui-&gt;updateSpeedLbl)-&gt;setText(statusText);</a>
+<a name="ln1141">}</a>
+<a name="ln1142"> </a>
 <a name="ln1143"> </a>
-<a name="ln1144"> </a>
-<a name="ln1145">void QAppImageUpdatePrivate::handleGUIUpdateStart() {</a>
-<a name="ln1146">    emit started(n_CurrentAction);</a>
-<a name="ln1147">}</a>
-<a name="ln1148"> </a>
-<a name="ln1149">void QAppImageUpdatePrivate::handleGUIUpdateCancel() {</a>
-<a name="ln1150">    m_UpdaterDialog-&gt;hide();</a>
-<a name="ln1151"> </a>
-<a name="ln1152">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::rejected,</a>
-<a name="ln1153">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationRejected);</a>
-<a name="ln1154">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::accepted,</a>
-<a name="ln1155">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationAccepted);</a>
-<a name="ln1156"> </a>
-<a name="ln1157">    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),</a>
-<a name="ln1158">               m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));</a>
-<a name="ln1159"> </a>
-<a name="ln1160">    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),</a>
-<a name="ln1161">               m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));</a>
-<a name="ln1162"> </a>
-<a name="ln1163">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::zsyncInformation,</a>
-<a name="ln1164">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::setConfiguration);</a>
-<a name="ln1165"> </a>
-<a name="ln1166">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finishedConfiguring,</a>
-<a name="ln1167">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::start);</a>
-<a name="ln1168"> </a>
-<a name="ln1169">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finished,</a>
-<a name="ln1170">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateFinished);</a>
-<a name="ln1171"> </a>
-<a name="ln1172">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::error,</a>
-<a name="ln1173">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1174"> </a>
-<a name="ln1175">    disconnect(m_UpdateInformation.data(), &amp;AppImageUpdateInformationPrivate::error,</a>
-<a name="ln1176">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1177"> </a>
-<a name="ln1178">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::error,</a>
-<a name="ln1179">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1180"> </a>
-<a name="ln1181">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::progress,</a>
-<a name="ln1182">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateProgress);</a>
-<a name="ln1183"> </a>
-<a name="ln1184">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::canceled,</a>
-<a name="ln1185">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateCancel);</a>
-<a name="ln1186"> </a>
-<a name="ln1187">    b_Started = b_Running = b_Finished = b_CancelRequested = false;</a>
-<a name="ln1188">    b_Canceled = true;</a>
-<a name="ln1189"> </a>
-<a name="ln1190">    emit canceled(n_CurrentAction);</a>
-<a name="ln1191">}</a>
-<a name="ln1192"> </a>
-<a name="ln1193">void QAppImageUpdatePrivate::handleGUIUpdateError(short ecode) {</a>
-<a name="ln1194">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::rejected,</a>
-<a name="ln1195">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationRejected);</a>
-<a name="ln1196">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::accepted,</a>
-<a name="ln1197">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationAccepted);</a>
-<a name="ln1198"> </a>
-<a name="ln1199">    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),</a>
-<a name="ln1200">               m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));</a>
-<a name="ln1201"> </a>
-<a name="ln1202">    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),</a>
-<a name="ln1203">               m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));</a>
-<a name="ln1204"> </a>
-<a name="ln1205">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::zsyncInformation,</a>
-<a name="ln1206">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::setConfiguration);</a>
-<a name="ln1207"> </a>
-<a name="ln1208">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finishedConfiguring,</a>
-<a name="ln1209">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::start);</a>
-<a name="ln1210"> </a>
-<a name="ln1211">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finished,</a>
-<a name="ln1212">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateFinished);</a>
-<a name="ln1213"> </a>
-<a name="ln1214">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::error,</a>
-<a name="ln1215">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1216"> </a>
-<a name="ln1217">    disconnect(m_UpdateInformation.data(), &amp;AppImageUpdateInformationPrivate::error,</a>
-<a name="ln1218">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1219"> </a>
-<a name="ln1220">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::error,</a>
-<a name="ln1221">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1222"> </a>
-<a name="ln1223">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::progress,</a>
-<a name="ln1224">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateProgress);</a>
-<a name="ln1225"> </a>
-<a name="ln1226">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::canceled,</a>
-<a name="ln1227">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateCancel);</a>
+<a name="ln1144">void QAppImageUpdatePrivate::handleGUIUpdateStart() {</a>
+<a name="ln1145">    emit started(n_CurrentAction);</a>
+<a name="ln1146">}</a>
+<a name="ln1147"> </a>
+<a name="ln1148">void QAppImageUpdatePrivate::handleGUIUpdateCancel() {</a>
+<a name="ln1149">    m_UpdaterDialog-&gt;hide();</a>
+<a name="ln1150"> </a>
+<a name="ln1151">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::rejected,</a>
+<a name="ln1152">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationRejected);</a>
+<a name="ln1153">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::accepted,</a>
+<a name="ln1154">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationAccepted);</a>
+<a name="ln1155"> </a>
+<a name="ln1156">    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),</a>
+<a name="ln1157">               m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));</a>
+<a name="ln1158"> </a>
+<a name="ln1159">    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),</a>
+<a name="ln1160">               m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));</a>
+<a name="ln1161"> </a>
+<a name="ln1162">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::zsyncInformation,</a>
+<a name="ln1163">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::setConfiguration);</a>
+<a name="ln1164"> </a>
+<a name="ln1165">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finishedConfiguring,</a>
+<a name="ln1166">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::start);</a>
+<a name="ln1167"> </a>
+<a name="ln1168">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finished,</a>
+<a name="ln1169">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateFinished);</a>
+<a name="ln1170"> </a>
+<a name="ln1171">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::error,</a>
+<a name="ln1172">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1173"> </a>
+<a name="ln1174">    disconnect(m_UpdateInformation.data(), &amp;AppImageUpdateInformationPrivate::error,</a>
+<a name="ln1175">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1176"> </a>
+<a name="ln1177">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::error,</a>
+<a name="ln1178">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1179"> </a>
+<a name="ln1180">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::progress,</a>
+<a name="ln1181">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateProgress);</a>
+<a name="ln1182"> </a>
+<a name="ln1183">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::canceled,</a>
+<a name="ln1184">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateCancel);</a>
+<a name="ln1185"> </a>
+<a name="ln1186">    b_Started = b_Running = b_Finished = b_CancelRequested = false;</a>
+<a name="ln1187">    b_Canceled = true;</a>
+<a name="ln1188"> </a>
+<a name="ln1189">    emit canceled(n_CurrentAction);</a>
+<a name="ln1190">}</a>
+<a name="ln1191"> </a>
+<a name="ln1192">void QAppImageUpdatePrivate::handleGUIUpdateError(short ecode) {</a>
+<a name="ln1193">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::rejected,</a>
+<a name="ln1194">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationRejected);</a>
+<a name="ln1195">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::accepted,</a>
+<a name="ln1196">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationAccepted);</a>
+<a name="ln1197"> </a>
+<a name="ln1198">    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),</a>
+<a name="ln1199">               m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));</a>
+<a name="ln1200"> </a>
+<a name="ln1201">    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),</a>
+<a name="ln1202">               m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));</a>
+<a name="ln1203"> </a>
+<a name="ln1204">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::zsyncInformation,</a>
+<a name="ln1205">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::setConfiguration);</a>
+<a name="ln1206"> </a>
+<a name="ln1207">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finishedConfiguring,</a>
+<a name="ln1208">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::start);</a>
+<a name="ln1209"> </a>
+<a name="ln1210">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finished,</a>
+<a name="ln1211">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateFinished);</a>
+<a name="ln1212"> </a>
+<a name="ln1213">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::error,</a>
+<a name="ln1214">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1215"> </a>
+<a name="ln1216">    disconnect(m_UpdateInformation.data(), &amp;AppImageUpdateInformationPrivate::error,</a>
+<a name="ln1217">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1218"> </a>
+<a name="ln1219">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::error,</a>
+<a name="ln1220">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1221"> </a>
+<a name="ln1222">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::progress,</a>
+<a name="ln1223">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateProgress);</a>
+<a name="ln1224"> </a>
+<a name="ln1225">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::canceled,</a>
+<a name="ln1226">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateCancel);</a>
+<a name="ln1227"> </a>
 <a name="ln1228"> </a>
-<a name="ln1229"> </a>
-<a name="ln1230">    b_Started = b_Running = b_Finished = false;</a>
-<a name="ln1231">    b_Canceled = false;</a>
-<a name="ln1232"> </a>
-<a name="ln1233">    if(b_CancelRequested) {</a>
-<a name="ln1234">        b_CancelRequested = false;</a>
-<a name="ln1235">        b_Canceled = true;</a>
-<a name="ln1236">        emit canceled(n_CurrentAction);</a>
-<a name="ln1237">        return;</a>
-<a name="ln1238">    }</a>
-<a name="ln1239"> </a>
-<a name="ln1240">    bool show = n_GuiFlag &amp; GuiFlag::ShowErrorDialog;</a>
+<a name="ln1229">    b_Started = b_Running = b_Finished = false;</a>
+<a name="ln1230">    b_Canceled = false;</a>
+<a name="ln1231"> </a>
+<a name="ln1232">    if(b_CancelRequested) {</a>
+<a name="ln1233">        b_CancelRequested = false;</a>
+<a name="ln1234">        b_Canceled = true;</a>
+<a name="ln1235">        emit canceled(n_CurrentAction);</a>
+<a name="ln1236">        return;</a>
+<a name="ln1237">    }</a>
+<a name="ln1238"> </a>
+<a name="ln1239">    bool show = n_GuiFlag &amp; GuiFlag::ShowErrorDialog;</a>
+<a name="ln1240"> </a>
 <a name="ln1241"> </a>
-<a name="ln1242"> </a>
-<a name="ln1243">    QString errorString = QAppImageUpdatePrivate::errorCodeToDescriptionString(ecode);</a>
-<a name="ln1244">    if(ecode == QAppImageUpdateEnums::Error::NoReadPermission ||</a>
-<a name="ln1245">            ecode == QAppImageUpdateEnums::Error::NoPermissionToReadSourceFile ||</a>
-<a name="ln1246">            ecode == QAppImageUpdateEnums::Error::NoPermissionToReadWriteTargetFile) {</a>
-<a name="ln1247">        if(n_GuiFlag &amp; GuiFlag::NoShowErrorDialogOnPermissionErrors) {</a>
-<a name="ln1248">            show = false;</a>
-<a name="ln1249">        }</a>
-<a name="ln1250">    }</a>
-<a name="ln1251"> </a>
-<a name="ln1252">    if(show) {</a>
-<a name="ln1253">        QMessageBox box(m_UpdaterDialog.data());</a>
-<a name="ln1254">        box.setWindowTitle(QString::fromUtf8(&quot;Update Failed&quot;));</a>
-<a name="ln1255">        box.setIcon(QMessageBox::Critical);</a>
-<a name="ln1256">        box.setText(QString::fromUtf8(&quot;Update failed for '&quot;) +</a>
-<a name="ln1257">                    (m_ApplicationName.isEmpty() ? QFileInfo(m_CurrentAppImagePath).fileName() : m_ApplicationName) +</a>
-<a name="ln1258">                    QString::fromUtf8(&quot;': &quot;) + errorString);</a>
-<a name="ln1259">        box.exec();</a>
-<a name="ln1260">    }</a>
+<a name="ln1242">    QString errorString = QAppImageUpdatePrivate::errorCodeToDescriptionString(ecode);</a>
+<a name="ln1243">    if(ecode == QAppImageUpdateEnums::Error::NoReadPermission ||</a>
+<a name="ln1244">            ecode == QAppImageUpdateEnums::Error::NoPermissionToReadSourceFile ||</a>
+<a name="ln1245">            ecode == QAppImageUpdateEnums::Error::NoPermissionToReadWriteTargetFile) {</a>
+<a name="ln1246">        if(n_GuiFlag &amp; GuiFlag::NoShowErrorDialogOnPermissionErrors) {</a>
+<a name="ln1247">            show = false;</a>
+<a name="ln1248">        }</a>
+<a name="ln1249">    }</a>
+<a name="ln1250"> </a>
+<a name="ln1251">    if(show) {</a>
+<a name="ln1252">        QMessageBox box(m_UpdaterDialog.data());</a>
+<a name="ln1253">        box.setWindowTitle(QString::fromUtf8(&quot;Update Failed&quot;));</a>
+<a name="ln1254">        box.setIcon(QMessageBox::Critical);</a>
+<a name="ln1255">        box.setText(QString::fromUtf8(&quot;Update failed for '&quot;) +</a>
+<a name="ln1256">                    (m_ApplicationName.isEmpty() ? QFileInfo(m_CurrentAppImagePath).fileName() : m_ApplicationName) +</a>
+<a name="ln1257">                    QString::fromUtf8(&quot;': &quot;) + errorString);</a>
+<a name="ln1258">        box.exec();</a>
+<a name="ln1259">    }</a>
+<a name="ln1260"> </a>
 <a name="ln1261"> </a>
-<a name="ln1262"> </a>
-<a name="ln1263">    emit error(ecode, n_CurrentAction);</a>
-<a name="ln1264">    m_UpdaterDialog-&gt;hide();</a>
-<a name="ln1265">    return;</a>
-<a name="ln1266">}</a>
-<a name="ln1267"> </a>
-<a name="ln1268">void QAppImageUpdatePrivate::handleGUIUpdateFinished(QJsonObject info, QString oldVersionPath) {</a>
-<a name="ln1269">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::rejected,</a>
-<a name="ln1270">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationRejected);</a>
-<a name="ln1271">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::accepted,</a>
-<a name="ln1272">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationAccepted);</a>
-<a name="ln1273"> </a>
-<a name="ln1274">    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),</a>
-<a name="ln1275">               m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));</a>
-<a name="ln1276"> </a>
-<a name="ln1277">    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),</a>
-<a name="ln1278">               m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));</a>
-<a name="ln1279"> </a>
-<a name="ln1280">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::zsyncInformation,</a>
-<a name="ln1281">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::setConfiguration);</a>
-<a name="ln1282"> </a>
-<a name="ln1283">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finishedConfiguring,</a>
-<a name="ln1284">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::start);</a>
-<a name="ln1285"> </a>
-<a name="ln1286">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finished,</a>
-<a name="ln1287">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateFinished);</a>
-<a name="ln1288"> </a>
-<a name="ln1289">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::error,</a>
-<a name="ln1290">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1291"> </a>
-<a name="ln1292">    disconnect(m_UpdateInformation.data(), &amp;AppImageUpdateInformationPrivate::error,</a>
-<a name="ln1293">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1294"> </a>
-<a name="ln1295">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::error,</a>
-<a name="ln1296">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
-<a name="ln1297"> </a>
-<a name="ln1298">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::progress,</a>
-<a name="ln1299">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateProgress);</a>
-<a name="ln1300"> </a>
-<a name="ln1301">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::canceled,</a>
-<a name="ln1302">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateCancel);</a>
+<a name="ln1262">    emit error(ecode, n_CurrentAction);</a>
+<a name="ln1263">    m_UpdaterDialog-&gt;hide();</a>
+<a name="ln1264">    return;</a>
+<a name="ln1265">}</a>
+<a name="ln1266"> </a>
+<a name="ln1267">void QAppImageUpdatePrivate::handleGUIUpdateFinished(QJsonObject info, QString oldVersionPath) {</a>
+<a name="ln1268">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::rejected,</a>
+<a name="ln1269">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationRejected);</a>
+<a name="ln1270">    disconnect(m_ConfirmationDialog.data(), &amp;SoftwareUpdateDialog::accepted,</a>
+<a name="ln1271">               this, &amp;QAppImageUpdatePrivate::handleGUIConfirmationAccepted);</a>
+<a name="ln1272"> </a>
+<a name="ln1273">    disconnect(m_UpdateInformation.data(), SIGNAL(info(QJsonObject)),</a>
+<a name="ln1274">               m_ControlFileParser.data(), SLOT(setControlFileUrl(QJsonObject)));</a>
+<a name="ln1275"> </a>
+<a name="ln1276">    disconnect(m_ControlFileParser.data(), SIGNAL(receiveControlFile(void)),</a>
+<a name="ln1277">               m_ControlFileParser.data(), SLOT(getZsyncInformation(void)));</a>
+<a name="ln1278"> </a>
+<a name="ln1279">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::zsyncInformation,</a>
+<a name="ln1280">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::setConfiguration);</a>
+<a name="ln1281"> </a>
+<a name="ln1282">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finishedConfiguring,</a>
+<a name="ln1283">               m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::start);</a>
+<a name="ln1284"> </a>
+<a name="ln1285">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::finished,</a>
+<a name="ln1286">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateFinished);</a>
+<a name="ln1287"> </a>
+<a name="ln1288">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::error,</a>
+<a name="ln1289">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1290"> </a>
+<a name="ln1291">    disconnect(m_UpdateInformation.data(), &amp;AppImageUpdateInformationPrivate::error,</a>
+<a name="ln1292">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1293"> </a>
+<a name="ln1294">    disconnect(m_ControlFileParser.data(), &amp;ZsyncRemoteControlFileParserPrivate::error,</a>
+<a name="ln1295">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateError);</a>
+<a name="ln1296"> </a>
+<a name="ln1297">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::progress,</a>
+<a name="ln1298">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateProgress);</a>
+<a name="ln1299"> </a>
+<a name="ln1300">    disconnect(m_DeltaWriter.data(), &amp;ZsyncWriterPrivate::canceled,</a>
+<a name="ln1301">               this, &amp;QAppImageUpdatePrivate::handleGUIUpdateCancel);</a>
+<a name="ln1302"> </a>
 <a name="ln1303"> </a>
 <a name="ln1304"> </a>
-<a name="ln1305"> </a>
-<a name="ln1306">    QJsonObject result {</a>
-<a name="ln1307">        {&quot;OldVersionPath&quot;, oldVersionPath},</a>
-<a name="ln1308">        {&quot;NewVersionPath&quot;, info[&quot;AbsolutePath&quot;].toString()},</a>
-<a name="ln1309">        {&quot;NewVersionSha1Hash&quot;, info[&quot;Sha1Hash&quot;].toString()},</a>
-<a name="ln1310">        {&quot;UsedTorrent&quot;, info[&quot;UsedTorrent&quot;].toBool()}</a>
-<a name="ln1311">    };</a>
-<a name="ln1312">    b_Started = b_Running = false;</a>
-<a name="ln1313">    b_Finished = true;</a>
-<a name="ln1314">    b_Canceled = false;</a>
-<a name="ln1315"> </a>
-<a name="ln1316">    if(b_CancelRequested) {</a>
-<a name="ln1317">        QFile::remove(info[&quot;AbsolutePath&quot;].toString());</a>
-<a name="ln1318"> </a>
-<a name="ln1319">        b_CancelRequested = false;</a>
-<a name="ln1320">        b_Canceled = true;</a>
-<a name="ln1321">        emit canceled(n_CurrentAction);</a>
-<a name="ln1322">        return;</a>
-<a name="ln1323">    }</a>
-<a name="ln1324"> </a>
-<a name="ln1325">    (m_Ui-&gt;updateSpeedLbl)-&gt;setText(QString::fromUtf8(&quot;Finalizing Update... &quot;));</a>
-<a name="ln1326"> </a>
-<a name="ln1327">    bool execute = false;</a>
-<a name="ln1328">    bool show = n_GuiFlag &amp; GuiFlag::ShowFinishedDialog;</a>
-<a name="ln1329"> </a>
-<a name="ln1330">    if(show) {</a>
-<a name="ln1331">        auto curinfo = QFileInfo(oldVersionPath);</a>
-<a name="ln1332">        QString currentAppImageName = curinfo.fileName();</a>
-<a name="ln1333">        QString currentAppImageAbsPath = curinfo.absolutePath();</a>
-<a name="ln1334"> </a>
-<a name="ln1335">        QMessageBox box(m_UpdaterDialog.data());</a>
-<a name="ln1336">        box.setWindowTitle(QString::fromUtf8(&quot;Update Completed&quot;));</a>
-<a name="ln1337">        box.setIcon(QMessageBox::Information);</a>
-<a name="ln1338">        box.setDetailedText(</a>
-<a name="ln1339">            QString::fromUtf8(&quot;Old version is at: &quot;) +</a>
-<a name="ln1340">            currentAppImageAbsPath + QString::fromUtf8(&quot;/&quot;) + currentAppImageName +</a>
-<a name="ln1341">            QString::fromUtf8(&quot;\n\n&quot;) +</a>
-<a name="ln1342">            QString::fromUtf8(&quot;New version is saved at: &quot;) +</a>
-<a name="ln1343">            result[&quot;NewVersionPath&quot;].toString());</a>
-<a name="ln1344">        box.setText(QString::fromUtf8(&quot;Update completed successfully for &lt;b&gt;&quot;) +</a>
-<a name="ln1345">                    (m_ApplicationName.isEmpty() ? currentAppImageName : m_ApplicationName) +</a>
-<a name="ln1346">                    QString::fromUtf8(&quot;&lt;/b&gt;, do you want to launch the new version? View details for more information.&quot;));</a>
-<a name="ln1347">        box.addButton(QMessageBox::Yes);</a>
-<a name="ln1348">        box.addButton(QMessageBox::No);</a>
-<a name="ln1349">        execute = (box.exec() == QMessageBox::Yes);</a>
-<a name="ln1350">    }</a>
-<a name="ln1351"> </a>
-<a name="ln1352">    if(execute) {</a>
-<a name="ln1353">        QFileInfo info(result[&quot;NewVersionPath&quot;].toString());</a>
-<a name="ln1354">        if(!info.isExecutable()) {</a>
-<a name="ln1355">            {</a>
-<a name="ln1356">                QFile file(result[&quot;NewVersionPath&quot;].toString());</a>
-<a name="ln1357">                file.setPermissions(QFileDevice::ExeUser |</a>
-<a name="ln1358">                                    QFileDevice::ExeOther|</a>
-<a name="ln1359">                                    QFileDevice::ExeGroup|</a>
-<a name="ln1360">                                    info.permissions());</a>
-<a name="ln1361">            }</a>
-<a name="ln1362">        }</a>
+<a name="ln1305">    QJsonObject result {</a>
+<a name="ln1306">        {&quot;OldVersionPath&quot;, oldVersionPath},</a>
+<a name="ln1307">        {&quot;NewVersionPath&quot;, info[&quot;AbsolutePath&quot;].toString()},</a>
+<a name="ln1308">        {&quot;NewVersionSha1Hash&quot;, info[&quot;Sha1Hash&quot;].toString()},</a>
+<a name="ln1309">        {&quot;UsedTorrent&quot;, info[&quot;UsedTorrent&quot;].toBool()}</a>
+<a name="ln1310">    };</a>
+<a name="ln1311">    b_Started = b_Running = false;</a>
+<a name="ln1312">    b_Finished = true;</a>
+<a name="ln1313">    b_Canceled = false;</a>
+<a name="ln1314"> </a>
+<a name="ln1315">    if(b_CancelRequested) {</a>
+<a name="ln1316">        QFile::remove(info[&quot;AbsolutePath&quot;].toString());</a>
+<a name="ln1317"> </a>
+<a name="ln1318">        b_CancelRequested = false;</a>
+<a name="ln1319">        b_Canceled = true;</a>
+<a name="ln1320">        emit canceled(n_CurrentAction);</a>
+<a name="ln1321">        return;</a>
+<a name="ln1322">    }</a>
+<a name="ln1323"> </a>
+<a name="ln1324">    (m_Ui-&gt;updateSpeedLbl)-&gt;setText(QString::fromUtf8(&quot;Finalizing Update... &quot;));</a>
+<a name="ln1325"> </a>
+<a name="ln1326">    bool execute = false;</a>
+<a name="ln1327">    bool show = n_GuiFlag &amp; GuiFlag::ShowFinishedDialog;</a>
+<a name="ln1328"> </a>
+<a name="ln1329">    if(show) {</a>
+<a name="ln1330">        auto curinfo = QFileInfo(oldVersionPath);</a>
+<a name="ln1331">        QString currentAppImageName = curinfo.fileName();</a>
+<a name="ln1332">        QString currentAppImageAbsPath = curinfo.absolutePath();</a>
+<a name="ln1333"> </a>
+<a name="ln1334">        QMessageBox box(m_UpdaterDialog.data());</a>
+<a name="ln1335">        box.setWindowTitle(QString::fromUtf8(&quot;Update Completed&quot;));</a>
+<a name="ln1336">        box.setIcon(QMessageBox::Information);</a>
+<a name="ln1337">        box.setDetailedText(</a>
+<a name="ln1338">            QString::fromUtf8(&quot;Old version is at: &quot;) +</a>
+<a name="ln1339">            currentAppImageAbsPath + QString::fromUtf8(&quot;/&quot;) + currentAppImageName +</a>
+<a name="ln1340">            QString::fromUtf8(&quot;\n\n&quot;) +</a>
+<a name="ln1341">            QString::fromUtf8(&quot;New version is saved at: &quot;) +</a>
+<a name="ln1342">            result[&quot;NewVersionPath&quot;].toString());</a>
+<a name="ln1343">        box.setText(QString::fromUtf8(&quot;Update completed successfully for &lt;b&gt;&quot;) +</a>
+<a name="ln1344">                    (m_ApplicationName.isEmpty() ? currentAppImageName : m_ApplicationName) +</a>
+<a name="ln1345">                    QString::fromUtf8(&quot;&lt;/b&gt;, do you want to launch the new version? View details for more information.&quot;));</a>
+<a name="ln1346">        box.addButton(QMessageBox::Yes);</a>
+<a name="ln1347">        box.addButton(QMessageBox::No);</a>
+<a name="ln1348">        execute = (box.exec() == QMessageBox::Yes);</a>
+<a name="ln1349">    }</a>
+<a name="ln1350"> </a>
+<a name="ln1351">    if(execute) {</a>
+<a name="ln1352">        QFileInfo info(result[&quot;NewVersionPath&quot;].toString());</a>
+<a name="ln1353">        if(!info.isExecutable()) {</a>
+<a name="ln1354">            {</a>
+<a name="ln1355">                QFile file(result[&quot;NewVersionPath&quot;].toString());</a>
+<a name="ln1356">                file.setPermissions(QFileDevice::ExeUser |</a>
+<a name="ln1357">                                    QFileDevice::ExeOther|</a>
+<a name="ln1358">                                    QFileDevice::ExeGroup|</a>
+<a name="ln1359">                                    info.permissions());</a>
+<a name="ln1360">            }</a>
+<a name="ln1361">        }</a>
+<a name="ln1362"> </a>
 <a name="ln1363"> </a>
-<a name="ln1364"> </a>
-<a name="ln1365">        //// The delay is set to 5 seconds</a>
-<a name="ln1366">        QProcess::startDetached(&quot;sh&quot;,</a>
-<a name="ln1367">                                QStringList()</a>
-<a name="ln1368">                                &lt;&lt; &quot;-c&quot;</a>
-<a name="ln1369">                                &lt;&lt; (</a>
-<a name="ln1370">                                    QString::fromUtf8(&quot;sleep &quot;) +</a>
-<a name="ln1371">                                    QString::number(5) +</a>
-<a name="ln1372">                                    QString::fromUtf8(&quot;; &quot;) +</a>
-<a name="ln1373">                                    result[&quot;NewVersionPath&quot;].toString()</a>
-<a name="ln1374">                                ));</a>
-<a name="ln1375">        m_UpdaterDialog-&gt;hide();</a>
-<a name="ln1376">        emit quit();</a>
-<a name="ln1377">    }</a>
-<a name="ln1378">    m_UpdaterDialog-&gt;hide();</a>
-<a name="ln1379">    emit finished(result, n_CurrentAction);</a>
-<a name="ln1380">    return;</a>
-<a name="ln1381">}</a>
-<a name="ln1382">#endif // NOT NO_GUI</a>
-<a name="ln1383"> </a>
-<a name="ln1384">//// Static Methods</a>
-<a name="ln1385">QString QAppImageUpdatePrivate::errorCodeToString(short errorCode) {</a>
-<a name="ln1386">    QString ret = &quot;QAppImageUpdate::Error::&quot;;</a>
-<a name="ln1387">    switch(errorCode) {</a>
-<a name="ln1388">    case QAppImageUpdateEnums::Error::NoAppimagePathGiven:</a>
-<a name="ln1389">        ret += &quot;NoAppImagePathGiven&quot;;</a>
-<a name="ln1390">        break;</a>
-<a name="ln1391">    case QAppImageUpdateEnums::Error::AppimageNotReadable:</a>
-<a name="ln1392">        ret += &quot;AppImageNotReadable&quot;;</a>
-<a name="ln1393">        break;</a>
-<a name="ln1394">    case QAppImageUpdateEnums::Error::NoReadPermission:</a>
-<a name="ln1395">        ret += &quot;NoReadPermission&quot;;</a>
-<a name="ln1396">        break;</a>
-<a name="ln1397">    case QAppImageUpdateEnums::Error::AppimageNotFound:</a>
-<a name="ln1398">        ret += &quot;AppimageNotFound&quot;;</a>
-<a name="ln1399">        break;</a>
-<a name="ln1400">    case QAppImageUpdateEnums::Error::CannotOpenAppimage:</a>
-<a name="ln1401">        ret += &quot;CannnotOpenAppimage&quot;;</a>
-<a name="ln1402">        break;</a>
-<a name="ln1403">    case QAppImageUpdateEnums::Error::EmptyUpdateInformation:</a>
-<a name="ln1404">        ret += &quot;EmptyUpdateInformation&quot;;</a>
-<a name="ln1405">        break;</a>
-<a name="ln1406">    case QAppImageUpdateEnums::Error::InvalidAppimageType:</a>
-<a name="ln1407">        ret += &quot;InvalidAppimageType&quot;;</a>
-<a name="ln1408">        break;</a>
-<a name="ln1409">    case QAppImageUpdateEnums::Error::InvalidMagicBytes:</a>
-<a name="ln1410">        ret += &quot;InvalidMagicBytes&quot;;</a>
-<a name="ln1411">        break;</a>
-<a name="ln1412">    case QAppImageUpdateEnums::Error::InvalidUpdateInformation:</a>
-<a name="ln1413">        ret += &quot;InvalidUpdateInformation&quot;;</a>
-<a name="ln1414">        break;</a>
-<a name="ln1415">    case QAppImageUpdateEnums::Error::NotEnoughMemory:</a>
-<a name="ln1416">        ret += &quot;NotEnoughMemory&quot;;</a>
-<a name="ln1417">        break;</a>
-<a name="ln1418">    case QAppImageUpdateEnums::Error::SectionHeaderNotFound:</a>
-<a name="ln1419">        ret += &quot;SectionHeaderNotFound&quot;;</a>
-<a name="ln1420">        break;</a>
-<a name="ln1421">    case QAppImageUpdateEnums::Error::UnsupportedElfFormat:</a>
-<a name="ln1422">        ret += &quot;UnsupportedElfFormat&quot;;</a>
-<a name="ln1423">        break;</a>
-<a name="ln1424">    case QAppImageUpdateEnums::Error::UnsupportedTransport:</a>
-<a name="ln1425">        ret += &quot;UnsupportedTransport&quot;;</a>
-<a name="ln1426">        break;</a>
-<a name="ln1427">    case QAppImageUpdateEnums::Error::UnknownNetworkError:</a>
-<a name="ln1428">        ret += &quot;UnknownNetworkError&quot;;</a>
-<a name="ln1429">        break;</a>
-<a name="ln1430">    case QAppImageUpdateEnums::Error::IoReadError:</a>
-<a name="ln1431">        ret += &quot;IoReadError&quot;;</a>
-<a name="ln1432">        break;</a>
-<a name="ln1433">    case QAppImageUpdateEnums::Error::ErrorResponseCode:</a>
-<a name="ln1434">        ret += &quot;ErrorResponseCode&quot;;</a>
-<a name="ln1435">        break;</a>
-<a name="ln1436">    case QAppImageUpdateEnums::Error::GithubApiRateLimitReached:</a>
-<a name="ln1437">        ret += &quot;GithubApiRateLimitReached&quot;;</a>
-<a name="ln1438">        break;</a>
-<a name="ln1439">    case QAppImageUpdateEnums::Error::NoMarkerFoundInControlFile:</a>
-<a name="ln1440">        ret += &quot;NoMarkerFoundInControlFile&quot;;</a>
-<a name="ln1441">        break;</a>
-<a name="ln1442">    case QAppImageUpdateEnums::Error::InvalidZsyncHeadersNumber:</a>
-<a name="ln1443">        ret += &quot;InvalidZsyncHeadersNumber&quot;;</a>
-<a name="ln1444">        break;</a>
-<a name="ln1445">    case QAppImageUpdateEnums::Error::InvalidZsyncMakeVersion:</a>
-<a name="ln1446">        ret += &quot;InvalidZsyncMakeVersion&quot;;</a>
-<a name="ln1447">        break;</a>
-<a name="ln1448">    case QAppImageUpdateEnums::Error::InvalidZsyncTargetFilename:</a>
-<a name="ln1449">        ret += &quot;InvalidZsyncTargetFilename&quot;;</a>
-<a name="ln1450">        break;</a>
-<a name="ln1451">    case QAppImageUpdateEnums::Error::InvalidZsyncMtime:</a>
-<a name="ln1452">        ret += &quot;InvalidZsyncMtime&quot;;</a>
-<a name="ln1453">        break;</a>
-<a name="ln1454">    case QAppImageUpdateEnums::Error::InvalidZsyncBlocksize:</a>
-<a name="ln1455">        ret += &quot;InvalidZsyncBlocksize&quot;;</a>
-<a name="ln1456">        break;</a>
-<a name="ln1457">    case QAppImageUpdateEnums::Error::InvalidTargetFileLength:</a>
-<a name="ln1458">        ret += &quot;InvalidTargetFileLength&quot;;</a>
-<a name="ln1459">        break;</a>
-<a name="ln1460">    case QAppImageUpdateEnums::Error::InvalidHashLengthLine:</a>
-<a name="ln1461">        ret += &quot;InvalidHashLengthLine&quot;;</a>
-<a name="ln1462">        break;</a>
-<a name="ln1463">    case QAppImageUpdateEnums::Error::InvalidHashLengths:</a>
-<a name="ln1464">        ret += &quot;InvalidHashLengths&quot;;</a>
-<a name="ln1465">        break;</a>
-<a name="ln1466">    case QAppImageUpdateEnums::Error::InvalidTargetFileUrl:</a>
-<a name="ln1467">        ret += &quot;InvalidTargetFileUrl&quot;;</a>
-<a name="ln1468">        break;</a>
-<a name="ln1469">    case QAppImageUpdateEnums::Error::InvalidTargetFileSha1:</a>
-<a name="ln1470">        ret += &quot;InvalidTargetFileSha1&quot;;</a>
-<a name="ln1471">        break;</a>
-<a name="ln1472">    case QAppImageUpdateEnums::Error::ConnectionRefusedError:</a>
-<a name="ln1473">        ret += &quot;ConnectionRefusedError&quot;;</a>
-<a name="ln1474">        break;</a>
-<a name="ln1475">    case QAppImageUpdateEnums::Error::RemoteHostClosedError:</a>
-<a name="ln1476">        ret += &quot;RemoteHostClosedError&quot;;</a>
-<a name="ln1477">        break;</a>
-<a name="ln1478">    case QAppImageUpdateEnums::Error::HostNotFoundError:</a>
-<a name="ln1479">        ret += &quot;HostNotFoundError&quot;;</a>
-<a name="ln1480">        break;</a>
-<a name="ln1481">    case QAppImageUpdateEnums::Error::TimeoutError:</a>
-<a name="ln1482">        ret += &quot;TimeoutError&quot;;</a>
-<a name="ln1483">        break;</a>
-<a name="ln1484">    case QAppImageUpdateEnums::Error::OperationCanceledError:</a>
-<a name="ln1485">        ret += &quot;OperationCanceledError&quot;;</a>
-<a name="ln1486">        break;</a>
-<a name="ln1487">    case QAppImageUpdateEnums::Error::SslHandshakeFailedError:</a>
-<a name="ln1488">        ret += &quot;SslHandshakeFailedError&quot;;</a>
-<a name="ln1489">        break;</a>
-<a name="ln1490">    case QAppImageUpdateEnums::Error::TemporaryNetworkFailureError:</a>
-<a name="ln1491">        ret += &quot;TemporaryNetworkFailureError&quot;;</a>
-<a name="ln1492">        break;</a>
-<a name="ln1493">    case QAppImageUpdateEnums::Error::NetworkSessionFailedError:</a>
-<a name="ln1494">        ret += &quot;NetworkSessionFailedError&quot;;</a>
-<a name="ln1495">        break;</a>
-<a name="ln1496">    case QAppImageUpdateEnums::Error::BackgroundRequestNotAllowedError:</a>
-<a name="ln1497">        ret += &quot;BackgroundRequestNotAllowedError&quot;;</a>
-<a name="ln1498">        break;</a>
-<a name="ln1499">    case QAppImageUpdateEnums::Error::TooManyRedirectsError:</a>
-<a name="ln1500">        ret += &quot;TooManyRedirectsError&quot;;</a>
-<a name="ln1501">        break;</a>
-<a name="ln1502">    case QAppImageUpdateEnums::Error::InsecureRedirectError:</a>
-<a name="ln1503">        ret += &quot;InsecureRedirectError&quot;;</a>
-<a name="ln1504">        break;</a>
-<a name="ln1505">    case QAppImageUpdateEnums::Error::ProxyConnectionRefusedError:</a>
-<a name="ln1506">        ret += &quot;ProxyConnectionRefusedError&quot;;</a>
-<a name="ln1507">        break;</a>
-<a name="ln1508">    case QAppImageUpdateEnums::Error::ProxyConnectionClosedError:</a>
-<a name="ln1509">        ret += &quot;ProxyConnectionClosedError&quot;;</a>
-<a name="ln1510">        break;</a>
-<a name="ln1511">    case QAppImageUpdateEnums::Error::ProxyNotFoundError:</a>
-<a name="ln1512">        ret += &quot;ProxyNotFoundError&quot;;</a>
-<a name="ln1513">        break;</a>
-<a name="ln1514">    case QAppImageUpdateEnums::Error::ProxyTimeoutError:</a>
-<a name="ln1515">        ret += &quot;ProxyTimeoutError&quot;;</a>
-<a name="ln1516">        break;</a>
-<a name="ln1517">    case QAppImageUpdateEnums::Error::ProxyAuthenticationRequiredError:</a>
-<a name="ln1518">        ret += &quot;ProxyAuthenticationRequiredError&quot;;</a>
-<a name="ln1519">        break;</a>
-<a name="ln1520">    case QAppImageUpdateEnums::Error::ContentAccessDenied:</a>
-<a name="ln1521">        ret += &quot;ContentAccessDenied&quot;;</a>
-<a name="ln1522">        break;</a>
-<a name="ln1523">    case QAppImageUpdateEnums::Error::ContentOperationNotPermittedError:</a>
-<a name="ln1524">        ret += &quot;ContentOperationNotPermittedError&quot;;</a>
-<a name="ln1525">        break;</a>
-<a name="ln1526">    case QAppImageUpdateEnums::Error::ContentNotFoundError:</a>
-<a name="ln1527">        ret += &quot;ContentNotFoundError&quot;;</a>
-<a name="ln1528">        break;</a>
-<a name="ln1529">    case QAppImageUpdateEnums::Error::AuthenticationRequiredError:</a>
-<a name="ln1530">        ret += &quot;AuthenticationRequiredError&quot;;</a>
-<a name="ln1531">        break;</a>
-<a name="ln1532">    case QAppImageUpdateEnums::Error::ContentReSendError:</a>
-<a name="ln1533">        ret += &quot;ContentReSendError&quot;;</a>
-<a name="ln1534">        break;</a>
-<a name="ln1535">    case QAppImageUpdateEnums::Error::ContentConflictError:</a>
-<a name="ln1536">        ret += &quot;ContentConflictError&quot;;</a>
-<a name="ln1537">        break;</a>
-<a name="ln1538">    case QAppImageUpdateEnums::Error::ContentGoneError:</a>
-<a name="ln1539">        ret += &quot;ContentGoneError&quot;;</a>
-<a name="ln1540">        break;</a>
-<a name="ln1541">    case QAppImageUpdateEnums::Error::InternalServerError:</a>
-<a name="ln1542">        ret += &quot;InternalServerError&quot;;</a>
-<a name="ln1543">        break;</a>
-<a name="ln1544">    case QAppImageUpdateEnums::Error::OperationNotImplementedError:</a>
-<a name="ln1545">        ret += &quot;OperationNotImplementedError&quot;;</a>
-<a name="ln1546">        break;</a>
-<a name="ln1547">    case QAppImageUpdateEnums::Error::ServiceUnavailableError:</a>
-<a name="ln1548">        ret += &quot;ServiceUnavailableError&quot;;</a>
-<a name="ln1549">        break;</a>
-<a name="ln1550">    case QAppImageUpdateEnums::Error::ProtocolUnknownError:</a>
-<a name="ln1551">        ret += &quot;ProtocolUnknownError&quot;;</a>
-<a name="ln1552">        break;</a>
-<a name="ln1553">    case QAppImageUpdateEnums::Error::ProtocolInvalidOperationError:</a>
-<a name="ln1554">        ret += &quot;ProtocolInvalidOperationError&quot;;</a>
-<a name="ln1555">        break;</a>
-<a name="ln1556">    case QAppImageUpdateEnums::Error::UnknownProxyError:</a>
-<a name="ln1557">        ret += &quot;UnknownProxyError&quot;;</a>
-<a name="ln1558">        break;</a>
-<a name="ln1559">    case QAppImageUpdateEnums::Error::UnknownContentError:</a>
-<a name="ln1560">        ret += &quot;UnknownContentError&quot;;</a>
-<a name="ln1561">        break;</a>
-<a name="ln1562">    case QAppImageUpdateEnums::Error::ProtocolFailure:</a>
-<a name="ln1563">        ret += &quot;ProtocolFailure&quot;;</a>
-<a name="ln1564">        break;</a>
-<a name="ln1565">    case QAppImageUpdateEnums::Error::UnknownServerError:</a>
-<a name="ln1566">        ret += &quot;UnknownServerError&quot;;</a>
-<a name="ln1567">        break;</a>
-<a name="ln1568">    case QAppImageUpdateEnums::Error::ZsyncControlFileNotFound:</a>
-<a name="ln1569">        ret += &quot;ZsyncControlFileNotFound&quot;;</a>
-<a name="ln1570">        break;</a>
-<a name="ln1571">    case QAppImageUpdateEnums::Error::HashTableNotAllocated:</a>
-<a name="ln1572">        ret += &quot;HashTableNotAllocated&quot;;</a>
-<a name="ln1573">        break;</a>
-<a name="ln1574">    case QAppImageUpdateEnums::Error::InvalidTargetFileChecksumBlocks:</a>
-<a name="ln1575">        ret += &quot;InvalidTargetFileChecksumBlocks&quot;;</a>
-<a name="ln1576">        break;</a>
-<a name="ln1577">    case QAppImageUpdateEnums::Error::CannotConstructHashTable:</a>
-<a name="ln1578">        ret += &quot;CannotConstructHashTable&quot;;</a>
-<a name="ln1579">        break;</a>
-<a name="ln1580">    case QAppImageUpdateEnums::Error::CannotOpenTargetFileChecksumBlocks:</a>
-<a name="ln1581">        ret += &quot;CannotOpenTargetFileChecksumBlocks&quot;;</a>
-<a name="ln1582">        break;</a>
-<a name="ln1583">    case QAppImageUpdateEnums::Error::QbufferIoReadError:</a>
-<a name="ln1584">        ret += &quot;QbufferIoReadError&quot;;</a>
-<a name="ln1585">        break;</a>
-<a name="ln1586">    case QAppImageUpdateEnums::Error::SourceFileNotFound:</a>
-<a name="ln1587">        ret += &quot;SourceFileNotFound&quot;;</a>
-<a name="ln1588">        break;</a>
-<a name="ln1589">    case QAppImageUpdateEnums::Error::NoPermissionToReadSourceFile:</a>
-<a name="ln1590">        ret += &quot;NoPermissionToReadSourceFile&quot;;</a>
-<a name="ln1591">        break;</a>
-<a name="ln1592">    case QAppImageUpdateEnums::Error::CannotOpenSourceFile:</a>
-<a name="ln1593">        ret += &quot;CannotOpenSourceFile&quot;;</a>
-<a name="ln1594">        break;</a>
-<a name="ln1595">    case QAppImageUpdateEnums::Error::NoPermissionToReadWriteTargetFile:</a>
-<a name="ln1596">        ret += &quot;NoPermissionToReadWriteTargetFile&quot;;</a>
-<a name="ln1597">        break;</a>
-<a name="ln1598">    case QAppImageUpdateEnums::Error::CannotOpenTargetFile:</a>
-<a name="ln1599">        ret += &quot;CannotOpenTargetFile&quot;;</a>
-<a name="ln1600">        break;</a>
-<a name="ln1601">    case QAppImageUpdateEnums::Error::TargetFileSha1HashMismatch:</a>
-<a name="ln1602">        ret += &quot;TargetFileSha1HashMismatch&quot;;</a>
-<a name="ln1603">        break;</a>
-<a name="ln1604">    case QAppImageUpdateEnums::Error::TorrentNotSupported:</a>
-<a name="ln1605">	ret += &quot;TorrentNotSupported&quot;;</a>
-<a name="ln1606">	break;</a>
-<a name="ln1607">    case QAppImageUpdateEnums::Error::TorrentSeedFailed:</a>
-<a name="ln1608">	ret += &quot;TorrentSeedFailed&quot;;</a>
-<a name="ln1609">	break;</a>
-<a name="ln1610">    case QAppImageUpdateEnums::Error::OutdatedAppImageForSeed:</a>
-<a name="ln1611">	ret += &quot;OutdatedAppImageForSeed&quot;;</a>
-<a name="ln1612">	break;</a>
-<a name="ln1613">    case QAppImageUpdateEnums::Error::IncompleteAppImageForSeed:</a>
-<a name="ln1614">	ret += &quot;IncompleteAppImageForSeed&quot;;</a>
-<a name="ln1615">	break;</a>
-<a name="ln1616">    case QAppImageUpdateEnums::Error::UnsupportedActionForBuild:</a>
-<a name="ln1617">        ret += &quot;UnsupportedActionForBuild&quot;;</a>
-<a name="ln1618">        break;</a>
-<a name="ln1619">    case QAppImageUpdateEnums::Error::InvalidAction:</a>
-<a name="ln1620">        ret += &quot;InvalidAction&quot;;</a>
-<a name="ln1621">        break;</a>
-<a name="ln1622">    default:</a>
-<a name="ln1623">        ret += &quot;Unknown&quot;;</a>
-<a name="ln1624">        break;</a>
-<a name="ln1625">    }</a>
-<a name="ln1626">    return ret;</a>
-<a name="ln1627">}</a>
-<a name="ln1628"> </a>
-<a name="ln1629">QString QAppImageUpdatePrivate::errorCodeToDescriptionString(short errorCode) {</a>
-<a name="ln1630">    QString errorString;</a>
-<a name="ln1631">    switch(errorCode) {</a>
-<a name="ln1632">    case QAppImageUpdateEnums::Error::ConnectionRefusedError:</a>
-<a name="ln1633">        errorString = QString::fromUtf8(&quot;The update server is not accepting requests.&quot;);</a>
-<a name="ln1634">        break;</a>
-<a name="ln1635">    case QAppImageUpdateEnums::Error::RemoteHostClosedError:</a>
-<a name="ln1636">        errorString = QString::fromUtf8(&quot;The remote server closed the connection prematurely, &quot;);</a>
-<a name="ln1637">        errorString += QString::fromUtf8(&quot;before the entire reply was received and processed.&quot;);</a>
-<a name="ln1638">        break;</a>
-<a name="ln1639">    case QAppImageUpdateEnums::Error::HostNotFoundError:</a>
-<a name="ln1640">        errorString = QString::fromUtf8(&quot;The remote host name was not found (invalid hostname).&quot;);</a>
-<a name="ln1641">        break;</a>
-<a name="ln1642">    case QAppImageUpdateEnums::Error::TimeoutError:</a>
-<a name="ln1643">        errorString = QString::fromUtf8(&quot;The connection to the remote server timed out.&quot;);</a>
-<a name="ln1644">        break;</a>
-<a name="ln1645">    case QAppImageUpdateEnums::Error::SslHandshakeFailedError:</a>
-<a name="ln1646">        errorString = QString::fromUtf8(&quot;The SSL/TLS handshake failed and the encrypted channel &quot;);</a>
-<a name="ln1647">        errorString += QString::fromUtf8(&quot;could not be established.&quot;);</a>
-<a name="ln1648">        break;</a>
-<a name="ln1649">    case QAppImageUpdateEnums::Error::TemporaryNetworkFailureError:</a>
-<a name="ln1650">        errorString = QString::fromUtf8(&quot;The connection to the network was broken.&quot;);</a>
-<a name="ln1651">        break;</a>
-<a name="ln1652">    case QAppImageUpdateEnums::Error::NetworkSessionFailedError:</a>
-<a name="ln1653">        errorString = QString::fromUtf8(&quot;The connection to the network was broken &quot;);</a>
-<a name="ln1654">        errorString += QString::fromUtf8(&quot;or could not be initiated.&quot;);</a>
-<a name="ln1655">        break;</a>
-<a name="ln1656">    case QAppImageUpdateEnums::Error::BackgroundRequestNotAllowedError:</a>
-<a name="ln1657">        errorString = QString::fromUtf8(&quot;The background request is not currently allowed due to platform policy.&quot;);</a>
-<a name="ln1658">        break;</a>
-<a name="ln1659">    case QAppImageUpdateEnums::Error::TooManyRedirectsError:</a>
-<a name="ln1660">        errorString = QString::fromUtf8(&quot;While following redirects, the maximum limit was reached.&quot;);</a>
-<a name="ln1661">        break;</a>
-<a name="ln1662">    case QAppImageUpdateEnums::Error::InsecureRedirectError:</a>
-<a name="ln1663">        errorString = QString::fromUtf8(&quot;While following redirects, there was a redirect &quot;);</a>
-<a name="ln1664">        errorString += QString::fromUtf8(&quot;from a encrypted protocol (https) to an unencrypted one (http).&quot;);</a>
-<a name="ln1665">        break;</a>
-<a name="ln1666">    case QAppImageUpdateEnums::Error::ContentAccessDenied:</a>
-<a name="ln1667">        errorString = QString::fromUtf8(&quot;The access to the remote content was denied (HTTP error 403).&quot;);</a>
-<a name="ln1668">        break;</a>
-<a name="ln1669">    case QAppImageUpdateEnums::Error::ContentOperationNotPermittedError:</a>
-<a name="ln1670">        errorString = QString::fromUtf8(&quot;The operation requested on the remote content is not permitted.&quot;);</a>
-<a name="ln1671">        break;</a>
-<a name="ln1672">    case QAppImageUpdateEnums::Error::ContentNotFoundError:</a>
-<a name="ln1673">        errorString = QString::fromUtf8(&quot;The remote content was not found at the server (HTTP error 404)&quot;);</a>
-<a name="ln1674">        break;</a>
-<a name="ln1675">    case QAppImageUpdateEnums::Error::AuthenticationRequiredError:</a>
-<a name="ln1676">        errorString = QString::fromUtf8(&quot;The remote server requires authentication to serve the content, &quot;);</a>
-<a name="ln1677">        errorString += QString::fromUtf8(&quot;but the credentials provided were not accepted or given.&quot;);</a>
-<a name="ln1678">        break;</a>
-<a name="ln1679">    case QAppImageUpdateEnums::Error::ContentConflictError:</a>
-<a name="ln1680">        errorString = QString::fromUtf8(&quot;The request could not be completed due to a conflict with the &quot;);</a>
-<a name="ln1681">        errorString += QString::fromUtf8(&quot;current state of the resource.&quot;);</a>
-<a name="ln1682">        break;</a>
-<a name="ln1683">    case QAppImageUpdateEnums::Error::ContentGoneError:</a>
-<a name="ln1684">        errorString = QString::fromUtf8(&quot;The requested resource is no longer available at the server.&quot;);</a>
-<a name="ln1685">        break;</a>
-<a name="ln1686">    case QAppImageUpdateEnums::Error::InternalServerError:</a>
-<a name="ln1687">        errorString = QString::fromUtf8(&quot;The server encountered an unexpected condition which prevented &quot;);</a>
-<a name="ln1688">        errorString += QString::fromUtf8(&quot;it from fulfilling the request.&quot;);</a>
-<a name="ln1689">        break;</a>
-<a name="ln1690">    case QAppImageUpdateEnums::Error::OperationNotImplementedError:</a>
-<a name="ln1691">        errorString = QString::fromUtf8(&quot;The server does not support the functionality required to fulfill the request.&quot;);</a>
-<a name="ln1692">        break;</a>
-<a name="ln1693">    case QAppImageUpdateEnums::Error::ServiceUnavailableError:</a>
-<a name="ln1694">        errorString = QString::fromUtf8(&quot;The server is unable to handle the request at this time.&quot;);</a>
-<a name="ln1695">        break;</a>
-<a name="ln1696">    case QAppImageUpdateEnums::Error::ProtocolUnknownError:</a>
-<a name="ln1697">        errorString = QString::fromUtf8(&quot;The Network Access API cannot honor the request because the protocol&quot;);</a>
-<a name="ln1698">        errorString += QString::fromUtf8(&quot; is not known.&quot;);</a>
-<a name="ln1699">        break;</a>
-<a name="ln1700">    case QAppImageUpdateEnums::Error::ProtocolInvalidOperationError:</a>
-<a name="ln1701">        errorString = QString::fromUtf8(&quot;The requested operation is invalid for this protocol.&quot;);</a>
-<a name="ln1702">        break;</a>
-<a name="ln1703">    case QAppImageUpdateEnums::Error::UnknownNetworkError:</a>
-<a name="ln1704">        errorString = QString::fromUtf8(&quot;An unknown network-related error was detected.&quot;);</a>
-<a name="ln1705">        break;</a>
-<a name="ln1706">    case QAppImageUpdateEnums::Error::UnknownContentError:</a>
-<a name="ln1707">        errorString = QString::fromUtf8(&quot;An unknown error related to the remote content was detected.&quot;);</a>
-<a name="ln1708">        break;</a>
-<a name="ln1709">    case QAppImageUpdateEnums::Error::ProtocolFailure:</a>
-<a name="ln1710">        errorString = QString::fromUtf8(&quot;A breakdown in protocol was detected &quot;);</a>
-<a name="ln1711">        errorString += QString::fromUtf8(&quot;(parsing error, invalid or unexpected responses, etc.)&quot;);</a>
-<a name="ln1712">        break;</a>
-<a name="ln1713">    case QAppImageUpdateEnums::Error::UnknownServerError:</a>
-<a name="ln1714">        errorString = QString::fromUtf8(&quot;An unknown error related to the server response was detected.&quot;);</a>
-<a name="ln1715">        break;</a>
-<a name="ln1716">    case QAppImageUpdateEnums::Error::NoAppimagePathGiven:</a>
-<a name="ln1717">        errorString = QString::fromUtf8(&quot;No AppImage given.&quot;);</a>
-<a name="ln1718">        break;</a>
-<a name="ln1719">    case QAppImageUpdateEnums::Error::AppimageNotReadable:</a>
-<a name="ln1720">        errorString = QString::fromUtf8(&quot;The AppImage is not readable.&quot;);</a>
-<a name="ln1721">        break;</a>
-<a name="ln1722">    case QAppImageUpdateEnums::Error::NoReadPermission:</a>
-<a name="ln1723">        errorString = QString::fromUtf8(&quot;You don't have the permission to read the AppImage.&quot;);</a>
-<a name="ln1724">        break;</a>
-<a name="ln1725">    case QAppImageUpdateEnums::Error::AppimageNotFound:</a>
-<a name="ln1726">        errorString = QString::fromUtf8(&quot;The AppImage does not exist.&quot;);</a>
-<a name="ln1727">        break;</a>
-<a name="ln1728">    case QAppImageUpdateEnums::Error::CannotOpenAppimage:</a>
-<a name="ln1729">        errorString = QString::fromUtf8(&quot;The AppImage cannot be opened.&quot;);</a>
-<a name="ln1730">        break;</a>
-<a name="ln1731">    case QAppImageUpdateEnums::Error::EmptyUpdateInformation:</a>
-<a name="ln1732">        errorString = QString::fromUtf8(&quot;The AppImage does not include any update information.&quot;);</a>
-<a name="ln1733">        break;</a>
-<a name="ln1734">    case QAppImageUpdateEnums::Error::InvalidAppimageType:</a>
-<a name="ln1735">        errorString = QString::fromUtf8(&quot;The AppImage has an unknown type.&quot;);</a>
-<a name="ln1736">        break;</a>
-<a name="ln1737">    case QAppImageUpdateEnums::Error::InvalidMagicBytes:</a>
-<a name="ln1738">        errorString = QString::fromUtf8(&quot;The AppImage is not valid.&quot;);</a>
-<a name="ln1739">        break;</a>
-<a name="ln1740">    case QAppImageUpdateEnums::Error::InvalidUpdateInformation:</a>
-<a name="ln1741">        errorString = QString::fromUtf8(&quot;The AppImage has invalid update information.&quot;);</a>
-<a name="ln1742">        break;</a>
-<a name="ln1743">    case QAppImageUpdateEnums::Error::NotEnoughMemory:</a>
-<a name="ln1744">        errorString = QString::fromUtf8(&quot;Not enough memory.&quot;);</a>
-<a name="ln1745">        break;</a>
-<a name="ln1746">    case QAppImageUpdateEnums::Error::SectionHeaderNotFound:</a>
-<a name="ln1747">        errorString = QString::fromUtf8(&quot;The AppImage does not contain update information &quot;);</a>
-<a name="ln1748">        errorString += QString::fromUtf8(&quot;at a valid section header.&quot;);</a>
-<a name="ln1749">        break;</a>
-<a name="ln1750">    case QAppImageUpdateEnums::Error::UnsupportedElfFormat:</a>
-<a name="ln1751">        errorString = QString::fromUtf8(&quot;The AppImage is not in supported ELF format.&quot;);</a>
-<a name="ln1752">        break;</a>
-<a name="ln1753">    case QAppImageUpdateEnums::Error::UnsupportedTransport:</a>
-<a name="ln1754">        errorString = QString::fromUtf8(&quot;The AppImage specifies an unsupported update transport.&quot;);</a>
-<a name="ln1755">        break;</a>
-<a name="ln1756">    case QAppImageUpdateEnums::Error::IoReadError:</a>
-<a name="ln1757">        errorString = QString::fromUtf8(&quot;Unknown IO read error.&quot;);</a>
-<a name="ln1758">        break;</a>
-<a name="ln1759">    case QAppImageUpdateEnums::Error::GithubApiRateLimitReached:</a>
-<a name="ln1760">        errorString = QString::fromUtf8(&quot;GitHub API rate limit reached, please try again later.&quot;);</a>
-<a name="ln1761">        break;</a>
-<a name="ln1762">    case QAppImageUpdateEnums::Error::ErrorResponseCode:</a>
-<a name="ln1763">        errorString = QString::fromUtf8(&quot;Bad response from the server, please try again later.&quot;);</a>
-<a name="ln1764">        break;</a>
-<a name="ln1765">    case QAppImageUpdateEnums::Error::NoMarkerFoundInControlFile:</a>
-<a name="ln1766">    case QAppImageUpdateEnums::Error::InvalidZsyncHeadersNumber:</a>
-<a name="ln1767">    case QAppImageUpdateEnums::Error::InvalidZsyncMakeVersion:</a>
-<a name="ln1768">    case QAppImageUpdateEnums::Error::InvalidZsyncTargetFilename:</a>
-<a name="ln1769">    case QAppImageUpdateEnums::Error::InvalidZsyncMtime:</a>
-<a name="ln1770">    case QAppImageUpdateEnums::Error::InvalidZsyncBlocksize:</a>
-<a name="ln1771">    case QAppImageUpdateEnums::Error::InvalidTargetFileLength:</a>
-<a name="ln1772">    case QAppImageUpdateEnums::Error::InvalidHashLengthLine:</a>
-<a name="ln1773">    case QAppImageUpdateEnums::Error::InvalidHashLengths:</a>
-<a name="ln1774">    case QAppImageUpdateEnums::Error::InvalidTargetFileUrl:</a>
-<a name="ln1775">    case QAppImageUpdateEnums::Error::InvalidTargetFileSha1:</a>
-<a name="ln1776">    case QAppImageUpdateEnums::Error::HashTableNotAllocated:</a>
-<a name="ln1777">    case QAppImageUpdateEnums::Error::InvalidTargetFileChecksumBlocks:</a>
-<a name="ln1778">    case QAppImageUpdateEnums::Error::CannotOpenTargetFileChecksumBlocks:</a>
-<a name="ln1779">    case QAppImageUpdateEnums::Error::CannotConstructHashTable:</a>
-<a name="ln1780">    case QAppImageUpdateEnums::Error::QbufferIoReadError:</a>
-<a name="ln1781">        errorString = QString::fromUtf8(&quot;Invalid zsync meta file.&quot;);</a>
-<a name="ln1782">        break;</a>
-<a name="ln1783">    case QAppImageUpdateEnums::Error::ZsyncControlFileNotFound:</a>
-<a name="ln1784">        errorString = QString::fromUtf8(&quot;The zsync control file was not found in the specified location.&quot;);</a>
-<a name="ln1785">        break;</a>
-<a name="ln1786">    case QAppImageUpdateEnums::Error::SourceFileNotFound:</a>
-<a name="ln1787">        errorString = QString::fromUtf8(&quot;The current AppImage could not be found, maybe it was deleted while updating?&quot;);</a>
-<a name="ln1788">        break;</a>
-<a name="ln1789">    case QAppImageUpdateEnums::Error::NoPermissionToReadSourceFile:</a>
-<a name="ln1790">        errorString = QString::fromUtf8(&quot;You don't have the permission to read the current AppImage.&quot;);</a>
-<a name="ln1791">        break;</a>
-<a name="ln1792">    case QAppImageUpdateEnums::Error::CannotOpenSourceFile:</a>
-<a name="ln1793">        errorString = QString::fromUtf8(&quot;The current AppImage cannot be opened.&quot;);</a>
-<a name="ln1794">        break;</a>
-<a name="ln1795">    case QAppImageUpdateEnums::Error::NoPermissionToReadWriteTargetFile:</a>
-<a name="ln1796">        errorString = QString::fromUtf8(&quot;You have no write or read permissions for the new version.&quot;);</a>
-<a name="ln1797">        break;</a>
-<a name="ln1798">    case QAppImageUpdateEnums::Error::CannotOpenTargetFile:</a>
-<a name="ln1799">        errorString = QString::fromUtf8(&quot;The new version cannot be opened to write or read.&quot;);</a>
-<a name="ln1800">        break;</a>
-<a name="ln1801">    case QAppImageUpdateEnums::Error::TargetFileSha1HashMismatch:</a>
-<a name="ln1802">        errorString = QString::fromUtf8(&quot;The newly constructed AppImage failed the integrity check, please try again.&quot;);</a>
-<a name="ln1803">        break;</a>
-<a name="ln1804">    case QAppImageUpdateEnums::Error::TorrentNotSupported:</a>
-<a name="ln1805">	errorString = QString::fromUtf8(&quot;The AppImage author does not support decentralized update.&quot;);</a>
-<a name="ln1806">	break;</a>
-<a name="ln1807">    case QAppImageUpdateEnums::Error::TorrentSeedFailed:</a>
-<a name="ln1808">	errorString = QString::fromUtf8(&quot;The AppImage cannot be seeded.&quot;);</a>
-<a name="ln1809">	break;</a>
-<a name="ln1810">    case QAppImageUpdateEnums::Error::OutdatedAppImageForSeed:</a>
-<a name="ln1811">	errorString = QString::fromUtf8(&quot;The AppImage is not the newest available for seeding.&quot;);</a>
-<a name="ln1812">	break;</a>
-<a name="ln1813">    case QAppImageUpdateEnums::Error::IncompleteAppImageForSeed:</a>
-<a name="ln1814">	errorString = QString::fromUtf8(&quot;The AppImage is incomplete for seeding.&quot;);</a>
-<a name="ln1815">	break;</a>
-<a name="ln1816">    case QAppImageUpdateEnums::Error::UnsupportedActionForBuild:</a>
-<a name="ln1817">        errorString = QString::fromUtf8(&quot;The current build of the core library does not support the requested action.&quot;);</a>
-<a name="ln1818">        break;</a>
-<a name="ln1819">    case QAppImageUpdateEnums::Error::InvalidAction:</a>
-<a name="ln1820">        errorString = QString::fromUtf8(&quot;The requested action is invalid.&quot;);</a>
-<a name="ln1821">        break;</a>
-<a name="ln1822">    default:</a>
-<a name="ln1823">        errorString = QString::fromUtf8(&quot;Unknown error.&quot;);</a>
-<a name="ln1824">        break;</a>
-<a name="ln1825">    }</a>
-<a name="ln1826">    return errorString;</a>
-<a name="ln1827">}</a>
-<a name="ln1828"> </a>
-<a name="ln1829">QString QAppImageUpdatePrivate::versionString() {</a>
-<a name="ln1830">    return QString::fromUtf8(&quot;2.0.1&quot;);</a>
-<a name="ln1831">}</a>
+<a name="ln1364">        //// The delay is set to 5 seconds</a>
+<a name="ln1365">        QProcess::startDetached(&quot;sh&quot;,</a>
+<a name="ln1366">                                QStringList()</a>
+<a name="ln1367">                                &lt;&lt; &quot;-c&quot;</a>
+<a name="ln1368">                                &lt;&lt; (</a>
+<a name="ln1369">                                    QString::fromUtf8(&quot;sleep &quot;) +</a>
+<a name="ln1370">                                    QString::number(5) +</a>
+<a name="ln1371">                                    QString::fromUtf8(&quot;; &quot;) +</a>
+<a name="ln1372">                                    result[&quot;NewVersionPath&quot;].toString()</a>
+<a name="ln1373">                                ));</a>
+<a name="ln1374">        m_UpdaterDialog-&gt;hide();</a>
+<a name="ln1375">        emit quit();</a>
+<a name="ln1376">    }</a>
+<a name="ln1377">    m_UpdaterDialog-&gt;hide();</a>
+<a name="ln1378">    emit finished(result, n_CurrentAction);</a>
+<a name="ln1379">    return;</a>
+<a name="ln1380">}</a>
+<a name="ln1381">#endif // NOT NO_GUI</a>
+<a name="ln1382"> </a>
+<a name="ln1383">//// Static Methods</a>
+<a name="ln1384">QString QAppImageUpdatePrivate::errorCodeToString(short errorCode) {</a>
+<a name="ln1385">    QString ret = &quot;QAppImageUpdate::Error::&quot;;</a>
+<a name="ln1386">    switch(errorCode) {</a>
+<a name="ln1387">    case QAppImageUpdateEnums::Error::NoAppimagePathGiven:</a>
+<a name="ln1388">        ret += &quot;NoAppImagePathGiven&quot;;</a>
+<a name="ln1389">        break;</a>
+<a name="ln1390">    case QAppImageUpdateEnums::Error::AppimageNotReadable:</a>
+<a name="ln1391">        ret += &quot;AppImageNotReadable&quot;;</a>
+<a name="ln1392">        break;</a>
+<a name="ln1393">    case QAppImageUpdateEnums::Error::NoReadPermission:</a>
+<a name="ln1394">        ret += &quot;NoReadPermission&quot;;</a>
+<a name="ln1395">        break;</a>
+<a name="ln1396">    case QAppImageUpdateEnums::Error::AppimageNotFound:</a>
+<a name="ln1397">        ret += &quot;AppimageNotFound&quot;;</a>
+<a name="ln1398">        break;</a>
+<a name="ln1399">    case QAppImageUpdateEnums::Error::CannotOpenAppimage:</a>
+<a name="ln1400">        ret += &quot;CannnotOpenAppimage&quot;;</a>
+<a name="ln1401">        break;</a>
+<a name="ln1402">    case QAppImageUpdateEnums::Error::EmptyUpdateInformation:</a>
+<a name="ln1403">        ret += &quot;EmptyUpdateInformation&quot;;</a>
+<a name="ln1404">        break;</a>
+<a name="ln1405">    case QAppImageUpdateEnums::Error::InvalidAppimageType:</a>
+<a name="ln1406">        ret += &quot;InvalidAppimageType&quot;;</a>
+<a name="ln1407">        break;</a>
+<a name="ln1408">    case QAppImageUpdateEnums::Error::InvalidMagicBytes:</a>
+<a name="ln1409">        ret += &quot;InvalidMagicBytes&quot;;</a>
+<a name="ln1410">        break;</a>
+<a name="ln1411">    case QAppImageUpdateEnums::Error::InvalidUpdateInformation:</a>
+<a name="ln1412">        ret += &quot;InvalidUpdateInformation&quot;;</a>
+<a name="ln1413">        break;</a>
+<a name="ln1414">    case QAppImageUpdateEnums::Error::NotEnoughMemory:</a>
+<a name="ln1415">        ret += &quot;NotEnoughMemory&quot;;</a>
+<a name="ln1416">        break;</a>
+<a name="ln1417">    case QAppImageUpdateEnums::Error::SectionHeaderNotFound:</a>
+<a name="ln1418">        ret += &quot;SectionHeaderNotFound&quot;;</a>
+<a name="ln1419">        break;</a>
+<a name="ln1420">    case QAppImageUpdateEnums::Error::UnsupportedElfFormat:</a>
+<a name="ln1421">        ret += &quot;UnsupportedElfFormat&quot;;</a>
+<a name="ln1422">        break;</a>
+<a name="ln1423">    case QAppImageUpdateEnums::Error::UnsupportedTransport:</a>
+<a name="ln1424">        ret += &quot;UnsupportedTransport&quot;;</a>
+<a name="ln1425">        break;</a>
+<a name="ln1426">    case QAppImageUpdateEnums::Error::UnknownNetworkError:</a>
+<a name="ln1427">        ret += &quot;UnknownNetworkError&quot;;</a>
+<a name="ln1428">        break;</a>
+<a name="ln1429">    case QAppImageUpdateEnums::Error::IoReadError:</a>
+<a name="ln1430">        ret += &quot;IoReadError&quot;;</a>
+<a name="ln1431">        break;</a>
+<a name="ln1432">    case QAppImageUpdateEnums::Error::ErrorResponseCode:</a>
+<a name="ln1433">        ret += &quot;ErrorResponseCode&quot;;</a>
+<a name="ln1434">        break;</a>
+<a name="ln1435">    case QAppImageUpdateEnums::Error::GithubApiRateLimitReached:</a>
+<a name="ln1436">        ret += &quot;GithubApiRateLimitReached&quot;;</a>
+<a name="ln1437">        break;</a>
+<a name="ln1438">    case QAppImageUpdateEnums::Error::NoMarkerFoundInControlFile:</a>
+<a name="ln1439">        ret += &quot;NoMarkerFoundInControlFile&quot;;</a>
+<a name="ln1440">        break;</a>
+<a name="ln1441">    case QAppImageUpdateEnums::Error::InvalidZsyncHeadersNumber:</a>
+<a name="ln1442">        ret += &quot;InvalidZsyncHeadersNumber&quot;;</a>
+<a name="ln1443">        break;</a>
+<a name="ln1444">    case QAppImageUpdateEnums::Error::InvalidZsyncMakeVersion:</a>
+<a name="ln1445">        ret += &quot;InvalidZsyncMakeVersion&quot;;</a>
+<a name="ln1446">        break;</a>
+<a name="ln1447">    case QAppImageUpdateEnums::Error::InvalidZsyncTargetFilename:</a>
+<a name="ln1448">        ret += &quot;InvalidZsyncTargetFilename&quot;;</a>
+<a name="ln1449">        break;</a>
+<a name="ln1450">    case QAppImageUpdateEnums::Error::InvalidZsyncMtime:</a>
+<a name="ln1451">        ret += &quot;InvalidZsyncMtime&quot;;</a>
+<a name="ln1452">        break;</a>
+<a name="ln1453">    case QAppImageUpdateEnums::Error::InvalidZsyncBlocksize:</a>
+<a name="ln1454">        ret += &quot;InvalidZsyncBlocksize&quot;;</a>
+<a name="ln1455">        break;</a>
+<a name="ln1456">    case QAppImageUpdateEnums::Error::InvalidTargetFileLength:</a>
+<a name="ln1457">        ret += &quot;InvalidTargetFileLength&quot;;</a>
+<a name="ln1458">        break;</a>
+<a name="ln1459">    case QAppImageUpdateEnums::Error::InvalidHashLengthLine:</a>
+<a name="ln1460">        ret += &quot;InvalidHashLengthLine&quot;;</a>
+<a name="ln1461">        break;</a>
+<a name="ln1462">    case QAppImageUpdateEnums::Error::InvalidHashLengths:</a>
+<a name="ln1463">        ret += &quot;InvalidHashLengths&quot;;</a>
+<a name="ln1464">        break;</a>
+<a name="ln1465">    case QAppImageUpdateEnums::Error::InvalidTargetFileUrl:</a>
+<a name="ln1466">        ret += &quot;InvalidTargetFileUrl&quot;;</a>
+<a name="ln1467">        break;</a>
+<a name="ln1468">    case QAppImageUpdateEnums::Error::InvalidTargetFileSha1:</a>
+<a name="ln1469">        ret += &quot;InvalidTargetFileSha1&quot;;</a>
+<a name="ln1470">        break;</a>
+<a name="ln1471">    case QAppImageUpdateEnums::Error::ConnectionRefusedError:</a>
+<a name="ln1472">        ret += &quot;ConnectionRefusedError&quot;;</a>
+<a name="ln1473">        break;</a>
+<a name="ln1474">    case QAppImageUpdateEnums::Error::RemoteHostClosedError:</a>
+<a name="ln1475">        ret += &quot;RemoteHostClosedError&quot;;</a>
+<a name="ln1476">        break;</a>
+<a name="ln1477">    case QAppImageUpdateEnums::Error::HostNotFoundError:</a>
+<a name="ln1478">        ret += &quot;HostNotFoundError&quot;;</a>
+<a name="ln1479">        break;</a>
+<a name="ln1480">    case QAppImageUpdateEnums::Error::TimeoutError:</a>
+<a name="ln1481">        ret += &quot;TimeoutError&quot;;</a>
+<a name="ln1482">        break;</a>
+<a name="ln1483">    case QAppImageUpdateEnums::Error::OperationCanceledError:</a>
+<a name="ln1484">        ret += &quot;OperationCanceledError&quot;;</a>
+<a name="ln1485">        break;</a>
+<a name="ln1486">    case QAppImageUpdateEnums::Error::SslHandshakeFailedError:</a>
+<a name="ln1487">        ret += &quot;SslHandshakeFailedError&quot;;</a>
+<a name="ln1488">        break;</a>
+<a name="ln1489">    case QAppImageUpdateEnums::Error::TemporaryNetworkFailureError:</a>
+<a name="ln1490">        ret += &quot;TemporaryNetworkFailureError&quot;;</a>
+<a name="ln1491">        break;</a>
+<a name="ln1492">    case QAppImageUpdateEnums::Error::NetworkSessionFailedError:</a>
+<a name="ln1493">        ret += &quot;NetworkSessionFailedError&quot;;</a>
+<a name="ln1494">        break;</a>
+<a name="ln1495">    case QAppImageUpdateEnums::Error::BackgroundRequestNotAllowedError:</a>
+<a name="ln1496">        ret += &quot;BackgroundRequestNotAllowedError&quot;;</a>
+<a name="ln1497">        break;</a>
+<a name="ln1498">    case QAppImageUpdateEnums::Error::TooManyRedirectsError:</a>
+<a name="ln1499">        ret += &quot;TooManyRedirectsError&quot;;</a>
+<a name="ln1500">        break;</a>
+<a name="ln1501">    case QAppImageUpdateEnums::Error::InsecureRedirectError:</a>
+<a name="ln1502">        ret += &quot;InsecureRedirectError&quot;;</a>
+<a name="ln1503">        break;</a>
+<a name="ln1504">    case QAppImageUpdateEnums::Error::ProxyConnectionRefusedError:</a>
+<a name="ln1505">        ret += &quot;ProxyConnectionRefusedError&quot;;</a>
+<a name="ln1506">        break;</a>
+<a name="ln1507">    case QAppImageUpdateEnums::Error::ProxyConnectionClosedError:</a>
+<a name="ln1508">        ret += &quot;ProxyConnectionClosedError&quot;;</a>
+<a name="ln1509">        break;</a>
+<a name="ln1510">    case QAppImageUpdateEnums::Error::ProxyNotFoundError:</a>
+<a name="ln1511">        ret += &quot;ProxyNotFoundError&quot;;</a>
+<a name="ln1512">        break;</a>
+<a name="ln1513">    case QAppImageUpdateEnums::Error::ProxyTimeoutError:</a>
+<a name="ln1514">        ret += &quot;ProxyTimeoutError&quot;;</a>
+<a name="ln1515">        break;</a>
+<a name="ln1516">    case QAppImageUpdateEnums::Error::ProxyAuthenticationRequiredError:</a>
+<a name="ln1517">        ret += &quot;ProxyAuthenticationRequiredError&quot;;</a>
+<a name="ln1518">        break;</a>
+<a name="ln1519">    case QAppImageUpdateEnums::Error::ContentAccessDenied:</a>
+<a name="ln1520">        ret += &quot;ContentAccessDenied&quot;;</a>
+<a name="ln1521">        break;</a>
+<a name="ln1522">    case QAppImageUpdateEnums::Error::ContentOperationNotPermittedError:</a>
+<a name="ln1523">        ret += &quot;ContentOperationNotPermittedError&quot;;</a>
+<a name="ln1524">        break;</a>
+<a name="ln1525">    case QAppImageUpdateEnums::Error::ContentNotFoundError:</a>
+<a name="ln1526">        ret += &quot;ContentNotFoundError&quot;;</a>
+<a name="ln1527">        break;</a>
+<a name="ln1528">    case QAppImageUpdateEnums::Error::AuthenticationRequiredError:</a>
+<a name="ln1529">        ret += &quot;AuthenticationRequiredError&quot;;</a>
+<a name="ln1530">        break;</a>
+<a name="ln1531">    case QAppImageUpdateEnums::Error::ContentReSendError:</a>
+<a name="ln1532">        ret += &quot;ContentReSendError&quot;;</a>
+<a name="ln1533">        break;</a>
+<a name="ln1534">    case QAppImageUpdateEnums::Error::ContentConflictError:</a>
+<a name="ln1535">        ret += &quot;ContentConflictError&quot;;</a>
+<a name="ln1536">        break;</a>
+<a name="ln1537">    case QAppImageUpdateEnums::Error::ContentGoneError:</a>
+<a name="ln1538">        ret += &quot;ContentGoneError&quot;;</a>
+<a name="ln1539">        break;</a>
+<a name="ln1540">    case QAppImageUpdateEnums::Error::InternalServerError:</a>
+<a name="ln1541">        ret += &quot;InternalServerError&quot;;</a>
+<a name="ln1542">        break;</a>
+<a name="ln1543">    case QAppImageUpdateEnums::Error::OperationNotImplementedError:</a>
+<a name="ln1544">        ret += &quot;OperationNotImplementedError&quot;;</a>
+<a name="ln1545">        break;</a>
+<a name="ln1546">    case QAppImageUpdateEnums::Error::ServiceUnavailableError:</a>
+<a name="ln1547">        ret += &quot;ServiceUnavailableError&quot;;</a>
+<a name="ln1548">        break;</a>
+<a name="ln1549">    case QAppImageUpdateEnums::Error::ProtocolUnknownError:</a>
+<a name="ln1550">        ret += &quot;ProtocolUnknownError&quot;;</a>
+<a name="ln1551">        break;</a>
+<a name="ln1552">    case QAppImageUpdateEnums::Error::ProtocolInvalidOperationError:</a>
+<a name="ln1553">        ret += &quot;ProtocolInvalidOperationError&quot;;</a>
+<a name="ln1554">        break;</a>
+<a name="ln1555">    case QAppImageUpdateEnums::Error::UnknownProxyError:</a>
+<a name="ln1556">        ret += &quot;UnknownProxyError&quot;;</a>
+<a name="ln1557">        break;</a>
+<a name="ln1558">    case QAppImageUpdateEnums::Error::UnknownContentError:</a>
+<a name="ln1559">        ret += &quot;UnknownContentError&quot;;</a>
+<a name="ln1560">        break;</a>
+<a name="ln1561">    case QAppImageUpdateEnums::Error::ProtocolFailure:</a>
+<a name="ln1562">        ret += &quot;ProtocolFailure&quot;;</a>
+<a name="ln1563">        break;</a>
+<a name="ln1564">    case QAppImageUpdateEnums::Error::UnknownServerError:</a>
+<a name="ln1565">        ret += &quot;UnknownServerError&quot;;</a>
+<a name="ln1566">        break;</a>
+<a name="ln1567">    case QAppImageUpdateEnums::Error::ZsyncControlFileNotFound:</a>
+<a name="ln1568">        ret += &quot;ZsyncControlFileNotFound&quot;;</a>
+<a name="ln1569">        break;</a>
+<a name="ln1570">    case QAppImageUpdateEnums::Error::HashTableNotAllocated:</a>
+<a name="ln1571">        ret += &quot;HashTableNotAllocated&quot;;</a>
+<a name="ln1572">        break;</a>
+<a name="ln1573">    case QAppImageUpdateEnums::Error::InvalidTargetFileChecksumBlocks:</a>
+<a name="ln1574">        ret += &quot;InvalidTargetFileChecksumBlocks&quot;;</a>
+<a name="ln1575">        break;</a>
+<a name="ln1576">    case QAppImageUpdateEnums::Error::CannotConstructHashTable:</a>
+<a name="ln1577">        ret += &quot;CannotConstructHashTable&quot;;</a>
+<a name="ln1578">        break;</a>
+<a name="ln1579">    case QAppImageUpdateEnums::Error::CannotOpenTargetFileChecksumBlocks:</a>
+<a name="ln1580">        ret += &quot;CannotOpenTargetFileChecksumBlocks&quot;;</a>
+<a name="ln1581">        break;</a>
+<a name="ln1582">    case QAppImageUpdateEnums::Error::QbufferIoReadError:</a>
+<a name="ln1583">        ret += &quot;QbufferIoReadError&quot;;</a>
+<a name="ln1584">        break;</a>
+<a name="ln1585">    case QAppImageUpdateEnums::Error::SourceFileNotFound:</a>
+<a name="ln1586">        ret += &quot;SourceFileNotFound&quot;;</a>
+<a name="ln1587">        break;</a>
+<a name="ln1588">    case QAppImageUpdateEnums::Error::NoPermissionToReadSourceFile:</a>
+<a name="ln1589">        ret += &quot;NoPermissionToReadSourceFile&quot;;</a>
+<a name="ln1590">        break;</a>
+<a name="ln1591">    case QAppImageUpdateEnums::Error::CannotOpenSourceFile:</a>
+<a name="ln1592">        ret += &quot;CannotOpenSourceFile&quot;;</a>
+<a name="ln1593">        break;</a>
+<a name="ln1594">    case QAppImageUpdateEnums::Error::NoPermissionToReadWriteTargetFile:</a>
+<a name="ln1595">        ret += &quot;NoPermissionToReadWriteTargetFile&quot;;</a>
+<a name="ln1596">        break;</a>
+<a name="ln1597">    case QAppImageUpdateEnums::Error::CannotOpenTargetFile:</a>
+<a name="ln1598">        ret += &quot;CannotOpenTargetFile&quot;;</a>
+<a name="ln1599">        break;</a>
+<a name="ln1600">    case QAppImageUpdateEnums::Error::TargetFileSha1HashMismatch:</a>
+<a name="ln1601">        ret += &quot;TargetFileSha1HashMismatch&quot;;</a>
+<a name="ln1602">        break;</a>
+<a name="ln1603">    case QAppImageUpdateEnums::Error::TorrentNotSupported:</a>
+<a name="ln1604">	ret += &quot;TorrentNotSupported&quot;;</a>
+<a name="ln1605">	break;</a>
+<a name="ln1606">    case QAppImageUpdateEnums::Error::TorrentSeedFailed:</a>
+<a name="ln1607">	ret += &quot;TorrentSeedFailed&quot;;</a>
+<a name="ln1608">	break;</a>
+<a name="ln1609">    case QAppImageUpdateEnums::Error::OutdatedAppImageForSeed:</a>
+<a name="ln1610">	ret += &quot;OutdatedAppImageForSeed&quot;;</a>
+<a name="ln1611">	break;</a>
+<a name="ln1612">    case QAppImageUpdateEnums::Error::IncompleteAppImageForSeed:</a>
+<a name="ln1613">	ret += &quot;IncompleteAppImageForSeed&quot;;</a>
+<a name="ln1614">	break;</a>
+<a name="ln1615">    case QAppImageUpdateEnums::Error::UnsupportedActionForBuild:</a>
+<a name="ln1616">        ret += &quot;UnsupportedActionForBuild&quot;;</a>
+<a name="ln1617">        break;</a>
+<a name="ln1618">    case QAppImageUpdateEnums::Error::InvalidAction:</a>
+<a name="ln1619">        ret += &quot;InvalidAction&quot;;</a>
+<a name="ln1620">        break;</a>
+<a name="ln1621">    default:</a>
+<a name="ln1622">        ret += &quot;Unknown&quot;;</a>
+<a name="ln1623">        break;</a>
+<a name="ln1624">    }</a>
+<a name="ln1625">    return ret;</a>
+<a name="ln1626">}</a>
+<a name="ln1627"> </a>
+<a name="ln1628">QString QAppImageUpdatePrivate::errorCodeToDescriptionString(short errorCode) {</a>
+<a name="ln1629">    QString errorString;</a>
+<a name="ln1630">    switch(errorCode) {</a>
+<a name="ln1631">    case QAppImageUpdateEnums::Error::ConnectionRefusedError:</a>
+<a name="ln1632">        errorString = QString::fromUtf8(&quot;The update server is not accepting requests.&quot;);</a>
+<a name="ln1633">        break;</a>
+<a name="ln1634">    case QAppImageUpdateEnums::Error::RemoteHostClosedError:</a>
+<a name="ln1635">        errorString = QString::fromUtf8(&quot;The remote server closed the connection prematurely, &quot;);</a>
+<a name="ln1636">        errorString += QString::fromUtf8(&quot;before the entire reply was received and processed.&quot;);</a>
+<a name="ln1637">        break;</a>
+<a name="ln1638">    case QAppImageUpdateEnums::Error::HostNotFoundError:</a>
+<a name="ln1639">        errorString = QString::fromUtf8(&quot;The remote host name was not found (invalid hostname).&quot;);</a>
+<a name="ln1640">        break;</a>
+<a name="ln1641">    case QAppImageUpdateEnums::Error::TimeoutError:</a>
+<a name="ln1642">        errorString = QString::fromUtf8(&quot;The connection to the remote server timed out.&quot;);</a>
+<a name="ln1643">        break;</a>
+<a name="ln1644">    case QAppImageUpdateEnums::Error::SslHandshakeFailedError:</a>
+<a name="ln1645">        errorString = QString::fromUtf8(&quot;The SSL/TLS handshake failed and the encrypted channel &quot;);</a>
+<a name="ln1646">        errorString += QString::fromUtf8(&quot;could not be established.&quot;);</a>
+<a name="ln1647">        break;</a>
+<a name="ln1648">    case QAppImageUpdateEnums::Error::TemporaryNetworkFailureError:</a>
+<a name="ln1649">        errorString = QString::fromUtf8(&quot;The connection to the network was broken.&quot;);</a>
+<a name="ln1650">        break;</a>
+<a name="ln1651">    case QAppImageUpdateEnums::Error::NetworkSessionFailedError:</a>
+<a name="ln1652">        errorString = QString::fromUtf8(&quot;The connection to the network was broken &quot;);</a>
+<a name="ln1653">        errorString += QString::fromUtf8(&quot;or could not be initiated.&quot;);</a>
+<a name="ln1654">        break;</a>
+<a name="ln1655">    case QAppImageUpdateEnums::Error::BackgroundRequestNotAllowedError:</a>
+<a name="ln1656">        errorString = QString::fromUtf8(&quot;The background request is not currently allowed due to platform policy.&quot;);</a>
+<a name="ln1657">        break;</a>
+<a name="ln1658">    case QAppImageUpdateEnums::Error::TooManyRedirectsError:</a>
+<a name="ln1659">        errorString = QString::fromUtf8(&quot;While following redirects, the maximum limit was reached.&quot;);</a>
+<a name="ln1660">        break;</a>
+<a name="ln1661">    case QAppImageUpdateEnums::Error::InsecureRedirectError:</a>
+<a name="ln1662">        errorString = QString::fromUtf8(&quot;While following redirects, there was a redirect &quot;);</a>
+<a name="ln1663">        errorString += QString::fromUtf8(&quot;from a encrypted protocol (https) to an unencrypted one (http).&quot;);</a>
+<a name="ln1664">        break;</a>
+<a name="ln1665">    case QAppImageUpdateEnums::Error::ContentAccessDenied:</a>
+<a name="ln1666">        errorString = QString::fromUtf8(&quot;The access to the remote content was denied (HTTP error 403).&quot;);</a>
+<a name="ln1667">        break;</a>
+<a name="ln1668">    case QAppImageUpdateEnums::Error::ContentOperationNotPermittedError:</a>
+<a name="ln1669">        errorString = QString::fromUtf8(&quot;The operation requested on the remote content is not permitted.&quot;);</a>
+<a name="ln1670">        break;</a>
+<a name="ln1671">    case QAppImageUpdateEnums::Error::ContentNotFoundError:</a>
+<a name="ln1672">        errorString = QString::fromUtf8(&quot;The remote content was not found at the server (HTTP error 404)&quot;);</a>
+<a name="ln1673">        break;</a>
+<a name="ln1674">    case QAppImageUpdateEnums::Error::AuthenticationRequiredError:</a>
+<a name="ln1675">        errorString = QString::fromUtf8(&quot;The remote server requires authentication to serve the content, &quot;);</a>
+<a name="ln1676">        errorString += QString::fromUtf8(&quot;but the credentials provided were not accepted or given.&quot;);</a>
+<a name="ln1677">        break;</a>
+<a name="ln1678">    case QAppImageUpdateEnums::Error::ContentConflictError:</a>
+<a name="ln1679">        errorString = QString::fromUtf8(&quot;The request could not be completed due to a conflict with the &quot;);</a>
+<a name="ln1680">        errorString += QString::fromUtf8(&quot;current state of the resource.&quot;);</a>
+<a name="ln1681">        break;</a>
+<a name="ln1682">    case QAppImageUpdateEnums::Error::ContentGoneError:</a>
+<a name="ln1683">        errorString = QString::fromUtf8(&quot;The requested resource is no longer available at the server.&quot;);</a>
+<a name="ln1684">        break;</a>
+<a name="ln1685">    case QAppImageUpdateEnums::Error::InternalServerError:</a>
+<a name="ln1686">        errorString = QString::fromUtf8(&quot;The server encountered an unexpected condition which prevented &quot;);</a>
+<a name="ln1687">        errorString += QString::fromUtf8(&quot;it from fulfilling the request.&quot;);</a>
+<a name="ln1688">        break;</a>
+<a name="ln1689">    case QAppImageUpdateEnums::Error::OperationNotImplementedError:</a>
+<a name="ln1690">        errorString = QString::fromUtf8(&quot;The server does not support the functionality required to fulfill the request.&quot;);</a>
+<a name="ln1691">        break;</a>
+<a name="ln1692">    case QAppImageUpdateEnums::Error::ServiceUnavailableError:</a>
+<a name="ln1693">        errorString = QString::fromUtf8(&quot;The server is unable to handle the request at this time.&quot;);</a>
+<a name="ln1694">        break;</a>
+<a name="ln1695">    case QAppImageUpdateEnums::Error::ProtocolUnknownError:</a>
+<a name="ln1696">        errorString = QString::fromUtf8(&quot;The Network Access API cannot honor the request because the protocol&quot;);</a>
+<a name="ln1697">        errorString += QString::fromUtf8(&quot; is not known.&quot;);</a>
+<a name="ln1698">        break;</a>
+<a name="ln1699">    case QAppImageUpdateEnums::Error::ProtocolInvalidOperationError:</a>
+<a name="ln1700">        errorString = QString::fromUtf8(&quot;The requested operation is invalid for this protocol.&quot;);</a>
+<a name="ln1701">        break;</a>
+<a name="ln1702">    case QAppImageUpdateEnums::Error::UnknownNetworkError:</a>
+<a name="ln1703">        errorString = QString::fromUtf8(&quot;An unknown network-related error was detected.&quot;);</a>
+<a name="ln1704">        break;</a>
+<a name="ln1705">    case QAppImageUpdateEnums::Error::UnknownContentError:</a>
+<a name="ln1706">        errorString = QString::fromUtf8(&quot;An unknown error related to the remote content was detected.&quot;);</a>
+<a name="ln1707">        break;</a>
+<a name="ln1708">    case QAppImageUpdateEnums::Error::ProtocolFailure:</a>
+<a name="ln1709">        errorString = QString::fromUtf8(&quot;A breakdown in protocol was detected &quot;);</a>
+<a name="ln1710">        errorString += QString::fromUtf8(&quot;(parsing error, invalid or unexpected responses, etc.)&quot;);</a>
+<a name="ln1711">        break;</a>
+<a name="ln1712">    case QAppImageUpdateEnums::Error::UnknownServerError:</a>
+<a name="ln1713">        errorString = QString::fromUtf8(&quot;An unknown error related to the server response was detected.&quot;);</a>
+<a name="ln1714">        break;</a>
+<a name="ln1715">    case QAppImageUpdateEnums::Error::NoAppimagePathGiven:</a>
+<a name="ln1716">        errorString = QString::fromUtf8(&quot;No AppImage given.&quot;);</a>
+<a name="ln1717">        break;</a>
+<a name="ln1718">    case QAppImageUpdateEnums::Error::AppimageNotReadable:</a>
+<a name="ln1719">        errorString = QString::fromUtf8(&quot;The AppImage is not readable.&quot;);</a>
+<a name="ln1720">        break;</a>
+<a name="ln1721">    case QAppImageUpdateEnums::Error::NoReadPermission:</a>
+<a name="ln1722">        errorString = QString::fromUtf8(&quot;You don't have the permission to read the AppImage.&quot;);</a>
+<a name="ln1723">        break;</a>
+<a name="ln1724">    case QAppImageUpdateEnums::Error::AppimageNotFound:</a>
+<a name="ln1725">        errorString = QString::fromUtf8(&quot;The AppImage does not exist.&quot;);</a>
+<a name="ln1726">        break;</a>
+<a name="ln1727">    case QAppImageUpdateEnums::Error::CannotOpenAppimage:</a>
+<a name="ln1728">        errorString = QString::fromUtf8(&quot;The AppImage cannot be opened.&quot;);</a>
+<a name="ln1729">        break;</a>
+<a name="ln1730">    case QAppImageUpdateEnums::Error::EmptyUpdateInformation:</a>
+<a name="ln1731">        errorString = QString::fromUtf8(&quot;The AppImage does not include any update information.&quot;);</a>
+<a name="ln1732">        break;</a>
+<a name="ln1733">    case QAppImageUpdateEnums::Error::InvalidAppimageType:</a>
+<a name="ln1734">        errorString = QString::fromUtf8(&quot;The AppImage has an unknown type.&quot;);</a>
+<a name="ln1735">        break;</a>
+<a name="ln1736">    case QAppImageUpdateEnums::Error::InvalidMagicBytes:</a>
+<a name="ln1737">        errorString = QString::fromUtf8(&quot;The AppImage is not valid.&quot;);</a>
+<a name="ln1738">        break;</a>
+<a name="ln1739">    case QAppImageUpdateEnums::Error::InvalidUpdateInformation:</a>
+<a name="ln1740">        errorString = QString::fromUtf8(&quot;The AppImage has invalid update information.&quot;);</a>
+<a name="ln1741">        break;</a>
+<a name="ln1742">    case QAppImageUpdateEnums::Error::NotEnoughMemory:</a>
+<a name="ln1743">        errorString = QString::fromUtf8(&quot;Not enough memory.&quot;);</a>
+<a name="ln1744">        break;</a>
+<a name="ln1745">    case QAppImageUpdateEnums::Error::SectionHeaderNotFound:</a>
+<a name="ln1746">        errorString = QString::fromUtf8(&quot;The AppImage does not contain update information &quot;);</a>
+<a name="ln1747">        errorString += QString::fromUtf8(&quot;at a valid section header.&quot;);</a>
+<a name="ln1748">        break;</a>
+<a name="ln1749">    case QAppImageUpdateEnums::Error::UnsupportedElfFormat:</a>
+<a name="ln1750">        errorString = QString::fromUtf8(&quot;The AppImage is not in supported ELF format.&quot;);</a>
+<a name="ln1751">        break;</a>
+<a name="ln1752">    case QAppImageUpdateEnums::Error::UnsupportedTransport:</a>
+<a name="ln1753">        errorString = QString::fromUtf8(&quot;The AppImage specifies an unsupported update transport.&quot;);</a>
+<a name="ln1754">        break;</a>
+<a name="ln1755">    case QAppImageUpdateEnums::Error::IoReadError:</a>
+<a name="ln1756">        errorString = QString::fromUtf8(&quot;Unknown IO read error.&quot;);</a>
+<a name="ln1757">        break;</a>
+<a name="ln1758">    case QAppImageUpdateEnums::Error::GithubApiRateLimitReached:</a>
+<a name="ln1759">        errorString = QString::fromUtf8(&quot;GitHub API rate limit reached, please try again later.&quot;);</a>
+<a name="ln1760">        break;</a>
+<a name="ln1761">    case QAppImageUpdateEnums::Error::ErrorResponseCode:</a>
+<a name="ln1762">        errorString = QString::fromUtf8(&quot;Bad response from the server, please try again later.&quot;);</a>
+<a name="ln1763">        break;</a>
+<a name="ln1764">    case QAppImageUpdateEnums::Error::NoMarkerFoundInControlFile:</a>
+<a name="ln1765">    case QAppImageUpdateEnums::Error::InvalidZsyncHeadersNumber:</a>
+<a name="ln1766">    case QAppImageUpdateEnums::Error::InvalidZsyncMakeVersion:</a>
+<a name="ln1767">    case QAppImageUpdateEnums::Error::InvalidZsyncTargetFilename:</a>
+<a name="ln1768">    case QAppImageUpdateEnums::Error::InvalidZsyncMtime:</a>
+<a name="ln1769">    case QAppImageUpdateEnums::Error::InvalidZsyncBlocksize:</a>
+<a name="ln1770">    case QAppImageUpdateEnums::Error::InvalidTargetFileLength:</a>
+<a name="ln1771">    case QAppImageUpdateEnums::Error::InvalidHashLengthLine:</a>
+<a name="ln1772">    case QAppImageUpdateEnums::Error::InvalidHashLengths:</a>
+<a name="ln1773">    case QAppImageUpdateEnums::Error::InvalidTargetFileUrl:</a>
+<a name="ln1774">    case QAppImageUpdateEnums::Error::InvalidTargetFileSha1:</a>
+<a name="ln1775">    case QAppImageUpdateEnums::Error::HashTableNotAllocated:</a>
+<a name="ln1776">    case QAppImageUpdateEnums::Error::InvalidTargetFileChecksumBlocks:</a>
+<a name="ln1777">    case QAppImageUpdateEnums::Error::CannotOpenTargetFileChecksumBlocks:</a>
+<a name="ln1778">    case QAppImageUpdateEnums::Error::CannotConstructHashTable:</a>
+<a name="ln1779">    case QAppImageUpdateEnums::Error::QbufferIoReadError:</a>
+<a name="ln1780">        errorString = QString::fromUtf8(&quot;Invalid zsync meta file.&quot;);</a>
+<a name="ln1781">        break;</a>
+<a name="ln1782">    case QAppImageUpdateEnums::Error::ZsyncControlFileNotFound:</a>
+<a name="ln1783">        errorString = QString::fromUtf8(&quot;The zsync control file was not found in the specified location.&quot;);</a>
+<a name="ln1784">        break;</a>
+<a name="ln1785">    case QAppImageUpdateEnums::Error::SourceFileNotFound:</a>
+<a name="ln1786">        errorString = QString::fromUtf8(&quot;The current AppImage could not be found, maybe it was deleted while updating?&quot;);</a>
+<a name="ln1787">        break;</a>
+<a name="ln1788">    case QAppImageUpdateEnums::Error::NoPermissionToReadSourceFile:</a>
+<a name="ln1789">        errorString = QString::fromUtf8(&quot;You don't have the permission to read the current AppImage.&quot;);</a>
+<a name="ln1790">        break;</a>
+<a name="ln1791">    case QAppImageUpdateEnums::Error::CannotOpenSourceFile:</a>
+<a name="ln1792">        errorString = QString::fromUtf8(&quot;The current AppImage cannot be opened.&quot;);</a>
+<a name="ln1793">        break;</a>
+<a name="ln1794">    case QAppImageUpdateEnums::Error::NoPermissionToReadWriteTargetFile:</a>
+<a name="ln1795">        errorString = QString::fromUtf8(&quot;You have no write or read permissions for the new version.&quot;);</a>
+<a name="ln1796">        break;</a>
+<a name="ln1797">    case QAppImageUpdateEnums::Error::CannotOpenTargetFile:</a>
+<a name="ln1798">        errorString = QString::fromUtf8(&quot;The new version cannot be opened to write or read.&quot;);</a>
+<a name="ln1799">        break;</a>
+<a name="ln1800">    case QAppImageUpdateEnums::Error::TargetFileSha1HashMismatch:</a>
+<a name="ln1801">        errorString = QString::fromUtf8(&quot;The newly constructed AppImage failed the integrity check, please try again.&quot;);</a>
+<a name="ln1802">        break;</a>
+<a name="ln1803">    case QAppImageUpdateEnums::Error::TorrentNotSupported:</a>
+<a name="ln1804">	errorString = QString::fromUtf8(&quot;The AppImage author does not support decentralized update.&quot;);</a>
+<a name="ln1805">	break;</a>
+<a name="ln1806">    case QAppImageUpdateEnums::Error::TorrentSeedFailed:</a>
+<a name="ln1807">	errorString = QString::fromUtf8(&quot;The AppImage cannot be seeded.&quot;);</a>
+<a name="ln1808">	break;</a>
+<a name="ln1809">    case QAppImageUpdateEnums::Error::OutdatedAppImageForSeed:</a>
+<a name="ln1810">	errorString = QString::fromUtf8(&quot;The AppImage is not the newest available for seeding.&quot;);</a>
+<a name="ln1811">	break;</a>
+<a name="ln1812">    case QAppImageUpdateEnums::Error::IncompleteAppImageForSeed:</a>
+<a name="ln1813">	errorString = QString::fromUtf8(&quot;The AppImage is incomplete for seeding.&quot;);</a>
+<a name="ln1814">	break;</a>
+<a name="ln1815">    case QAppImageUpdateEnums::Error::UnsupportedActionForBuild:</a>
+<a name="ln1816">        errorString = QString::fromUtf8(&quot;The current build of the core library does not support the requested action.&quot;);</a>
+<a name="ln1817">        break;</a>
+<a name="ln1818">    case QAppImageUpdateEnums::Error::InvalidAction:</a>
+<a name="ln1819">        errorString = QString::fromUtf8(&quot;The requested action is invalid.&quot;);</a>
+<a name="ln1820">        break;</a>
+<a name="ln1821">    default:</a>
+<a name="ln1822">        errorString = QString::fromUtf8(&quot;Unknown error.&quot;);</a>
+<a name="ln1823">        break;</a>
+<a name="ln1824">    }</a>
+<a name="ln1825">    return errorString;</a>
+<a name="ln1826">}</a>
+<a name="ln1827"> </a>
+<a name="ln1828">QString QAppImageUpdatePrivate::versionString() {</a>
+<a name="ln1829">    return QString::fromUtf8(&quot;2.0.1&quot;);</a>
+<a name="ln1830">}</a>
 
 </code></pre>
 <div class="balloon" rel="248"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1048/" target="_blank">V1048</a> The 'b_Running' variable was assigned the same value.</p></div>
@@ -1849,8 +1848,8 @@
 <div class="balloon" rel="548"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v1048/" target="_blank">V1048</a> The 'b_Canceled' variable was assigned the same value.</p></div>
 <div class="balloon" rel="964"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v519/" target="_blank">V519</a> The 'b_Canceled' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 962, 964.</p></div>
 <div class="balloon" rel="1087"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v519/" target="_blank">V519</a> The 'b_Canceled' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 1085, 1087.</p></div>
-<div class="balloon" rel="1137"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v636/" target="_blank">V636</a> The 'bytesReceived / 1048576' expression was implicitly cast from 'long long' type to 'double' type. Consider utilizing an explicit type cast to avoid the loss of a fractional part. An example: double A = (double)(X) / Y;.</p></div>
-<div class="balloon" rel="1138"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v636/" target="_blank">V636</a> The 'bytesTotal / 1048576' expression was implicitly cast from 'long long' type to 'double' type. Consider utilizing an explicit type cast to avoid the loss of a fractional part. An example: double A = (double)(X) / Y;.</p></div>
+<div class="balloon" rel="1136"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v636/" target="_blank">V636</a> The 'bytesReceived / 1048576' expression was implicitly cast from 'long long' type to 'double' type. Consider utilizing an explicit type cast to avoid the loss of a fractional part. An example: double A = (double)(X) / Y;.</p></div>
+<div class="balloon" rel="1137"><p><span style="font-size:18px">&uarr;</span> <a href="https://www.viva64.com/en/w/v636/" target="_blank">V636</a> The 'bytesTotal / 1048576' expression was implicitly cast from 'long long' type to 'double' type. Consider utilizing an explicit type cast to avoid the loss of a fractional part. An example: double A = (double)(X) / Y;.</p></div>
 
 <link rel="stylesheet" href="highlight.css">
 <script src="highlight.pack.js"></script>
