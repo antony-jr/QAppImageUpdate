@@ -565,6 +565,60 @@ void ZsyncWriterPrivate::start() {
         foundGarbageFiles.removeDuplicates();
     }
 
+    /*
+     * Check if we have the target file already downloaded if 
+     * so just emit finish and don't run the delta updater.
+     */
+     {
+            QString alreadyDownloadedTargetFile = QFileInfo(p_TargetFile->fileName()).path() + "/" + s_TargetFileName;
+            QFileInfo info(alreadyDownloadedTargetFile);
+            QFile file(alreadyDownloadedTargetFile);
+	    if(info.exists() && info.isReadable() && file.open(QIODevice::ReadOnly)) {
+             INFO_START " start : found file with same remote target file name. Running SHA1 verification." INFO_END;
+
+    	     QScopedPointer<QCryptographicHash> SHA1Hasher(new QCryptographicHash(QCryptographicHash::Sha1));
+	     qint64 bufferSize = 1024;
+	     
+	     if(n_TargetFileLength >= 1073741824) { // 1 GiB and more.
+        	bufferSize = 104857600; // copy per 100 MiB.
+    	     } else if(n_TargetFileLength >= 1048576 ) { // 1 MiB and more
+		     bufferSize = 1048576; // copy per 1 MiB.
+    	     } else if(n_TargetFileLength  >= 1024) { // 1 KiB and more.
+		     bufferSize = 4096; // copy per 4 KiB.
+	     } else { // less than 1 KiB
+		     bufferSize = 1024; // copy per 1 KiB.
+	     }
+	     
+	     while(!file.atEnd()) {
+        	SHA1Hasher->addData(file.read(bufferSize));
+        	QCoreApplication::processEvents();
+    	     }
+	     file.close();
+
+    	     auto sha1Hash = QString(SHA1Hasher->result().toHex().toUpper()); 
+	     INFO_START " start : comparing temporary target file sha1 hash(" LOGR sha1Hash
+		     LOGR ") and remote target file sha1 hash(" LOGR s_TargetFileSHA1 INFO_END;
+	     
+	     if(sha1Hash == s_TargetFileSHA1) {
+	         INFO_START " start : SHA1 hash matches." INFO_END;
+		 /*
+		  * * Emit finished signal. */   
+		  QJsonObject newVersionDetails {
+		  {"AbsolutePath", alreadyDownloadedTargetFile },
+                  {"Sha1Hash", sha1Hash},
+                  {"UsedTorrent", false},
+	          {"TorrentFileUrl", u_TorrentFileUrl.isValid() ? u_TorrentFileUrl.toString() : ""}
+                  };
+
+                  b_Started = b_CancelRequested = false;
+                  emit finished(newVersionDetails, s_SourceFilePath);
+		  return;
+	     }else {
+		  INFO_START " start : sha1 hash mismatch." INFO_END;
+	     }
+	    }
+    }
+
     if(b_AcceptRange == true) {
         /*
          * Check if we have the target file already downloaded

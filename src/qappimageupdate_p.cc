@@ -1359,20 +1359,11 @@ void QAppImageUpdatePrivate::handleGUIUpdateFinished(QJsonObject info, QString o
                                     info.permissions());
             }
         }
-
-
-        //// The delay is set to 5 seconds
-        QProcess::startDetached("sh",
-                                QStringList()
-                                << "-c"
-                                << (
-                                    QString::fromUtf8("sleep ") +
-                                    QString::number(5) +
-                                    QString::fromUtf8("; ") +
-                                    result["NewVersionPath"].toString()
-                                ));
-        m_UpdaterDialog->hide();
-        emit quit();
+	
+	m_UpdaterDialog->hide();
+        QProcess::startDetached(result["NewVersionPath"].toString(), QStringList());
+        
+	emit quit();
     }
     m_UpdaterDialog->hide();
     emit finished(result, n_CurrentAction);
