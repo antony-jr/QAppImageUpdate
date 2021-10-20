@@ -146,8 +146,6 @@ QAppImageUpdate as a subdirectory in your CMakeList.txt</p>
 <span class="hljs-keyword">find_package</span>(Qt5Widgets)
 
 <span class="hljs-keyword">include_directories</span>(<span class="hljs-variable">${CMAKE_CURRENT_BINARY_DIR}</span>) <span class="hljs-comment"># just in case!</span>
-<span class="hljs-comment"># Add include directory</span>
-<span class="hljs-keyword">include_directories</span>(QAppImageUpdate)
 
 <span class="hljs-comment"># include subdirectories </span>
 <span class="hljs-keyword">add_subdirectory</span>(QAppImageUpdate)
@@ -159,6 +157,39 @@ QAppImageUpdate as a subdirectory in your CMakeList.txt</p>
                     Qt5::Widgets)
 </code></pre>
 <p>Where <strong>MyCoolApplication</strong> is the application that you are currently working with.</p>
+<h1><a class="anchor" aria-hidden="true" id="using-cmake-when-qappimageupdate-installed-to-system"></a><a href="#using-cmake-when-qappimageupdate-installed-to-system" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using CMake (When QAppImageUpdate installed to system)</h1>
+<p>QAppImageUpdate can be installed to the system with the following commands,</p>
+<pre><code class="hljs"> <span class="hljs-variable">$ </span>git clone <span class="hljs-symbol">https:</span>/<span class="hljs-regexp">/github.com/antony</span>-jr/QAppImageUpdate
+ <span class="hljs-variable">$ </span>cd QAppImageUpdate
+ <span class="hljs-variable">$ </span>cmake .
+ <span class="hljs-variable">$ </span>make -j<span class="hljs-variable">$(</span>nproc)
+ <span class="hljs-variable">$ </span>sudo make install
+</code></pre>
+<p>Then it can be simply used using CMake's <strong>find_package()</strong>.</p>
+<pre><code class="hljs"><span class="hljs-keyword">CMAKE_MINIMUM_REQUIRED</span>( VERSION <span class="hljs-number">3.2</span>)
+<span class="hljs-keyword">project</span>(MyCoolApplication)
+
+<span class="hljs-keyword">set</span>(CMAKE_CXX_STANDARD <span class="hljs-number">11</span>)
+
+<span class="hljs-keyword">set</span>(CMAKE_INCLUDE_CURRENT_DIR <span class="hljs-keyword">ON</span>)
+<span class="hljs-comment"># Instruct CMake to run moc automatically when needed.</span>
+<span class="hljs-keyword">set</span>(CMAKE_AUTOMOC <span class="hljs-keyword">ON</span>)
+
+<span class="hljs-comment"># Find the QtCore library</span>
+<span class="hljs-keyword">find_package</span>(Qt5Core)
+<span class="hljs-keyword">find_package</span>(Qt5Network)
+<span class="hljs-keyword">find_package</span>(Qt5Widgets)
+
+<span class="hljs-comment"># Get QAppImageUpdate</span>
+<span class="hljs-keyword">find_package</span>(QAppImageUpdate)
+
+<span class="hljs-keyword">add_executable</span>(MyCoolApplication MyMain.cpp)
+<span class="hljs-keyword">target_link_libraries</span>(MyCoolApplication QAppImageUpdate
+                    Qt5::Core 
+                    Qt5::Network
+                    Qt5::Widgets)
+
+</code></pre>
 <h1><a class="anchor" aria-hidden="true" id="disable-logging-in-qmake-or-cmake"></a><a href="#disable-logging-in-qmake-or-cmake" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Disable Logging in QMake or CMake</h1>
 <p>For some reasone if you think you don't want logging support whatsoever , i.e no signal from logger signal in
 AppImageDeltaRevisioner.</p>
@@ -183,6 +214,9 @@ also saves some runtime overhead and memory usage.</p>
 <h1><a class="anchor" aria-hidden="true" id="enable-torrent-update-feature"></a><a href="#enable-torrent-update-feature" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Enable Torrent Update Feature</h1>
 <p>As of v2.0 QAppImageUpdate supports updating AppImages via Bittorrent protocol.</p>
 <p><strong>But you should have torrent rasterbar installed, At least v1.2.8 is needed for QAppImageUpdate.</strong></p>
+<blockquote>
+<p>NOTE: Torrent Rasterbar v2.x is not supported yet.</p>
+</blockquote>
 <p>In QMake ,</p>
 <pre><code class="hljs"> <span class="hljs-variable">$ </span>qmake <span class="hljs-string">"CONFIG+=DECENTRALIZED_UPDATE_ENABLED"</span> [ProjectFolder]
 </code></pre>
