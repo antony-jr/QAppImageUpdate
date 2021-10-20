@@ -41,3 +41,16 @@ or **to install it in your git project folder**
 ```
 
 Even though AppImage is specific to linux, this library is cross platform.
+
+
+## Installing to the system
+
+```
+ $ git clone https://github.com/antony-jr/QAppImageUpdate
+ $ cd QAppImageUpdate
+ $ cmake .
+ $ make -j$(nproc)
+ $ sudo make install
+```
+
+Now you can use QAppImage with CMake's **find_package()**.

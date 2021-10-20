@@ -108,7 +108,6 @@ Thats it, All you have to do is to build your project with **qmake**.
  $ mkdir build; cd build ; qmake .. ; make -j$(nproc) 
 ```
 
-
 # Using CMake 
 
 It is recommended for you to keep your source files at the top level and then add
@@ -132,8 +131,6 @@ find_package(Qt5Network)
 find_package(Qt5Widgets)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}) # just in case!
-# Add include directory
-include_directories(QAppImageUpdate)
 
 # include subdirectories 
 add_subdirectory(QAppImageUpdate)
@@ -146,6 +143,46 @@ target_link_libraries(MyCoolApplication QAppImageUpdate
 ```
 
 Where **MyCoolApplication** is the application that you are currently working with.
+
+# Using CMake (When QAppImageUpdate installed to system)
+
+QAppImageUpdate can be installed to the system with the following commands,
+
+```
+ $ git clone https://github.com/antony-jr/QAppImageUpdate
+ $ cd QAppImageUpdate
+ $ cmake .
+ $ make -j$(nproc)
+ $ sudo make install
+```
+
+Then it can be simply used using CMake's **find_package()**.
+
+```
+CMAKE_MINIMUM_REQUIRED( VERSION 3.2)
+project(MyCoolApplication)
+
+set(CMAKE_CXX_STANDARD 11)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# Instruct CMake to run moc automatically when needed.
+set(CMAKE_AUTOMOC ON)
+
+# Find the QtCore library
+find_package(Qt5Core)
+find_package(Qt5Network)
+find_package(Qt5Widgets)
+
+# Get QAppImageUpdate
+find_package(QAppImageUpdate)
+
+add_executable(MyCoolApplication MyMain.cpp)
+target_link_libraries(MyCoolApplication QAppImageUpdate
+					Qt5::Core 
+					Qt5::Network
+					Qt5::Widgets)
+
+```
 
 # Disable Logging in QMake or CMake
 
@@ -192,7 +229,10 @@ In CMake ,
 
 As of v2.0 QAppImageUpdate supports updating AppImages via Bittorrent protocol.
 
-**But you should have torrent rasterbar installed, At least v1.2.8 is needed for QAppImageUpdate.**
+**But you should have torrent rasterbar installed, At least v1.2.8 is needed for QAppImageUpdate.** 
+
+> NOTE: Torrent Rasterbar v2.x is not supported yet. 
+
 
 
 In QMake ,

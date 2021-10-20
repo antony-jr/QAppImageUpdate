@@ -134,7 +134,10 @@ else()
 endif()
 
 target_link_libraries(QAppImageUpdate PUBLIC Qt5::Core Qt5::Network)
-target_include_directories(QAppImageUpdate INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include>")
+target_include_directories(QAppImageUpdate INTERFACE
+				$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+				$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+				$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 target_include_directories(QAppImageUpdate INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QAppImageUpdate>" )
 
 if(DECENTRALIZED_UPDATE_ENABLED)
