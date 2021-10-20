@@ -48,9 +48,12 @@ class QAppImageUpdateTests : public QObject {
                 ;
 
         /// Bintray based AppImage Update
-        urls /* Large AppImage < 200 MiB */
-                << "https://bintray.com/probono/AppImages/download_file?file_path=Blender-2.78-x86_64.AppImage"
-                << "https://bintray.com/probono/AppImages/download_file?file_path=FreeCAD-0.17.git201709021132.glibc2.17-x86_64.AppImage";
+	/// Bintray is now shutdown so no need to 
+	/// test them.
+	//
+        //urls /* Large AppImage < 200 MiB */
+        //        << "https://bintray.com/probono/AppImages/download_file?file_path=Blender-2.78-x86_64.AppImage"
+        //        << "https://bintray.com/probono/AppImages/download_file?file_path=FreeCAD-0.17.git201709021132.glibc2.17-x86_64.AppImage";
 
 
         /// Direct zsync AppImage Update
